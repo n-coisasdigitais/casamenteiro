@@ -160,7 +160,7 @@ export default function SupplierDashboard() {
         <div className="container flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="font-serif text-lg font-semibold">Meu Grande Dia</span>
+            <span className="text-lg font-bold">Meu Grande Dia</span>
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">{profile?.full_name}</span>
@@ -173,7 +173,7 @@ export default function SupplierDashboard() {
 
       <main className="container px-4 py-8 max-w-3xl">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="font-serif text-2xl font-bold">Painel do Fornecedor</h1>
+          <h1 className="text-2xl font-bold">Painel do Fornecedor</h1>
           {statusInfo && (
             <Badge variant={statusInfo.variant} className="flex items-center gap-1">
               <statusInfo.icon className="h-3 w-3" />
@@ -283,7 +283,7 @@ export default function SupplierDashboard() {
           <TabsContent value="profile">
             <Card>
               <CardHeader>
-                <CardTitle className="font-serif text-lg">Informações</CardTitle>
+                <CardTitle className="text-lg">Informações</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div><Label>Nome da empresa</Label><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></div>
@@ -311,7 +311,7 @@ export default function SupplierDashboard() {
           <TabsContent value="photos">
             <Card>
               <CardHeader>
-                <CardTitle className="font-serif text-lg">Portfólio ({photos.length}/10 fotos)</CardTitle>
+                <CardTitle className="text-lg">Portfólio ({photos.length}/10 fotos)</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
