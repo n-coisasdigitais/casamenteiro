@@ -27,7 +27,7 @@ export default function CoupleDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("couples").select("*").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("couples").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (data) {
         if (!data.onboarding_completed) {
           navigate("/onboarding");
