@@ -32,7 +32,7 @@ export default function AdminPanel() {
 
   const loadSuppliers = async () => {
     setLoading(true);
-    let query = supabase.from("suppliers").select("*, categories(name), profiles!suppliers_user_id_fkey(full_name)").order("created_at", { ascending: false });
+    let query = supabase.from("suppliers").select("*, categories(name)").order("created_at", { ascending: false });
     
     // Note: we can't filter by status here due to RLS allowing admin to see all
     const { data } = await query;
@@ -60,14 +60,14 @@ export default function AdminPanel() {
         <div className="container flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="font-serif text-lg font-semibold">Admin</span>
+            <span className="text-lg font-bold">Admin</span>
           </Link>
           <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="h-4 w-4" /></Button>
         </div>
       </header>
 
       <main className="container px-4 py-8">
-        <h1 className="font-serif text-2xl font-bold mb-6">Painel de Administração</h1>
+        <h1 className="text-2xl font-bold mb-6">Painel de Administração</h1>
 
         <div className="flex gap-2 mb-6 overflow-x-auto">
           {(["pending", "approved", "rejected", "all"] as const).map((f) => (
@@ -94,7 +94,7 @@ export default function AdminPanel() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-serif font-semibold text-lg">{sup.company_name}</h3>
+                        <h3 className="font-semibold text-lg">{sup.company_name}</h3>
                         <Badge variant={sup.status === "approved" ? "default" : sup.status === "rejected" ? "destructive" : "secondary"}>
                           {sup.status === "pending" ? "Pendente" : sup.status === "approved" ? "Aprovado" : "Rejeitado"}
                         </Badge>

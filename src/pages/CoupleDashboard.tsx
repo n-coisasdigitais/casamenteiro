@@ -74,7 +74,7 @@ export default function CoupleDashboard() {
         <div className="container flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="font-serif text-lg font-semibold">Meu Grande Dia</span>
+            <span className="text-lg font-bold">Meu Grande Dia</span>
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">
@@ -88,7 +88,7 @@ export default function CoupleDashboard() {
       </header>
 
       <main className="container px-4 py-8">
-        <h1 className="font-serif text-3xl font-bold mb-2">Meu Casamento</h1>
+        <h1 className="text-3xl font-bold mb-2">Meu Casamento</h1>
         {couple.partner_name && (
           <p className="text-muted-foreground mb-8">
             {couple.couple_role === "noivo" ? "Noivo" : "Noiva"} & {couple.partner_name}
@@ -152,7 +152,7 @@ export default function CoupleDashboard() {
         {/* Quotes sent */}
         {quotes.length > 0 && (
           <div className="mb-8">
-            <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
               Meus Orçamentos ({quotes.length})
             </h2>
@@ -210,7 +210,7 @@ export default function CoupleDashboard() {
         {couple.invite_code && (
           <Card>
             <CardHeader>
-              <CardTitle className="font-serif text-lg flex items-center gap-2">
+              <CardTitle className="text-lg flex items-center gap-2">
                 <Share2 className="h-5 w-5 text-primary" />
                 Vincular conta do(a) parceiro(a)
               </CardTitle>
