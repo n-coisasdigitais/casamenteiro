@@ -9,8 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import QuoteThread from "@/components/QuoteThread";
 
 type Category = { id: string; name: string };
 
@@ -22,6 +25,9 @@ export default function SupplierDashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [quotes, setQuotes] = useState<any[]>([]);
+  const [selectedQuote, setSelectedQuote] = useState<any>(null);
+  const [threadOpen, setThreadOpen] = useState(false);
 
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
@@ -37,6 +43,10 @@ export default function SupplierDashboard() {
     loadSupplier();
   }, [user]);
 
+  useEffect(() => {
+    if (supplier) loadQuotes();
+  }, [supplier]);
+
   const loadSupplier = async () => {
     if (!user) return;
     const { data } = await supabase.from("suppliers").select("*").eq("user_id", user.id).single();
@@ -49,9 +59,41 @@ export default function SupplierDashboard() {
       setState(data.state || "");
       setPhone(data.phone || "");
       setEmail(data.email || "");
-      // Load photos
       const { data: photoData } = await supabase.from("supplier_photos").select("*").eq("supplier_id", data.id).order("display_order");
       setPhotos(photoData || []);
+    }
+  };
+
+  const loadQuotes = async () => {
+    if (!supplier) return;
+    const { data } = await supabase
+      .from("quotes")
+      .select("*")
+      .eq("supplier_id", supplier.id)
+      .order("created_at", { ascending: false });
+    setQuotes(data || []);
+  };
+
+  const updateQuoteStatus = async (quoteId: string, status: string) => {
+    const { error } = await supabase
+      .from("quotes")
+      .update({ status })
+      .eq("id", quoteId);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Status atualizado!" });
+      // Mark as viewed when opening
+      loadQuotes();
+    }
+  };
+
+  const openThread = (quote: any) => {
+    setSelectedQuote(quote);
+    setThreadOpen(true);
+    // Auto-mark as viewed
+    if (quote.status === "pending") {
+      updateQuoteStatus(quote.id, "viewed");
     }
   };
 
@@ -128,9 +170,9 @@ export default function SupplierDashboard() {
         </div>
       </header>
 
-      <main className="container px-4 py-8 max-w-2xl">
+      <main className="container px-4 py-8 max-w-3xl">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="font-serif text-2xl font-bold">Meu Perfil</h1>
+          <h1 className="font-serif text-2xl font-bold">Painel do Fornecedor</h1>
           {statusInfo && (
             <Badge variant={statusInfo.variant} className="flex items-center gap-1">
               <statusInfo.icon className="h-3 w-3" />
@@ -147,61 +189,181 @@ export default function SupplierDashboard() {
           </Card>
         )}
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="font-serif text-lg">Informações</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div><Label>Nome da empresa</Label><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></div>
-            <div><Label>Descrição dos serviços</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
-            <div><Label>Categoria</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Cidade</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
-              <div><Label>Estado</Label><Input value={state} onChange={(e) => setState(e.target.value)} /></div>
-            </div>
-            <div><Label>Telefone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-            <div><Label>E-mail de contato</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-            <Button onClick={handleSave} disabled={loading} className="w-full">
-              {loading ? "Salvando..." : "Salvar alterações"}
-            </Button>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="quotes" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="quotes" className="flex items-center gap-1.5">
+              <MessageSquare className="h-4 w-4" />
+              Orçamentos {quotes.length > 0 && <Badge variant="secondary" className="ml-1 text-xs h-5 px-1.5">{quotes.length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
+            <TabsTrigger value="photos">Fotos</TabsTrigger>
+          </TabsList>
 
-        {/* Photos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-lg">Portfólio ({photos.length}/10 fotos)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-              {photos.map((photo) => (
-                <div key={photo.id} className="relative group rounded-lg overflow-hidden aspect-square">
-                  <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => deletePhoto(photo.id)}
-                    className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            {photos.length < 10 && (
-              <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent transition-colors">
-                <Upload className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  {uploading ? "Enviando..." : "Adicionar foto"}
-                </span>
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
-              </label>
+          {/* QUOTES TAB */}
+          <TabsContent value="quotes">
+            {quotes.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">Nenhum pedido de orçamento recebido ainda.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {quotes.map((q) => {
+                  const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+                    pending: { label: "Novo", variant: "default" },
+                    viewed: { label: "Visualizado", variant: "secondary" },
+                    answered: { label: "Respondido", variant: "outline" },
+                    accepted: { label: "Aceito", variant: "default" },
+                    rejected: { label: "Recusado", variant: "destructive" },
+                    cancelled: { label: "Cancelado", variant: "secondary" },
+                  };
+                  const st = statusMap[q.status] || statusMap.pending;
+                  return (
+                    <Card key={q.id} className={`cursor-pointer hover:shadow-md transition-shadow ${q.status === "pending" ? "border-primary/50" : ""}`} onClick={() => openThread(q)}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(q.created_at).toLocaleDateString("pt-BR")}
+                              </span>
+                            </div>
+                            <p className="text-sm line-clamp-2">{q.message}</p>
+                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                              {q.event_date && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {new Date(q.event_date).toLocaleDateString("pt-BR")}
+                                </span>
+                              )}
+                              {q.guest_count && (
+                                <span className="flex items-center gap-1">
+                                  <UsersIcon className="h-3 w-3" />
+                                  {q.guest_count} convidados
+                                </span>
+                              )}
+                              {q.phone && q.phone_visible && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {q.phone}
+                                </span>
+                              )}
+                              {q.phone && !q.phone_visible && (
+                                <span className="flex items-center gap-1 italic">
+                                  <Phone className="h-3 w-3" />
+                                  Telefone oculto
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <Eye className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          {/* PROFILE TAB */}
+          <TabsContent value="profile">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-serif text-lg">Informações</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div><Label>Nome da empresa</Label><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></div>
+                <div><Label>Descrição dos serviços</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
+                <div><Label>Categoria</Label>
+                  <Select value={categoryId} onValueChange={setCategoryId}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Cidade</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
+                  <div><Label>Estado</Label><Input value={state} onChange={(e) => setState(e.target.value)} /></div>
+                </div>
+                <div><Label>Telefone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                <div><Label>E-mail de contato</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+                <Button onClick={handleSave} disabled={loading} className="w-full">
+                  {loading ? "Salvando..." : "Salvar alterações"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* PHOTOS TAB */}
+          <TabsContent value="photos">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-serif text-lg">Portfólio ({photos.length}/10 fotos)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                  {photos.map((photo) => (
+                    <div key={photo.id} className="relative group rounded-lg overflow-hidden aspect-square">
+                      <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => deletePhoto(photo.id)}
+                        className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {photos.length < 10 && (
+                  <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent transition-colors">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {uploading ? "Enviando..." : "Adicionar foto"}
+                    </span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+                  </label>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Quote Thread Dialog */}
+        <Dialog open={threadOpen} onOpenChange={setThreadOpen}>
+          <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
+            <DialogHeader className="p-4 pb-2 border-b border-border">
+              <DialogTitle className="text-base">Orçamento</DialogTitle>
+              {selectedQuote && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Select
+                    value={selectedQuote.status}
+                    onValueChange={(val) => {
+                      updateQuoteStatus(selectedQuote.id, val);
+                      setSelectedQuote({ ...selectedQuote, status: val });
+                    }}
+                  >
+                    <SelectTrigger className="w-40 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Novo</SelectItem>
+                      <SelectItem value="viewed">Visualizado</SelectItem>
+                      <SelectItem value="answered">Respondido</SelectItem>
+                      <SelectItem value="accepted">Aceito ✓</SelectItem>
+                      <SelectItem value="rejected">Recusado ✕</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </DialogHeader>
+            {selectedQuote && user && (
+              <QuoteThread quoteId={selectedQuote.id} currentUserId={user.id} />
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

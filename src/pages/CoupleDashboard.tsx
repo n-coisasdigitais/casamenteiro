@@ -4,8 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Search, Calendar, Users, DollarSign, LogOut, Copy, Share2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Heart, Search, Calendar, Users, DollarSign, LogOut, Copy, Share2, MessageSquare, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import QuoteThread from "@/components/QuoteThread";
 
 type CoupleData = {
   id: string;
@@ -24,6 +27,9 @@ export default function CoupleDashboard() {
   const { toast } = useToast();
   const [couple, setCouple] = useState<CoupleData | null>(null);
   const [favCount, setFavCount] = useState(0);
+  const [quotes, setQuotes] = useState<any[]>([]);
+  const [selectedQuote, setSelectedQuote] = useState<any>(null);
+  const [threadOpen, setThreadOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -34,11 +40,17 @@ export default function CoupleDashboard() {
           return;
         }
         setCouple(data);
-        // Get favorites count
         supabase.from("couple_favorites").select("id", { count: "exact", head: true }).eq("couple_id", data.id).then(({ count }) => {
           setFavCount(count || 0);
         });
-      }
+        // Load quotes
+        supabase
+          .from("quotes")
+          .select("*")
+          .eq("couple_id", data.id)
+          .order("created_at", { ascending: false })
+          .then(({ data: q }) => setQuotes(q || []));
+        }
     });
   }, [user, navigate]);
 
@@ -136,6 +148,63 @@ export default function CoupleDashboard() {
             </Link>
           </Button>
         </div>
+
+        {/* Quotes sent */}
+        {quotes.length > 0 && (
+          <div className="mb-8">
+            <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              Meus Orçamentos ({quotes.length})
+            </h2>
+            <div className="space-y-3">
+              {quotes.map((q) => {
+                const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+                  pending: { label: "Enviado", variant: "secondary" },
+                  viewed: { label: "Visualizado", variant: "outline" },
+                  answered: { label: "Respondido", variant: "default" },
+                  accepted: { label: "Aceito ✓", variant: "default" },
+                  rejected: { label: "Recusado", variant: "destructive" },
+                  cancelled: { label: "Cancelado", variant: "secondary" },
+                };
+                const st = statusMap[q.status] || statusMap.pending;
+                return (
+                  <Card
+                    key={q.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => { setSelectedQuote(q); setThreadOpen(true); }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(q.created_at).toLocaleDateString("pt-BR")}
+                            </span>
+                          </div>
+                          <p className="text-sm line-clamp-2">{q.message}</p>
+                        </div>
+                        <Eye className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Quote Thread Dialog */}
+        <Dialog open={threadOpen} onOpenChange={setThreadOpen}>
+          <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
+            <DialogHeader className="p-4 pb-2 border-b border-border">
+              <DialogTitle className="text-base">Conversa sobre orçamento</DialogTitle>
+            </DialogHeader>
+            {selectedQuote && user && (
+              <QuoteThread quoteId={selectedQuote.id} currentUserId={user.id} />
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Invite code */}
         {couple.invite_code && (

@@ -14,6 +14,7 @@ import {
   DollarSign, Tag, ChevronLeft, ChevronRight, Calendar,
   Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send
 } from "lucide-react";
+import QuoteRequestForm from "@/components/QuoteRequestForm";
 
 type Review = {
   id: string;
@@ -535,9 +536,10 @@ export default function SupplierProfile() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button className="flex-1 h-12 text-base font-semibold">
-                      Pedir Orçamento Grátis
-                    </Button>
+                    <QuoteRequestForm
+                      supplierId={supplier.id}
+                      supplierName={supplier.company_name}
+                    />
                     {supplier.phone && (
                       <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" asChild>
                         <a href={`tel:${supplier.phone}`}>
