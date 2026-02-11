@@ -215,8 +215,16 @@ export type Database = {
           created_at: string
           description: string | null
           email: string | null
+          featured: boolean
+          guest_max: number | null
+          guest_min: number | null
           id: string
           phone: string | null
+          price_max: number | null
+          price_min: number | null
+          promo_percentage: number | null
+          rating: number | null
+          review_count: number | null
           state: string | null
           status: Database["public"]["Enums"]["supplier_status"]
           updated_at: string
@@ -229,8 +237,16 @@ export type Database = {
           created_at?: string
           description?: string | null
           email?: string | null
+          featured?: boolean
+          guest_max?: number | null
+          guest_min?: number | null
           id?: string
           phone?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          promo_percentage?: number | null
+          rating?: number | null
+          review_count?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
           updated_at?: string
@@ -243,8 +259,16 @@ export type Database = {
           created_at?: string
           description?: string | null
           email?: string | null
+          featured?: boolean
+          guest_max?: number | null
+          guest_min?: number | null
           id?: string
           phone?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          promo_percentage?: number | null
+          rating?: number | null
+          review_count?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
           updated_at?: string
