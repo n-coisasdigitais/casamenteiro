@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import SupplierCard from "@/components/SupplierCard";
+import UserMenu from "@/components/UserMenu";
 import heroImage from "@/assets/hero-wedding.jpg";
 import { 
   Heart, Search, Building, Camera, Music, Utensils, 
@@ -21,6 +23,7 @@ const categoryIcons: Record<string, any> = {
 type Category = { id: string; name: string; slug: string; icon: string | null };
 
 const Index = () => {
+  const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredSuppliers, setFeaturedSuppliers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,15 +58,21 @@ const Index = () => {
             <Link to="/buscar?cat=fotografia" className="text-muted-foreground hover:text-foreground transition-colors">Fotografia</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">Entrar</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link to="/cadastro">
-                <User className="mr-1.5 h-3.5 w-3.5" />
-                Cadastrar
-              </Link>
-            </Button>
+            {user ? (
+              <UserMenu />
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">Entrar</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/cadastro">
+                    <User className="mr-1.5 h-3.5 w-3.5" />
+                    Cadastrar
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>

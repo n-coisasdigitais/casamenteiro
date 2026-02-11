@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, ArrowLeft, MapPin, Building } from "lucide-react";
+import UserMenu from "@/components/UserMenu";
 
 export default function Favorites() {
   const { user } = useAuth();
@@ -29,11 +30,14 @@ export default function Favorites() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border sticky top-0 z-40">
-        <div className="container flex items-center h-16 px-4 gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
-          </Button>
-          <h1 className="font-serif text-lg font-semibold">Meus Favoritos</h1>
+        <div className="container flex items-center justify-between h-16 px-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
+            </Button>
+            <h1 className="text-lg font-semibold">Meus Favoritos</h1>
+          </div>
+          <UserMenu />
         </div>
       </header>
       <main className="container px-4 py-6">
