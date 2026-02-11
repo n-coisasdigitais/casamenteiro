@@ -175,6 +175,104 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_messages: {
+        Row: {
+          attachment_url: string | null
+          created_at: string
+          id: string
+          is_template: boolean
+          message: string
+          quote_id: string
+          sender_id: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          is_template?: boolean
+          message: string
+          quote_id: string
+          sender_id: string
+        }
+        Update: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          is_template?: boolean
+          message?: string
+          quote_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_messages_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          couple_id: string
+          created_at: string
+          event_date: string | null
+          guest_count: number | null
+          id: string
+          message: string
+          phone: string | null
+          phone_visible: boolean
+          status: string
+          supplier_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          event_date?: string | null
+          guest_count?: number | null
+          id?: string
+          message: string
+          phone?: string | null
+          phone_visible?: boolean
+          status?: string
+          supplier_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          event_date?: string | null
+          guest_count?: number | null
+          id?: string
+          message?: string
+          phone?: string | null
+          phone_visible?: boolean
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           comment: string | null
