@@ -1,85 +1,67 @@
 
 
-# 🎊 Plataforma "Meu Grande Dia" — MVP Completo
+# Pagina de Perfil do Usuario + Menu do Usuario
 
-## Visão Geral
-Uma plataforma elegante de planejamento de casamentos que conecta casais a fornecedores de serviços. Design mobile-first com paleta suave (branco, bege, dourado, cinza). Backend via Lovable Cloud (Supabase).
+## O que sera feito
 
----
+Criar uma pagina de perfil/configuracoes para o usuario do tipo "casal", alem de um menu dropdown no header (ao clicar no avatar) presente em todas as paginas logadas. Inspirado nos prints do casamentos.com.br.
 
-## 1. Landing Page
-- Headline atrativa com imagem hero de casamento
-- Seção "Como funciona" em 3 passos
-- Dois CTAs principais: "Sou Casal" e "Sou Fornecedor"
-- Design elegante com tons de branco, bege e dourado claro
-- Fonte elegante e legível (ex: Playfair Display + Inter)
+## Funcionalidades
 
-## 2. Autenticação
-- **Cadastro separado** para Casal e Fornecedor (com seleção de tipo de conta)
-- Login com e-mail e senha via Supabase Auth
-- Verificação de e-mail obrigatória para ambos
-- Após login, redireciona para o fluxo correto (onboarding ou dashboard)
+### 1. Pagina de Perfil (`/perfil`)
+- Secao de perfil com avatar (iniciais do nome), nome completo, email e data do casamento
+- Edicao dos dados pessoais: nome completo, nome do parceiro(a), papel (noivo/noiva)
+- Edicao dos dados do casamento: data, numero de convidados, orcamento estimado
+- Secao de configuracoes: alterar senha
+- Botao de fechar sessao
 
-## 3. Sistema de Contas Vinculadas (Casal)
-- Ao cadastrar, o casal cria uma conta principal
-- Pode gerar um **código de convite** para o parceiro(a)
-- O parceiro se cadastra normalmente e insere o código para vincular
-- Ambos acessam o mesmo dashboard e dados do casamento
+### 2. Menu Dropdown do Usuario (Header)
+- Substituir o botao simples de "LogOut" nos headers do CoupleDashboard, Favorites e outras paginas logadas
+- Avatar com iniciais do nome (circulo com cor primaria)
+- Ao clicar, abre dropdown com:
+  - Nome do usuario + link "Perfil"
+  - Link "Meu Casamento" (dashboard)
+  - Link "Fornecedores" (buscar)
+  - Link "Favoritos"
+  - Separador
+  - "Configuracao" (vai para /perfil)
+  - "Fechar sessao"
 
-## 4. Onboarding do Casal
-- Formulário em etapas (wizard) após primeiro login:
-  - "Eu sou..." (noivo/noiva)
-  - Nome do parceiro(a)
-  - Data prevista do casamento
-  - Número estimado de convidados
-  - Orçamento total estimado
-  - Quais serviços está precisando (seleção múltipla de categorias)
-- Dados salvos no banco e usados para personalizar a busca
+### 3. Componente UserMenu reutilizavel
+- Componente `UserMenu` que encapsula o avatar + dropdown
+- Reutilizado em todos os headers das paginas logadas
 
-## 5. Dashboard do Casal
-- Resumo do casamento (data, countdown, orçamento)
-- Sugestões de fornecedores baseadas nas categorias selecionadas no onboarding
-- Acesso rápido à busca de fornecedores
-- Lista de fornecedores favoritados
+## Detalhes Tecnicos
 
-## 6. Busca de Fornecedores
-- Filtros por **categoria** (Espaços, Fotografia, Buffet, Música, etc.) e **localização** (Cidade/Estado)
-- Pré-preenchido com dados do onboarding do casal
-- Grid de resultados com foto principal, nome, categoria e cidade
-- Layout responsivo (cards em grid)
+### Novo arquivo: `src/components/UserMenu.tsx`
+- Usa DropdownMenu do Radix (ja instalado)
+- Recebe `profile` e `signOut` do AuthContext
+- Avatar com iniciais geradas a partir do `full_name`
+- Links para /perfil, /dashboard, /buscar, /favoritos
+- Botao de fechar sessao
 
-## 7. Perfil Público do Fornecedor
-- Nome da empresa e categoria
-- Galeria de fotos (portfólio)
-- Descrição detalhada dos serviços
-- Informações de contato (telefone, e-mail)
-- Botão de "Favoritar" para o casal
-- Sem avaliações/comentários neste MVP
+### Novo arquivo: `src/pages/UserProfile.tsx`
+- Rota: `/perfil`
+- Carrega dados de `profiles` e `couples` do banco
+- Formulario editavel para nome, parceiro, data, convidados, orcamento
+- Usa `supabase.from("profiles").update(...)` e `supabase.from("couples").update(...)`
+- Secao para trocar senha via `supabase.auth.updateUser({ password })`
+- Layout consistente com DM Sans (sem font-serif)
 
-## 8. Área Privada do Fornecedor
-- Formulário para preencher/editar perfil:
-  - Nome da empresa, descrição, categoria, localização, contato
-  - Upload de até 10 fotos (Supabase Storage)
-- Status visível: "Pendente de Aprovação" / "Aprovado" / "Rejeitado"
-- Mensagem clara sobre o processo de aprovação
+### Alteracoes em arquivos existentes
 
-## 9. Painel de Administração
-- Página protegida (acesso apenas para admin via roles no banco)
-- Lista de fornecedores pendentes de aprovação
-- Visualização do perfil completo de cada fornecedor
-- Botões "Aprovar" e "Rejeitar"
-- Fornecedores rejeitados não aparecem na busca; aprovados ficam visíveis
+**`src/App.tsx`**
+- Adicionar rota `/perfil` apontando para UserProfile
 
-## 10. Banco de Dados (Supabase)
-- Tabelas: profiles, couples (dados do casamento), suppliers (fornecedores), supplier_photos, categories, couple_favorites, user_roles, couple_links (vinculação de contas)
-- RLS policies para segurança
-- Storage bucket para fotos dos fornecedores
-- Role de admin para o painel administrativo
+**`src/pages/CoupleDashboard.tsx`**
+- Substituir o header atual (botao LogOut) pelo componente `UserMenu`
 
-## Design & UX
-- **Mobile-first** com layout responsivo
-- Paleta: branco, bege (#F5F0EB), dourado claro (#D4AF37), cinza claro
-- Tipografia elegante (Playfair Display para títulos, Inter para corpo)
-- Componentes limpos e minimalistas
-- Inspirado no estilo de casamentos.com.br
+**`src/pages/Favorites.tsx`**
+- Adicionar `UserMenu` no header
+
+**`src/pages/Index.tsx`**
+- Quando usuario estiver logado, mostrar `UserMenu` ao inves dos botoes "Entrar/Cadastrar"
+
+### Banco de dados
+- Nenhuma alteracao necessaria. Os campos `profiles.full_name` e `couples.*` ja cobrem os dados editaveis. Avatar sera gerado por iniciais (sem necessidade de upload por enquanto).
 
