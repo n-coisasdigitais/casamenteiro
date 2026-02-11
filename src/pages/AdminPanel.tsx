@@ -24,8 +24,7 @@ export default function AdminPanel() {
       navigate("/login");
       return;
     }
-    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data, error }) => {
-      console.log("Admin check:", { data, error, userId: user.id });
+    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }) => {
       if (!data) {
         navigate("/");
         return;
