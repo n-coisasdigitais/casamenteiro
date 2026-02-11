@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { MapPin } from "lucide-react";
 
 type Props = {
@@ -11,7 +11,8 @@ export default function SupplierMap({ city, state, supplierName }: Props) {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
 
   const location = [city, state].filter(Boolean).join(", ");
 
@@ -38,9 +39,8 @@ export default function SupplierMap({ city, state, supplierName }: Props) {
       .finally(() => setLoading(false));
   }, [location]);
 
-  // Dynamically load leaflet only when we have a position
   useEffect(() => {
-    if (!position) return;
+    if (!position || !containerRef.current) return;
 
     let cancelled = false;
 
@@ -48,6 +48,14 @@ export default function SupplierMap({ city, state, supplierName }: Props) {
       try {
         const L = (await import("leaflet")).default;
         await import("leaflet/dist/leaflet.css");
+
+        if (cancelled || !containerRef.current) return;
+
+        // Cleanup previous map
+        if (mapInstanceRef.current) {
+          try { mapInstanceRef.current.remove(); } catch {}
+          mapInstanceRef.current = null;
+        }
 
         // Fix default marker icons
         delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -57,15 +65,8 @@ export default function SupplierMap({ city, state, supplierName }: Props) {
           shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
         });
 
-        if (cancelled) return;
-
-        const container = document.getElementById("supplier-map-container");
-        if (!container) return;
-
-        // Clear previous map instance if any
-        container.innerHTML = "";
-
-        const map = L.map(container).setView(position, 13);
+        const map = L.map(containerRef.current).setView(position, 13);
+        mapInstanceRef.current = map;
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -76,13 +77,14 @@ export default function SupplierMap({ city, state, supplierName }: Props) {
           .bindPopup(`<strong>${supplierName || "Fornecedor"}</strong><br/>${location}`)
           .openPopup();
 
-        // Fix tile rendering after container becomes visible
-        setTimeout(() => map.invalidateSize(), 100);
-
-        setMapReady(true);
+        setTimeout(() => {
+          if (!cancelled && mapInstanceRef.current) {
+            mapInstanceRef.current.invalidateSize();
+          }
+        }, 200);
       } catch (err) {
         console.error("Map load error:", err);
-        setError(true);
+        if (!cancelled) setError(true);
       }
     };
 
@@ -90,6 +92,10 @@ export default function SupplierMap({ city, state, supplierName }: Props) {
 
     return () => {
       cancelled = true;
+      if (mapInstanceRef.current) {
+        try { mapInstanceRef.current.remove(); } catch {}
+        mapInstanceRef.current = null;
+      }
     };
   }, [position, supplierName, location]);
 
@@ -116,7 +122,7 @@ export default function SupplierMap({ city, state, supplierName }: Props) {
 
   return (
     <div
-      id="supplier-map-container"
+      ref={containerRef}
       className="h-72 rounded-lg overflow-hidden border border-border"
       style={{ minHeight: "288px" }}
     />

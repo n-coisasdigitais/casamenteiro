@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Heart, MapPin, Phone, Mail, Building, Star, Users,
   DollarSign, Tag, ChevronLeft, ChevronRight, Calendar,
-  Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send
+  Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send, Eye
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
 import SupplierMap from "@/components/SupplierMap";
@@ -37,6 +37,7 @@ export default function SupplierProfile() {
   const [coupleId, setCoupleId] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [loading, setLoading] = useState(true);
+  const quoteFormRef = useRef<HTMLDivElement>(null);
 
   // Reviews
   const [reviews, setReviews] = useState<any[]>([]);
@@ -49,13 +50,15 @@ export default function SupplierProfile() {
   // Recommendations
   const [recommendations, setRecommendations] = useState<any[]>([]);
 
+  // Social proof - random viewer count (stable per page load)
+  const viewerCount = useMemo(() => Math.floor(Math.random() * 15) + 1, []);
+
   useEffect(() => {
     if (!id) return;
     
     supabase.from("suppliers").select("*, categories(name)").eq("id", id).maybeSingle().then(({ data }) => {
       setSupplier(data);
       setLoading(false);
-      // Fetch recommendations from same category
       if (data?.category_id) {
         supabase
           .from("suppliers")
@@ -70,8 +73,6 @@ export default function SupplierProfile() {
     });
     
     supabase.from("supplier_photos").select("*").eq("supplier_id", id).order("display_order").then(({ data }) => setPhotos(data || []));
-
-    // Fetch reviews
     loadReviews();
 
     if (user) {
@@ -81,7 +82,6 @@ export default function SupplierProfile() {
           supabase.from("couple_favorites").select("id").eq("couple_id", data.id).eq("supplier_id", id).maybeSingle().then(({ data: fav }) => {
             setIsFavorited(!!fav);
           });
-          // Check if user already reviewed
           supabase.from("reviews").select("id").eq("couple_id", data.id).eq("supplier_id", id).maybeSingle().then(({ data: rev }) => {
             setUserHasReview(!!rev);
           });
@@ -124,7 +124,6 @@ export default function SupplierProfile() {
       setReviewRating(5);
       setUserHasReview(true);
       loadReviews();
-      // Refresh supplier to get updated rating
       supabase.from("suppliers").select("*, categories(name)").eq("id", id).maybeSingle().then(({ data }) => setSupplier(data));
     }
   };
@@ -146,6 +145,10 @@ export default function SupplierProfile() {
       setIsFavorited(true);
       toast({ title: "Adicionado aos favoritos!" });
     }
+  };
+
+  const scrollToQuoteForm = () => {
+    quoteFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
@@ -212,22 +215,25 @@ export default function SupplierProfile() {
         </div>
       </div>
 
-      {/* Interest banner */}
+      {/* Interest banner with social proof */}
       <div className="bg-blue-50 border-b border-blue-100">
         <div className="container py-3 text-sm text-blue-700 flex items-center gap-2">
-          <Sparkles className="h-4 w-4" />
-          Há casais interessados neste fornecedor. <Link to="#" className="underline font-medium">Solicite um orçamento!</Link>
+          <Eye className="h-4 w-4" />
+          <span className="font-medium">{viewerCount} {viewerCount === 1 ? "pessoa está" : "pessoas estão"} olhando este fornecedor.</span>
+          <button onClick={scrollToQuoteForm} className="underline font-medium hover:text-blue-900 transition-colors">
+            Solicite um orçamento!
+          </button>
         </div>
       </div>
 
       <main className="container py-6">
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Left: Gallery + content */}
           <div className="flex-1 min-w-0">
             {/* Photo gallery - mosaic */}
             {photos.length > 0 ? (
               <div className="relative mb-6">
-                <div className="grid grid-cols-3 gap-1 rounded-xl overflow-hidden" style={{ height: "400px" }}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 rounded-xl overflow-hidden" style={{ height: "400px" }}>
                   <div className="col-span-2 row-span-2 relative bg-muted cursor-pointer" onClick={() => setSelectedPhoto(0)}>
                     <img src={photos[0]?.photo_url} alt={supplier.company_name} className="w-full h-full object-cover" />
                   </div>
@@ -261,9 +267,58 @@ export default function SupplierProfile() {
               </div>
             )}
 
+            {/* Mobile: Supplier info + quote form */}
+            <div className="lg:hidden mb-6" ref={quoteFormRef}>
+              <Card>
+                <CardContent className="p-5">
+                  <h1 className="font-bold text-xl mb-3">{supplier.company_name}</h1>
+
+                  {supplier.rating && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star key={s} className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                        ))}
+                      </div>
+                      <span className="font-semibold text-sm">{supplier.rating.toFixed(1)}</span>
+                      <span className="text-sm text-muted-foreground">{ratingLabel}</span>
+                    </div>
+                  )}
+
+                  {(supplier.city || supplier.state) && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <span>{[supplier.city, supplier.state].filter(Boolean).join(", ")}</span>
+                    </div>
+                  )}
+
+                  {supplier.price_min && (
+                    <div className="flex items-center gap-2 text-sm mb-3">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <span>Desde R${supplier.price_min.toLocaleString("pt-BR")}</span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <QuoteRequestForm
+                      supplierId={supplier.id}
+                      supplierName={supplier.company_name}
+                    />
+                    {supplier.phone && (
+                      <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" asChild>
+                        <a href={`tel:${supplier.phone}`}>
+                          <Phone className="h-5 w-5" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Tabs */}
             <Tabs defaultValue="info" className="mb-8">
-              <TabsList className="bg-transparent border-b border-border rounded-none w-full justify-start gap-0 h-auto p-0">
+              <TabsList className="bg-transparent border-b border-border rounded-none w-full justify-start gap-0 h-auto p-0 overflow-x-auto">
                 {[
                   { value: "info", label: "Informação" },
                   { value: "faqs", label: "FAQs" },
@@ -273,7 +328,7 @@ export default function SupplierProfile() {
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 text-sm"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 text-sm whitespace-nowrap"
                   >
                     {tab.label}
                   </TabsTrigger>
@@ -337,7 +392,6 @@ export default function SupplierProfile() {
               <TabsContent value="opinions" className="mt-6">
                 <h2 className="font-bold text-lg mb-4">Opiniões</h2>
                 
-                {/* Rating summary */}
                 {supplier.rating ? (
                   <div className="flex items-center gap-3 mb-6 p-4 bg-secondary rounded-lg">
                     <div className="text-3xl font-bold text-primary">{supplier.rating.toFixed(1)}</div>
@@ -352,7 +406,6 @@ export default function SupplierProfile() {
                   </div>
                 ) : null}
 
-                {/* Review form */}
                 {user && coupleId && !userHasReview && (
                   <div className="border border-border rounded-lg p-4 mb-6">
                     <h3 className="font-semibold text-sm mb-3">Deixe sua avaliação</h3>
@@ -390,7 +443,6 @@ export default function SupplierProfile() {
                   </p>
                 )}
 
-                {/* Reviews list */}
                 {reviews.length > 0 ? (
                   <div className="space-y-4">
                     {reviews.map((rev) => (
@@ -415,7 +467,7 @@ export default function SupplierProfile() {
                 ) : null}
               </TabsContent>
 
-              <TabsContent value="map" className="mt-6">
+              <TabsContent value="map" className="mt-6" forceMount>
                 <h2 className="font-bold text-lg mb-4">Localização</h2>
                 <SupplierMap
                   city={supplier.city}
@@ -466,9 +518,9 @@ export default function SupplierProfile() {
             )}
           </div>
 
-          {/* Right sidebar - sticky */}
+          {/* Right sidebar - desktop only */}
           <aside className="hidden lg:block w-[340px] shrink-0">
-            <div className="sticky top-20">
+            <div className="sticky top-20" ref={quoteFormRef}>
               <Card className="mb-4">
                 <CardContent className="p-6">
                   <h1 className="font-bold text-xl mb-3">{supplier.company_name}</h1>
