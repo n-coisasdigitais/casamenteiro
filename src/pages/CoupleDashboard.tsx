@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Heart, Search, Calendar, Users, DollarSign, LogOut, Copy, Share2, MessageSquare, Eye } from "lucide-react";
+import { Heart, Search, Calendar, Users, DollarSign, Copy, Share2, MessageSquare, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
+import UserMenu from "@/components/UserMenu";
 
 type CoupleData = {
   id: string;
@@ -80,9 +81,7 @@ export default function CoupleDashboard() {
             <span className="text-sm text-muted-foreground hidden sm:inline">
               Olá, {profile?.full_name || "Casal"}
             </span>
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <UserMenu />
           </div>
         </div>
       </header>
