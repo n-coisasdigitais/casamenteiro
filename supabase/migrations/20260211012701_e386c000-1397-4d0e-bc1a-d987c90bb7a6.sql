@@ -1,0 +1,11 @@
+
+-- Add rating and price fields to suppliers
+ALTER TABLE public.suppliers
+  ADD COLUMN rating NUMERIC(2,1) DEFAULT NULL,
+  ADD COLUMN review_count INTEGER DEFAULT 0,
+  ADD COLUMN price_min NUMERIC DEFAULT NULL,
+  ADD COLUMN price_max NUMERIC DEFAULT NULL,
+  ADD COLUMN guest_min INTEGER DEFAULT NULL,
+  ADD COLUMN guest_max INTEGER DEFAULT NULL,
+  ADD COLUMN featured BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN promo_percentage INTEGER DEFAULT NULL;
