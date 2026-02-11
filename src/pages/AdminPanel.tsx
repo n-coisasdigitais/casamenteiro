@@ -9,26 +9,32 @@ import { Heart, LogOut, Check, X, MapPin, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminPanel() {
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminChecked, setAdminChecked] = useState(false);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+  const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("all");
 
   useEffect(() => {
-    if (!user) return;
-    // Check admin role via RPC
-    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }) => {
+    if (authLoading) return;
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data, error }) => {
+      console.log("Admin check:", { data, error, userId: user.id });
       if (!data) {
         navigate("/");
         return;
       }
       setIsAdmin(true);
+      setAdminChecked(true);
       loadSuppliers();
     });
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const loadSuppliers = async () => {
     setLoading(true);
@@ -52,7 +58,8 @@ export default function AdminPanel() {
 
   const filteredSuppliers = filter === "all" ? suppliers : suppliers.filter((s) => s.status === filter);
 
-  if (!isAdmin) return <div className="min-h-screen flex items-center justify-center"><p>Verificando permissões...</p></div>;
+  if (authLoading || !adminChecked) return <div className="min-h-screen flex items-center justify-center"><p>Verificando permissões...</p></div>;
+  if (!isAdmin) return <div className="min-h-screen flex items-center justify-center"><p>Acesso negado.</p></div>;
 
   return (
     <div className="min-h-screen bg-background">
