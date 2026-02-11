@@ -1,0 +1,167 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Heart, Search, Calendar, Users, DollarSign, LogOut, Copy, Share2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+type CoupleData = {
+  id: string;
+  partner_name: string | null;
+  couple_role: string | null;
+  wedding_date: string | null;
+  estimated_guests: number | null;
+  estimated_budget: number | null;
+  invite_code: string | null;
+  onboarding_completed: boolean;
+};
+
+export default function CoupleDashboard() {
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [couple, setCouple] = useState<CoupleData | null>(null);
+  const [favCount, setFavCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("couples").select("*").eq("user_id", user.id).single().then(({ data }) => {
+      if (data) {
+        if (!data.onboarding_completed) {
+          navigate("/onboarding");
+          return;
+        }
+        setCouple(data);
+        // Get favorites count
+        supabase.from("couple_favorites").select("id", { count: "exact", head: true }).eq("couple_id", data.id).then(({ count }) => {
+          setFavCount(count || 0);
+        });
+      }
+    });
+  }, [user, navigate]);
+
+  const daysUntilWedding = couple?.wedding_date
+    ? Math.ceil((new Date(couple.wedding_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const copyInviteCode = () => {
+    if (couple?.invite_code) {
+      navigator.clipboard.writeText(couple.invite_code);
+      toast({ title: "Código copiado!", description: "Compartilhe com seu(sua) parceiro(a)." });
+    }
+  };
+
+  if (!couple) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-card border-b border-border sticky top-0 z-40">
+        <div className="container flex items-center justify-between h-16 px-4">
+          <Link to="/" className="flex items-center gap-2">
+            <Heart className="h-5 w-5 text-primary fill-primary" />
+            <span className="font-serif text-lg font-semibold">Meu Grande Dia</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground hidden sm:inline">
+              Olá, {profile?.full_name || "Casal"}
+            </span>
+            <Button variant="ghost" size="icon" onClick={signOut}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="container px-4 py-8">
+        <h1 className="font-serif text-3xl font-bold mb-2">Meu Casamento</h1>
+        {couple.partner_name && (
+          <p className="text-muted-foreground mb-8">
+            {couple.couple_role === "noivo" ? "Noivo" : "Noiva"} & {couple.partner_name}
+          </p>
+        )}
+
+        {/* Stats cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {daysUntilWedding !== null && (
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Calendar className="h-6 w-6 text-primary mx-auto mb-2" />
+                <p className="text-2xl font-bold text-primary">{daysUntilWedding > 0 ? daysUntilWedding : "Hoje!"}</p>
+                <p className="text-xs text-muted-foreground">dias restantes</p>
+              </CardContent>
+            </Card>
+          )}
+          {couple.estimated_guests && (
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Users className="h-6 w-6 text-primary mx-auto mb-2" />
+                <p className="text-2xl font-bold">{couple.estimated_guests}</p>
+                <p className="text-xs text-muted-foreground">convidados</p>
+              </CardContent>
+            </Card>
+          )}
+          {couple.estimated_budget && (
+            <Card>
+              <CardContent className="p-4 text-center">
+                <DollarSign className="h-6 w-6 text-primary mx-auto mb-2" />
+                <p className="text-2xl font-bold">R$ {couple.estimated_budget.toLocaleString("pt-BR")}</p>
+                <p className="text-xs text-muted-foreground">orçamento</p>
+              </CardContent>
+            </Card>
+          )}
+          <Card>
+            <CardContent className="p-4 text-center">
+              <Heart className="h-6 w-6 text-primary mx-auto mb-2" />
+              <p className="text-2xl font-bold">{favCount}</p>
+              <p className="text-xs text-muted-foreground">favoritos</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick actions */}
+        <div className="grid sm:grid-cols-2 gap-4 mb-8">
+          <Button size="lg" className="h-auto py-6 text-lg" asChild>
+            <Link to="/buscar">
+              <Search className="mr-2 h-5 w-5" />
+              Buscar fornecedores
+            </Link>
+          </Button>
+          <Button size="lg" variant="outline" className="h-auto py-6 text-lg" asChild>
+            <Link to="/favoritos">
+              <Heart className="mr-2 h-5 w-5" />
+              Meus favoritos
+            </Link>
+          </Button>
+        </div>
+
+        {/* Invite code */}
+        {couple.invite_code && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif text-lg flex items-center gap-2">
+                <Share2 className="h-5 w-5 text-primary" />
+                Vincular conta do(a) parceiro(a)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">
+                Compartilhe este código para que seu(sua) parceiro(a) acesse o mesmo painel.
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 px-4 py-2 bg-muted rounded-md font-mono text-lg tracking-widest text-center">
+                  {couple.invite_code}
+                </code>
+                <Button variant="outline" size="icon" onClick={copyInviteCode}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </main>
+    </div>
+  );
+}
