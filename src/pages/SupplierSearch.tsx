@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Heart, Search, ArrowLeft, Building, Star, MapPin, Users, 
   DollarSign, ChevronDown, ChevronUp, List, LayoutGrid, Tag,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Map, Filter, X
 } from "lucide-react";
+import SupplierSearchMap from "@/components/SupplierSearchMap";
 
 type Category = { id: string; name: string; slug: string };
 
@@ -32,7 +33,6 @@ type Supplier = {
   supplier_photos: { photo_url: string }[];
 };
 
-// Sub-category labels per main category slug
 const subCategories: Record<string, string[]> = {
   "espacos-buffet": ["Fazendas", "Chácaras", "Hotéis", "Restaurantes", "Salões", "Sítios", "Casas", "Espaços exclusivos"],
   "fotografia": ["Pré-wedding", "Pós-wedding", "Álbuns", "Mini álbuns", "Álbum digital", "Fotografias em alta resolução"],
@@ -50,6 +50,7 @@ const priceRanges = [
 
 export default function SupplierSearch() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const catSlug = searchParams.get("cat") || "";
   const queryParam = searchParams.get("q") || "";
   const locParam = searchParams.get("loc") || "";
@@ -61,11 +62,12 @@ export default function SupplierSearch() {
   const [searchQuery, setSearchQuery] = useState(queryParam);
   const [searchLocation, setSearchLocation] = useState(locParam);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
+  const [viewMode, setViewMode] = useState<"list" | "gallery" | "map">("list");
   const [showPromo, setShowPromo] = useState(false);
   const [selectedPriceRange, setSelectedPriceRange] = useState<number | null>(null);
   const [filtersOpen, setFiltersOpen] = useState({ category: true, highlights: true, price: false });
   const [photoIndex, setPhotoIndex] = useState<Record<string, number>>({});
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     supabase.from("categories").select("*").order("name").then(({ data }) => {
@@ -129,12 +131,104 @@ export default function SupplierSearch() {
     return "Todos os fornecedores";
   };
 
+  const FiltersSidebar = () => (
+    <>
+      {/* Category filter */}
+      <div className="mb-6">
+        <button
+          className="flex items-center justify-between w-full text-sm font-semibold mb-3"
+          onClick={() => setFiltersOpen(p => ({ ...p, category: !p.category }))}
+        >
+          <span>{currentCategoryName || "Categoria"}</span>
+          {filtersOpen.category ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        {filtersOpen.category && (
+          <div className="space-y-2">
+            {subs.length > 0 ? subs.map((name, i) => (
+              <label key={i} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
+                <Checkbox className="h-4 w-4" />
+                <span>{name}</span>
+              </label>
+            )) : categories.map(cat => (
+              <label
+                key={cat.id}
+                className={`flex items-center gap-2 text-sm cursor-pointer ${selectedCategory === cat.id ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => {
+                  setSelectedCategory(cat.id === selectedCategory ? null : cat.id);
+                  setSelectedCategorySlug(cat.slug);
+                }}
+              >
+                <Checkbox checked={selectedCategory === cat.id} className="h-4 w-4" />
+                <span>{cat.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-border my-4" />
+
+      {/* Highlights */}
+      <div className="mb-6">
+        <button
+          className="flex items-center justify-between w-full text-sm font-semibold mb-3"
+          onClick={() => setFiltersOpen(p => ({ ...p, highlights: !p.highlights }))}
+        >
+          <span>Filtros destacados</span>
+          {filtersOpen.highlights ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        {filtersOpen.highlights && (
+          <div className="space-y-3">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Tag className="h-4 w-4" /> Promoções
+              </span>
+              <button
+                onClick={() => setShowPromo(!showPromo)}
+                className={`w-10 h-5 rounded-full transition-colors ${showPromo ? "bg-primary" : "bg-muted"}`}
+              >
+                <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${showPromo ? "translate-x-5" : "translate-x-0.5"}`} />
+              </button>
+            </label>
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-border my-4" />
+
+      {/* Price */}
+      <div className="mb-6">
+        <button
+          className="flex items-center justify-between w-full text-sm font-semibold mb-3"
+          onClick={() => setFiltersOpen(p => ({ ...p, price: !p.price }))}
+        >
+          <span>Preço</span>
+          {filtersOpen.price ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        {filtersOpen.price && (
+          <div className="space-y-2">
+            {priceRanges.map((range, i) => (
+              <label key={i} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
+                <Checkbox
+                  checked={selectedPriceRange === i}
+                  onCheckedChange={() => setSelectedPriceRange(selectedPriceRange === i ? null : i)}
+                  className="h-4 w-4"
+                />
+                <span>{range.label}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-background border-b border-border sticky top-0 z-50">
-        <div className="container flex items-center h-14 gap-4">
-          <Link to="/" className="flex items-center gap-2">
+        <div className="container flex items-center h-14 gap-2 sm:gap-4 px-3 sm:px-4">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <Heart className="h-5 w-5 text-primary fill-primary" />
             <span className="text-lg font-bold hidden sm:inline">Meu Grande Dia</span>
           </Link>
@@ -147,15 +241,15 @@ export default function SupplierSearch() {
             <Button variant="ghost" size="sm" asChild>
               <Link to="/login">Entrar</Link>
             </Button>
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="hidden sm:inline-flex">
               <Link to="/cadastro">Cadastrar</Link>
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Breadcrumb */}
-      <div className="border-b border-border bg-background">
+      {/* Breadcrumb - hidden on mobile */}
+      <div className="border-b border-border bg-background hidden sm:block">
         <div className="container py-2 text-xs text-muted-foreground flex items-center gap-1.5">
           <Link to="/" className="hover:text-foreground">Casamentos</Link>
           <span>/</span>
@@ -179,11 +273,11 @@ export default function SupplierSearch() {
 
       {/* Hero search bar */}
       <div className="relative">
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-6">
-          <div className="container">
-            <h1 className="text-2xl md:text-3xl font-bold mb-4">{getCategoryTitle()}</h1>
-            <div className="flex bg-background rounded-lg border border-border shadow-sm overflow-hidden max-w-2xl">
-              <div className="flex-1 flex items-center gap-2 px-4">
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-4 sm:py-6">
+          <div className="container px-3 sm:px-4">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4">{getCategoryTitle()}</h1>
+            <div className="flex flex-col sm:flex-row bg-background rounded-lg border border-border shadow-sm overflow-hidden max-w-2xl">
+              <div className="flex-1 flex items-center gap-2 px-3 sm:px-4">
                 <Search className="h-4 w-4 text-muted-foreground shrink-0" />
                 <Input
                   placeholder={currentCategoryName || "Pesquisar fornecedor..."}
@@ -193,16 +287,16 @@ export default function SupplierSearch() {
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
-              <div className="flex items-center border-l border-border px-4">
+              <div className="flex items-center border-t sm:border-t-0 sm:border-l border-border px-3 sm:px-4">
                 <Input
                   placeholder="Estado"
-                  className="border-0 shadow-none focus-visible:ring-0 px-0 w-28 text-sm"
+                  className="border-0 shadow-none focus-visible:ring-0 px-0 w-full sm:w-28 text-sm"
                   value={searchLocation}
                   onChange={(e) => setSearchLocation(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
-              <Button className="rounded-none rounded-r-lg px-6 h-11" onClick={handleSearch}>
+              <Button className="rounded-none sm:rounded-r-lg px-6 h-11" onClick={handleSearch}>
                 Pesquisar
               </Button>
             </div>
@@ -210,120 +304,86 @@ export default function SupplierSearch() {
         </div>
       </div>
 
+      {/* Mobile filter bar */}
+      <div className="lg:hidden border-b border-border px-3 py-2 flex items-center gap-2 overflow-x-auto">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="shrink-0"
+          onClick={() => setMobileFiltersOpen(true)}
+        >
+          <Filter className="h-3.5 w-3.5 mr-1.5" />
+          Filtros
+        </Button>
+        {/* Quick category pills */}
+        {categories.slice(0, 4).map(cat => (
+          <Button
+            key={cat.id}
+            variant={selectedCategory === cat.id ? "default" : "outline"}
+            size="sm"
+            className="shrink-0 text-xs"
+            onClick={() => {
+              setSelectedCategory(cat.id === selectedCategory ? null : cat.id);
+              setSelectedCategorySlug(cat.slug);
+            }}
+          >
+            {cat.name}
+          </Button>
+        ))}
+      </div>
+
+      {/* Mobile filter drawer */}
+      {mobileFiltersOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFiltersOpen(false)} />
+          <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-sm bg-background overflow-y-auto p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Filtros</h3>
+              <Button variant="ghost" size="icon" onClick={() => setMobileFiltersOpen(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <FiltersSidebar />
+            <Button className="w-full mt-4" onClick={() => { setMobileFiltersOpen(false); handleSearch(); }}>
+              Aplicar filtros
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
-      <div className="container py-6">
+      <div className="container py-4 sm:py-6 px-3 sm:px-4">
         <div className="flex gap-8">
           {/* Sidebar filters - desktop */}
           <aside className="hidden lg:block w-64 shrink-0">
-            {/* Category filter */}
-            <div className="mb-6">
-              <button
-                className="flex items-center justify-between w-full text-sm font-semibold mb-3"
-                onClick={() => setFiltersOpen(p => ({ ...p, category: !p.category }))}
-              >
-                <span>{currentCategoryName || "Categoria"}</span>
-                {filtersOpen.category ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-              {filtersOpen.category && (
-                <div className="space-y-2">
-                  {(subs.length > 0 ? subs : categories.map(c => c.name)).map((name, i) => (
-                    <label key={i} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
-                      <Checkbox className="h-4 w-4" />
-                      <span>{name}</span>
-                    </label>
-                  ))}
-                  {subs.length === 0 && categories.map(cat => (
-                    <label
-                      key={cat.id}
-                      className={`flex items-center gap-2 text-sm cursor-pointer ${selectedCategory === cat.id ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}
-                      onClick={() => {
-                        setSelectedCategory(cat.id === selectedCategory ? null : cat.id);
-                        setSelectedCategorySlug(cat.slug);
-                      }}
-                    >
-                      <Checkbox checked={selectedCategory === cat.id} className="h-4 w-4" />
-                      <span>{cat.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-border my-4" />
-
-            {/* Highlights */}
-            <div className="mb-6">
-              <button
-                className="flex items-center justify-between w-full text-sm font-semibold mb-3"
-                onClick={() => setFiltersOpen(p => ({ ...p, highlights: !p.highlights }))}
-              >
-                <span>Filtros destacados</span>
-                {filtersOpen.highlights ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-              {filtersOpen.highlights && (
-                <div className="space-y-3">
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Tag className="h-4 w-4" /> Promoções
-                    </span>
-                    <button
-                      onClick={() => setShowPromo(!showPromo)}
-                      className={`w-10 h-5 rounded-full transition-colors ${showPromo ? "bg-primary" : "bg-muted"}`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${showPromo ? "translate-x-5" : "translate-x-0.5"}`} />
-                    </button>
-                  </label>
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-border my-4" />
-
-            {/* Price */}
-            <div className="mb-6">
-              <button
-                className="flex items-center justify-between w-full text-sm font-semibold mb-3"
-                onClick={() => setFiltersOpen(p => ({ ...p, price: !p.price }))}
-              >
-                <span>Preço</span>
-                {filtersOpen.price ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-              {filtersOpen.price && (
-                <div className="space-y-2">
-                  {priceRanges.map((range, i) => (
-                    <label key={i} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
-                      <Checkbox
-                        checked={selectedPriceRange === i}
-                        onCheckedChange={() => setSelectedPriceRange(selectedPriceRange === i ? null : i)}
-                        className="h-4 w-4"
-                      />
-                      <span>{range.label}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+            <FiltersSidebar />
           </aside>
 
           {/* Results */}
           <div className="flex-1 min-w-0">
             {/* Results header */}
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm font-medium tracking-wider text-muted-foreground uppercase">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <p className="text-xs sm:text-sm font-medium tracking-wider text-muted-foreground uppercase">
                 {suppliers.length} resultados
               </p>
               <div className="flex items-center border border-border rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm ${viewMode === "list" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}
+                  className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm ${viewMode === "list" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}
                 >
-                  <List className="h-4 w-4" /> Lista
+                  <List className="h-4 w-4" /> <span className="hidden sm:inline">Lista</span>
                 </button>
                 <button
                   onClick={() => setViewMode("gallery")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border-l border-border ${viewMode === "gallery" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}
+                  className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm border-l border-border ${viewMode === "gallery" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}
                 >
-                  <LayoutGrid className="h-4 w-4" /> Galeria
+                  <LayoutGrid className="h-4 w-4" /> <span className="hidden sm:inline">Galeria</span>
+                </button>
+                <button
+                  onClick={() => setViewMode("map")}
+                  className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm border-l border-border ${viewMode === "map" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}
+                >
+                  <Map className="h-4 w-4" /> <span className="hidden sm:inline">Mapa</span>
                 </button>
               </div>
             </div>
@@ -340,6 +400,46 @@ export default function SupplierSearch() {
                 <h3 className="font-bold text-lg mb-2">Nenhum fornecedor encontrado</h3>
                 <p className="text-muted-foreground text-sm">Tente alterar os filtros ou buscar em outra cidade.</p>
               </div>
+            ) : viewMode === "map" ? (
+              /* MAP VIEW */
+              <div className="flex flex-col lg:flex-row gap-4" style={{ height: "600px" }}>
+                <div className="flex-1 min-h-[300px] lg:min-h-0">
+                  <SupplierSearchMap
+                    suppliers={suppliers}
+                    onSupplierClick={(id) => navigate(`/fornecedor/${id}`)}
+                  />
+                </div>
+                <div className="lg:w-[300px] overflow-y-auto space-y-2">
+                  {suppliers.map(sup => {
+                    const photo = sup.supplier_photos?.[0]?.photo_url;
+                    return (
+                      <Link key={sup.id} to={`/fornecedor/${sup.id}`} className="flex gap-3 p-2 rounded-lg border border-border hover:shadow-md transition-shadow bg-card">
+                        <div className="w-20 h-16 rounded-md overflow-hidden bg-muted shrink-0">
+                          {photo ? (
+                            <img src={photo} alt={sup.company_name} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><Building className="h-5 w-5 text-muted-foreground" /></div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm line-clamp-1">{sup.company_name}</h4>
+                          {sup.rating && (
+                            <div className="flex items-center gap-1 text-xs">
+                              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                              <span>{sup.rating.toFixed(1)}</span>
+                            </div>
+                          )}
+                          {(sup.city || sup.state) && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {[sup.city, sup.state].filter(Boolean).join(", ")}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             ) : viewMode === "list" ? (
               /* LIST VIEW */
               <div className="space-y-4">
@@ -347,9 +447,9 @@ export default function SupplierSearch() {
                   const photos = sup.supplier_photos || [];
                   const currentPhoto = photoIndex[sup.id] || 0;
                   return (
-                    <div key={sup.id} className="flex border border-border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-shadow">
+                    <div key={sup.id} className="flex flex-col sm:flex-row border border-border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-shadow">
                       {/* Photo carousel */}
-                      <div className="relative w-[280px] h-[220px] shrink-0 bg-muted group">
+                      <div className="relative w-full sm:w-[280px] h-48 sm:h-[220px] shrink-0 bg-muted group">
                         {photos.length > 0 ? (
                           <Link to={`/fornecedor/${sup.id}`}>
                             <img
@@ -364,7 +464,6 @@ export default function SupplierSearch() {
                             <Building className="h-12 w-12 text-muted-foreground" />
                           </div>
                         )}
-                        {/* Carousel dots */}
                         {photos.length > 1 && (
                           <>
                             <button
@@ -386,25 +485,22 @@ export default function SupplierSearch() {
                             </div>
                           </>
                         )}
-                        {/* Badges */}
                         {sup.featured && (
                           <Badge className="absolute top-3 left-3 bg-amber-600 text-white text-[10px] font-bold tracking-wider">
                             TOP
                           </Badge>
                         )}
-                        {/* Favorite */}
                         <button className="absolute top-3 right-3 text-white/80 hover:text-primary transition-colors">
                           <Heart className="h-5 w-5" />
                         </button>
                       </div>
 
                       {/* Info */}
-                      <div className="flex-1 p-5 flex flex-col">
+                      <div className="flex-1 p-4 sm:p-5 flex flex-col">
                         <Link to={`/fornecedor/${sup.id}`} className="hover:text-primary transition-colors">
-                          <h3 className="font-bold text-lg mb-1">{sup.company_name}</h3>
+                          <h3 className="font-bold text-base sm:text-lg mb-1">{sup.company_name}</h3>
                         </Link>
 
-                        {/* Rating + location */}
                         <div className="flex items-center gap-1.5 text-sm mb-2">
                           {sup.rating && (
                             <>
@@ -417,49 +513,51 @@ export default function SupplierSearch() {
                             </>
                           )}
                           {(sup.city || sup.state) && (
-                            <span className="text-muted-foreground">
+                            <span className="text-muted-foreground text-xs sm:text-sm">
                               {[sup.city, sup.state].filter(Boolean).join(", ")}
                             </span>
                           )}
                         </div>
 
-                        {/* Description */}
                         {sup.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-3 mb-3 flex-1">
+                          <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-3 mb-3 flex-1">
                             {sup.description}
                           </p>
                         )}
 
-                        {/* Price & guests & promo */}
-                        <div className="flex items-center gap-4 text-sm mt-auto">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm mt-auto">
                           {sup.price_min && (
                             <span className="flex items-center gap-1 text-muted-foreground">
-                              <DollarSign className="h-4 w-4" />
-                              A partir de R${sup.price_min.toLocaleString("pt-BR")}
+                              <DollarSign className="h-3.5 w-3.5" />
+                              R${sup.price_min.toLocaleString("pt-BR")}
                             </span>
                           )}
                           {(sup.guest_min || sup.guest_max) && (
                             <span className="flex items-center gap-1 text-muted-foreground">
-                              <Users className="h-4 w-4" />
+                              <Users className="h-3.5 w-3.5" />
                               {sup.guest_min && sup.guest_max
-                                ? `${sup.guest_min} a ${sup.guest_max}`
+                                ? `${sup.guest_min}-${sup.guest_max}`
                                 : sup.guest_max
                                   ? `Até ${sup.guest_max}`
                                   : `${sup.guest_min}+`}
-                              <span className="text-xs">Convidados</span>
                             </span>
                           )}
                           {sup.promo_percentage && sup.promo_percentage > 0 && (
                             <span className="flex items-center gap-1 text-primary font-medium">
-                              <Tag className="h-4 w-4" />
-                              1 promoção <span className="text-emerald-600">-{sup.promo_percentage}%</span>
+                              <Tag className="h-3.5 w-3.5" />
+                              -{sup.promo_percentage}%
                             </span>
                           )}
                         </div>
+
+                        {/* Mobile CTA */}
+                        <Button className="mt-3 sm:hidden w-full" size="sm" asChild>
+                          <Link to={`/fornecedor/${sup.id}`}>Pedir Orçamento</Link>
+                        </Button>
                       </div>
 
-                      {/* CTA */}
-                      <div className="hidden md:flex items-end p-5">
+                      {/* Desktop CTA */}
+                      <div className="hidden sm:flex items-end p-5">
                         <Button className="whitespace-nowrap" asChild>
                           <Link to={`/fornecedor/${sup.id}`}>
                             Pedir Orçamento Grátis
@@ -472,24 +570,24 @@ export default function SupplierSearch() {
               </div>
             ) : (
               /* GALLERY VIEW */
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                 {suppliers.map((sup) => {
                   const photo = sup.supplier_photos?.[0]?.photo_url;
                   return (
                     <Link key={sup.id} to={`/fornecedor/${sup.id}`} className="group">
                       <div className="rounded-lg overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
-                        <div className="relative h-48 bg-muted">
+                        <div className="relative h-32 sm:h-48 bg-muted">
                           {photo ? (
                             <img src={photo} alt={sup.company_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center"><Building className="h-10 w-10 text-muted-foreground" /></div>
                           )}
                           {sup.featured && (
-                            <Badge className="absolute top-3 left-3 bg-amber-600 text-white text-[10px] font-bold">TOP</Badge>
+                            <Badge className="absolute top-2 left-2 bg-amber-600 text-white text-[10px] font-bold">TOP</Badge>
                           )}
                         </div>
-                        <div className="p-3">
-                          <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">{sup.company_name}</h3>
+                        <div className="p-2 sm:p-3">
+                          <h3 className="font-semibold text-xs sm:text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">{sup.company_name}</h3>
                           {sup.rating && (
                             <div className="flex items-center gap-1 text-xs mb-1">
                               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
@@ -498,7 +596,7 @@ export default function SupplierSearch() {
                             </div>
                           )}
                           {sup.price_min && (
-                            <p className="text-xs text-muted-foreground">A partir de R${sup.price_min.toLocaleString("pt-BR")}</p>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">R${sup.price_min.toLocaleString("pt-BR")}</p>
                           )}
                         </div>
                       </div>
