@@ -14,7 +14,7 @@ export default function Favorites() {
   useEffect(() => {
     if (!user) return;
     const loadFavorites = async () => {
-      const { data: couple } = await supabase.from("couples").select("id").eq("user_id", user.id).single();
+      const { data: couple } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
       if (!couple) { setLoading(false); return; }
       const { data } = await supabase
         .from("couple_favorites")

@@ -6,12 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
   Heart, MapPin, Phone, Mail, Building, Star, Users,
   DollarSign, Tag, ChevronLeft, ChevronRight, Calendar,
-  Sparkles, TreePine, Car as CarIcon, ChefHat, Image
+  Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send
 } from "lucide-react";
+
+type Review = {
+  id: string;
+  rating: number;
+  title: string | null;
+  comment: string | null;
+  created_at: string;
+  couples: { id: string } | null;
+  profiles: { full_name: string | null } | null;
+};
 
 export default function SupplierProfile() {
   const { id } = useParams();
@@ -22,23 +34,98 @@ export default function SupplierProfile() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [coupleId, setCoupleId] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Reviews
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [userHasReview, setUserHasReview] = useState(false);
+
+  // Recommendations
+  const [recommendations, setRecommendations] = useState<any[]>([]);
 
   useEffect(() => {
     if (!id) return;
-    supabase.from("suppliers").select("*, categories(name)").eq("id", id).single().then(({ data }) => setSupplier(data));
+    
+    supabase.from("suppliers").select("*, categories(name)").eq("id", id).maybeSingle().then(({ data }) => {
+      setSupplier(data);
+      setLoading(false);
+      // Fetch recommendations from same category
+      if (data?.category_id) {
+        supabase
+          .from("suppliers")
+          .select("*, categories(name), supplier_photos(photo_url)")
+          .eq("status", "approved")
+          .eq("category_id", data.category_id)
+          .neq("id", id)
+          .order("rating", { ascending: false, nullsFirst: false })
+          .limit(4)
+          .then(({ data: recs }) => setRecommendations(recs || []));
+      }
+    });
+    
     supabase.from("supplier_photos").select("*").eq("supplier_id", id).order("display_order").then(({ data }) => setPhotos(data || []));
 
+    // Fetch reviews
+    loadReviews();
+
     if (user) {
-      supabase.from("couples").select("id").eq("user_id", user.id).single().then(({ data }) => {
+      supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle().then(({ data }) => {
         if (data) {
           setCoupleId(data.id);
-          supabase.from("couple_favorites").select("id").eq("couple_id", data.id).eq("supplier_id", id).single().then(({ data: fav }) => {
+          supabase.from("couple_favorites").select("id").eq("couple_id", data.id).eq("supplier_id", id).maybeSingle().then(({ data: fav }) => {
             setIsFavorited(!!fav);
+          });
+          // Check if user already reviewed
+          supabase.from("reviews").select("id").eq("couple_id", data.id).eq("supplier_id", id).maybeSingle().then(({ data: rev }) => {
+            setUserHasReview(!!rev);
           });
         }
       });
     }
   }, [id, user]);
+
+  const loadReviews = async () => {
+    if (!id) return;
+    const { data } = await supabase
+      .from("reviews")
+      .select("*")
+      .eq("supplier_id", id)
+      .order("created_at", { ascending: false });
+    setReviews(data || []);
+  };
+
+  const submitReview = async () => {
+    if (!coupleId || !id || !user) {
+      toast({ title: "Faça login como casal para avaliar", variant: "destructive" });
+      return;
+    }
+    setSubmittingReview(true);
+    const { error } = await supabase.from("reviews").insert({
+      supplier_id: id,
+      couple_id: coupleId,
+      user_id: user.id,
+      rating: reviewRating,
+      title: reviewTitle.trim() || null,
+      comment: reviewComment.trim() || null,
+    });
+    setSubmittingReview(false);
+    if (error) {
+      toast({ title: "Erro ao enviar avaliação", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Avaliação enviada!" });
+      setReviewTitle("");
+      setReviewComment("");
+      setReviewRating(5);
+      setUserHasReview(true);
+      loadReviews();
+      // Refresh supplier to get updated rating
+      supabase.from("suppliers").select("*, categories(name)").eq("id", id).maybeSingle().then(({ data }) => setSupplier(data));
+    }
+  };
 
   const toggleFavorite = async () => {
     if (!coupleId || !id) {
@@ -59,7 +146,14 @@ export default function SupplierProfile() {
     }
   };
 
-  if (!supplier) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
+  if (!supplier) return (
+    <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+      <Building className="h-16 w-16 text-muted-foreground" />
+      <p className="text-muted-foreground">Fornecedor não encontrado.</p>
+      <Button asChild><Link to="/buscar">Voltar à busca</Link></Button>
+    </div>
+  );
 
   const categoryName = (supplier.categories as any)?.name || "Fornecedor";
   const ratingLabel = supplier.rating >= 4.8 ? "Fantástico" : supplier.rating >= 4.5 ? "Excelente" : supplier.rating >= 4.0 ? "Muito bom" : "Bom";
@@ -132,11 +226,9 @@ export default function SupplierProfile() {
             {photos.length > 0 ? (
               <div className="relative mb-6">
                 <div className="grid grid-cols-3 gap-1 rounded-xl overflow-hidden" style={{ height: "400px" }}>
-                  {/* Main photo */}
                   <div className="col-span-2 row-span-2 relative bg-muted cursor-pointer" onClick={() => setSelectedPhoto(0)}>
                     <img src={photos[0]?.photo_url} alt={supplier.company_name} className="w-full h-full object-cover" />
                   </div>
-                  {/* Side photos */}
                   {photos.slice(1, 5).map((photo, i) => (
                     <div key={photo.id} className="relative bg-muted cursor-pointer" onClick={() => setSelectedPhoto(i + 1)}>
                       <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
@@ -148,8 +240,6 @@ export default function SupplierProfile() {
                     </div>
                   ))}
                 </div>
-
-                {/* Action buttons */}
                 <div className="absolute top-4 right-4 flex gap-2">
                   <button
                     onClick={toggleFavorite}
@@ -158,8 +248,6 @@ export default function SupplierProfile() {
                     <Heart className={`h-5 w-5 ${isFavorited ? "fill-primary" : ""}`} />
                   </button>
                 </div>
-
-                {/* Ver fotos button */}
                 <button className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 text-sm font-medium shadow-md flex items-center gap-2 hover:bg-white transition-colors">
                   <Image className="h-4 w-4" />
                   Ver Fotos {photos.length}
@@ -177,7 +265,7 @@ export default function SupplierProfile() {
                 {[
                   { value: "info", label: "Informação" },
                   { value: "faqs", label: "FAQs" },
-                  { value: "opinions", label: `Opiniões ${supplier.review_count ? supplier.review_count : ""}` },
+                  { value: "opinions", label: `Opiniões ${reviews.length > 0 ? `(${reviews.length})` : ""}` },
                   { value: "map", label: "Mapa" },
                 ].map(tab => (
                   <TabsTrigger
@@ -191,7 +279,6 @@ export default function SupplierProfile() {
               </TabsList>
 
               <TabsContent value="info" className="mt-6">
-                {/* Dados de interesse */}
                 <div className="mb-8">
                   <h2 className="font-bold text-lg mb-4">Dados de interesse</h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -228,7 +315,6 @@ export default function SupplierProfile() {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div>
                   <h2 className="font-bold text-lg mb-4">Informação</h2>
                   {supplier.description ? (
@@ -248,6 +334,8 @@ export default function SupplierProfile() {
 
               <TabsContent value="opinions" className="mt-6">
                 <h2 className="font-bold text-lg mb-4">Opiniões</h2>
+                
+                {/* Rating summary */}
                 {supplier.rating ? (
                   <div className="flex items-center gap-3 mb-6 p-4 bg-secondary rounded-lg">
                     <div className="text-3xl font-bold text-primary">{supplier.rating.toFixed(1)}</div>
@@ -257,12 +345,72 @@ export default function SupplierProfile() {
                           <Star key={s} className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
                         ))}
                       </div>
-                      <p className="text-sm text-muted-foreground">{ratingLabel} · {supplier.review_count || 0} opiniões</p>
+                      <p className="text-sm text-muted-foreground">{ratingLabel} · {reviews.length} opiniões</p>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Ainda não há opiniões. <button className="text-primary underline">Deixe sua opinião</button></p>
+                ) : null}
+
+                {/* Review form */}
+                {user && coupleId && !userHasReview && (
+                  <div className="border border-border rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold text-sm mb-3">Deixe sua avaliação</h3>
+                    <div className="flex gap-1 mb-3">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <button key={s} onClick={() => setReviewRating(s)}>
+                          <Star className={`h-6 w-6 transition-colors ${s <= reviewRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground hover:text-amber-300"}`} />
+                        </button>
+                      ))}
+                    </div>
+                    <Input
+                      placeholder="Título da avaliação (opcional)"
+                      value={reviewTitle}
+                      onChange={(e) => setReviewTitle(e.target.value)}
+                      className="mb-2"
+                      maxLength={100}
+                    />
+                    <Textarea
+                      placeholder="Conte como foi sua experiência..."
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      className="mb-3"
+                      maxLength={1000}
+                    />
+                    <Button onClick={submitReview} disabled={submittingReview} size="sm">
+                      <Send className="h-4 w-4 mr-2" />
+                      {submittingReview ? "Enviando..." : "Enviar avaliação"}
+                    </Button>
+                  </div>
                 )}
+
+                {!user && (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    <Link to="/login" className="text-primary underline">Faça login</Link> para deixar sua avaliação.
+                  </p>
+                )}
+
+                {/* Reviews list */}
+                {reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.map((rev) => (
+                      <div key={rev.id} className="border border-border rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5].map(s => (
+                              <Star key={s} className={`h-3.5 w-3.5 ${s <= rev.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                            ))}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(rev.created_at).toLocaleDateString("pt-BR")}
+                          </span>
+                        </div>
+                        {rev.title && <p className="font-semibold text-sm mb-1">{rev.title}</p>}
+                        {rev.comment && <p className="text-sm text-muted-foreground">{rev.comment}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : !supplier.rating ? (
+                  <p className="text-sm text-muted-foreground">Ainda não há opiniões sobre este fornecedor.</p>
+                ) : null}
               </TabsContent>
 
               <TabsContent value="map" className="mt-6">
@@ -275,6 +423,46 @@ export default function SupplierProfile() {
                 </div>
               </TabsContent>
             </Tabs>
+
+            {/* Recommendations */}
+            {recommendations.length > 0 && (
+              <div className="mb-8">
+                <h2 className="font-bold text-lg mb-4">Fornecedores similares que você pode gostar</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {recommendations.map((rec) => {
+                    const photo = rec.supplier_photos?.[0]?.photo_url;
+                    return (
+                      <Link key={rec.id} to={`/fornecedor/${rec.id}`} className="group">
+                        <div className="rounded-lg overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
+                          <div className="relative h-36 bg-muted">
+                            {photo ? (
+                              <img src={photo} alt={rec.company_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center"><Building className="h-8 w-8 text-muted-foreground" /></div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">{rec.company_name}</h3>
+                            {rec.rating && (
+                              <div className="flex items-center gap-1 text-xs mb-1">
+                                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                <span className="font-semibold">{rec.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                            {(rec.city || rec.state) && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {[rec.city, rec.state].filter(Boolean).join(", ")}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right sidebar - sticky */}
@@ -284,7 +472,6 @@ export default function SupplierProfile() {
                 <CardContent className="p-6">
                   <h1 className="font-bold text-xl mb-3">{supplier.company_name}</h1>
 
-                  {/* Rating */}
                   {supplier.rating && (
                     <div className="flex items-center gap-2 mb-2">
                       <div className="flex gap-0.5">
@@ -294,13 +481,12 @@ export default function SupplierProfile() {
                       </div>
                       <span className="font-semibold text-sm">{supplier.rating.toFixed(1)}</span>
                       <span className="text-sm text-muted-foreground">{ratingLabel}</span>
-                      {supplier.review_count && (
-                        <span className="text-sm text-primary underline cursor-pointer">· {supplier.review_count} opiniões</span>
+                      {reviews.length > 0 && (
+                        <span className="text-sm text-primary underline cursor-pointer">· {reviews.length} opiniões</span>
                       )}
                     </div>
                   )}
 
-                  {/* Location */}
                   {(supplier.city || supplier.state) && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                       <MapPin className="h-4 w-4 text-primary" />
@@ -308,7 +494,6 @@ export default function SupplierProfile() {
                     </div>
                   )}
 
-                  {/* Promo */}
                   {supplier.promo_percentage && supplier.promo_percentage > 0 && (
                     <div className="flex items-center gap-2 text-sm mb-4">
                       <Tag className="h-4 w-4 text-primary" />
@@ -317,7 +502,6 @@ export default function SupplierProfile() {
                     </div>
                   )}
 
-                  {/* Price & capacity card */}
                   <div className="border border-border rounded-lg p-4 mb-4 space-y-3">
                     {supplier.price_min && (
                       <div className="flex items-center gap-3">
@@ -350,7 +534,6 @@ export default function SupplierProfile() {
                     </div>
                   </div>
 
-                  {/* CTA buttons */}
                   <div className="flex gap-2">
                     <Button className="flex-1 h-12 text-base font-semibold">
                       Pedir Orçamento Grátis
@@ -364,7 +547,6 @@ export default function SupplierProfile() {
                     )}
                   </div>
 
-                  {/* Popular tag */}
                   <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" />
                     Dos mais pesquisados em {supplier.state || "sua região"}
@@ -372,7 +554,6 @@ export default function SupplierProfile() {
                 </CardContent>
               </Card>
 
-              {/* Contact card */}
               {(supplier.email || supplier.phone) && (
                 <Card>
                   <CardContent className="p-4 space-y-2">
