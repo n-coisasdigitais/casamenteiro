@@ -15,6 +15,7 @@ import {
   Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
+import SupplierMap from "@/components/SupplierMap";
 
 type Review = {
   id: string;
@@ -416,12 +417,11 @@ export default function SupplierProfile() {
 
               <TabsContent value="map" className="mt-6">
                 <h2 className="font-bold text-lg mb-4">Localização</h2>
-                <div className="h-64 bg-muted rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">{[supplier.city, supplier.state].filter(Boolean).join(", ")}</p>
-                  </div>
-                </div>
+                <SupplierMap
+                  city={supplier.city}
+                  state={supplier.state}
+                  supplierName={supplier.company_name}
+                />
               </TabsContent>
             </Tabs>
 
