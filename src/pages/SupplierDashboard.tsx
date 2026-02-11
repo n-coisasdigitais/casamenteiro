@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon } from "lucide-react";
+import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
+import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 
 type Category = { id: string; name: string };
 
@@ -190,10 +191,14 @@ export default function SupplierDashboard() {
         )}
 
         <Tabs defaultValue="quotes" className="space-y-6">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="quotes" className="flex items-center gap-1.5">
               <MessageSquare className="h-4 w-4" />
               Orçamentos {quotes.length > 0 && <Badge variant="secondary" className="ml-1 text-xs h-5 px-1.5">{quotes.length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="availability" className="flex items-center gap-1.5">
+              <CalendarDays className="h-4 w-4" />
+              Disponibilidade
             </TabsTrigger>
             <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
             <TabsTrigger value="photos">Fotos</TabsTrigger>
@@ -267,6 +272,11 @@ export default function SupplierDashboard() {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* AVAILABILITY TAB */}
+          <TabsContent value="availability">
+            <AvailabilityCalendar supplierId={supplier.id} />
           </TabsContent>
 
           {/* PROFILE TAB */}
