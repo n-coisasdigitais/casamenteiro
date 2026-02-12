@@ -9,6 +9,8 @@ import Auth from "./pages/Auth";
 import CoupleOnboarding from "./pages/CoupleOnboarding";
 import CoupleDashboard from "./pages/CoupleDashboard";
 import WeddingTasks from "./pages/WeddingTasks";
+import MySuppliers from "./pages/MySuppliers";
+import WeddingGuests from "./pages/WeddingGuests";
 import SupplierSearch from "./pages/SupplierSearch";
 import SupplierProfile from "./pages/SupplierProfile";
 import SupplierDashboard from "./pages/SupplierDashboard";
@@ -33,8 +35,8 @@ const App = () => (
             <Route path="/onboarding" element={<CoupleOnboarding />} />
             <Route path="/dashboard" element={<CoupleDashboard />} />
             <Route path="/tarefas" element={<WeddingTasks />} />
-            <Route path="/meus-fornecedores" element={<Favorites />} />
-            <Route path="/convidados" element={<NotFound />} />
+            <Route path="/meus-fornecedores" element={<MySuppliers />} />
+            <Route path="/convidados" element={<WeddingGuests />} />
             <Route path="/orcamento" element={<NotFound />} />
             <Route path="/buscar" element={<SupplierSearch />} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
