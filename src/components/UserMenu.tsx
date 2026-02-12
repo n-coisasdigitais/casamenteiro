@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Heart, Search, User, Settings, LogOut } from "lucide-react";
+import { Heart, Search, User, Settings, LogOut, CheckSquare, Users, DollarSign, Store } from "lucide-react";
 
 function getInitials(name: string | null | undefined): string {
   if (!name) return "U";
@@ -51,15 +51,33 @@ export default function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/buscar" className="cursor-pointer">
-            <Search className="mr-2 h-4 w-4" />
-            Fornecedores
+          <Link to="/tarefas" className="cursor-pointer">
+            <CheckSquare className="mr-2 h-4 w-4" />
+            Agenda de Tarefas
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/favoritos" className="cursor-pointer">
-            <Heart className="mr-2 h-4 w-4" />
-            Favoritos
+          <Link to="/meus-fornecedores" className="cursor-pointer">
+            <Store className="mr-2 h-4 w-4" />
+            Meus Fornecedores
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/convidados" className="cursor-pointer">
+            <Users className="mr-2 h-4 w-4" />
+            Convidados
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/orcamento" className="cursor-pointer">
+            <DollarSign className="mr-2 h-4 w-4" />
+            Orçamento
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/buscar" className="cursor-pointer">
+            <Search className="mr-2 h-4 w-4" />
+            Buscar Fornecedores
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
