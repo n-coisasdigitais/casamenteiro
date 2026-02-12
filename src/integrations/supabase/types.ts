@@ -14,6 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_items: {
+        Row: {
+          category: string
+          couple_id: string
+          created_at: string
+          description: string
+          estimated_cost: number
+          final_cost: number | null
+          id: string
+          notes: string | null
+          status: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          couple_id: string
+          created_at?: string
+          description: string
+          estimated_cost?: number
+          final_cost?: number | null
+          id?: string
+          notes?: string | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          couple_id?: string
+          created_at?: string
+          description?: string
+          estimated_cost?: number
+          final_cost?: number | null
+          id?: string
+          notes?: string | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_items_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_payments: {
+        Row: {
+          amount: number
+          budget_item_id: string
+          couple_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          payment_date: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          budget_item_id: string
+          couple_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          payment_date?: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          budget_item_id?: string
+          couple_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          payment_date?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_payments_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "budget_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_payments_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -103,6 +211,64 @@ export type Database = {
           },
         ]
       }
+      couple_suppliers: {
+        Row: {
+          category_id: string | null
+          contract_value: number | null
+          couple_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          status: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          contract_value?: number | null
+          couple_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          contract_value?: number | null
+          couple_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_suppliers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "couple_suppliers_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "couple_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couples: {
         Row: {
           couple_role: Database["public"]["Enums"]["couple_role"] | null
@@ -147,6 +313,35 @@ export type Database = {
           wedding_date?: string | null
         }
         Relationships: []
+      }
+      guest_groups: {
+        Row: {
+          couple_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_groups_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -483,6 +678,134 @@ export type Database = {
         }
         Relationships: []
       }
+      wedding_guests: {
+        Row: {
+          couple_id: string
+          created_at: string
+          email: string | null
+          group_id: string | null
+          guest_type: string
+          id: string
+          menu_preference: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          rsvp_status: string
+          table_number: number | null
+          updated_at: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          email?: string | null
+          group_id?: string | null
+          guest_type?: string
+          id?: string
+          menu_preference?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          rsvp_status?: string
+          table_number?: number | null
+          updated_at?: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          email?: string | null
+          group_id?: string | null
+          guest_type?: string
+          id?: string
+          menu_preference?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          rsvp_status?: string
+          table_number?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wedding_guests_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wedding_guests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "guest_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wedding_tasks: {
+        Row: {
+          action_label: string | null
+          action_url: string | null
+          category: string
+          completed_at: string | null
+          couple_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          due_period: string | null
+          id: string
+          is_completed: boolean
+          is_custom: boolean
+          priority: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_url?: string | null
+          category?: string
+          completed_at?: string | null
+          couple_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          due_period?: string | null
+          id?: string
+          is_completed?: boolean
+          is_custom?: boolean
+          priority?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_label?: string | null
+          action_url?: string | null
+          category?: string
+          completed_at?: string | null
+          couple_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          due_period?: string | null
+          id?: string
+          is_completed?: boolean
+          is_custom?: boolean
+          priority?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wedding_tasks_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -495,6 +818,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      seed_default_tasks: {
+        Args: { _couple_id: string; _wedding_date?: string }
+        Returns: undefined
       }
     }
     Enums: {
