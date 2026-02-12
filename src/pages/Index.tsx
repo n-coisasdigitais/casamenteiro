@@ -245,6 +245,18 @@ const Index = () => {
               <Heart className="h-5 w-5 fill-primary text-primary" />
               <span className="text-lg font-bold">Meu Grande Dia</span>
             </div>
+            <div className="flex items-center gap-1.5 text-sm text-background/80">
+              <span>Desenvolvido com carinho pela</span>
+              <a 
+                href="https://ncoisas.digital/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="font-semibold hover:text-background transition-colors"
+              >
+                N Coisas Digitais
+              </a>
+              <Heart className="h-4 w-4 fill-background text-background" />
+            </div>
             <nav className="flex gap-6 text-sm text-background/60">
               <Link to="/buscar" className="hover:text-background">Fornecedores</Link>
               <Link to="/cadastro?tipo=supplier" className="hover:text-background">Para empresas</Link>
