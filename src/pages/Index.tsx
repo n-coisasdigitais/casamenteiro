@@ -240,29 +240,54 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-10 bg-foreground text-background">
         <div className="container">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 fill-primary text-primary" />
-              <span className="text-lg font-bold">Meu Grande Dia</span>
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="h-5 w-5 fill-primary text-primary" />
+                <span className="text-lg font-bold">Meu Grande Dia</span>
+              </div>
+              <p className="text-background/60 text-sm">
+                A plataforma completa para planejar o casamento dos seus sonhos.
+              </p>
             </div>
-            <nav className="flex gap-6 text-sm text-background/60">
-              <Link to="/buscar" className="hover:text-background">Fornecedores</Link>
-              <Link to="/cadastro?tipo=supplier" className="hover:text-background">Para empresas</Link>
-            </nav>
+            <div>
+              <h4 className="font-semibold mb-3 text-sm">Para casais</h4>
+              <nav className="flex flex-col gap-2 text-sm text-background/60">
+                <Link to="/cadastro?tipo=couple" className="hover:text-background">Criar conta grátis</Link>
+                <Link to="/buscar" className="hover:text-background">Buscar fornecedores</Link>
+                <Link to="/dashboard" className="hover:text-background">Meu casamento</Link>
+                <Link to="/tarefas" className="hover:text-background">Agenda de tarefas</Link>
+              </nav>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-3 text-sm">Ferramentas</h4>
+              <nav className="flex flex-col gap-2 text-sm text-background/60">
+                <Link to="/orcamento" className="hover:text-background">Orçamento</Link>
+                <Link to="/convidados" className="hover:text-background">Lista de convidados</Link>
+                <Link to="/meus-fornecedores" className="hover:text-background">Meus fornecedores</Link>
+                <Link to="/perfil" className="hover:text-background">Meu perfil</Link>
+              </nav>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-3 text-sm">Para fornecedores</h4>
+              <nav className="flex flex-col gap-2 text-sm text-background/60">
+                <Link to="/cadastro?tipo=supplier" className="hover:text-background">Cadastrar empresa</Link>
+                <Link to="/fornecedor/painel" className="hover:text-background">Painel do fornecedor</Link>
+              </nav>
+            </div>
+          </div>
+          <div className="border-t border-background/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-background/40 text-xs">
               © 2026 Meu Grande Dia. Todos os direitos reservados.
             </p>
+            <div className="flex items-center gap-1.5 text-xs text-background/60">
+              <span>Desenvolvido com carinho pela</span>
+              <a href="https://ncoisas.digital/" target="_blank" rel="noopener noreferrer" className="font-semibold text-background/80 hover:text-background transition-colors">N Coisas Digitais</a>
+              <Heart className="h-3.5 w-3.5 fill-primary text-primary" />
+            </div>
           </div>
         </div>
       </footer>
-      {/* Subfooter */}
-      <div className="py-3 bg-foreground border-t border-background/10 text-center">
-        <div className="flex items-center justify-center gap-1.5 text-xs text-background/60">
-          <span>Desenvolvido com carinho pela</span>
-          <a href="https://ncoisas.digital/" target="_blank" rel="noopener noreferrer" className="font-semibold text-background/80 hover:text-background transition-colors">N Coisas Digitais</a>
-          <Heart className="h-3.5 w-3.5 fill-background text-background" />
-        </div>
-      </div>
     </div>
   );
 };

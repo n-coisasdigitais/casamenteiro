@@ -8,6 +8,7 @@ type Profile = {
   user_id: string;
   full_name: string | null;
   account_type: string;
+  avatar_url: string | null;
 };
 
 type AuthContextType = {
