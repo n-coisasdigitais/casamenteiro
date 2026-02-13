@@ -8,17 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Heart, Search, User, Settings, LogOut, CheckSquare, Users, DollarSign, Store } from "lucide-react";
-
-function getInitials(name: string | null | undefined): string {
-  if (!name) return "U";
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join("");
-}
+import { Heart, Search, Settings, LogOut, CheckSquare, Users, DollarSign, Store } from "lucide-react";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function UserMenu() {
   const { profile, signOut } = useAuth();
@@ -32,8 +23,8 @@ export default function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-          {getInitials(profile?.full_name)}
+        <button className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-full">
+          <UserAvatar fullName={profile?.full_name} avatarUrl={profile?.avatar_url} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -89,7 +80,7 @@ export default function UserMenu() {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
-          Fechar sessão
+          Sair
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

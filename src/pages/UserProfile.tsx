@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Heart, ArrowLeft, Save, Lock } from "lucide-react";
+import { Save, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import UserMenu from "@/components/UserMenu";
+import DashboardHeader from "@/components/DashboardHeader";
+import DashboardNav from "@/components/DashboardNav";
+import AvatarUpload from "@/components/AvatarUpload";
 
 export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -23,6 +25,7 @@ export default function UserProfile() {
   const [estimatedGuests, setEstimatedGuests] = useState("");
   const [estimatedBudget, setEstimatedBudget] = useState("");
   const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -36,6 +39,7 @@ export default function UserProfile() {
 
     if (profile) {
       setFullName(profile.full_name || "");
+      setAvatarUrl(profile.avatar_url || null);
     }
 
     supabase.from("couples").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
@@ -77,7 +81,7 @@ export default function UserProfile() {
     if (profileRes.error || coupleRes.error) {
       toast({ title: "Erro ao salvar", description: "Tente novamente.", variant: "destructive" });
     } else {
-      toast({ title: "Perfil atualizado!" });
+      toast({ title: "Perfil atualizado com sucesso!" });
     }
     setSaving(false);
   };
@@ -88,7 +92,7 @@ export default function UserProfile() {
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast({ title: "Senhas não coincidem", variant: "destructive" });
+      toast({ title: "As senhas não coincidem", variant: "destructive" });
       return;
     }
     setSavingPassword(true);
@@ -103,42 +107,28 @@ export default function UserProfile() {
     setSavingPassword(false);
   };
 
-  const initials = fullName
-    ? fullName.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("")
-    : "U";
-
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-border sticky top-0 z-40">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
-            </Button>
-            <Link to="/" className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-primary fill-primary" />
-              <span className="text-lg font-bold">Meu Grande Dia</span>
-            </Link>
-          </div>
-          <UserMenu />
-        </div>
-      </header>
+      <DashboardHeader />
+      <DashboardNav />
 
       <main className="container px-4 py-8 max-w-2xl">
         {/* Avatar + name header */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
-            {initials}
-          </div>
+          <AvatarUpload
+            avatarUrl={avatarUrl}
+            fullName={fullName}
+            onUploaded={(url) => setAvatarUrl(url)}
+          />
           <div>
             <h1 className="text-2xl font-bold">{fullName || "Meu Perfil"}</h1>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </div>
 
-        {/* Personal data */}
+        {/* Dados pessoais */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Dados pessoais</CardTitle>
@@ -165,7 +155,7 @@ export default function UserProfile() {
           </CardContent>
         </Card>
 
-        {/* Wedding data */}
+        {/* Dados do casamento */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Dados do casamento</CardTitle>
@@ -176,7 +166,7 @@ export default function UserProfile() {
               <Input id="weddingDate" type="date" value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="guests">Número de convidados</Label>
+              <Label htmlFor="guests">Número estimado de convidados</Label>
               <Input id="guests" type="number" value={estimatedGuests} onChange={(e) => setEstimatedGuests(e.target.value)} />
             </div>
             <div>
@@ -191,7 +181,7 @@ export default function UserProfile() {
           {saving ? "Salvando..." : "Salvar alterações"}
         </Button>
 
-        {/* Change password */}
+        {/* Alterar senha */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
