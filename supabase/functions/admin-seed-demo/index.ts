@@ -129,8 +129,8 @@ Deno.serve(async (req) => {
     }
     // CERIMONIALISTAS
     for (const r of DATA.cerimonialistas) {
-      const id = await insSup({faixa_preco:r[8],aceita_datas_ociosas:r[9],desconto_datas_ociosas_pct:r[10],nome:r[1],cidade:r[2],estado:r[3],whatsapp:r[4],instagram:r[5],site:r[6],foto_perfil_url:r[7],preco_min:r[15] as number,preco_max:(r[17] || r[16] || r[15]) as number}, "cerimonialista");
-      if (id) await insDet("supplier_details_cerimonialista", id, {tipo_assessoria:r[11],tamanho_equipe:r[12],num_casamentos:r[13],inclui_decoracao:r[14],preco_dia_a:r[15],preco_parcial:r[16],preco_completa:r[17],faz_religioso:r[18],faz_civil:r[19]});
+      const id = await insSup({faixa_preco:r[8],aceita_datas_ociosas:r[9],desconto_datas_ociosas_pct:r[10],nome:r[1],cidade:r[2],estado:r[3],whatsapp:r[4],instagram:r[5],site:r[6],foto_perfil_url:r[7],preco_min:r[16] as number,preco_max:(r[18] || r[17] || r[16]) as number}, "cerimonialista");
+      if (id) await insDet("supplier_details_cerimonialista", id, {tipo_assessoria:r[11],tamanho_equipe:r[12],num_casamentos:r[13],inclui_decoracao:r[14],indica_fornecedores:r[15],preco_dia_a:r[16],preco_parcial:r[17],preco_completa:r[18],faz_religioso:r[19],faz_civil:r[20]});
     }
     // CONVITES
     for (const r of DATA.convites) {
