@@ -522,6 +522,45 @@ export type Database = {
           },
         ]
       }
+      simulated_budgets: {
+        Row: {
+          categorias_selecionadas: string[] | null
+          cidade: string | null
+          couple_id: string | null
+          created_at: string
+          distribuicao: Json
+          estado: string | null
+          estilo: string | null
+          id: string
+          num_convidados: number
+          orcamento_total: number
+        }
+        Insert: {
+          categorias_selecionadas?: string[] | null
+          cidade?: string | null
+          couple_id?: string | null
+          created_at?: string
+          distribuicao?: Json
+          estado?: string | null
+          estilo?: string | null
+          id?: string
+          num_convidados: number
+          orcamento_total: number
+        }
+        Update: {
+          categorias_selecionadas?: string[] | null
+          cidade?: string | null
+          couple_id?: string | null
+          created_at?: string
+          distribuicao?: Json
+          estado?: string | null
+          estilo?: string | null
+          id?: string
+          num_convidados?: number
+          orcamento_total?: number
+        }
+        Relationships: []
+      }
       supplier_blocked_dates: {
         Row: {
           blocked_date: string
@@ -547,6 +586,362 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "supplier_blocked_dates_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_details_beleza: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_details_beleza_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_details_buffet: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_details_buffet_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_details_cerimonialista: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_details_cerimonialista_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_details_convites: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_details_convites_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_details_decoracao: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_details_decoracao_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_details_fotografo: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_details_fotografo_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_details_local: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_details_local_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_details_musica: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_details_musica_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_details_trajes: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_details_trajes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_leads: {
+        Row: {
+          cidade_evento: string | null
+          comissao_gerada: number | null
+          couple_id: string | null
+          created_at: string
+          data_contato: string
+          data_evento: string | null
+          email_casal: string | null
+          id: string
+          nome_casal: string | null
+          num_convidados: number | null
+          orcamento_total: number | null
+          origem: string
+          status_lead: string
+          supplier_id: string
+          updated_at: string
+          valor_fechado: number | null
+          whatsapp_casal: string | null
+        }
+        Insert: {
+          cidade_evento?: string | null
+          comissao_gerada?: number | null
+          couple_id?: string | null
+          created_at?: string
+          data_contato?: string
+          data_evento?: string | null
+          email_casal?: string | null
+          id?: string
+          nome_casal?: string | null
+          num_convidados?: number | null
+          orcamento_total?: number | null
+          origem?: string
+          status_lead?: string
+          supplier_id: string
+          updated_at?: string
+          valor_fechado?: number | null
+          whatsapp_casal?: string | null
+        }
+        Update: {
+          cidade_evento?: string | null
+          comissao_gerada?: number | null
+          couple_id?: string | null
+          created_at?: string
+          data_contato?: string
+          data_evento?: string | null
+          email_casal?: string | null
+          id?: string
+          nome_casal?: string | null
+          num_convidados?: number | null
+          orcamento_total?: number | null
+          origem?: string
+          status_lead?: string
+          supplier_id?: string
+          updated_at?: string
+          valor_fechado?: number | null
+          whatsapp_casal?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_leads_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
@@ -588,6 +983,7 @@ export type Database = {
       }
       suppliers: {
         Row: {
+          accepts_idle_dates: boolean
           category_id: string | null
           city: string | null
           company_name: string
@@ -598,9 +994,12 @@ export type Database = {
           guest_max: number | null
           guest_min: number | null
           id: string
+          idle_discount_pct: number | null
+          instagram: string | null
           phone: string | null
           price_max: number | null
           price_min: number | null
+          profile_photo_url: string | null
           promo_percentage: number | null
           rating: number | null
           review_count: number | null
@@ -608,8 +1007,11 @@ export type Database = {
           status: Database["public"]["Enums"]["supplier_status"]
           updated_at: string
           user_id: string
+          website: string | null
+          whatsapp: string | null
         }
         Insert: {
+          accepts_idle_dates?: boolean
           category_id?: string | null
           city?: string | null
           company_name: string
@@ -620,9 +1022,12 @@ export type Database = {
           guest_max?: number | null
           guest_min?: number | null
           id?: string
+          idle_discount_pct?: number | null
+          instagram?: string | null
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
+          profile_photo_url?: string | null
           promo_percentage?: number | null
           rating?: number | null
           review_count?: number | null
@@ -630,8 +1035,11 @@ export type Database = {
           status?: Database["public"]["Enums"]["supplier_status"]
           updated_at?: string
           user_id: string
+          website?: string | null
+          whatsapp?: string | null
         }
         Update: {
+          accepts_idle_dates?: boolean
           category_id?: string | null
           city?: string | null
           company_name?: string
@@ -642,9 +1050,12 @@ export type Database = {
           guest_max?: number | null
           guest_min?: number | null
           id?: string
+          idle_discount_pct?: number | null
+          instagram?: string | null
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
+          profile_photo_url?: string | null
           promo_percentage?: number | null
           rating?: number | null
           review_count?: number | null
@@ -652,6 +1063,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["supplier_status"]
           updated_at?: string
           user_id?: string
+          website?: string | null
+          whatsapp?: string | null
         }
         Relationships: [
           {

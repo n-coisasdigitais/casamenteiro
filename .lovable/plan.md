@@ -1,138 +1,101 @@
+# Plano: Estrutura de Banco para Simulador de Orçamento
 
-# Painel Completo do Casamento - Plano de Implementacao
+Objetivo: preparar o banco para a nova versão centrada no **simulador**, sem mexer em layout/UX agora. Apenas adicionar/criar o que falta, preservando o que já existe.
 
-Este e um projeto grande que cobre 5 funcionalidades principais. Recomendo implementar em **3 fases** para manter a qualidade e evitar problemas.
+## 1. Estender `suppliers` (campos faltantes)
 
----
+Adicionar colunas via migration (todas nullable para não quebrar dados atuais):
 
-## Fase 1 - Estrutura de Dados + Dashboard Reformulado + Agenda de Tarefas
+- `whatsapp text`
+- `instagram text`
+- `website text`
+- `profile_photo_url text`
+- `accepts_idle_dates boolean default false`
+- `idle_discount_pct integer` (desconto específico para datas ociosas, distinto de `promo_percentage`)
 
-### 1.1 Novas Tabelas no Banco de Dados
+Campos já existentes que cobrem a proposta: `id`, `category_id` (categoria), `company_name` (nome), `city`, `state`, `phone`, `price_min`/`price_max` (faixa de preço), `status`, `featured` (destaque), `created_at`. Galeria já está em `supplier_photos` (mantém normalizado, melhor que array).
 
-**`wedding_tasks`** - Agenda de tarefas do casal
-- `id`, `couple_id` (FK couples), `title`, `description`, `category` (text), `priority` (text: essential/recommended/optional), `due_period` (text: "10-12 meses", "7-9 meses", etc.), `due_date` (date, nullable), `is_completed` (boolean), `completed_at` (timestamp), `is_custom` (boolean), `action_label` (text, nullable), `action_url` (text, nullable), `sort_order` (int), `created_at`, `updated_at`
-- RLS: casal so ve/edita suas proprias tarefas
+## 2. Tabelas de detalhes por categoria (novas)
 
-**`wedding_guests`** - Lista de convidados
-- `id`, `couple_id` (FK couples), `group_id` (FK guest_groups, nullable), `name`, `email` (nullable), `phone` (nullable), `guest_type` (text: adult/child/baby), `rsvp_status` (text: pending/confirmed/declined), `menu_preference` (text, nullable), `table_number` (int, nullable), `notes` (text, nullable), `created_at`, `updated_at`
-- RLS: casal so ve/edita seus proprios convidados
+Padrão: cada tabela tem `id uuid pk`, `supplier_id uuid unique references suppliers(id) on delete cascade`, `created_at`, `updated_at`, RLS pública para leitura (fornecedores aprovados) e edição apenas pelo dono.
 
-**`guest_groups`** - Agrupamento de convidados
-- `id`, `couple_id` (FK couples), `name` (ex: "Familia da Noiva"), `created_at`
-- RLS: casal so ve/edita seus proprios grupos
+Tabelas a criar (uma por categoria principal — ajustamos conforme os CSVs reais):
 
-**`budget_items`** - Itens de orcamento por categoria
-- `id`, `couple_id` (FK couples), `category` (text), `description` (text), `supplier_id` (FK suppliers, nullable), `estimated_cost` (numeric), `final_cost` (numeric, nullable), `status` (text: estimated/contracted/paid), `notes` (text, nullable), `created_at`, `updated_at`
-- RLS: casal so ve/edita seus proprios itens
+- `supplier_details_buffet` — tipo de cardápio, opções de menu, bebidas inclusas, capacidade, etc.
+- `supplier_details_fotografo` — estilos, entrega de fotos, álbum, horas inclusas, etc.
+- `supplier_details_local` — capacidade, tipo (salão/sítio/igreja), estacionamento, hospedagem, etc.
+- `supplier_details_decoracao` — estilos atendidos, itens inclusos, flores naturais/artificiais, etc.
+- `supplier_details_musica` — formato (DJ/banda/ambiente), repertório, equipamentos, horas, etc.
+- `supplier_details_cerimonialista` — pacotes, equipe, assessoria pré/dia, etc.
+- `supplier_details_beleza` — serviços (cabelo/maquiagem/spa), atende noiva/madrinhas, etc.
+- `supplier_details_trajes` — aluguel/venda, sob medida, prazo, ajustes inclusos, etc.
+- `supplier_details_convites` — tipos (impresso/digital), prazo, personalização, etc.
 
-**`budget_payments`** - Pagamentos registrados
-- `id`, `budget_item_id` (FK budget_items), `couple_id` (FK couples), `amount` (numeric), `payment_date` (date), `due_date` (date, nullable), `status` (text: paid/pending/overdue), `description` (text, nullable), `created_at`
-- RLS: casal so ve/edita seus proprios pagamentos
+> Observação: as colunas exatas de cada tabela serão derivadas dos CSVs que você tem. Como ainda não vi os CSVs, no momento da implementação você me envia (ou eu uso uma base mínima) e eu modelo coluna a coluna. Os scripts ficam idempotentes.
 
-**`couple_suppliers`** - Fornecedores contratados/salvos pelo casal
-- `id`, `couple_id` (FK couples), `supplier_id` (FK suppliers), `category_id` (FK categories), `status` (text: saved/contacted/contracted), `contract_value` (numeric, nullable), `notes` (text, nullable), `created_at`, `updated_at`
-- RLS: casal so ve/edita seus proprios fornecedores
+## 3. Nova tabela `supplier_leads` (rastreio de leads do simulador)
 
-### 1.2 Seed de Tarefas Padrao
+Diferente de `quotes` (que é uma conversa formal de orçamento). Leads vêm do simulador e podem ser anônimos no início.
 
-Criar uma funcao de banco `seed_default_tasks(couple_id, wedding_date)` que popula ~100 tarefas padrao organizadas por periodo (10-12 meses, 7-9, 4-6, 2-3, ultimo mes, ultimas semanas, dia do casamento), inspiradas na imagem de referencia do casamentos.com.br.
+Colunas:
+- `id uuid pk`
+- `supplier_id uuid references suppliers(id) on delete cascade`
+- `couple_id uuid` nullable (se o casal estiver logado)
+- `nome_casal text`
+- `whatsapp_casal text`
+- `email_casal text` nullable
+- `orcamento_total numeric`
+- `num_convidados integer`
+- `cidade_evento text`
+- `data_evento date` nullable
+- `data_contato timestamptz default now()`
+- `status_lead text` com check em `('novo','em_conversa','fechado','perdido')` default `'novo'`
+- `valor_fechado numeric` nullable
+- `comissao_gerada numeric` nullable
+- `origem text` default `'simulador'`
+- `created_at`, `updated_at`
 
-### 1.3 Dashboard Reformulado (`/dashboard`)
+RLS:
+- INSERT permitido para qualquer um (inclusive anônimo) — para o simulador funcionar sem login.
+- SELECT/UPDATE: o fornecedor dono (`suppliers.user_id = auth.uid()`), o casal dono (`couple_id = get_couple_id_for_user(auth.uid())`), e admin.
 
-O dashboard atual sera expandido com:
+## 4. Nova tabela `simulated_budgets` (orçamentos do simulador)
 
-- **Cabecalho personalizado**: Saudacao "Ola, [Nome] & [Parceiro]", foto do casal (upload), contador regressivo visual
-- **KPIs com barra de progresso**: Tarefas (X/Y concluidas), Orcamento (gasto/total), Convidados (confirmados/total), Fornecedores (contratados/total)
-- **Proximas 3 tarefas urgentes**: com checkbox para marcar direto do painel
-- **Widget Orcamento**: custo estimado vs final, botao "+ Adicionar Gasto"
-- **Widget Convidados**: resumo RSVP (confirmados, pendentes, recusados)
-- **Acoes rapidas**: links para Tarefas, Fornecedores, Convidados, Orcamento
-- **Secao de orcamentos/quotes** (ja existente, mantida)
+Salva cada simulação feita (anônima ou logada), para analytics e para o casal recuperar depois.
 
-### 1.4 Navegacao por Abas no Header
+Colunas:
+- `id uuid pk`
+- `couple_id uuid` nullable
+- `orcamento_total numeric not null`
+- `num_convidados integer not null`
+- `cidade text`
+- `estado text`
+- `estilo text` (clássico, rústico, praia, mini-wedding, etc.)
+- `distribuicao jsonb` — ex: `{ "buffet": 35, "decoracao": 15, "fotografia": 10, ... }`
+- `categorias_selecionadas text[]`
+- `created_at timestamptz default now()`
 
-Adicionar barra de navegacao secundaria abaixo do header principal com icones:
-- Meu Casamento | Agenda de Tarefas | Fornecedores | Convidados | Orcamento | Perfil
+RLS:
+- INSERT público (anônimo ok).
+- SELECT: dono via `couple_id` e admin. Admin pode ler todas para analytics.
 
-### 1.5 Pagina Agenda de Tarefas (`/tarefas`)
+## 5. O que **não** muda
 
-- Cabecalho com progresso "Voce completou X de Y tarefas" + barra de progresso
-- Botao "+ Criar nova tarefa"
-- Filtros na lateral esquerda: por estado (pendentes/completadas), por data/periodo, por categoria
-- Lista principal agrupada por periodo ("De 10 a 12 meses", "De 7 a 9 meses", etc.)
-- Cada tarefa: checkbox, titulo, tags de categoria, link de acao
-- Botoes "Baixar" e "Imprimir"
+- `quotes` e `quote_messages` continuam para conversas formais de orçamento.
+- `couple_suppliers`, `couple_favorites`, `wedding_tasks`, `budget_items`, etc. — intactos.
+- `supplier_photos` continua sendo a galeria (não viramos array).
+- Layouts e páginas atuais não são alterados nesta etapa.
 
----
+## Detalhes técnicos
 
-## Fase 2 - Fornecedores + Convidados
+- Tudo em uma única migration SQL (alterações + criações + RLS + índices em FKs).
+- `supplier_id` indexado em todas as novas tabelas.
+- Triggers `update_updated_at_column` aplicados onde houver `updated_at`.
+- Tipos enum não vou criar para `status_lead` (uso `text + check`) para facilitar evolução.
+- `src/integrations/supabase/types.ts` é regenerado automaticamente após a migration.
 
-### 2.1 Pagina Meus Fornecedores (`/meus-fornecedores`)
+## Próximo passo (após aprovação)
 
-- Cabecalho: "Meus Fornecedores", contador "X de Y contratados"
-- Filtros: Guardados (favoritos) e Contratados
-- Botao "+ Adicionar fornecedor" (externo)
-- Grid de categorias com cards (icone, nome, botao "Pesquisar")
-- Indicador visual se categoria ja tem fornecedor contratado
-
-### 2.2 Pagina Meus Convidados (`/convidados`)
-
-- Dashboard no topo: total de convidados (adultos/criancas/bebes), RSVP (confirmados/pendentes/recusados), mesas
-- Botoes: "+ Convidado", "+ Grupo", "Enviar mensagem", "Baixar", "Imprimir"
-- Tabela com busca, selecao em massa
-- Agrupamento por grupo (ex: "Familia da Noiva")
-- Cada linha: checkbox, nome, dropdown RSVP, dropdown menu, dropdown mesa, acoes
-- Importacao de CSV/Excel (futuro)
-
----
-
-## Fase 3 - Orcamento
-
-### 3.1 Pagina Gestao de Orcamento (`/orcamento`)
-
-- Painel resumo: custo estimado, custo final, saldo
-- Grafico de pizza com distribuicao por categoria (usando Recharts, ja instalado)
-- Detalhamento por categoria na lateral (valor orcado vs gasto, barra de progresso)
-- Aba "Fornecedores": tabela com fornecedor, categoria, status, valor proposta, valor pago, saldo
-- Aba "Pagamentos": tabela com descricao, vencimento, valor, status, botao "Marcar como pago"
-- Botao "+ Adicionar Despesa Manual"
-
----
-
-## Resumo de Arquivos
-
-### Novas paginas
-- `src/pages/WeddingTasks.tsx` - Agenda de Tarefas
-- `src/pages/MySuppliers.tsx` - Meus Fornecedores
-- `src/pages/WeddingGuests.tsx` - Meus Convidados
-- `src/pages/WeddingBudget.tsx` - Gestao de Orcamento
-
-### Novos componentes
-- `src/components/DashboardNav.tsx` - Barra de navegacao secundaria com abas/icones
-- `src/components/TaskItem.tsx` - Linha de tarefa reutilizavel
-- `src/components/GuestRow.tsx` - Linha de convidado reutilizavel
-- `src/components/BudgetChart.tsx` - Grafico de distribuicao de gastos
-- `src/components/AddExpenseDialog.tsx` - Dialog para adicionar gasto
-- `src/components/AddGuestDialog.tsx` - Dialog para adicionar convidado
-- `src/components/AddTaskDialog.tsx` - Dialog para criar tarefa personalizada
-
-### Arquivos modificados
-- `src/App.tsx` - Novas rotas (/tarefas, /meus-fornecedores, /convidados, /orcamento)
-- `src/pages/CoupleDashboard.tsx` - Reformulacao completa com KPIs, widgets e navegacao
-- `src/components/UserMenu.tsx` - Adicionar links para novas paginas
-
-### Migracao de banco
-- 1 migracao SQL criando as 6 tabelas com RLS
-- 1 migracao com funcao `seed_default_tasks` e trigger para popular tarefas ao completar onboarding
-
----
-
-## Consideracoes Tecnicas
-
-- **Recharts** ja esta instalado para os graficos de orcamento
-- **date-fns** ja esta instalado para manipulacao de datas
-- Todas as tabelas terao RLS baseado no `couple_id` do usuario autenticado, usando a funcao existente `get_couple_id_for_user`
-- Upload de foto do casal usara o bucket `supplier-photos` existente ou criaremos um novo bucket `couple-photos`
-- A seed de tarefas sera executada automaticamente quando o casal completar o onboarding
-
-Recomendo comecar pela **Fase 1** (banco + dashboard + tarefas), que e a base para tudo. Posso implementar fase por fase para manter o controle de qualidade.
+1. Eu rodo a migration com as colunas extras de `suppliers`, as 4 estruturas (`supplier_leads`, `simulated_budgets`) e tabelas de detalhes vazias com `supplier_id`.
+2. Você me envia os CSVs (ou me diz as colunas) por categoria, e eu adiciono as colunas específicas em cada `supplier_details_*` numa segunda migration.
+3. A partir daí podemos começar a página/lógica do simulador.
