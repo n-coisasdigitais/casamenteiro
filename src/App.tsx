@@ -16,6 +16,7 @@ import SupplierSearch from "./pages/SupplierSearch";
 import SupplierProfile from "./pages/SupplierProfile";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import AdminPanel from "./pages/AdminPanel";
+import AdminSuppliers from "./pages/AdminSuppliers";
 import Favorites from "./pages/Favorites";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/favoritos" element={<Favorites />} />
             <Route path="/perfil" element={<UserProfile />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin/fornecedores" element={<AdminSuppliers />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
