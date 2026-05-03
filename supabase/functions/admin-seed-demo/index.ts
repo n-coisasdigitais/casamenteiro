@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
     log.push("Aplicando migration...");
     await client.queryArray(`ALTER TABLE public.suppliers ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false`);
     await client.queryArray(`CREATE INDEX IF NOT EXISTS suppliers_is_demo_idx ON public.suppliers(is_demo) WHERE is_demo = true`);
+    await client.queryArray(`ALTER TABLE public.suppliers DROP CONSTRAINT IF EXISTS suppliers_user_id_key`);
     await client.queryArray(`DROP POLICY IF EXISTS "Admin can delete suppliers" ON public.suppliers`);
     await client.queryArray(`CREATE POLICY "Admin can delete suppliers" ON public.suppliers FOR DELETE USING (has_role(auth.uid(), 'admin'::app_role))`);
     await client.queryArray(`DROP POLICY IF EXISTS "Admin can insert suppliers" ON public.suppliers`);
