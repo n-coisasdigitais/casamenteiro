@@ -74,8 +74,6 @@ Deno.serve(async (req) => {
     await client.connect();
     
     // Verificar admin
-    const auth = req.headers.get("authorization");
-    if (!auth) throw new Error("Não autenticado");
     
     // 1) MIGRATION
     log.push("Aplicando migration...");
