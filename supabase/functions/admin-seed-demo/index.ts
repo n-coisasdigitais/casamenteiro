@@ -105,6 +105,7 @@ Deno.serve(async (req) => {
 
     async function insSup(row: any, catSlug: string): Promise<string | null> {
       const { min, max } = priceFromFaixa(row.faixa_preco);
+      log.push(`>> ${catSlug}: ${row.nome} pmin=${row.preco_min} pmax=${row.preco_max} idle=${row.aceita_datas_ociosas} pct=${row.desconto_datas_ociosas_pct}`);
       const r = await client.queryObject<{id: string}>(
         `INSERT INTO public.suppliers (user_id, company_name, category_id, city, state, phone, whatsapp, instagram, website, profile_photo_url, price_min, price_max, accepts_idle_dates, idle_discount_pct, status, is_demo, description)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'approved'::supplier_status,true,$15) RETURNING id`,
