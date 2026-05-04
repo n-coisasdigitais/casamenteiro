@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
 import SupplierMap from "@/components/SupplierMap";
+import { buildWhatsAppLink } from "@/lib/phone";
 
 type Review = {
   id: string;
@@ -75,6 +76,12 @@ export default function SupplierProfile() {
     
     supabase.from("supplier_photos").select("*").eq("supplier_id", id).order("display_order").then(({ data }) => setPhotos(data || []));
     loadReviews();
+
+    // Registra visita ao perfil (1x por carregamento)
+    (supabase.from("supplier_profile_views") as any).insert({
+      supplier_id: id,
+      viewer_id: user?.id ?? null,
+    }).then(() => { /* fire-and-forget */ });
 
     if (user) {
       supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle().then(({ data }) => {
@@ -308,7 +315,7 @@ export default function SupplierProfile() {
                       supplierId={supplier.id}
                       supplierName={supplier.company_name}
                     />
-                    {phoneUnlocked && (supplier.whatsapp || supplier.phone) && (
+                    {phoneUnlocked && buildWhatsAppLink(supplier.whatsapp || supplier.phone || "", "Olá! Vim pelo Meu Grande Dia, gostaria de conversar sobre o casamento.") && (
                       <Button
                         variant="outline"
                         size="icon"
@@ -316,7 +323,7 @@ export default function SupplierProfile() {
                         asChild
                       >
                         <a
-                          href={`https://wa.me/55${(supplier.whatsapp || supplier.phone).replace(/\D/g, "")}?text=${encodeURIComponent("Olá! Vim pelo Meu Grande Dia, gostaria de conversar sobre o casamento.")}`}
+                          href={buildWhatsAppLink(supplier.whatsapp || supplier.phone || "", "Olá! Vim pelo Meu Grande Dia, gostaria de conversar sobre o casamento.")!}
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label="Conversar no WhatsApp"

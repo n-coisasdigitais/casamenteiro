@@ -11,13 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays } from "lucide-react";
+import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
 import QuoteProposalPanel from "@/components/QuoteProposalPanel";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 import PromoDatesManager from "@/components/PromoDatesManager";
 import NotificationsBell from "@/components/NotificationsBell";
+import SupplierMetrics from "@/components/supplier/SupplierMetrics";
+import SupplierOnboardingWizard from "@/components/supplier/SupplierOnboardingWizard";
+import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 
 type Category = { id: string; name: string };
 
@@ -53,7 +56,7 @@ export default function SupplierDashboard() {
 
   const loadSupplier = async () => {
     if (!user) return;
-    const { data } = await supabase.from("suppliers").select("*").eq("user_id", user.id).single();
+    const { data } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle();
     if (data) {
       setSupplier(data);
       setCompanyName(data.company_name || "");
@@ -61,7 +64,7 @@ export default function SupplierDashboard() {
       setCategoryId(data.category_id || "");
       setCity(data.city || "");
       setState(data.state || "");
-      setPhone(data.phone || "");
+      setPhone(formatPhoneBR(data.whatsapp || data.phone || ""));
       setEmail(data.email || "");
       const { data: photoData } = await supabase.from("supplier_photos").select("*").eq("supplier_id", data.id).order("display_order");
       setPhotos(photoData || []);
@@ -103,14 +106,20 @@ export default function SupplierDashboard() {
 
   const handleSave = async () => {
     if (!supplier) return;
+    if (phone && !isValidPhoneBR(phone)) {
+      toast({ title: "WhatsApp inválido", description: "Use DDD + número (ex.: (11) 91234-5678).", variant: "destructive" });
+      return;
+    }
     setLoading(true);
+    const phoneDigits = phone.replace(/\D/g, "") || null;
     const { error } = await supabase.from("suppliers").update({
       company_name: companyName,
       description,
       category_id: categoryId || null,
       city: city || null,
       state: state || null,
-      phone: phone || null,
+      phone: phoneDigits,
+      whatsapp: phoneDigits,
       email: email || null,
     }).eq("id", supplier.id);
     if (error) {
@@ -194,8 +203,18 @@ export default function SupplierDashboard() {
           </Card>
         )}
 
-        <Tabs defaultValue="quotes" className="space-y-6">
+        {!supplier.onboarding_completed && (
+          <div className="mb-6">
+            <SupplierOnboardingWizard supplier={supplier} onComplete={loadSupplier} />
+          </div>
+        )}
+
+        <Tabs defaultValue={supplier.onboarding_completed ? "metrics" : "quotes"} className="space-y-6">
           <TabsList className="flex-wrap">
+            <TabsTrigger value="metrics" className="flex items-center gap-1.5">
+              <BarChart3 className="h-4 w-4" />
+              Painel
+            </TabsTrigger>
             <TabsTrigger value="quotes" className="flex items-center gap-1.5">
               <MessageSquare className="h-4 w-4" />
               Orçamentos {quotes.length > 0 && <Badge variant="secondary" className="ml-1 text-xs h-5 px-1.5">{quotes.length}</Badge>}
@@ -207,6 +226,11 @@ export default function SupplierDashboard() {
             <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
             <TabsTrigger value="photos">Fotos</TabsTrigger>
           </TabsList>
+
+          {/* METRICS TAB */}
+          <TabsContent value="metrics">
+            <SupplierMetrics supplierId={supplier.id} />
+          </TabsContent>
 
           {/* QUOTES TAB */}
           <TabsContent value="quotes">
@@ -303,7 +327,18 @@ export default function SupplierDashboard() {
                   <div><Label>Cidade</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
                   <div><Label>Estado</Label><Input value={state} onChange={(e) => setState(e.target.value)} /></div>
                 </div>
-                <div><Label>Telefone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                <div>
+                  <Label>WhatsApp (com DDD)</Label>
+                  <Input
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhoneBR(e.target.value))}
+                    placeholder="(11) 91234-5678"
+                    inputMode="numeric"
+                  />
+                  {phone && !isValidPhoneBR(phone) && (
+                    <p className="text-xs text-destructive mt-1">Telefone inválido. Use DDD + número.</p>
+                  )}
+                </div>
                 <div><Label>E-mail de contato</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
                 <Button onClick={handleSave} disabled={loading} className="w-full">
                   {loading ? "Salvando..." : "Salvar alterações"}
