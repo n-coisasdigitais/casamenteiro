@@ -407,6 +407,15 @@ export default function CoupleDashboard() {
             {selectedQuote && user && (
               <QuoteThread quoteId={selectedQuote.id} currentUserId={user.id} />
             )}
+            {selectedQuote && user && couple && (
+              <QuoteProposalPanel
+                quoteId={selectedQuote.id}
+                currentUserId={user.id}
+                isSupplier={false}
+                coupleId={couple.id}
+                supplierId={selectedQuote.supplier_id}
+              />
+            )}
           </DialogContent>
         </Dialog>
 
