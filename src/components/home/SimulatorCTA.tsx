@@ -92,10 +92,13 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
   return (
     <section
       ref={ref}
-      className="relative py-16 md:py-24 px-4"
-      style={{ background: "hsl(var(--color-bg))" }}
+      className="relative min-h-screen flex items-center px-4 py-16 md:py-20"
+      style={{
+        background:
+          "linear-gradient(180deg, hsl(30, 10%, 12%) 0%, hsl(30, 12%, 18%) 40%, hsl(36, 25%, 93%) 100%)",
+      }}
     >
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto w-full">
         <div
           className="relative overflow-hidden flex flex-col"
           style={{
