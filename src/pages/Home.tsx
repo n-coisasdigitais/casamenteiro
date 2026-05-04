@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence } from "framer-motion";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import Preloader from "@/components/home/Preloader";
 import HomeNavbar from "@/components/home/HomeNavbar";
-import StoryBlock from "@/components/home/StoryBlock";
+import ScrollStory from "@/components/home/ScrollStory";
 import SimulatorCTA from "@/components/home/SimulatorCTA";
 
 const FALLBACK_BLOCOS = [
+  { foto_url: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1600&q=80", frase: "Casar é o melhor dia da vida. Organizar é a parte que ninguém te conta.", subtexto: "A gente existe pra simplificar. Role pra entender.", supplier_id: null, supplier_name: null, supplier_category: null },
   { foto_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=1600&q=80", frase: "Cada detalhe importa. Cada escolha conta.", subtexto: "Da decoração ao buffet, a gente te ajuda a montar tudo.", supplier_id: null, supplier_name: "Ateliê Florescer", supplier_category: "Decoração" },
   { foto_url: "https://images.unsplash.com/photo-1529636798458-92182e662485?w=1600&q=80", frase: "Seu orçamento, seu jeito, seu dia.", subtexto: "Comece pelo quanto você tem. A gente faz o resto encaixar.", supplier_id: null, supplier_name: "Buffet Casa Plena", supplier_category: "Buffet" },
   { foto_url: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1600&q=80", frase: "Datas que ninguém disputou. Preços que fazem sentido.", subtexto: "Casamentos em dias úteis com até 35% de economia real.", supplier_id: null, supplier_name: "Espaço Vila Real", supplier_category: "Espaço" },
@@ -16,9 +15,6 @@ const FALLBACK_BLOCOS = [
 ];
 
 export default function Home() {
-  const [params] = useSearchParams();
-  const skip = params.get("preview") === "1" ? false : sessionStorage.getItem("home_preloader_done") === "1";
-  const [showPreloader, setShowPreloader] = useState(!skip);
   const [blocos, setBlocos] = useState(FALLBACK_BLOCOS);
   const ctaRef = useRef<HTMLElement>(null);
 
@@ -53,56 +49,14 @@ export default function Home() {
     })();
   }, []);
 
-  const finishPreloader = () => {
-    sessionStorage.setItem("home_preloader_done", "1");
-    setShowPreloader(false);
-  };
-
   const scrollToCTA = () => ctaRef.current?.scrollIntoView({ behavior: "smooth" });
 
   return (
     <div className="bg-cream text-ink min-h-screen scroll-smooth">
-      <AnimatePresence>
-        {showPreloader && <Preloader onDone={finishPreloader} />}
-      </AnimatePresence>
+      <HomeNavbar onSimularClick={scrollToCTA} />
 
-      {!showPreloader && <HomeNavbar onSimularClick={scrollToCTA} />}
-
-      <main className="pt-14">
-        {/* Hero opening */}
-        <section className="min-h-[70vh] flex items-center container">
-          <div className="max-w-2xl">
-            <p className="label-ui mb-5">Intro</p>
-            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl mb-6" style={{ color: "hsl(var(--color-dark))", lineHeight: 1.1 }}>
-              Casar é o melhor dia da vida.<br />
-              <em style={{ color: "hsl(var(--color-primary))" }}>Organizar</em> é a parte que ninguém te conta.
-            </h1>
-            <p className="text-base md:text-lg max-w-lg mb-8" style={{ color: "hsl(var(--color-text-muted))" }}>
-              A gente existe pra simplificar. Role pra entender — ou comece pelo simulador.
-            </p>
-            <button
-              onClick={scrollToCTA}
-              className="rounded-full px-7 py-3.5 font-semibold text-sm transition hover:opacity-90"
-              style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
-            >
-              Quero simular agora →
-            </button>
-          </div>
-        </section>
-
-        {blocos.map((b, i) => (
-          <StoryBlock
-            key={i}
-            index={i}
-            frase={b.frase}
-            subtexto={b.subtexto}
-            foto={b.foto_url}
-            supplierId={(b as any).supplier_id}
-            supplierName={(b as any).supplier_name}
-            supplierCategory={(b as any).supplier_category}
-          />
-        ))}
-
+      <main>
+        <ScrollStory blocos={blocos as any} onCTA={scrollToCTA} />
         <SimulatorCTA ref={ctaRef} />
       </main>
 
