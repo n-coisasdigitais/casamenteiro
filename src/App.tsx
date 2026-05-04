@@ -29,6 +29,7 @@ import AdminMetrics from "./pages/AdminMetrics";
 import AdminCoupleCRM from "./pages/AdminCoupleCRM";
 import AdminSupplierCRM from "./pages/AdminSupplierCRM";
 import AdminBroadcast from "./pages/AdminBroadcast";
+import AdminBroadcastHistory from "./pages/AdminBroadcastHistory";
 import AdminUsers from "./pages/AdminUsers";
 import AdminReviews from "./pages/AdminReviews";
 import AdminAuditLog from "./pages/AdminAuditLog";
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/admin/fornecedores-crm" element={<AdminSupplierCRM />} />
             <Route path="/admin/fornecedor/:id" element={<AdminSupplierCRM />} />
             <Route path="/admin/comunicacao" element={<AdminBroadcast />} />
+            <Route path="/admin/comunicacao/historico" element={<AdminBroadcastHistory />} />
             <Route path="/admin/usuarios" element={<AdminUsers />} />
             <Route path="/admin/avaliacoes" element={<AdminReviews />} />
             <Route path="/admin/auditoria" element={<AdminAuditLog />} />
