@@ -446,13 +446,15 @@ function SupplierMatchCard({
         )}
       </div>
 
-      <Link
-        to={`/fornecedor/${supplier.id}`}
+      <a
+        href={`/fornecedor/${supplier.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className="text-[11px] text-primary hover:underline mt-2 inline-block"
+        className="text-[11px] text-primary hover:underline mt-2 inline-flex items-center gap-1"
       >
-        Ver perfil completo →
-      </Link>
+        Ver perfil completo <ExternalLink className="w-3 h-3" />
+      </a>
     </div>
   );
 }
