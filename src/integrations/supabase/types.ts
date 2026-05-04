@@ -1295,6 +1295,35 @@ export type Database = {
           },
         ]
       }
+      supplier_profile_views: {
+        Row: {
+          id: string
+          supplier_id: string
+          viewed_at: string
+          viewer_id: string | null
+        }
+        Insert: {
+          id?: string
+          supplier_id: string
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Update: {
+          id?: string
+          supplier_id?: string
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_profile_views_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_promo_dates: {
         Row: {
           created_at: string
@@ -1338,6 +1367,7 @@ export type Database = {
           idle_discount_pct: number | null
           instagram: string | null
           is_demo: boolean
+          onboarding_completed: boolean
           phone: string | null
           price_max: number | null
           price_min: number | null
@@ -1367,6 +1397,7 @@ export type Database = {
           idle_discount_pct?: number | null
           instagram?: string | null
           is_demo?: boolean
+          onboarding_completed?: boolean
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
@@ -1396,6 +1427,7 @@ export type Database = {
           idle_discount_pct?: number | null
           instagram?: string | null
           is_demo?: boolean
+          onboarding_completed?: boolean
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
