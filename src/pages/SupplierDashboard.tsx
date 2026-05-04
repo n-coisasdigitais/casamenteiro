@@ -312,7 +312,18 @@ export default function SupplierDashboard() {
                   <div><Label>Cidade</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
                   <div><Label>Estado</Label><Input value={state} onChange={(e) => setState(e.target.value)} /></div>
                 </div>
-                <div><Label>Telefone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                <div>
+                  <Label>WhatsApp (com DDD)</Label>
+                  <Input
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhoneBR(e.target.value))}
+                    placeholder="(11) 91234-5678"
+                    inputMode="numeric"
+                  />
+                  {phone && !isValidPhoneBR(phone) && (
+                    <p className="text-xs text-destructive mt-1">Telefone inválido. Use DDD + número.</p>
+                  )}
+                </div>
                 <div><Label>E-mail de contato</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
                 <Button onClick={handleSave} disabled={loading} className="w-full">
                   {loading ? "Salvando..." : "Salvar alterações"}
