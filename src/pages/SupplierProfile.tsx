@@ -316,6 +316,12 @@ export default function SupplierProfile() {
                       </Button>
                     )}
                   </div>
+                  {supplier.phone && !phoneUnlocked && (
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      Telefone liberado após enviar o pedido de orçamento
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
