@@ -1,7 +1,8 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, CheckCircle2 } from "lucide-react";
+import { ExternalLink, CheckCircle2, Calendar, AlertCircle, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
+import { dueStatus, formatDueDate } from "@/lib/taskDueDate";
 
 type TaskItemProps = {
   id: string;
@@ -13,6 +14,7 @@ type TaskItemProps = {
   actionUrl?: string | null;
   supplierId?: string | null;
   supplierName?: string | null;
+  dueDate?: string | null;
   onToggle: (id: string, completed: boolean) => void;
 };
 
@@ -44,7 +46,15 @@ const priorityVariant: Record<string, "default" | "secondary" | "outline"> = {
   optional: "outline",
 };
 
-export default function TaskItem({ id, title, category, priority, isCompleted, actionLabel, actionUrl, supplierId, supplierName, onToggle }: TaskItemProps) {
+export default function TaskItem({ id, title, category, priority, isCompleted, actionLabel, actionUrl, supplierId, supplierName, dueDate, onToggle }: TaskItemProps) {
+  const d = dueDate ? new Date(dueDate) : null;
+  const status = dueStatus(d, isCompleted);
+  const dueChip = (() => {
+    if (status === "overdue") return { icon: AlertCircle, label: `Atrasada — ${formatDueDate(d)}`, cls: "text-destructive" };
+    if (status === "soon")    return { icon: Clock, label: `Em breve — ${formatDueDate(d)}`, cls: "text-amber-700" };
+    if (status === "ok")      return { icon: Calendar, label: formatDueDate(d), cls: "text-muted-foreground" };
+    return null;
+  })();
   return (
     <div className="flex items-start gap-3 py-3 px-4 rounded-lg hover:bg-muted/50 transition-colors group">
       <Checkbox
@@ -60,6 +70,11 @@ export default function TaskItem({ id, title, category, priority, isCompleted, a
           <Badge variant={priorityVariant[priority] || "secondary"} className="text-xs">
             {categoryLabels[category] || category}
           </Badge>
+          {dueChip && (
+            <span className={`inline-flex items-center gap-1 text-xs ${dueChip.cls}`}>
+              <dueChip.icon className="h-3 w-3" /> {dueChip.label}
+            </span>
+          )}
           {supplierId && supplierName && (
             <Link to={`/fornecedor/${supplierId}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
               <CheckCircle2 className="h-3 w-3" /> Contratado: {supplierName}
