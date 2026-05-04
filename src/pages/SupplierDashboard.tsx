@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 import PromoDatesManager from "@/components/PromoDatesManager";
+import NotificationsBell from "@/components/NotificationsBell";
 
 type Category = { id: string; name: string };
 
@@ -165,6 +166,7 @@ export default function SupplierDashboard() {
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">{profile?.full_name}</span>
+            <NotificationsBell />
             <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="h-4 w-4" />
             </Button>
