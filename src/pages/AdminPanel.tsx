@@ -1,39 +1,21 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, LogOut, Check, X, MapPin, ExternalLink } from "lucide-react";
+import { Check, X, MapPin, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminPanel() {
-  const { user, loading: authLoading, signOut } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [adminChecked, setAdminChecked] = useState(false);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("all");
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }) => {
-      if (!data) {
-        navigate("/");
-        return;
-      }
-      setIsAdmin(true);
-      setAdminChecked(true);
-      loadSuppliers();
-    });
-  }, [user, authLoading, navigate]);
+    loadSuppliers();
+  }, []);
 
   const loadSuppliers = async () => {
     setLoading(true);
@@ -57,23 +39,9 @@ export default function AdminPanel() {
 
   const filteredSuppliers = filter === "all" ? suppliers : suppliers.filter((s) => s.status === filter);
 
-  if (authLoading || !adminChecked) return <div className="min-h-screen flex items-center justify-center"><p>Verificando permissões...</p></div>;
-  if (!isAdmin) return <div className="min-h-screen flex items-center justify-center"><p>Acesso negado.</p></div>;
-
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-border sticky top-0 z-40">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="text-lg font-bold">Admin</span>
-          </Link>
-          <div className="flex items-center gap-2 flex-wrap"><Button variant="outline" size="sm" asChild><Link to="/admin/usuarios">Usuários</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/casais">CRM Casais</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/fornecedores-crm">CRM Fornecedores</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/comunicacao">Comunicação</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/comunicacao/historico">Histórico</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/avaliacoes">Avaliações</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/financeiro">Financeiro</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/metricas">Métricas</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/home-config">Home</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/tarefas-padrao">Tarefas padrão</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/configuracoes">Configurações</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/auditoria">Auditoria</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/fornecedores">Edição massa</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/simulacoes">Simulações</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/transacoes">Transações</Link></Button><Button variant="ghost" size="icon" onClick={signOut}><LogOut className="h-4 w-4" /></Button></div>
-        </div>
-      </header>
-
-      <main className="container px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Painel de Administração</h1>
+    <div className="px-4 md:px-8 py-6">
+      <h1 className="text-2xl font-bold mb-6">Aprovação de fornecedores</h1>
 
         <div className="flex gap-2 mb-6 overflow-x-auto">
           {(["pending", "approved", "rejected", "all"] as const).map((f) => (
@@ -134,7 +102,6 @@ export default function AdminPanel() {
             ))}
           </div>
         )}
-      </main>
     </div>
   );
 }
