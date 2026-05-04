@@ -336,6 +336,7 @@ export default function WeddingGuests() {
                         rsvpLabel={rsvpLabel}
                         invites={invites}
                         onSendInvite={sendInvite}
+                        onSendWhatsApp={sendInviteWhatsApp}
                         onSendGroup={() => sendInvitesGroup(groupGuests)}
                       />
                     );
@@ -353,6 +354,7 @@ export default function WeddingGuests() {
                       rsvpLabel={rsvpLabel}
                       invites={invites}
                       onSendInvite={sendInvite}
+                      onSendWhatsApp={sendInviteWhatsApp}
                     />
                   )}
                 </tbody>
