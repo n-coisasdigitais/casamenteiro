@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
+import QuoteProposalPanel from "@/components/QuoteProposalPanel";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 import PromoDatesManager from "@/components/PromoDatesManager";
 import NotificationsBell from "@/components/NotificationsBell";
@@ -375,6 +376,15 @@ export default function SupplierDashboard() {
             </DialogHeader>
             {selectedQuote && user && (
               <QuoteThread quoteId={selectedQuote.id} currentUserId={user.id} />
+            )}
+            {selectedQuote && user && supplier && (
+              <QuoteProposalPanel
+                quoteId={selectedQuote.id}
+                currentUserId={user.id}
+                isSupplier={true}
+                coupleId={selectedQuote.couple_id}
+                supplierId={supplier.id}
+              />
             )}
           </DialogContent>
         </Dialog>

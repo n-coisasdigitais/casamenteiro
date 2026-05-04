@@ -71,12 +71,17 @@ export default function MySuppliers() {
               {contracted.length} de {totalCategories} CONTRATADOS
             </p>
           </div>
-          <Button asChild>
-            <Link to="/buscar">
-              <Plus className="mr-2 h-4 w-4" />
-              Buscar fornecedor
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/meu-plano">Ver meu plano</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/buscar">
+                <Plus className="mr-2 h-4 w-4" />
+                Buscar fornecedor
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}

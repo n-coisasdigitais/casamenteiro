@@ -20,7 +20,9 @@ import AdminPanel from "./pages/AdminPanel";
 import AdminSuppliers from "./pages/AdminSuppliers";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
+import AdminTransacoes from "./pages/AdminTransacoes";
 import SimuladorResultado from "./pages/SimuladorResultado";
+import MeuPlano from "./pages/MeuPlano";
 import Favorites from "./pages/Favorites";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
@@ -54,7 +56,10 @@ const App = () => (
             <Route path="/admin/fornecedores" element={<AdminSuppliers />} />
             <Route path="/admin/home-config" element={<AdminHomeConfig />} />
             <Route path="/admin/simulacoes" element={<AdminSimulacoes />} />
+            <Route path="/admin/transacoes" element={<AdminTransacoes />} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
+            <Route path="/meu-plano" element={<MeuPlano />} />
+            <Route path="/meu-plano/:id" element={<MeuPlano />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -242,10 +242,15 @@ export type Database = {
         Row: {
           category_id: string | null
           contract_value: number | null
+          contracted_at: string | null
           couple_id: string
           created_at: string
+          estimated_value: number | null
+          final_value: number | null
           id: string
           notes: string | null
+          proposed_value: number | null
+          simulation_id: string | null
           status: string
           supplier_id: string
           updated_at: string
@@ -253,10 +258,15 @@ export type Database = {
         Insert: {
           category_id?: string | null
           contract_value?: number | null
+          contracted_at?: string | null
           couple_id: string
           created_at?: string
+          estimated_value?: number | null
+          final_value?: number | null
           id?: string
           notes?: string | null
+          proposed_value?: number | null
+          simulation_id?: string | null
           status?: string
           supplier_id: string
           updated_at?: string
@@ -264,10 +274,15 @@ export type Database = {
         Update: {
           category_id?: string | null
           contract_value?: number | null
+          contracted_at?: string | null
           couple_id?: string
           created_at?: string
+          estimated_value?: number | null
+          final_value?: number | null
           id?: string
           notes?: string | null
+          proposed_value?: number | null
+          simulation_id?: string | null
           status?: string
           supplier_id?: string
           updated_at?: string
@@ -539,6 +554,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quote_proposals: {
+        Row: {
+          amount: number | null
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          quote_id: string
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          quote_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          quote_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       quotes: {
         Row: {

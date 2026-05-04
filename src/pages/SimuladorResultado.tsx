@@ -139,6 +139,8 @@ export default function SimuladorResultado() {
             category_id: cat.category_id,
             status: "saved",
             contract_value: sup?.estimated_price || null,
+            estimated_value: sup?.estimated_price || null,
+            simulation_id: id,
             notes: "Adicionado pela simulação",
           };
         })
@@ -154,7 +156,7 @@ export default function SimuladorResultado() {
       const { error } = await supabase.from("couple_suppliers").insert(rows);
       if (error) throw error;
       toast({ title: "Plano salvo!", description: `${rows.length} fornecedor(es) adicionados ao seu painel.` });
-      navigate("/meus-fornecedores");
+      navigate(`/meu-plano/${id}`);
     } catch (e: any) {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
     } finally {

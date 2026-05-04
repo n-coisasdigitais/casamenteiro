@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
+import QuoteProposalPanel from "@/components/QuoteProposalPanel";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 
@@ -405,6 +406,15 @@ export default function CoupleDashboard() {
             </DialogHeader>
             {selectedQuote && user && (
               <QuoteThread quoteId={selectedQuote.id} currentUserId={user.id} />
+            )}
+            {selectedQuote && user && couple && (
+              <QuoteProposalPanel
+                quoteId={selectedQuote.id}
+                currentUserId={user.id}
+                isSupplier={false}
+                coupleId={couple.id}
+                supplierId={selectedQuote.supplier_id}
+              />
             )}
           </DialogContent>
         </Dialog>
