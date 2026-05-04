@@ -212,8 +212,12 @@ const Explore = () => {
 
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <Link to="/explorar" className="font-semibold border-b-2 border-foreground pb-3 -mb-3">Fornecedores</Link>
-            <Link to="/buscar" className="text-muted-foreground hover:text-foreground transition">Espaços</Link>
-            <Link to="/buscar?cat=fotografia" className="text-muted-foreground hover:text-foreground transition">Fotografia</Link>
+            {user && (
+              <>
+                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition">Meu Casamento</Link>
+                <Link to="/perfil" className="text-muted-foreground hover:text-foreground transition">Perfil</Link>
+              </>
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
