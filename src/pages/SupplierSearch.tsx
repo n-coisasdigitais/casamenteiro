@@ -233,9 +233,9 @@ export default function SupplierSearch() {
             <span className="text-lg font-bold hidden sm:inline">Meu Grande Dia</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm ml-6">
-            <Link to="/buscar?cat=espacos-buffet" className="text-muted-foreground hover:text-foreground transition-colors">Espaços</Link>
-            <Link to="/buscar?cat=fotografia" className="text-muted-foreground hover:text-foreground transition-colors">Fotografia</Link>
             <Link to="/buscar" className="text-muted-foreground hover:text-foreground transition-colors">Fornecedores</Link>
+            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">Meu Casamento</Link>
+            <Link to="/perfil" className="text-muted-foreground hover:text-foreground transition-colors">Perfil</Link>
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
