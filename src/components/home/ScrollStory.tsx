@@ -54,7 +54,7 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
           className="absolute inset-0 z-10 pointer-events-none"
           style={{
             background:
-              "linear-gradient(180deg, hsl(0 0% 0% / 0.55) 0%, hsl(0 0% 0% / 0.25) 35%, hsl(0 0% 0% / 0.25) 65%, hsl(0 0% 0% / 0.7) 100%)",
+              "linear-gradient(180deg, hsl(0 0% 0% / 0.65) 0%, hsl(0 0% 0% / 0.35) 30%, hsl(0 0% 0% / 0.45) 70%, hsl(0 0% 0% / 0.85) 100%)",
           }}
         />
 
@@ -148,9 +148,10 @@ function TextLayer({ index, total, bloco, progress, onCTA, isLast }: {
 
   const num = String(index + 1).padStart(2, "0");
   const isIntro = false; // capítulo 0 não passa por aqui
-  // All chapters show light text over the full-bleed photo
-  const textCol = "hsl(48, 27%, 97%)";
-  const mutedCol = "hsl(48, 27%, 97% / 0.82)";
+  // Texto claro com leve warmth — alta opacidade pra leitura sobre foto
+  const textCol = "hsl(48, 27%, 98%)";
+  const mutedCol = "hsl(48, 30%, 96%)";
+  const textShadow = "0 2px 14px hsl(0 0% 0% / 0.55), 0 1px 3px hsl(0 0% 0% / 0.4)";
 
   return (
     <motion.div
@@ -170,12 +171,15 @@ function TextLayer({ index, total, bloco, progress, onCTA, isLast }: {
         )}
         <h2
           className="text-3xl md:text-5xl lg:text-6xl mb-5"
-          style={{ color: textCol, lineHeight: 1.1, fontWeight: 700, letterSpacing: "-0.02em" }}
+          style={{ color: textCol, lineHeight: 1.1, fontWeight: 700, letterSpacing: "-0.02em", textShadow }}
         >
           {bloco.frase}
         </h2>
         {bloco.subtexto && (
-          <p className="text-base md:text-lg mb-6" style={{ color: mutedCol, lineHeight: 1.6 }}>
+          <p
+            className="text-base md:text-lg mb-6"
+            style={{ color: mutedCol, lineHeight: 1.6, textShadow, fontWeight: 500 }}
+          >
             {bloco.subtexto}
           </p>
         )}
