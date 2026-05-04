@@ -4,6 +4,7 @@
 //      couple_suppliers, budget_items
 // ─────────────────────────────────────────────────────────────
 import { supabase } from "@/integrations/supabase/client";
+import { buildWhatsAppLink } from "@/lib/phone";
 
 export type Estilo = "intimista" | "elegante" | "grandioso";
 
@@ -154,18 +155,7 @@ function enriquecer(s: any, verba: number, convidados: number, aceitaOciosas: bo
     temDesconto: tem,
     desconto,
     economiaEstimada,
-    linkWhatsApp: (() => {
-      const link = (() => {
-        try {
-          // import dinâmico evita ciclo; mas como simulador.ts é puro TS, usamos require-like via eval-free helper
-        } catch { /* noop */ }
-        return null;
-      })();
-      // helper local sem dependência
-      const digits = fone.replace(/\D/g, "");
-      if (digits.length !== 10 && digits.length !== 11) return "";
-      return `https://wa.me/55${digits}?text=${msg}`;
-    })(),
+    linkWhatsApp: buildWhatsAppLink(fone, decodeURIComponent(msg)) || "",
     aceita_datas_ociosas: !!s.accepts_idle_dates,
   };
 }
