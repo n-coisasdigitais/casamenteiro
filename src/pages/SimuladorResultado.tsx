@@ -1,18 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeSimulador, type SimuladorResult, type SupplierMatch } from "@/lib/simulador/match";
-import { Heart, Check, Star, ArrowLeft, Tag, AlertCircle, Send, ExternalLink, Save, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  recalcularSimulacao, criarPlano, formatarReais,
+  type Estilo, type SimuladorResultado as SimRes,
+} from "@/lib/simulador";
+import { Heart, ArrowLeft, AlertTriangle, Sparkles, Lightbulb, MessageCircle, Tag, ExternalLink, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const estiloLabel: Record<Estilo, string> = {
+  intimista: "intimista",
+  elegante: "elegante",
+  grandioso: "grandioso",
+};
 
 export default function SimuladorResultado() {
   const [params] = useSearchParams();
@@ -20,414 +27,367 @@ export default function SimuladorResultado() {
   const { user } = useAuth();
   const { toast } = useToast();
   const id = params.get("id");
+  const assumirOnLoad = params.get("assumir") === "1";
 
   const [loading, setLoading] = useState(true);
+  const [recalculando, setRecalculando] = useState(false);
   const [sim, setSim] = useState<any>(null);
-  const [result, setResult] = useState<SimuladorResult | null>(null);
-  // map: category_slug -> selected supplier_id
-  const [picks, setPicks] = useState<Record<string, string>>({});
-  const [coupleId, setCoupleId] = useState<string | null>(null);
-  const [savingPlan, setSavingPlan] = useState(false);
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkMessage, setBulkMessage] = useState("");
-  const [bulkEventDate, setBulkEventDate] = useState("");
-  const [bulkGuests, setBulkGuests] = useState("");
-  const [bulkPhone, setBulkPhone] = useState("");
-  const [bulkSending, setBulkSending] = useState(false);
+  const [resultado, setResultado] = useState<SimRes | null>(null);
+  const [aceitaOciosas, setAceitaOciosas] = useState(false);
+
+  const [openAssumir, setOpenAssumir] = useState(false);
+  const [nomePlano, setNomePlano] = useState("");
+  const [dataPrevista, setDataPrevista] = useState("");
+  const [criando, setCriando] = useState(false);
 
   useEffect(() => {
-    document.title = "Meu plano de casamento — Casamenteiro";
+    document.title = "Seu plano — Casamenteiro";
     (async () => {
-      if (!id) {
-        navigate("/");
-        return;
-      }
+      if (!id) { navigate("/simulador"); return; }
       const { data } = await (supabase
         .from("home_simulacoes" as any)
         .select("*")
         .eq("id", id)
         .maybeSingle() as any);
-      if (!data) {
-        navigate("/");
-        return;
-      }
+      if (!data) { navigate("/simulador"); return; }
       setSim(data);
-      // Carrega seleções salvas dentro do resultado
-      const savedPicks = (data.resultado && data.resultado.picks) as Record<string, string> | undefined;
-      if (savedPicks) setPicks(savedPicks);
-      // Se tem resultado salvo, usa; senão recalcula
-      if (data.resultado && Array.isArray(data.resultado.categories)) {
-        setResult(data.resultado as SimuladorResult);
+      // resultado salvo
+      if (data.resultado && data.resultado.plano && data.resultado.resumo) {
+        setResultado(data.resultado as SimRes);
+        setAceitaOciosas(!!data.resultado.resumo?.aceitaOciosas);
+        setLoading(false);
       } else {
-        const r = await computeSimulador({
-          orcamento_total: Number(data.orcamento_total),
-          num_convidados: data.num_convidados,
-          cidade: data.cidade || "",
-          estilo: data.estilo || "Médio e elegante",
-          data_evento: data.data_evento,
-        });
-        setResult(r);
+        // recalcula
+        const r = await recalcularSimulacao(
+          Number(data.orcamento_total),
+          Number(data.num_convidados),
+          data.cidade || "",
+          (data.estilo as Estilo) || "elegante",
+          false,
+        );
+        setResultado({ simulacaoId: id, ...r });
+        setLoading(false);
       }
-      setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Carrega couple_id do usuário
+  // Pre-preenche modal
   useEffect(() => {
-    if (!user) return;
-    supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle().then(({ data }) => {
-      if (data) {
-        setCoupleId(data.id);
-        // Pré-preenche campos do bulk
-        setBulkEventDate((sim?.data_evento) || "");
-        setBulkGuests(String(sim?.num_convidados || ""));
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, sim?.id]);
-
-  const totalSelecionado = useMemo(() => {
-    if (!result) return 0;
-    let sum = 0;
-    for (const cat of result.categories) {
-      const pickedId = picks[cat.category_slug];
-      const picked = cat.suppliers.find((s) => s.id === pickedId);
-      if (picked) sum += picked.estimated_price;
+    if (sim && !nomePlano) {
+      setNomePlano(`Casamento em ${sim.cidade || "minha cidade"}`);
     }
-    return sum;
-  }, [picks, result]);
+  }, [sim, nomePlano]);
 
-  const totalBudget = result?.total_budget || 0;
-  const overBudget = totalSelecionado > totalBudget;
-  const pctUsed = totalBudget > 0 ? Math.min(100, (totalSelecionado / totalBudget) * 100) : 0;
-  const selectedCount = Object.keys(picks).length;
-
-  // Auto-save picks na simulação sempre que mudam (debounce simples)
+  // Abre modal automaticamente após login
   useEffect(() => {
-    if (!id || !result) return;
-    const t = setTimeout(async () => {
-      const newResultado = { ...result, picks } as any;
+    if (assumirOnLoad && user && resultado) {
+      setOpenAssumir(true);
+    }
+  }, [assumirOnLoad, user, resultado]);
+
+  const recalcular = async (novoOcioso: boolean) => {
+    if (!sim) return;
+    setAceitaOciosas(novoOcioso);
+    setRecalculando(true);
+    try {
+      const r = await recalcularSimulacao(
+        Number(sim.orcamento_total),
+        Number(sim.num_convidados),
+        sim.cidade || "",
+        (sim.estilo as Estilo) || "elegante",
+        novoOcioso,
+      );
+      setResultado({ simulacaoId: id, ...r });
+      // persiste no banco
       await (supabase.from("home_simulacoes" as any) as any)
-        .update({ resultado: newResultado })
+        .update({ resultado: { ...r, simulacaoId: id } })
         .eq("id", id);
-    }, 800);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [picks, id]);
+    } catch (e: any) {
+      toast({ title: "Erro ao recalcular", description: e.message, variant: "destructive" });
+    } finally {
+      setRecalculando(false);
+    }
+  };
 
-  const finalizarPlano = async () => {
+  const onAssumir = () => {
     if (!user) {
-      navigate(`/cadastro?redirect=/simulador/resultado?id=${id}`);
+      toast({ title: "Crie sua conta para assumir o plano" });
+      navigate(`/cadastro?redirect=${encodeURIComponent(`/simulador/resultado?id=${id}&assumir=1`)}`);
       return;
     }
-    if (!coupleId || !result) return;
-    if (selectedCount === 0) {
-      toast({ title: "Selecione ao menos um fornecedor", variant: "destructive" });
+    setOpenAssumir(true);
+  };
+
+  const confirmarAssumir = async () => {
+    if (!resultado || !nomePlano.trim() || !dataPrevista) {
+      toast({ title: "Preencha nome e data", variant: "destructive" });
       return;
     }
-    setSavingPlan(true);
+    setCriando(true);
     try {
-      await (supabase.from("couples") as any)
-        .update({
-          target_budget: totalBudget,
-          estimated_budget: totalBudget,
-          estimated_guests: sim.num_convidados || null,
-          wedding_date: sim.data_evento || null,
-          budget_mode: "fixed",
-          wedding_city: sim.cidade || null,
-          wedding_style: sim.estilo || null,
-        })
-        .eq("id", coupleId);
-
-      const { data: existingBudget } = await supabase
-        .from("budget_items")
-        .select("category, supplier_id")
-        .eq("couple_id", coupleId);
-      const existingCategories = new Set((existingBudget || []).map((item: any) => item.category));
-      const existingSupplierIds = new Set((existingBudget || []).map((item: any) => item.supplier_id).filter(Boolean));
-
-      const categoryRows = result.categories.filter((cat) => !picks[cat.category_slug]).map((cat) => ({
-        couple_id: coupleId,
-        category: cat.category_slug,
-        description: cat.category_name,
-        estimated_cost: Math.round(cat.budget_slice),
-        status: "estimated",
-      }));
-      const missingCategories = categoryRows.filter((row) => !existingCategories.has(row.category));
-      const selectedBudgetRows = result.categories
-        .map((cat) => {
-          const sid = picks[cat.category_slug];
-          if (!sid || existingSupplierIds.has(sid)) return null;
-          const sup = cat.suppliers.find((s) => s.id === sid);
-          return {
-            couple_id: coupleId,
-            supplier_id: sid,
-            category: cat.category_slug,
-            description: sup?.company_name || cat.category_name,
-            estimated_cost: sup?.estimated_price || cat.budget_slice,
-            status: "estimated",
-          };
-        })
-        .filter(Boolean) as any[];
-      const budgetRows = [...missingCategories, ...selectedBudgetRows];
-      if (budgetRows.length) await (supabase.from("budget_items") as any).insert(budgetRows);
-
-      const rows = result.categories
-        .map((cat) => {
-          const sid = picks[cat.category_slug];
-          if (!sid) return null;
-          const sup = cat.suppliers.find((s) => s.id === sid);
-          return {
-            couple_id: coupleId,
-            supplier_id: sid,
-            category_id: cat.category_id,
-            status: "saved",
-            kanban_status: "nao_iniciado",
-            contract_value: sup?.estimated_price || null,
-            estimated_value: sup?.estimated_price || null,
-            simulation_id: id,
-            notes: "Adicionado pela simulação",
-          };
-        })
-        .filter(Boolean) as any[];
-      // Remove duplicatas existentes pela combinação couple+supplier
-      for (const r of rows) {
-        await supabase
-          .from("couple_suppliers")
-          .delete()
-          .eq("couple_id", r.couple_id)
-          .eq("supplier_id", r.supplier_id);
-      }
-      const { error } = await supabase.from("couple_suppliers").insert(rows);
-      if (error) throw error;
-      toast({ title: "Plano salvo!", description: "Sua simulação agora aparece em Orçamento e Fornecedores." });
-      navigate("/orcamento");
+      await criarPlano(id, resultado, nomePlano.trim(), dataPrevista);
+      toast({ title: "Plano criado!", description: "Tudo pronto para começar a planejar." });
+      setOpenAssumir(false);
+      navigate("/meu-casamento/plano");
     } catch (e: any) {
-      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao criar plano", description: e.message, variant: "destructive" });
     } finally {
-      setSavingPlan(false);
+      setCriando(false);
     }
   };
 
-  const enviarOrcamentoMassa = async () => {
-    if (!user || !coupleId || !result) {
-      toast({ title: "Faça login para enviar orçamentos", variant: "destructive" });
-      return;
-    }
-    if (!bulkMessage.trim()) {
-      toast({ title: "Escreva uma mensagem", variant: "destructive" });
-      return;
-    }
-    if (selectedCount === 0) {
-      toast({ title: "Nenhum fornecedor selecionado", variant: "destructive" });
-      return;
-    }
-    setBulkSending(true);
-    try {
-      const rows = result.categories
-        .map((cat) => {
-          const sid = picks[cat.category_slug];
-          if (!sid) return null;
-          return {
-            couple_id: coupleId,
-            supplier_id: sid,
-            user_id: user.id,
-            event_date: bulkEventDate || null,
-            guest_count: bulkGuests ? parseInt(bulkGuests) : null,
-            message: bulkMessage.trim(),
-            phone: bulkPhone.trim() || null,
-            phone_visible: !!bulkPhone.trim(),
-          };
-        })
-        .filter(Boolean) as any[];
-      const { error } = await supabase.from("quotes").insert(rows);
-      if (error) throw error;
-      toast({
-        title: "Orçamentos enviados!",
-        description: `${rows.length} pedido(s) enviado(s). Acompanhe no seu painel.`,
-      });
-      setBulkOpen(false);
-      navigate("/dashboard");
-    } catch (e: any) {
-      toast({ title: "Erro ao enviar", description: e.message, variant: "destructive" });
-    } finally {
-      setBulkSending(false);
-    }
-  };
+  const cobertura = resultado?.resumo.cobertura ?? 0;
+  const corCobertura = useMemo(() => {
+    if (cobertura >= 80) return { bg: "hsl(132 18% 91%)", fg: "hsl(145 24% 28%)", border: "hsl(145 24% 60%)" };
+    if (cobertura >= 50) return { bg: "hsl(45 92% 92%)", fg: "hsl(32 60% 28%)", border: "hsl(38 80% 60%)" };
+    return { bg: "hsl(0 70% 95%)", fg: "hsl(0 60% 35%)", border: "hsl(0 60% 65%)" };
+  }, [cobertura]);
 
-  if (loading) {
+  if (loading || !resultado || !sim) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Montando seu plano...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(var(--color-bg))" }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" style={{ color: "hsl(var(--color-primary))" }} />
+          <p style={{ color: "hsl(var(--color-text-muted))" }}>Montando seu plano…</p>
+        </div>
       </div>
     );
   }
 
-  if (!result || !sim) return null;
+  const planoCats = Object.values(resultado.plano);
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      {/* Header */}
-      <header className="border-b border-border bg-background sticky top-0 z-30">
-        <div className="container py-4 flex items-center justify-between">
+    <div className="min-h-screen pb-32" style={{ background: "hsl(var(--color-bg))" }}>
+      {/* Navbar simples */}
+      <header className="border-b sticky top-0 z-30 backdrop-blur bg-background/90" style={{ borderColor: "hsl(var(--color-border))" }}>
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary" fill="currentColor" />
-            <span className="font-serif text-lg">Casamenteiro</span>
+            <Heart className="h-5 w-5" style={{ color: "hsl(var(--color-primary))" }} fill="currentColor" />
+            <span className="text-lg font-semibold tracking-wide">casamenteiro</span>
           </Link>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to={user ? "/dashboard" : "/"}>
-              <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
-            </Link>
-          </Button>
+          {!user ? (
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/login">Entrar</Link>
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/dashboard"><ArrowLeft className="w-4 h-4 mr-1" /> Painel</Link>
+            </Button>
+          )}
         </div>
       </header>
 
-      <div className="container py-8 md:py-12">
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
         {/* Resumo */}
-        <div className="mb-8">
-          <p className="label-ui text-primary mb-2">Seu plano personalizado</p>
+        <div className="mb-6">
           <h1 className="text-3xl md:text-4xl mb-3" style={{ fontWeight: 700, letterSpacing: "-0.02em" }}>
-            Casamento em {sim.cidade || "sua cidade"} para {sim.num_convidados} convidados
+            Seu plano está pronto ✓
           </h1>
-          <p className="text-muted-foreground">
-            Orçamento de <strong>R$ {totalBudget.toLocaleString("pt-BR")}</strong> · estilo {sim.estilo}
-            {sim.data_evento && (
-              <> · data <strong>{new Date(sim.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}</strong></>
-            )}
+          <p className="text-sm md:text-base" style={{ color: "hsl(var(--color-text-muted))" }}>
+            <strong>{formatarReais(resultado.resumo.orcamentoTotal)}</strong> · {resultado.resumo.convidados} convidados ·{" "}
+            {resultado.resumo.cidade || "—"} · estilo {estiloLabel[resultado.resumo.estilo]}
           </p>
+
+          <div
+            className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full text-sm font-medium"
+            style={{ background: corCobertura.bg, color: corCobertura.fg, border: `1px solid ${corCobertura.border}` }}
+          >
+            {cobertura >= 80 && "Ótimo!"}{" "}
+            Encontramos fornecedores em {resultado.resumo.categoriasComFornecedor} de {resultado.resumo.totalCategorias} categorias.
+          </div>
+        </div>
+
+        {/* Alertas */}
+        {resultado.alertas.length > 0 && (
+          <div className="space-y-3 mb-6">
+            {resultado.alertas.map((a, i) => (
+              <AlertaBanner
+                key={i}
+                alerta={a}
+                onAcao={(codigo) => {
+                  if (codigo === "ATIVAR_OCIOSAS") recalcular(true);
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Toggle datas ociosas */}
+        <div
+          className="sticky top-[57px] z-20 mb-6 rounded-xl p-3 flex items-center justify-between gap-3"
+          style={{ background: "hsl(var(--color-secondary))", border: "1px solid hsl(var(--color-border))" }}
+        >
+          <div>
+            <Label htmlFor="ociosas" className="text-sm font-semibold" style={{ color: "hsl(var(--color-dark))" }}>
+              Mostrar fornecedores com desconto em dias úteis
+            </Label>
+            <p className="text-xs" style={{ color: "hsl(var(--color-text-muted))" }}>
+              Pode reduzir bastante o custo total do casamento.
+            </p>
+          </div>
+          <Switch id="ociosas" checked={aceitaOciosas} disabled={recalculando} onCheckedChange={recalcular} />
         </div>
 
         {/* Categorias */}
-        <div className="space-y-6">
-          {result.categories.map((cat) => (
-            <Card key={cat.category_slug} className="p-5 md:p-6">
-              <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-xl font-semibold">{cat.category_name}</h2>
-                    {cat.essential && <Badge variant="secondary" className="text-[10px]">essencial</Badge>}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {cat.pct}% do orçamento · até <strong>R$ {cat.budget_slice.toLocaleString("pt-BR")}</strong>
-                  </p>
-                </div>
-                {picks[cat.category_slug] && (
-                  <Badge className="bg-accent text-accent-foreground">
-                    <Check className="w-3 h-3 mr-1" /> selecionado
-                  </Badge>
-                )}
+        <div className="space-y-7">
+          {planoCats.map((cat) => (
+            <section key={cat.key}>
+              <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
+                <h2 className="text-lg md:text-xl font-semibold" style={{ color: "hsl(var(--color-dark))" }}>
+                  <span className="mr-2">{cat.icon}</span>{cat.label}
+                </h2>
+                <p className="text-sm" style={{ color: "hsl(var(--color-text-muted))" }}>
+                  <strong style={{ color: "hsl(var(--color-dark))" }}>{formatarReais(cat.verba)}</strong>{" "}
+                  ({Math.round(cat.percentual * 100)}%)
+                </p>
               </div>
 
-              {cat.suppliers.length === 0 ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-                  <AlertCircle className="w-4 h-4" />
-                  Nenhum fornecedor encontrado nessa categoria. Vamos avisar quando aparecer um match.
+              {recalculando ? (
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-64 flex-shrink-0 rounded-xl" />)}
+                </div>
+              ) : cat.fornecedores.length === 0 ? (
+                <div className="rounded-xl p-4 text-sm" style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-muted))" }}>
+                  Nenhum fornecedor encontrado nesta faixa em {sim.cidade || "sua cidade"}.{" "}
+                  <Link to={`/buscar?categoria=${cat.slug}`} className="underline font-medium" style={{ color: "hsl(var(--color-primary))" }}>
+                    Ver todos os fornecedores desta categoria →
+                  </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {cat.suppliers.map((s) => (
-                    <SupplierMatchCard
-                      key={s.id}
-                      supplier={s}
-                      slice={cat.budget_slice}
-                      selected={picks[cat.category_slug] === s.id}
-                      onToggle={() =>
-                        setPicks((prev) => {
-                          const next = { ...prev };
-                          if (next[cat.category_slug] === s.id) delete next[cat.category_slug];
-                          else next[cat.category_slug] = s.id;
-                          return next;
-                        })
-                      }
-                    />
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+                  {cat.fornecedores.map((f) => (
+                    <article
+                      key={f.id}
+                      className="flex-shrink-0 w-72 rounded-xl p-4 snap-start"
+                      style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--color-border))" }}
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        {f.foto_perfil_url ? (
+                          <img src={f.foto_perfil_url} alt={f.nome} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                        ) : (
+                          <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0"
+                            style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-primary))" }}
+                          >
+                            {f.nome.charAt(0)}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <Link to={`/fornecedor/${f.id}`} className="block text-sm font-semibold truncate hover:underline" style={{ color: "hsl(var(--color-dark))" }}>
+                            {f.nome}
+                          </Link>
+                          {f.cidade && (
+                            <p className="text-xs truncate" style={{ color: "hsl(var(--color-text-muted))" }}>{f.cidade}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}>
+                          {f.faixa_preco}
+                        </span>
+                        {f.temDesconto && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1" style={{ background: "hsl(132 18% 91%)", color: "hsl(145 24% 28%)" }}>
+                            <Tag className="w-2.5 h-2.5" /> -{f.desconto}% data ociosa
+                          </span>
+                        )}
+                        {f.destaque && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "hsl(var(--color-primary) / 0.15)", color: "hsl(var(--color-primary))" }}>
+                            destaque
+                          </span>
+                        )}
+                      </div>
+
+                      {f.linkWhatsApp ? (
+                        <a
+                          href={f.linkWhatsApp}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
+                          style={{ background: "hsl(var(--color-accent))", color: "hsl(var(--accent-foreground))" }}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 inline mr-1" /> Falar pelo WhatsApp
+                        </a>
+                      ) : (
+                        <Link
+                          to={`/fornecedor/${f.id}`}
+                          className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
+                          style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 inline mr-1" /> Ver perfil
+                        </Link>
+                      )}
+                    </article>
                   ))}
                 </div>
               )}
-            </Card>
+            </section>
           ))}
         </div>
       </div>
 
-      {/* Sticky budget bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur shadow-lg">
-        <div className="container py-3">
-          <div className="flex items-center justify-between gap-4 mb-2">
-            <div className="text-sm">
-              <span className="text-muted-foreground">Selecionado:</span>{" "}
-              <strong className={overBudget ? "text-destructive" : ""}>
-                R$ {totalSelecionado.toLocaleString("pt-BR")}
-              </strong>{" "}
-              <span className="text-muted-foreground">de R$ {totalBudget.toLocaleString("pt-BR")}</span>
-            </div>
-            <div className="text-sm font-medium">
-              {selectedCount} / {result.categories.length} categorias
-            </div>
-          </div>
-          <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all ${overBudget ? "bg-destructive" : "bg-primary"}`}
-              style={{ width: `${pctUsed}%` }}
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-3">
-            <Button
-              variant="outline"
-              className="flex-1"
-              disabled={selectedCount === 0}
-              onClick={() => setBulkOpen(true)}
-            >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Pedir orçamento p/ todos ({selectedCount})
-            </Button>
-            <Button
-              className="flex-1"
-              disabled={selectedCount === 0 || savingPlan}
-              onClick={finalizarPlano}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {savingPlan ? "Salvando..." : "Finalizar plano"}
-            </Button>
-          </div>
+      {/* CTA fixo */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur"
+        style={{ background: "hsl(var(--color-bg) / 0.95)", borderColor: "hsl(var(--color-border))" }}
+      >
+        <div className="max-w-3xl mx-auto px-4 py-3 flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            className="rounded-full flex-1 sm:flex-initial"
+            asChild
+          >
+            <Link to="/simulador">Simular novamente</Link>
+          </Button>
+          <Button
+            onClick={onAssumir}
+            className="rounded-full flex-1"
+            style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
+          >
+            Assumir este plano →
+          </Button>
         </div>
       </div>
 
-      {/* Bulk dialog */}
-      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+      {/* Modal Assumir */}
+      <Dialog open={openAssumir} onOpenChange={setOpenAssumir}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Pedir orçamento para {selectedCount} fornecedor(es)</DialogTitle>
+            <DialogTitle>Assumir este plano</DialogTitle>
+            <DialogDescription>
+              Vamos criar seu plano com os fornecedores sugeridos. Você pode editar tudo depois.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Data do evento</Label>
-                <Input type="date" value={bulkEventDate} onChange={(e) => setBulkEventDate(e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs">Nº convidados</Label>
-                <Input type="number" value={bulkGuests} onChange={(e) => setBulkGuests(e.target.value)} />
-              </div>
+            <div>
+              <Label className="text-xs">Nome do plano</Label>
+              <Input
+                value={nomePlano}
+                onChange={(e) => setNomePlano(e.target.value)}
+                placeholder="Ex: Casamento Silva & Fernandes"
+                disabled={criando}
+              />
             </div>
             <div>
-              <Label className="text-xs">Telefone (opcional)</Label>
-              <Input type="tel" placeholder="(11) 99999-9999" value={bulkPhone} onChange={(e) => setBulkPhone(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs">Mensagem *</Label>
-              <Textarea
-                rows={4}
-                placeholder="Olá! Estou planejando meu casamento e gostaria de receber um orçamento..."
-                value={bulkMessage}
-                onChange={(e) => setBulkMessage(e.target.value)}
+              <Label className="text-xs">Data prevista do casamento</Label>
+              <Input
+                type="date"
+                value={dataPrevista}
+                onChange={(e) => setDataPrevista(e.target.value)}
+                min={new Date().toISOString().slice(0, 10)}
+                disabled={criando}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setBulkOpen(false)} disabled={bulkSending}>Cancelar</Button>
-            <Button onClick={enviarOrcamentoMassa} disabled={bulkSending}>
-              <Send className="w-4 h-4 mr-2" />
-              {bulkSending ? "Enviando..." : "Enviar para todos"}
+            <Button variant="ghost" onClick={() => setOpenAssumir(false)} disabled={criando}>Cancelar</Button>
+            <Button
+              onClick={confirmarAssumir}
+              disabled={criando || !nomePlano.trim() || !dataPrevista}
+              style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
+            >
+              {criando ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Criando...</> : "Criar meu plano →"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -436,73 +396,39 @@ export default function SimuladorResultado() {
   );
 }
 
-function SupplierMatchCard({
-  supplier,
-  slice,
-  selected,
-  onToggle,
-}: {
-  supplier: SupplierMatch;
-  slice: number;
-  selected: boolean;
-  onToggle: () => void;
-}) {
+function AlertaBanner({
+  alerta, onAcao,
+}: { alerta: import("@/lib/simulador").Alerta; onAcao: (codigo: "ATIVAR_OCIOSAS") => void }) {
+  const cfg =
+    alerta.tipo === "aviso"
+      ? { bg: "hsl(45 92% 95%)", border: "hsl(38 80% 70%)", fg: "hsl(32 60% 25%)", Icon: AlertTriangle }
+      : alerta.tipo === "oportunidade"
+        ? { bg: "hsl(132 18% 93%)", border: "hsl(145 24% 60%)", fg: "hsl(145 24% 28%)", Icon: Sparkles }
+        : { bg: "hsl(210 60% 95%)", border: "hsl(210 60% 70%)", fg: "hsl(210 60% 28%)", Icon: Lightbulb };
+
   return (
     <div
-      onClick={onToggle}
-      className={`relative rounded-xl border-2 p-3 cursor-pointer transition ${
-        selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-      }`}
+      className="rounded-xl p-4 flex gap-3"
+      style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.fg }}
     >
-      <div className="flex gap-3">
-        <div className="w-16 h-16 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
-          {supplier.profile_photo_url ? (
-            <img src={supplier.profile_photo_url} alt={supplier.company_name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">sem foto</div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-sm font-semibold truncate">{supplier.company_name}</h3>
-            <Checkbox checked={selected} className="mt-0.5 flex-shrink-0 pointer-events-none" />
-          </div>
-          {supplier.city && (
-            <p className="text-[11px] text-muted-foreground truncate">{supplier.city}</p>
-          )}
-          {supplier.rating != null && supplier.review_count ? (
-            <div className="flex items-center gap-1 text-[11px] mt-0.5">
-              <Star className="w-3 h-3 fill-current text-primary" />
-              <span>{Number(supplier.rating).toFixed(1)}</span>
-              <span className="text-muted-foreground">({supplier.review_count})</span>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
-        <div className="text-sm">
-          <span className="font-semibold">R$ {supplier.estimated_price.toLocaleString("pt-BR")}</span>
-          {!supplier.fits_budget_slice && (
-            <span className="text-[11px] text-destructive ml-1">acima da fatia</span>
-          )}
-        </div>
-        {supplier.is_idle_promo && supplier.applied_discount_pct > 0 && (
-          <Badge variant="outline" className="text-[10px] border-primary text-primary">
-            <Tag className="w-2.5 h-2.5 mr-1" /> -{supplier.applied_discount_pct}% data ociosa
-          </Badge>
+      <cfg.Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm leading-relaxed">{alerta.mensagem}</p>
+        {alerta.sugestoes && alerta.sugestoes.length > 0 && (
+          <ul className="text-xs mt-2 list-disc list-inside space-y-0.5 opacity-90">
+            {alerta.sugestoes.map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        )}
+        {alerta.acao && (
+          <button
+            onClick={() => onAcao(alerta.acao!.codigo)}
+            className="mt-3 text-xs font-semibold underline-offset-2 hover:underline"
+            style={{ color: cfg.fg }}
+          >
+            {alerta.acao.label} →
+          </button>
         )}
       </div>
-
-      <a
-        href={`/fornecedor/${supplier.id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={(e) => e.stopPropagation()}
-        className="text-[11px] text-primary hover:underline mt-2 inline-flex items-center gap-1"
-      >
-        Ver perfil completo <ExternalLink className="w-3 h-3" />
-      </a>
     </div>
   );
 }
