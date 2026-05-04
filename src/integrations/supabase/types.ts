@@ -1619,6 +1619,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_broadcast_notification: {
+        Args: {
+          _body: string
+          _link?: string
+          _segment: string
+          _title: string
+        }
+        Returns: number
+      }
       get_couple_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_invite_by_token: {
         Args: { _token: string }
