@@ -6,8 +6,13 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ExternalLink, MessageSquare } from "lucide-react";
+import { ExternalLink, MessageSquare, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 type KanbanStatus = "enviado" | "respondido" | "negociando" | "fechado" | "recusado";
 
@@ -32,8 +37,16 @@ type QuoteRow = {
 };
 
 export default function QuotesKanban({ coupleId }: { coupleId: string }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [quotes, setQuotes] = useState<QuoteRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
+  const [allSuppliers, setAllSuppliers] = useState<{ id: string; company_name: string; category_id: string | null }[]>([]);
+  const [supId, setSupId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [status, setStatus] = useState<KanbanStatus>("fechado");
+  const [saving, setSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -66,6 +79,63 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
 
   useEffect(() => { if (coupleId) load(); }, [coupleId]);
 
+  useEffect(() => {
+    if (!addOpen || allSuppliers.length) return;
+    supabase.from("suppliers").select("id, company_name, category_id").eq("status", "approved").order("company_name")
+      .then(({ data }) => setAllSuppliers(data || []));
+  }, [addOpen]);
+
+  const addManual = async () => {
+    if (!user || !coupleId || !supId) {
+      toast({ title: "Selecione um fornecedor", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const sup = allSuppliers.find((s) => s.id === supId);
+    const { data: q, error } = await (supabase.from("quotes") as any).insert({
+      couple_id: coupleId,
+      supplier_id: supId,
+      user_id: user.id,
+      message: "Contrato adicionado manualmente pelo casal.",
+      kanban_status: status,
+      status: status === "fechado" ? "accepted" : "pending",
+    }).select("id").maybeSingle();
+    if (error || !q) {
+      toast({ title: "Erro", description: error?.message || "Falha ao criar", variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+    if (amount) {
+      await (supabase.from("quote_proposals") as any).insert({
+        quote_id: q.id, sender_id: user.id, kind: "proposal",
+        amount: Number(amount), status: status === "fechado" ? "accepted" : "pending",
+      });
+    }
+    if (status === "fechado") {
+      // garante couple_supplier contratado (trigger sync_budget cuida do orçamento)
+      const { data: existing } = await supabase
+        .from("couple_suppliers").select("id").eq("couple_id", coupleId).eq("supplier_id", supId).maybeSingle();
+      const payload: any = {
+        status: "contracted",
+        category_id: sup?.category_id || null,
+        final_value: amount ? Number(amount) : null,
+        contract_value: amount ? Number(amount) : null,
+        contracted_at: new Date().toISOString(),
+      };
+      if (existing) {
+        await (supabase.from("couple_suppliers") as any).update(payload).eq("id", existing.id);
+      } else {
+        await (supabase.from("couple_suppliers") as any).insert({
+          couple_id: coupleId, supplier_id: supId, ...payload,
+        });
+      }
+    }
+    toast({ title: "Adicionado ao kanban" });
+    setSupId(""); setAmount(""); setStatus("fechado"); setAddOpen(false);
+    load();
+    setSaving(false);
+  };
+
   const moveQuote = async (id: string, status: KanbanStatus) => {
     setQuotes(prev => prev.map(q => q.id === id ? { ...q, kanban_status: status } : q));
     await supabase.from("quotes").update({ kanban_status: status }).eq("id", id);
@@ -73,19 +143,27 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
 
   if (loading) return <p className="text-sm text-muted-foreground">Carregando orçamentos...</p>;
 
-  if (quotes.length === 0) {
-    return (
-      <Card className="p-6 text-center">
-        <p className="text-muted-foreground mb-3">Você ainda não enviou pedidos de orçamento.</p>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/buscar">Buscar fornecedores</Link>
-        </Button>
-      </Card>
-    );
-  }
-
   return (
-    <div className="overflow-x-auto pb-2">
+    <div className="space-y-3">
+      <div className="flex items-center justify-end gap-2">
+        <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar contrato
+        </Button>
+      </div>
+      {quotes.length === 0 ? (
+        <Card className="p-6 text-center">
+          <p className="text-muted-foreground mb-3">Nenhum orçamento ainda. Envie pedidos pela plataforma ou registre contratos fechados por fora.</p>
+          <div className="flex justify-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/buscar">Buscar fornecedores</Link>
+            </Button>
+            <Button size="sm" onClick={() => setAddOpen(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar contrato
+            </Button>
+          </div>
+        </Card>
+      ) : (
+      <div className="overflow-x-auto pb-2">
       <div className="grid grid-cols-5 gap-3 min-w-[900px]">
         {COLUMNS.map(col => {
           const items = quotes.filter(q => q.kanban_status === col.key);
@@ -137,6 +215,43 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
           );
         })}
       </div>
+      </div>
+      )}
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Adicionar contrato</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">Use para registrar fornecedores fechados por fora da plataforma.</p>
+            <div>
+              <Label className="text-xs">Fornecedor</Label>
+              <select value={supId} onChange={(e) => setSupId(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm">
+                <option value="">Selecione...</option>
+                {allSuppliers.map((s) => <option key={s.id} value={s.id}>{s.company_name}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Valor (R$)</Label>
+                <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Status</Label>
+                <Select value={status} onValueChange={(v) => setStatus(v as KanbanStatus)}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {COLUMNS.map(c => <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setAddOpen(false)}>Cancelar</Button>
+              <Button onClick={addManual} disabled={saving || !supId}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
