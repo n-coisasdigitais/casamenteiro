@@ -72,15 +72,19 @@ export default function Home() {
         {/* Hero opening */}
         <section className="min-h-[70vh] flex items-center container">
           <div className="max-w-2xl">
-            <p className="font-serif italic text-olive mb-4">(intro)</p>
-            <h1 className="font-serif text-5xl md:text-7xl leading-[1.05] text-ink mb-6">
+            <p className="label-ui mb-5">Intro</p>
+            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl mb-6" style={{ color: "hsl(var(--color-dark))", lineHeight: 1.1 }}>
               Casar é o melhor dia da vida.<br />
-              <span className="text-rose-gold italic">Organizar</span> é a parte que ninguém te conta.
+              <em style={{ color: "hsl(var(--color-primary))" }}>Organizar</em> é a parte que ninguém te conta.
             </h1>
-            <p className="text-ink/60 text-lg max-w-lg leading-relaxed mb-8">
+            <p className="text-base md:text-lg max-w-lg mb-8" style={{ color: "hsl(var(--color-text-muted))" }}>
               A gente existe pra simplificar. Role pra entender — ou comece pelo simulador.
             </p>
-            <button onClick={scrollToCTA} className="bg-rose-gold text-white px-6 py-3 rounded-md hover:opacity-90 transition">
+            <button
+              onClick={scrollToCTA}
+              className="rounded-full px-7 py-3.5 font-semibold text-sm transition hover:opacity-90"
+              style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
+            >
               Quero simular agora →
             </button>
           </div>
@@ -102,20 +106,20 @@ export default function Home() {
         <SimulatorCTA ref={ctaRef} />
       </main>
 
-      <footer className="py-10 bg-ink text-cream/80">
+      <footer className="py-10" style={{ background: "hsl(var(--color-dark))", color: "hsl(var(--color-bg) / 0.8)" }}>
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 fill-rose-gold text-rose-gold" />
+            <Heart className="h-4 w-4" style={{ color: "hsl(var(--color-primary))", fill: "hsl(var(--color-primary))" }} />
             <span className="font-serif text-base">Casamenteiro</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/explorar" className="hover:text-cream">Explorar fornecedores</Link>
-            <Link to="/login" className="hover:text-cream">Entrar</Link>
+            <Link to="/explorar" className="hover:opacity-100 opacity-80">Explorar fornecedores</Link>
+            <Link to="/login" className="hover:opacity-100 opacity-80">Entrar</Link>
           </div>
-          <p className="text-xs text-cream/50 flex items-center gap-1.5">
+          <p className="text-xs flex items-center gap-1.5" style={{ opacity: 0.6 }}>
             Desenvolvido com carinho pela
-            <a href="https://ncoisas.digital/" target="_blank" rel="noopener noreferrer" className="font-semibold hover:text-cream">N Coisas Digitais</a>
-            <Heart className="h-3 w-3 fill-rose-gold text-rose-gold" />
+            <a href="https://ncoisas.digital/" target="_blank" rel="noopener noreferrer" className="font-semibold">N Coisas Digitais</a>
+            <Heart className="h-3 w-3" style={{ color: "hsl(var(--color-primary))", fill: "hsl(var(--color-primary))" }} />
           </p>
         </div>
       </footer>

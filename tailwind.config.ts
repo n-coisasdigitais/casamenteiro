@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Figtree"', 'system-ui', 'sans-serif'],
-        serif: ['"Rufina"', 'Georgia', 'serif'],
-        display: ['"Rufina"', 'Georgia', 'serif'],
+        sans: ['"Nunito"', 'system-ui', 'sans-serif'],
+        serif: ['"Young Serif"', 'Georgia', 'serif'],
+        display: ['"Young Serif"', 'Georgia', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -100,29 +100,37 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Figtree', system-ui, sans-serif;
+    font-family: 'Nunito', system-ui, sans-serif;
     font-weight: 300;
-    line-height: 1.75;
+    line-height: 1.8;
+    font-size: 15px;
     color: hsl(var(--color-text-body));
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Rufina', serif;
+    font-family: 'Young Serif', serif;
     font-weight: 400;
     color: hsl(var(--color-dark));
-    letter-spacing: 0.3px;
+    line-height: 1.15;
   }
 
-  h1 { font-size: clamp(2rem, 5vw, 3rem); }
+  h1 { font-size: clamp(2.25rem, 5vw, 3rem); }
   h2 { font-size: clamp(1.6rem, 3.5vw, 2.125rem); }
 }
 
 @layer components {
   .label-ui {
-    font-family: 'Figtree', sans-serif;
-    font-weight: 500;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
     font-size: 11px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    color: hsl(var(--color-text-muted));
+  }
+  .btn-pill {
+    @apply inline-flex items-center justify-center rounded-full font-semibold transition;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    padding: 12px 28px;
   }
 }
