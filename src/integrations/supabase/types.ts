@@ -1648,6 +1648,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalc_task_due_dates: {
+        Args: { _couple_id: string }
+        Returns: undefined
+      }
       respond_invite: {
         Args: {
           _companions?: number
