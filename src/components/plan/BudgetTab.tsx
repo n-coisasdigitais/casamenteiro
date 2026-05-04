@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MessageCircle } from "lucide-react";
 import { PlanSupplier } from "./PlanKanban";
+import { buildWhatsAppLink } from "@/lib/phone";
 
 const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
 
@@ -31,7 +32,7 @@ export default function BudgetTab({
     if (ids.length === 0) return;
     supabase.from("suppliers").select("id, whatsapp, phone").in("id", ids).then(({ data }) => {
       const map: Record<string, string> = {};
-      (data || []).forEach((s: any) => { map[s.id] = (s.whatsapp || s.phone || "").replace(/\D/g, ""); });
+      (data || []).forEach((s: any) => { map[s.id] = (s.whatsapp || s.phone || ""); });
       setWhatsapps(map);
     });
   }, [items]);
@@ -93,8 +94,8 @@ export default function BudgetTab({
     let abertos = 0;
     for (const item of escolhidos) {
       const wpp = whatsapps[item.supplier_id];
-      if (!wpp) continue;
-      const link = `https://wa.me/55${wpp}?text=${encodeURIComponent(mensagemPara(item))}`;
+      const link = buildWhatsAppLink(wpp || "", mensagemPara(item));
+      if (!link) continue;
       window.open(link, "_blank");
       abertos++;
       await new Promise((r) => setTimeout(r, 350));
@@ -224,17 +225,17 @@ export default function BudgetTab({
                   <Badge variant="secondary" className="text-[10px]">
                     {item.kanban_status === "em_orcamento" ? "em orçamento" : "não iniciado"}
                   </Badge>
-                  {wpp ? (
+                  {buildWhatsAppLink(wpp || "", mensagemPara(item)) ? (
                     <Button asChild size="sm" variant="outline">
                       <a
-                        href={`https://wa.me/55${wpp}?text=${encodeURIComponent(mensagemPara(item))}`}
+                        href={buildWhatsAppLink(wpp || "", mensagemPara(item))!}
                         target="_blank" rel="noreferrer"
                       >
                         <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
                       </a>
                     </Button>
                   ) : (
-                    <span className="text-[11px] text-muted-foreground">sem WhatsApp</span>
+                    <span className="text-[11px] text-muted-foreground">WhatsApp inválido</span>
                   )}
                 </div>
               );
