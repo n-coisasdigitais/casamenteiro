@@ -26,6 +26,9 @@ import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
 import AdminTransacoes from "./pages/AdminTransacoes";
 import AdminMetrics from "./pages/AdminMetrics";
+import AdminCoupleCRM from "./pages/AdminCoupleCRM";
+import AdminSupplierCRM from "./pages/AdminSupplierCRM";
+import AdminBroadcast from "./pages/AdminBroadcast";
 import SimuladorResultado from "./pages/SimuladorResultado";
 import Simulador from "./pages/Simulador";
 import MeuPlano from "./pages/MeuPlano";
@@ -71,6 +74,11 @@ const App = () => (
             <Route path="/admin/simulacoes" element={<AdminSimulacoes />} />
             <Route path="/admin/transacoes" element={<AdminTransacoes />} />
             <Route path="/admin/metricas" element={<AdminMetrics />} />
+            <Route path="/admin/casais" element={<AdminCoupleCRM />} />
+            <Route path="/admin/casais/:id" element={<AdminCoupleCRM />} />
+            <Route path="/admin/fornecedores-crm" element={<AdminSupplierCRM />} />
+            <Route path="/admin/fornecedor/:id" element={<AdminSupplierCRM />} />
+            <Route path="/admin/comunicacao" element={<AdminBroadcast />} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />
