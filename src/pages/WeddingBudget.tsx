@@ -88,7 +88,7 @@ export default function WeddingBudget() {
         .select("orcamento_total, criado_em")
         .or(`couple_id.eq.${data.id},user_id.eq.${user.id}`)
         .order("criado_em", { ascending: false })
-        .limit(5)
+        .limit(1)
         .maybeSingle()
         .then(({ data: s, error }: any) => {
           if (!error) setSimBudget(s?.orcamento_total ? Number(s.orcamento_total) : null);
