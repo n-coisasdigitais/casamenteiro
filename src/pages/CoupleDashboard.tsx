@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Heart, Search, Calendar, Users, DollarSign, Copy, Share2,
-  MessageSquare, Eye, CheckSquare, Store, ArrowRight
+  MessageSquare, Eye, CheckSquare, Store, ArrowRight, Calculator
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
@@ -46,6 +46,7 @@ export default function CoupleDashboard() {
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary>({ estimated: 0, final: 0 });
   const [supplierCount, setSupplierCount] = useState(0);
   const [urgentTasks, setUrgentTasks] = useState<any[]>([]);
+  const [simulacoes, setSimulacoes] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -59,7 +60,7 @@ export default function CoupleDashboard() {
 
   const loadDashboardData = async (coupleId: string) => {
     // All queries in parallel
-    const [favRes, quotesRes, tasksRes, guestsRes, budgetRes, suppRes, urgentRes] = await Promise.all([
+    const [favRes, quotesRes, tasksRes, guestsRes, budgetRes, suppRes, urgentRes, simRes] = await Promise.all([
       supabase.from("couple_favorites").select("id", { count: "exact", head: true }).eq("couple_id", coupleId),
       supabase.from("quotes").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }),
       supabase.from("wedding_tasks").select("id, is_completed").eq("couple_id", coupleId),
@@ -67,6 +68,7 @@ export default function CoupleDashboard() {
       supabase.from("budget_items").select("estimated_cost, final_cost").eq("couple_id", coupleId),
       supabase.from("couple_suppliers").select("id", { count: "exact", head: true }).eq("couple_id", coupleId).eq("status", "contracted"),
       supabase.from("wedding_tasks").select("id, title, category, is_completed").eq("couple_id", coupleId).eq("is_completed", false).order("sort_order", { ascending: true }).limit(3),
+      (supabase.from("home_simulacoes" as any) as any).select("*").or(`couple_id.eq.${coupleId},user_id.eq.${user?.id}`).order("criado_em", { ascending: false }).limit(5),
     ]);
 
     setFavCount(favRes.count || 0);
@@ -91,6 +93,7 @@ export default function CoupleDashboard() {
 
     setSupplierCount(suppRes.count || 0);
     setUrgentTasks(urgentRes.data || []);
+    setSimulacoes((simRes as any).data || []);
   };
 
   const toggleUrgentTask = async (id: string) => {
@@ -304,6 +307,55 @@ export default function CoupleDashboard() {
               </Button>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Minhas simulações */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-primary" />
+              Minhas simulações ({simulacoes.length})
+            </h2>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/#simulador">Nova simulação</Link>
+            </Button>
+          </div>
+          {simulacoes.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Você ainda não fez nenhuma simulação. Faça uma para descobrir os melhores fornecedores para seu orçamento.
+                </p>
+                <Button asChild>
+                  <Link to="/#simulador">Simular meu casamento</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-3">
+              {simulacoes.map((s) => (
+                <Card key={s.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">
+                          {s.cidade || "Sua cidade"} · {s.num_convidados} convidados
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          R$ {Number(s.orcamento_total).toLocaleString("pt-BR")} · {s.estilo || "—"}
+                        </p>
+                      </div>
+                      <Eye className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(s.criado_em).toLocaleDateString("pt-BR")}
+                      {s.data_evento && ` · evento em ${new Date(s.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}`}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quotes */}

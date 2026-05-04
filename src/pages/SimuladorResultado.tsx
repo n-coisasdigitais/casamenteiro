@@ -3,16 +3,22 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeSimulador, type SimuladorResult, type SupplierMatch } from "@/lib/simulador/match";
-import { Heart, Check, Star, ArrowLeft, Tag, AlertCircle } from "lucide-react";
+import { Heart, Check, Star, ArrowLeft, Tag, AlertCircle, Send, ExternalLink, Save, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function SimuladorResultado() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const id = params.get("id");
 
   const [loading, setLoading] = useState(true);
@@ -20,6 +26,14 @@ export default function SimuladorResultado() {
   const [result, setResult] = useState<SimuladorResult | null>(null);
   // map: category_slug -> selected supplier_id
   const [picks, setPicks] = useState<Record<string, string>>({});
+  const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [bulkEventDate, setBulkEventDate] = useState("");
+  const [bulkGuests, setBulkGuests] = useState("");
+  const [bulkPhone, setBulkPhone] = useState("");
+  const [bulkSending, setBulkSending] = useState(false);
 
   useEffect(() => {
     document.title = "Meu plano de casamento — Casamenteiro";
@@ -38,6 +52,9 @@ export default function SimuladorResultado() {
         return;
       }
       setSim(data);
+      // Carrega seleções salvas dentro do resultado
+      const savedPicks = (data.resultado && data.resultado.picks) as Record<string, string> | undefined;
+      if (savedPicks) setPicks(savedPicks);
       // Se tem resultado salvo, usa; senão recalcula
       if (data.resultado && Array.isArray(data.resultado.categories)) {
         setResult(data.resultado as SimuladorResult);
@@ -56,6 +73,20 @@ export default function SimuladorResultado() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Carrega couple_id do usuário
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data) {
+        setCoupleId(data.id);
+        // Pré-preenche campos do bulk
+        setBulkEventDate((sim?.data_evento) || "");
+        setBulkGuests(String(sim?.num_convidados || ""));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, sim?.id]);
+
   const totalSelecionado = useMemo(() => {
     if (!result) return 0;
     let sum = 0;
@@ -70,6 +101,112 @@ export default function SimuladorResultado() {
   const totalBudget = result?.total_budget || 0;
   const overBudget = totalSelecionado > totalBudget;
   const pctUsed = totalBudget > 0 ? Math.min(100, (totalSelecionado / totalBudget) * 100) : 0;
+  const selectedCount = Object.keys(picks).length;
+
+  // Auto-save picks na simulação sempre que mudam (debounce simples)
+  useEffect(() => {
+    if (!id || !result) return;
+    const t = setTimeout(async () => {
+      const newResultado = { ...result, picks } as any;
+      await (supabase.from("home_simulacoes" as any) as any)
+        .update({ resultado: newResultado })
+        .eq("id", id);
+    }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picks, id]);
+
+  const finalizarPlano = async () => {
+    if (!user) {
+      navigate(`/cadastro?redirect=/simulador/resultado?id=${id}`);
+      return;
+    }
+    if (!coupleId || !result) return;
+    if (selectedCount === 0) {
+      toast({ title: "Selecione ao menos um fornecedor", variant: "destructive" });
+      return;
+    }
+    setSavingPlan(true);
+    try {
+      const rows = result.categories
+        .map((cat) => {
+          const sid = picks[cat.category_slug];
+          if (!sid) return null;
+          const sup = cat.suppliers.find((s) => s.id === sid);
+          return {
+            couple_id: coupleId,
+            supplier_id: sid,
+            category_id: cat.category_id,
+            status: "saved",
+            contract_value: sup?.estimated_price || null,
+            notes: "Adicionado pela simulação",
+          };
+        })
+        .filter(Boolean) as any[];
+      // Remove duplicatas existentes pela combinação couple+supplier
+      for (const r of rows) {
+        await supabase
+          .from("couple_suppliers")
+          .delete()
+          .eq("couple_id", r.couple_id)
+          .eq("supplier_id", r.supplier_id);
+      }
+      const { error } = await supabase.from("couple_suppliers").insert(rows);
+      if (error) throw error;
+      toast({ title: "Plano salvo!", description: `${rows.length} fornecedor(es) adicionados ao seu painel.` });
+      navigate("/meus-fornecedores");
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingPlan(false);
+    }
+  };
+
+  const enviarOrcamentoMassa = async () => {
+    if (!user || !coupleId || !result) {
+      toast({ title: "Faça login para enviar orçamentos", variant: "destructive" });
+      return;
+    }
+    if (!bulkMessage.trim()) {
+      toast({ title: "Escreva uma mensagem", variant: "destructive" });
+      return;
+    }
+    if (selectedCount === 0) {
+      toast({ title: "Nenhum fornecedor selecionado", variant: "destructive" });
+      return;
+    }
+    setBulkSending(true);
+    try {
+      const rows = result.categories
+        .map((cat) => {
+          const sid = picks[cat.category_slug];
+          if (!sid) return null;
+          return {
+            couple_id: coupleId,
+            supplier_id: sid,
+            user_id: user.id,
+            event_date: bulkEventDate || null,
+            guest_count: bulkGuests ? parseInt(bulkGuests) : null,
+            message: bulkMessage.trim(),
+            phone: bulkPhone.trim() || null,
+            phone_visible: !!bulkPhone.trim(),
+          };
+        })
+        .filter(Boolean) as any[];
+      const { error } = await supabase.from("quotes").insert(rows);
+      if (error) throw error;
+      toast({
+        title: "Orçamentos enviados!",
+        description: `${rows.length} pedido(s) enviado(s). Acompanhe no seu painel.`,
+      });
+      setBulkOpen(false);
+      navigate("/dashboard");
+    } catch (e: any) {
+      toast({ title: "Erro ao enviar", description: e.message, variant: "destructive" });
+    } finally {
+      setBulkSending(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -176,7 +313,7 @@ export default function SimuladorResultado() {
               <span className="text-muted-foreground">de R$ {totalBudget.toLocaleString("pt-BR")}</span>
             </div>
             <div className="text-sm font-medium">
-              {Object.keys(picks).length} / {result.categories.length} categorias
+              {selectedCount} / {result.categories.length} categorias
             </div>
           </div>
           <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
@@ -185,8 +322,68 @@ export default function SimuladorResultado() {
               style={{ width: `${pctUsed}%` }}
             />
           </div>
+          <div className="flex flex-col sm:flex-row gap-2 mt-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={selectedCount === 0}
+              onClick={() => setBulkOpen(true)}
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Pedir orçamento p/ todos ({selectedCount})
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={selectedCount === 0 || savingPlan}
+              onClick={finalizarPlano}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {savingPlan ? "Salvando..." : "Finalizar plano"}
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Bulk dialog */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pedir orçamento para {selectedCount} fornecedor(es)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Data do evento</Label>
+                <Input type="date" value={bulkEventDate} onChange={(e) => setBulkEventDate(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Nº convidados</Label>
+                <Input type="number" value={bulkGuests} onChange={(e) => setBulkGuests(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Telefone (opcional)</Label>
+              <Input type="tel" placeholder="(11) 99999-9999" value={bulkPhone} onChange={(e) => setBulkPhone(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Mensagem *</Label>
+              <Textarea
+                rows={4}
+                placeholder="Olá! Estou planejando meu casamento e gostaria de receber um orçamento..."
+                value={bulkMessage}
+                onChange={(e) => setBulkMessage(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBulkOpen(false)} disabled={bulkSending}>Cancelar</Button>
+            <Button onClick={enviarOrcamentoMassa} disabled={bulkSending}>
+              <Send className="w-4 h-4 mr-2" />
+              {bulkSending ? "Enviando..." : "Enviar para todos"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -249,13 +446,15 @@ function SupplierMatchCard({
         )}
       </div>
 
-      <Link
-        to={`/fornecedor/${supplier.id}`}
+      <a
+        href={`/fornecedor/${supplier.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className="text-[11px] text-primary hover:underline mt-2 inline-block"
+        className="text-[11px] text-primary hover:underline mt-2 inline-flex items-center gap-1"
       >
-        Ver perfil completo →
-      </Link>
+        Ver perfil completo <ExternalLink className="w-3 h-3" />
+      </a>
     </div>
   );
 }
