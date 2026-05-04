@@ -11,13 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays } from "lucide-react";
+import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
 import QuoteProposalPanel from "@/components/QuoteProposalPanel";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 import PromoDatesManager from "@/components/PromoDatesManager";
 import NotificationsBell from "@/components/NotificationsBell";
+import SupplierMetrics from "@/components/supplier/SupplierMetrics";
+import SupplierOnboardingWizard from "@/components/supplier/SupplierOnboardingWizard";
+import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 
 type Category = { id: string; name: string };
 
@@ -53,7 +56,7 @@ export default function SupplierDashboard() {
 
   const loadSupplier = async () => {
     if (!user) return;
-    const { data } = await supabase.from("suppliers").select("*").eq("user_id", user.id).single();
+    const { data } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle();
     if (data) {
       setSupplier(data);
       setCompanyName(data.company_name || "");
@@ -61,7 +64,7 @@ export default function SupplierDashboard() {
       setCategoryId(data.category_id || "");
       setCity(data.city || "");
       setState(data.state || "");
-      setPhone(data.phone || "");
+      setPhone(formatPhoneBR(data.whatsapp || data.phone || ""));
       setEmail(data.email || "");
       const { data: photoData } = await supabase.from("supplier_photos").select("*").eq("supplier_id", data.id).order("display_order");
       setPhotos(photoData || []);
@@ -103,14 +106,20 @@ export default function SupplierDashboard() {
 
   const handleSave = async () => {
     if (!supplier) return;
+    if (phone && !isValidPhoneBR(phone)) {
+      toast({ title: "WhatsApp inválido", description: "Use DDD + número (ex.: (11) 91234-5678).", variant: "destructive" });
+      return;
+    }
     setLoading(true);
+    const phoneDigits = phone.replace(/\D/g, "") || null;
     const { error } = await supabase.from("suppliers").update({
       company_name: companyName,
       description,
       category_id: categoryId || null,
       city: city || null,
       state: state || null,
-      phone: phone || null,
+      phone: phoneDigits,
+      whatsapp: phoneDigits,
       email: email || null,
     }).eq("id", supplier.id);
     if (error) {
