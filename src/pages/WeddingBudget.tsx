@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
-import { Plus, Calculator, Pencil, Eye } from "lucide-react";
+import { Plus, Calculator, Pencil, Eye, FileDown } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import BudgetChart from "@/components/BudgetChart";
@@ -17,6 +17,7 @@ import QuotesKanban from "@/components/QuotesKanban";
 import BudgetManualSetupDialog from "@/components/BudgetManualSetupDialog";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { generateBudgetPdf } from "@/lib/budgetPdf";
 
 type BudgetItem = {
   id: string;
@@ -329,6 +330,38 @@ export default function WeddingBudget() {
                 <Button variant="secondary" size="sm" onClick={() => setManualOpen(true)}>
                   <Pencil className="h-3 w-3 mr-1" />
                   Editar meta
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const itemsWithSupplier = budgetItems.map((it) => ({
+                      ...it,
+                      supplier_name: it.supplier_id ? suppliers[it.supplier_id]?.company_name || null : null,
+                    }));
+                    const itemDescById: Record<string, string> = {};
+                    budgetItems.forEach((it) => { itemDescById[it.id] = it.description; });
+                    const paymentsWithItem = payments.map((p) => ({
+                      ...p,
+                      budget_item_description: itemDescById[p.budget_item_id] || null,
+                    }));
+                    generateBudgetPdf({
+                      couple: {
+                        partner_name: couple?.partner_name,
+                        user_full_name: coupleName,
+                        wedding_date: couple?.wedding_date,
+                        wedding_city: (couple as any)?.wedding_city,
+                        estimated_guests: couple?.estimated_guests,
+                        target_budget: couple?.target_budget,
+                        estimated_budget: couple?.estimated_budget,
+                      },
+                      items: itemsWithSupplier,
+                      payments: paymentsWithItem,
+                    });
+                  }}
+                >
+                  <FileDown className="h-3 w-3 mr-1" />
+                  Exportar PDF
                 </Button>
               </div>
             </div>

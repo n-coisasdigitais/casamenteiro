@@ -18,6 +18,7 @@ type Task = {
   category: string;
   priority: string;
   due_period: string | null;
+  due_date: string | null;
   is_completed: boolean;
   sort_order: number;
   supplier_id?: string | null;
@@ -65,7 +66,7 @@ export default function WeddingTasks() {
   const loadTasks = async (cId: string) => {
     const { data } = await (supabase
       .from("wedding_tasks") as any)
-      .select("id, title, category, priority, due_period, is_completed, sort_order, supplier_id")
+      .select("id, title, category, priority, due_period, due_date, is_completed, sort_order, supplier_id")
       .eq("couple_id", cId)
       .order("sort_order", { ascending: true });
     const list = (data || []) as Task[];
@@ -249,6 +250,7 @@ export default function WeddingTasks() {
                         isCompleted={t.is_completed}
                         supplierId={t.supplier_id || null}
                         supplierName={t.supplier_name || null}
+                        dueDate={t.due_date}
                         onToggle={toggleTask}
                       />
                     ))}
