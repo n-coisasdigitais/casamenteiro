@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, X, DollarSign, Percent, Handshake } from "lucide-react";
+import ConfirmFinishTaskDialog from "@/components/ConfirmFinishTaskDialog";
 
 type Proposal = {
   id: string;
@@ -35,6 +36,8 @@ export default function QuoteProposalPanel({ quoteId, currentUserId, isSupplier,
   const [desc, setDesc] = useState("");
   const [kind, setKind] = useState<"proposal" | "discount_request" | "counter">(isSupplier ? "proposal" : "discount_request");
   const [busy, setBusy] = useState(false);
+  const [confirmTrigger, setConfirmTrigger] = useState(0);
+  const [confirmCategory, setConfirmCategory] = useState<string | null>(null);
 
   const load = async () => {
     const { data } = await (supabase.from("quote_proposals" as any).select("*").eq("quote_id", quoteId).order("created_at", { ascending: true }) as any);
@@ -148,23 +151,13 @@ export default function QuoteProposalPanel({ quoteId, currentUserId, isSupplier,
       });
     }
 
-    // Marca tarefa "Contratar..." da categoria como concluída se existir
-    if (categoryName) {
-      const { data: tasks } = await supabase
-        .from("wedding_tasks")
-        .select("id")
-        .eq("couple_id", coupleId)
-        .eq("is_completed", false)
-        .ilike("title", `%contratar%${categoryName.toLowerCase()}%`);
-      if (tasks && tasks.length) {
-        await (supabase.from("wedding_tasks") as any)
-          .update({ is_completed: true, completed_at: new Date().toISOString() })
-          .in("id", tasks.map((t: any) => t.id));
-      }
-    }
-
     await (supabase.from("quotes") as any).update({ status: "accepted", kanban_status: "fechado" }).eq("id", quoteId);
-    toast({ title: "Marcado como contratado!", description: "Atualizamos fornecedores, orçamento e tarefas." });
+    toast({ title: "Marcado como contratado!", description: "Atualizamos fornecedores e orçamento." });
+    // dispara confirmação para concluir tarefa relacionada
+    if (categoryName) {
+      setConfirmCategory(categoryName);
+      setConfirmTrigger((n) => n + 1);
+    }
     onContracted?.();
     setBusy(false);
   };
@@ -253,6 +246,12 @@ export default function QuoteProposalPanel({ quoteId, currentUserId, isSupplier,
         </div>
         <Button size="sm" className="w-full" onClick={send} disabled={busy}>Enviar</Button>
       </div>
+      <ConfirmFinishTaskDialog
+        coupleId={coupleId || null}
+        supplierId={supplierId || null}
+        categoryName={confirmCategory}
+        trigger={confirmTrigger}
+      />
     </div>
   );
 }

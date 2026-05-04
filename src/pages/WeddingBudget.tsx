@@ -8,12 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
-import { Plus, TrendingDown, DollarSign, AlertCircle } from "lucide-react";
+import { Plus, Calculator, Pencil } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import BudgetChart from "@/components/BudgetChart";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
 import QuotesKanban from "@/components/QuotesKanban";
+import BudgetManualSetupDialog from "@/components/BudgetManualSetupDialog";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 type BudgetItem = {
@@ -69,6 +71,7 @@ export default function WeddingBudget() {
   const [loading, setLoading] = useState(true);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [simBudget, setSimBudget] = useState<number | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
   const [coupleName, setCoupleName] = useState<string>("");
 
   useEffect(() => {
@@ -170,6 +173,49 @@ export default function WeddingBudget() {
     return <div className="flex items-center justify-center h-screen">Carregando...</div>;
   }
 
+  // Empty state: sem meta E sem itens
+  const isEmpty = (!target || target <= 0) && budgetItems.length === 0;
+  if (isEmpty) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader />
+        <DashboardNav />
+        <div className="container px-4 py-12">
+          <div className="max-w-2xl mx-auto text-center space-y-6">
+            <h1 className="text-3xl md:text-4xl font-serif">Comece definindo seu orçamento</h1>
+            <p className="text-muted-foreground">
+              O Orçamento é o seu plano financeiro do casamento. Você pode partir de uma simulação rápida ou definir manualmente sua meta.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4 mt-6">
+              <Card className="p-6 text-left hover:shadow-md transition-shadow">
+                <Calculator className="h-8 w-8 text-primary mb-3" />
+                <h3 className="font-semibold mb-1">Fazer simulação</h3>
+                <p className="text-sm text-muted-foreground mb-4">Responda algumas perguntas e receba uma sugestão completa por categoria.</p>
+                <Button asChild className="w-full">
+                  <Link to="/#simulador">Começar simulação</Link>
+                </Button>
+              </Card>
+              <Card className="p-6 text-left hover:shadow-md transition-shadow">
+                <Pencil className="h-8 w-8 text-primary mb-3" />
+                <h3 className="font-semibold mb-1">Definir manualmente</h3>
+                <p className="text-sm text-muted-foreground mb-4">Informe sua meta total e crie a distribuição inicial automaticamente.</p>
+                <Button variant="outline" className="w-full" onClick={() => setManualOpen(true)}>
+                  Definir agora
+                </Button>
+              </Card>
+            </div>
+          </div>
+        </div>
+        <BudgetManualSetupDialog
+          open={manualOpen}
+          onOpenChange={setManualOpen}
+          coupleId={couple?.id || null}
+          onSuccess={() => couple && loadBudgetData(couple.id)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />
@@ -185,7 +231,7 @@ export default function WeddingBudget() {
               <div>
                 <p className="text-xs opacity-80">Meta</p>
                 <p className="text-2xl font-bold">R$ {target.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
-                <p className="text-xs opacity-70">{mode === "simulation" ? "Pela última simulação" : "Definida no cadastro"}</p>
+                <p className="text-xs opacity-70">Meta do casal</p>
               </div>
               <div>
                 <p className="text-xs opacity-80">Gasto/comprometido</p>
@@ -195,9 +241,10 @@ export default function WeddingBudget() {
                 <p className="text-xs opacity-80">Saldo</p>
                 <p className="text-2xl font-bold">R$ {remaining.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
               </div>
-              <div className="ml-auto">
-                <Button asChild variant="secondary" size="sm">
-                  <a href="/perfil">Editar meta</a>
+              <div className="ml-auto flex gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setManualOpen(true)}>
+                  <Pencil className="h-3 w-3 mr-1" />
+                  Editar meta
                 </Button>
               </div>
             </div>
@@ -512,6 +559,12 @@ export default function WeddingBudget() {
       </div>
 
       <AddExpenseDialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen} coupleId={couple?.id} onSuccess={handleAddExpense} />
+      <BudgetManualSetupDialog
+        open={manualOpen}
+        onOpenChange={setManualOpen}
+        coupleId={couple?.id || null}
+        onSuccess={() => couple && loadBudgetData(couple.id)}
+      />
     </div>
   );
 }

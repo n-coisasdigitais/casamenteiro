@@ -1,77 +1,77 @@
-# Plano de atualização — Explore, paleta e tipografia
+## Objetivo
 
-## 1. Nova paleta (sem vermelho, sem roxo)
+Simplificar o modelo: **Simulação** é só ponto de partida; **Plano = Orçamento** (mesma fonte de dados); **Fornecedores contratados** entram automaticamente; **Tarefas** se concluem com confirmação do casal.
 
-Paleta neutra quente com acento âmbar/dourado suave — caloroso, moderno e elegante:
+---
 
-- `--background`: #FAFAF7 (off-white quente)
-- `--foreground`: #1F1D1B (quase preto, marrom muito escuro)
-- `--primary`: #D9905A (terracota suave / âmbar)
-- `--primary-foreground`: #FFFFFF
-- `--secondary`: #F2EEE8 (areia clara — usada para superfícies/seções)
-- `--secondary-foreground`: #1F1D1B
-- `--muted`: #F4F1EC
-- `--muted-foreground`: #6B645C
-- `--accent`: #4A7C6A (verde sálvia escuro — para destaques/badges)
-- `--accent-foreground`: #FFFFFF
-- `--border`: #E6E1D9
-- `--input`: #E6E1D9
-- `--ring`: #D9905A
-- Aliases legados (`gold`, `coral`, `beige`, `cream`, `ink`, `olive`, `rose-gold`) remapeados para os novos tokens para não quebrar componentes existentes.
+## 1. Unificar Plano e Orçamento
 
-Atualizado em `src/index.css` (light + dark) e refletido nos tokens semânticos `--color-*`.
+- A página `/orcamento` passa a ler de `couple_suppliers` + `budget_items` (não mais da `home_simulacoes`).
+- A página `/meu-plano/:id` vira um redirect para `/orcamento` (ou é removida do menu — manter rota só por compatibilidade).
+- **Estrutura única do Orçamento:**
+  - Cabeçalho com meta total (`couples.target_budget`) + total estimado + total contratado.
+  - Lista de categorias (vindas de `categories` ativas no plano), cada uma com:
+    - valor estimado (vindo de `couple_suppliers.estimated_value` ou `budget_items.estimated_cost`)
+    - fornecedor vinculado (se houver) + status
+    - botão para editar valor / adicionar fornecedor manualmente / remover
+- **Quando há nova simulação:** apenas adiciona categorias/valores que ainda não existem no plano (merge, nunca sobrescreve). Categorias já contratadas são preservadas.
 
-## 2. Tipografia — Inter (sem serifa)
+## 2. Empty state do Orçamento (sem simulação)
 
-Trocar Libre Franklin + Faustina por **Inter** como família única (display + body).
+- Card grande no topo: "Comece definindo seu orçamento"
+- Dois CTAs lado a lado:
+  - **"Fazer simulação"** → vai para `/simulador`
+  - **"Definir manualmente"** → abre dialog pedindo meta total (R$) e popula categorias usando `budget_distribution_defaults` (porte simples/médio/grande conforme valor).
 
-- `index.html`: substituir o `<link>` do Google Fonts por Inter (300, 400, 500, 600, 700).
-- `src/index.css`:
-  - `body` → `font-family: 'Inter', system-ui, sans-serif;` peso 400, line-height 1.6.
-  - `h1–h6` → `Inter`, peso 600/700, letter-spacing -0.02em.
-  - `.label-ui` e `.btn-pill` → `Inter`.
-- `tailwind.config.ts`: `fontFamily.sans/serif/display` todas apontando para Inter.
+## 3. Pop-up de confirmação ao contratar fornecedor
 
-## 3. Página Explore estilo Airbnb
+- Em `QuoteProposalPanel.marcarContratado` e em `QuotesKanban` (adicionar contrato manual) e em `MySuppliers` (marcar contratado):
+  - Após gravar o contrato, **buscar tarefas abertas** com `ilike '%contratar%[categoria]%'` em `wedding_tasks` do casal.
+  - Se houver pelo menos 1, abrir um **AlertDialog**: 
+    > "Podemos finalizar a tarefa 'Contratar Fotografia'?"
+    > [Sim, finalizar] [Manter aberta]
+  - Ao confirmar: marca `is_completed = true`, `completed_at = now()` e grava `supplier_id` na tarefa (vincular fornecedor).
+- Remover a finalização automática silenciosa que existe hoje no trigger/função.
 
-Reconstruir `src/pages/Explore.tsx` com layout inspirado no anexo:
+## 4. Vincular fornecedor à tarefa
 
-**Header fixo (estilo Airbnb)**
-- Logo à esquerda.
-- Barra de busca pill central com 3 campos divididos por separadores: **Onde** (cidade), **Quando** (data do casamento) e **Quem** (categoria/serviço), com botão circular âmbar de busca à direita.
-- Menu de usuário (avatar + hambúrguer) à direita.
-- Em mobile: barra colapsa em um único pill compacto que abre um drawer com os filtros.
+**Migração:**
+```sql
+ALTER TABLE wedding_tasks ADD COLUMN supplier_id uuid REFERENCES suppliers(id);
+```
+- Exibir badge na tarefa quando vinculada: "Contratado: [Nome do fornecedor]" + link para perfil.
 
-**Tiras horizontais de cards (carrosséis)**
-Cada seção segue o padrão do Airbnb: título à esquerda com seta, setas de navegação à direita, scroll horizontal de cards. Seções:
-1. "Vistos recentemente" (últimos fornecedores que o usuário visitou — via localStorage; some se vazio).
-2. "Fornecedores em destaque em {cidade do usuário}" (ou cidade padrão se sem login).
-3. "Espaços e buffets muito procurados".
-4. "Fotografia em alta".
-5. "Decoração e flores".
-6. Mais uma tira por categoria principal restante (música, doces, etc.).
+## 5. Simplificar navegação
 
-**Card de fornecedor (estilo Airbnb)**
-- Imagem quadrada com `rounded-xl`, badge sobreposta no topo-esquerdo ("Destaque" / "Novo" / "Mais procurado") e ícone de coração (favoritar) no topo-direito.
-- Abaixo: nome • cidade, faixa de convidados, faixa de preço "A partir de R$ X", nota com estrela. Tudo em texto pequeno e discreto, igual Airbnb.
-- Carrossel interno de fotos opcional (setas só no hover) — versão simples primeiro: foto principal apenas.
+- No `DashboardNav`, manter: **Painel · Tarefas · Convidados · Orçamento · Fornecedores · Perfil**.
+- Remover link "Meu Plano" (substituído por Orçamento).
+- A simulação some do menu principal — fica como CTA dentro de Orçamento e na home.
 
-**Rodapé**
-- Mantém o rodapé atual com créditos da N Coisas Digitais.
+## 6. Resumo visual do fluxo unificado
 
-**Detalhes técnicos**
-- Carrosséis usando scroll horizontal nativo (`overflow-x-auto snap-x`) com botões de seta sobrepostos que chamam `scrollBy`. Sem nova dependência.
-- Reaproveita `SupplierCard` existente apenas como fallback; cria `ExploreSupplierCard` interno mais enxuto para casar com o visual Airbnb.
-- Busca de dados: uma query por seção (limit 12), filtrando por `status='approved'` e ordenando por `featured` + `created_at`. Categorias carregadas uma vez.
-- Favoritar continua usando a tabela `favorites` existente; sem login → toast pedindo para entrar.
+```text
+Simulação (opcional)
+        │
+        ▼
+   ORÇAMENTO  ◄────  Fornecedores contratados (auto-add)
+   (= Plano)         Itens manuais
+        │
+        ▼
+   TAREFAS  ◄────  Pop-up "Finalizar Contratar X?"
+                        ao marcar fornecedor contratado
+```
 
-## Arquivos editados
-- `index.html` (fonte Inter)
-- `src/index.css` (paleta + tipografia)
-- `tailwind.config.ts` (fontFamily)
-- `src/pages/Explore.tsx` (reescrita Airbnb-style)
-- `mem://style/visual-identity` (atualizar paleta + fonte)
+---
 
-## Fora do escopo
-- Não toco em `Home.tsx`, `StoryBlock`, `SimulatorCTA` nesta rodada — só herdam a nova paleta/fonte automaticamente via tokens.
-- Não adiciono filtros avançados nem mapa nesta página (já existem em `/buscar`).
+## Arquivos afetados
+
+- **Migração SQL:** adicionar `wedding_tasks.supplier_id`; ajustar `sync_budget_on_contract` para não tocar em tarefas (movido para o front com confirmação).
+- **`src/pages/WeddingBudget.tsx`:** reescrever para ser fonte única (lê `couple_suppliers` + `budget_items`); novo empty state; merge de simulação.
+- **`src/pages/MeuPlano.tsx`:** vira redirect → `/orcamento`.
+- **`src/components/DashboardNav.tsx`:** remover "Meu Plano".
+- **`src/components/QuoteProposalPanel.tsx`:** adicionar AlertDialog de confirmação de tarefa.
+- **`src/components/QuotesKanban.tsx`:** mesmo dialog ao adicionar contrato manual.
+- **`src/pages/MySuppliers.tsx`:** mesmo dialog ao alterar status para contratado.
+- **`src/pages/WeddingTasks.tsx`:** exibir badge "Contratado: [Fornecedor]".
+- **Novo componente:** `ConfirmFinishTaskDialog.tsx` reutilizável.
+- **Novo componente:** `BudgetManualSetupDialog.tsx` para definir meta + distribuição padrão.

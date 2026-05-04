@@ -80,7 +80,7 @@ export default function MySuppliers() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link to="/meu-plano">Ver meu plano</Link>
+              <Link to="/orcamento">Ver orçamento</Link>
             </Button>
             <Button asChild>
               <Link to="/buscar">

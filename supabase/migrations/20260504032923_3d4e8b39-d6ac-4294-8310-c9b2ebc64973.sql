@@ -1,0 +1,1 @@
+ALTER TABLE public.wedding_tasks ADD COLUMN IF NOT EXISTS supplier_id uuid REFERENCES public.suppliers(id) ON DELETE SET NULL;

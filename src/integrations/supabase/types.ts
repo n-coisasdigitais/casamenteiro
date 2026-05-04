@@ -1505,6 +1505,7 @@ export type Database = {
           is_custom: boolean
           priority: string
           sort_order: number
+          supplier_id: string | null
           title: string
           updated_at: string
         }
@@ -1523,6 +1524,7 @@ export type Database = {
           is_custom?: boolean
           priority?: string
           sort_order?: number
+          supplier_id?: string | null
           title: string
           updated_at?: string
         }
@@ -1541,6 +1543,7 @@ export type Database = {
           is_custom?: boolean
           priority?: string
           sort_order?: number
+          supplier_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -1550,6 +1553,13 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wedding_tasks_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
