@@ -46,6 +46,7 @@ export default function SupplierProfile() {
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [userHasReview, setUserHasReview] = useState(false);
+  const [phoneUnlocked, setPhoneUnlocked] = useState(false);
 
   // Recommendations
   const [recommendations, setRecommendations] = useState<any[]>([]);
@@ -84,6 +85,9 @@ export default function SupplierProfile() {
           });
           supabase.from("reviews").select("id").eq("couple_id", data.id).eq("supplier_id", id).maybeSingle().then(({ data: rev }) => {
             setUserHasReview(!!rev);
+          });
+          supabase.from("quotes").select("id").eq("couple_id", data.id).eq("supplier_id", id).limit(1).then(({ data: q }) => {
+            setPhoneUnlocked(!!(q && q.length > 0));
           });
         }
       });
