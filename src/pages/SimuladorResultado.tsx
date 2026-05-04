@@ -135,6 +135,8 @@ export default function SimuladorResultado() {
           estimated_guests: sim.num_convidados || null,
           wedding_date: sim.data_evento || null,
           budget_mode: "fixed",
+          wedding_city: sim.cidade || null,
+          wedding_style: sim.estilo || null,
         })
         .eq("id", coupleId);
 
@@ -181,6 +183,7 @@ export default function SimuladorResultado() {
             supplier_id: sid,
             category_id: cat.category_id,
             status: "saved",
+            kanban_status: "nao_iniciado",
             contract_value: sup?.estimated_price || null,
             estimated_value: sup?.estimated_price || null,
             simulation_id: id,

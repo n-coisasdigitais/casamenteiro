@@ -248,6 +248,8 @@ export type Database = {
           estimated_value: number | null
           final_value: number | null
           id: string
+          kanban_order: number
+          kanban_status: string
           notes: string | null
           proposed_value: number | null
           simulation_id: string | null
@@ -264,6 +266,8 @@ export type Database = {
           estimated_value?: number | null
           final_value?: number | null
           id?: string
+          kanban_order?: number
+          kanban_status?: string
           notes?: string | null
           proposed_value?: number | null
           simulation_id?: string | null
@@ -280,6 +284,8 @@ export type Database = {
           estimated_value?: number | null
           final_value?: number | null
           id?: string
+          kanban_order?: number
+          kanban_status?: string
           notes?: string | null
           proposed_value?: number | null
           simulation_id?: string | null
@@ -335,7 +341,9 @@ export type Database = {
           target_budget: number | null
           updated_at: string
           user_id: string
+          wedding_city: string | null
           wedding_date: string | null
+          wedding_style: string | null
         }
         Insert: {
           budget_mode?: string
@@ -360,7 +368,9 @@ export type Database = {
           target_budget?: number | null
           updated_at?: string
           user_id: string
+          wedding_city?: string | null
           wedding_date?: string | null
+          wedding_style?: string | null
         }
         Update: {
           budget_mode?: string
@@ -385,7 +395,9 @@ export type Database = {
           target_budget?: number | null
           updated_at?: string
           user_id?: string
+          wedding_city?: string | null
           wedding_date?: string | null
+          wedding_style?: string | null
         }
         Relationships: []
       }
@@ -1493,6 +1505,8 @@ export type Database = {
         Row: {
           action_label: string | null
           action_url: string | null
+          auto_completed_at: string | null
+          auto_completed_source: string | null
           category: string
           completed_at: string | null
           couple_id: string
@@ -1512,6 +1526,8 @@ export type Database = {
         Insert: {
           action_label?: string | null
           action_url?: string | null
+          auto_completed_at?: string | null
+          auto_completed_source?: string | null
           category?: string
           completed_at?: string | null
           couple_id: string
@@ -1531,6 +1547,8 @@ export type Database = {
         Update: {
           action_label?: string | null
           action_url?: string | null
+          auto_completed_at?: string | null
+          auto_completed_source?: string | null
           category?: string
           completed_at?: string | null
           couple_id?: string
