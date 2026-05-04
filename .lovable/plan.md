@@ -1,94 +1,139 @@
-## Simulador v2 — typeform + resultado com alertas
+## Auditoria da v1 — o que falta e o que melhorar
 
-Adapto a UX e a lógica do `simulador.js` ao banco atual. **Não crio tabelas novas** — uso `suppliers`, `home_simulacoes`, `couples`, `couple_suppliers`, `wedding_tasks` que já cumprem o papel de `fornecedores`, `simulacoes`, `planos`, `plano_fornecedores`, `tarefas`.
+Baseado em tudo que já foi construído (simulador, plano, kanban, orçamento, pagamentos, convidados, RSVP, fornecedores, admin), abaixo estão as lacunas e melhorias prioritárias para a v1 ficar redonda. Organizei em 4 níveis: **bloqueadores**, **importantes**, **polimento** e **opcionais para v1.1**.
 
-### 1. Nova lib `src/lib/simulador.ts`
+---
 
-Funções com a mesma assinatura do `simulador.js` (para manter o "contrato"), mas mapeadas para o banco real:
+### 🔴 BLOQUEADORES (impedem operação real)
 
-- `calcularSimulacao(orcamento, convidados, cidade, estilo, aceitaOciosas)`:
-  - Distribuição interna por estilo (`intimista`/`elegante`/`grandioso`) replicando os percentuais do JS para 9 categorias (espaço, buffet, fotógrafo, decoração, banda, cerimonialista, trajes, maquiagem, convites). Mapeia cada chave para o `categories.slug` correspondente do banco (faço a busca uma vez e cacheio o map).
-  - Para cada categoria: lê `suppliers` (status=approved, `category_id`, `ilike` na cidade). Calcula preço estimado a partir de `price_min`/`price_max`. Valida se cabe na verba (com tolerância) e respeita `guest_min`/`guest_max`.
-  - Aplica desconto se `aceitaOciosas && accepts_idle_dates && idle_discount_pct > 0`.
-  - Ordena por `featured`, ociosas, rating, e devolve top 3 por categoria, já enriquecidos (`temDesconto`, `desconto`, `economiaEstimada`, `linkWhatsApp`).
-  - Salva uma linha em `home_simulacoes` com `resultado` (jsonb) e devolve `simulacaoId`.
-  - Retorna `{ simulacaoId, resumo, plano, alertas }` exatamente como o JS.
+1. **E-mail transacional não está ativo**
+   - Hoje notificações só aparecem no sininho. Casal/fornecedor não recebe nada por e-mail.
+   - Mínimo da v1: novo orçamento (fornecedor), nova proposta (casal), RSVP confirmado (casal), conta criada/recuperação de senha.
+   - Requer configurar domínio de e-mail e o `auth-email-hook`.
 
-- `criarPlano(simulacaoId, resultado, nomeDoPlano, dataEvento)`:
-  - Atualiza `couples` do usuário (`wedding_date`, `wedding_city`, `wedding_style`, `estimated_budget`, `target_budget`, `estimated_guests`, `header_quote = nomeDoPlano`).
-  - Para cada categoria com fornecedor sugerido: faz upsert em `couple_suppliers` (`kanban_status='nao_iniciado'`, `estimated_value`, `simulation_id`, `category_id`).
-  - Cria/garante itens em `budget_items` por categoria (estimated_cost = verba da categoria).
-  - O trigger `trigger_seed_tasks_on_onboarding` + `seed_default_tasks` já cuida das tarefas; quando o casal mover um fornecedor para "contratado", o trigger `handle_kanban_contracted` marca a tarefa correspondente. **Nada novo de banco.**
-  - Devolve `couple_id` (usado como `:id` da rota).
+2. **Recuperação de senha**
+   - `Auth.tsx` tem login/cadastro mas não há fluxo "esqueci minha senha".
 
-- `formatarReais(valor)` — helper.
+3. **Segurança — alertas do linter pendentes**
+   - Existem 38 avisos ativos do linter Supabase (RLS sempre verdadeiro em algumas tabelas, buckets públicos com listagem aberta, funções SECURITY DEFINER expostas a anônimos).
+   - Para v1 pública precisa pelo menos varrer e fechar os WARN críticos.
 
-### 2. Nova página `/simulador` — typeform tela cheia
+4. **Validação de telefone/WhatsApp no fornecedor**
+   - O botão de WhatsApp usa `replace(/\D/g,"")` direto, sem validar DDD. Se o fornecedor cadastrou só "99999-9999", o link quebra.
+   - Adicionar máscara de telefone no cadastro do fornecedor + validação mínima de 10 dígitos.
 
-`src/pages/Simulador.tsx`. Sem navbar, fundo `#FAF7F2`, barra de progresso fina no topo (cor primária warm da paleta).
+5. **LGPD básica**
+   - Falta política de privacidade, termos de uso e checkbox de aceite no cadastro.
+   - Footer hoje só tem créditos do desenvolvedor.
 
-Telas: boas-vindas → P1 orçamento (slider 5k–150k) → P2 convidados (4 cards A/B/C/D, autoavança) → P3 cidade (input underline, autofocus) → P4 estilo (3 cards, autoavança) → loading "Buscando fornecedores…".
+---
 
-Estado local conforme spec. Transição fade + slide. `Enter` avança onde aplicável. Botão Voltar inferior esquerdo, Próxima inferior direito.
+### 🟡 IMPORTANTES (qualidade de produto)
 
-Ao final:
-- Se logado → chama `calcularSimulacao` e navega `/simulador/resultado?id=<simulacaoId>`.
-- Se deslogado → mesma chamada (a tabela aceita `user_id null`), salva também o `simulacaoId` em `sessionStorage.pendingSimulacao` e navega para `/cadastro?redirect=/simulador/resultado?id=<id>` com mensagem.
+6. **Onboarding do fornecedor incompleto**
+   - Quando alguém se cadastra como fornecedor hoje, cai num painel quase vazio. Falta um wizard guiado: dados da empresa → categoria → fotos → preços → datas ociosas → enviar para aprovação.
+   - Sem isso, fornecedor cadastra e não preenche o perfil.
 
-O CTA inline da Home (`SimulatorCTA.tsx`) **continua existindo** como atalho rápido — só adiciono um botão "Quero responder com calma" que leva para `/simulador`.
+7. **Painel do fornecedor — métricas e funil**
+   - Hoje o fornecedor vê pedidos de orçamento mas não tem visão geral: quantos leads recebeu no mês, taxa de resposta, taxa de conversão.
+   - Adicionar 4 cards de métrica + lista de leads recentes.
 
-### 3. Reescrita de `src/pages/SimuladorResultado.tsx`
+8. **Busca de fornecedores — filtros que ainda faltam**
+   - Filtro por **faixa de preço** (price_min/max já existem no banco).
+   - Filtro **"aceita data ociosa"** (campo existe).
+   - Ordenação: relevância / preço / avaliação / proximidade.
+   - Salvar busca / criar alerta (notifica quando entra fornecedor novo na categoria).
 
-Novo layout (coluna 720px, navbar simples no topo):
+9. **Kanban do plano — drag-and-drop mobile**
+   - DndKit funciona bem em desktop, mas em 390px o usuário não consegue arrastar entre colunas (precisa scroll horizontal).
+   - Adicionar opção alternativa: tap no card → menu "mover para…".
 
-- **Resumo**: heading "Seu plano está pronto ✓", linha resumo, **badge de cobertura** (verde ≥80% / amber ≥50% / vermelho <50%) com contagem N/total.
-- **Alertas**: renderiza `resultado.alertas` em banners (aviso amber, oportunidade verde, dica azul). Botões de ação reexecutam `calcularSimulacao` com `aceitaOciosas=true` e atualizam estado + persistem em `home_simulacoes.resultado`.
-- **Toggle datas ociosas** sticky logo abaixo do resumo. Skeleton enquanto recalcula.
-- **Grid por categoria**: header com ícone, nome, verba à direita (%); cards horizontais (foto/inicial, nome, cidade, badge `$/$$/$$$` derivado de `price_min`, badge "-N% data ociosa" se aplicável, botão WhatsApp). Vazio: mensagem + link `/buscar?categoria=<slug>`.
-- **CTA fixo bottom**: "Assumir este plano →" (primário) e "Simular novamente" (outline → `/simulador`).
+10. **Fluxo de "marcar como contratado" precisa de contrato/anexo**
+    - Hoje o casal só clica e pronto. Idealmente: anexar contrato (PDF), data de assinatura, condições de pagamento (sinal/parcelas).
+    - Já criar as parcelas em `budget_payments` automaticamente a partir da condição.
 
-**Modal "Assumir este plano"**:
-- Campos: nome do plano (input) + data prevista (date picker shadcn com `pointer-events-auto`).
-- Se usuário não logado → fecha e redireciona `/cadastro?redirect=/simulador/resultado?id=<id>&assumir=1`.
-- Se logado → chama `criarPlano`, mostra loading "Criando seu plano…", redireciona para `/meu-casamento/plano` (rota existente que renderiza `WeddingPlan`).
+11. **Convidados — importação em massa**
+    - Hoje só tem cadastro um a um. Falta importar de planilha (CSV) ou colar lista.
+    - Para um casamento de 150 pessoas isso é essencial.
 
-Recuperação pós-cadastro: `Auth.tsx` já trata `redirect=simulador`; ajusto para também respeitar `redirect=/simulador/resultado…&assumir=1` (volta para resultado e abre o modal automaticamente).
+12. **Convite RSVP — compartilhamento**
+    - Falta botão "Compartilhar no WhatsApp" com mensagem pronta + link único do convidado.
+    - Falta página pública de visualização do convite (preview antes de enviar).
 
-### 4. Rotas (`src/App.tsx`)
+13. **Tarefas — prazos calculados a partir da data do casamento**
+    - As 79 tarefas seed têm `due_period` em texto ("10-12 meses"). Falta converter para data real e mostrar "vencendo em X dias" + alerta no dashboard.
 
-Adiciono `/simulador` → `Simulador` (typeform). Mantenho `/simulador/resultado`. Mantenho `/meu-casamento/plano` → `WeddingPlan`.
+14. **Orçamento — exportar PDF**
+    - Casal precisa apresentar o orçamento aos pais/padrinhos. Botão "Baixar resumo em PDF" no plano.
 
-### 5. Estilo
+15. **Sistema de avaliações — moderação**
+    - Hoje qualquer review aparece. Falta painel admin para esconder review ofensivo + reportar avaliação.
 
-- Paleta atual do projeto (warm terracotta/sage, Inter), sem importar `#C4856A` literal — uso tokens (`primary`, `accent`, `bg-background`) que já estão configurados conforme a regra de identidade visual.
-- Botões pill (rounded-full) conforme memória de estilo.
-- Tudo em pt-BR. Toda query Supabase com `.maybeSingle()`.
+---
 
-### 6. O que não muda
+### 🟢 POLIMENTO
 
-- Banco de dados: zero migration.
-- `WeddingPlan.tsx` e abas Kanban/Orçamento/Pagamentos continuam como estão.
-- `SimulatorCTA` da Home continua funcionando.
-- `.env` já está configurado pela Cloud — não toco.
+16. **Mobile (390px)** — vários ajustes pequenos baseados no viewport atual:
+    - Header/nav do dashboard ficam apertados; precisa drawer.
+    - PlanHeader com 4 métricas em grid 2x2 pode quebrar em telas muito pequenas.
+    - Cards de fornecedor no kanban precisam de altura mínima maior.
 
-### Detalhes técnicos
+17. **Estados vazios** — várias telas mostram só "Nenhum item" sem ilustração ou call-to-action. Especialmente: Favoritos, Convidados sem grupos, Pagamentos.
+
+18. **Loading states** — substituir "Carregando..." por skeletons nas páginas principais (Dashboard, Plano, Busca).
+
+19. **SEO básico** — `index.html` provavelmente tem title/description genéricos. Precisa OG image, meta para compartilhamento.
+
+20. **404 customizada** — verificar se `NotFound.tsx` tem ilustração e link de volta.
+
+21. **Acessibilidade** — botões só com ícone sem `aria-label`, contraste em alguns badges, foco visível.
+
+22. **Performance** — imagens de fornecedor sem lazy + sem srcset. Em busca com 50+ cards isso pesa.
+
+---
+
+### 🔵 OPCIONAIS (podem ficar para v1.1)
+
+23. Sistema de favoritos com listas (ex: "Buffet", "Decoração") em vez de uma lista única.
+24. Dashboard do casal com countdown grande "faltam X dias".
+25. Chat em tempo real no quote (já tem postgres_changes disponível).
+26. Sistema de cashback / cupons.
+27. App mobile (PWA com manifest e service worker).
+28. Integração com Google Calendar para tarefas.
+29. Mural de fotos do casamento (pós-evento).
+
+---
+
+### Como abordar
+
+Sugiro atacar nesta ordem:
 
 ```text
-Arquivos novos:
-  src/lib/simulador.ts          (calcularSimulacao, criarPlano, formatarReais)
-  src/pages/Simulador.tsx       (typeform 4 perguntas)
-  src/components/simulador/Welcome.tsx
-  src/components/simulador/StepBudget.tsx
-  src/components/simulador/StepGuests.tsx
-  src/components/simulador/StepCity.tsx
-  src/components/simulador/StepStyle.tsx
-  src/components/simulador/AssumirPlanoDialog.tsx
+Sprint 1 (bloqueadores)
+  → e-mail transacional + recuperação de senha
+  → linter de segurança (fechar WARNs)
+  → LGPD (termos + privacidade + aceite)
 
-Arquivos editados:
-  src/App.tsx                   (rota /simulador)
-  src/pages/SimuladorResultado.tsx  (reescrita conforme spec)
-  src/pages/Auth.tsx            (suportar redirect=/simulador/resultado&assumir=1)
-  src/components/home/SimulatorCTA.tsx  (link "responder com calma" → /simulador)
+Sprint 2 (operação fornecedor)
+  → wizard de onboarding do fornecedor
+  → métricas no painel do fornecedor
+  → validação de telefone/WhatsApp
+
+Sprint 3 (operação casal)
+  → import CSV de convidados
+  → kanban mobile
+  → exportar PDF do orçamento
+  → compartilhar convite no WhatsApp
+  → tarefas com data real
+
+Sprint 4 (polimento)
+  → busca: filtros faltantes + ordenação
+  → estados vazios + skeletons
+  → SEO + a11y + performance
 ```
 
-Mapeamento de slugs (lib interna): `espaco→recepcao` (ou `local`), `buffet→buffet`, `fotografo→fotografia`, `decoracao→decoracao`, `banda→musica`, `cerimonialista→cerimonialista`, `trajes→trajes`, `maquiagem→beleza`, `convites→convites`. Confirmo os slugs reais ao implementar (leio `categories` e ajusto).
+---
+
+### Próximo passo
+
+Me diz qual desses blocos você quer atacar primeiro e eu já abro um plano detalhado de implementação. Minha recomendação é começar pelo **Sprint 1** (bloqueadores) porque sem e-mail e sem LGPD não dá para colocar em produção.
