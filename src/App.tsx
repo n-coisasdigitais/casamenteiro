@@ -29,6 +29,7 @@ import AdminMetrics from "./pages/AdminMetrics";
 import AdminCoupleCRM from "./pages/AdminCoupleCRM";
 import AdminSupplierCRM from "./pages/AdminSupplierCRM";
 import AdminBroadcast from "./pages/AdminBroadcast";
+import AdminUsers from "./pages/AdminUsers";
 import SimuladorResultado from "./pages/SimuladorResultado";
 import Simulador from "./pages/Simulador";
 import MeuPlano from "./pages/MeuPlano";
@@ -79,6 +80,7 @@ const App = () => (
             <Route path="/admin/fornecedores-crm" element={<AdminSupplierCRM />} />
             <Route path="/admin/fornecedor/:id" element={<AdminSupplierCRM />} />
             <Route path="/admin/comunicacao" element={<AdminBroadcast />} />
+            <Route path="/admin/usuarios" element={<AdminUsers />} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />
