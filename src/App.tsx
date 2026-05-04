@@ -25,6 +25,7 @@ import SimuladorResultado from "./pages/SimuladorResultado";
 import MeuPlano from "./pages/MeuPlano";
 import Favorites from "./pages/Favorites";
 import UserProfile from "./pages/UserProfile";
+import InviteRSVP from "./pages/InviteRSVP";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
             <Route path="/favoritos" element={<Favorites />} />
             <Route path="/perfil" element={<UserProfile />} />
+            <Route path="/convite/:token" element={<InviteRSVP />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/fornecedores" element={<AdminSuppliers />} />
             <Route path="/admin/home-config" element={<AdminHomeConfig />} />
