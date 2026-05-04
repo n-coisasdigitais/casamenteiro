@@ -80,7 +80,7 @@ export default function AdminSuppliers() {
 
   const deleteAllDemo = async () => {
     if (!confirm("Excluir TODOS os fornecedores marcados como demo?")) return;
-    const { error } = await supabase.from("suppliers").delete().eq("is_demo" as any, true);
+    const { error } = await (supabase.from("suppliers").delete() as any).eq("is_demo", true);
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
     else { toast({ title: "Todos os demos foram excluídos" }); load(); }
   };
