@@ -136,7 +136,7 @@ export default function SimuladorResultado() {
           return {
             couple_id: coupleId,
             supplier_id: sid,
-            category_id: (sup as any)?.category_id || null,
+            category_id: cat.category_id,
             status: "saved",
             contract_value: sup?.estimated_price || null,
             notes: "Adicionado pela simulação",
