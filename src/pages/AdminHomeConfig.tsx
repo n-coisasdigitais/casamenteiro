@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Trash2, Plus, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
+import { Heart, Trash2, Plus, ArrowUp, ArrowDown, ExternalLink, Upload, Loader2 } from "lucide-react";
 
 type Frase = { id: string; grupo: string; texto: string; ordem: number; ativo: boolean };
 type Bloco = { id: string; foto_url: string; frase: string; subtexto: string | null; ordem: number; ativo: boolean; supplier_id: string | null };
@@ -24,6 +24,17 @@ export default function AdminHomeConfig() {
   const [novoGrupo, setNovoGrupo] = useState("");
   const [novaFrase, setNovaFrase] = useState("");
   const [novoBloco, setNovoBloco] = useState({ foto_url: "", frase: "", subtexto: "" });
+  const [uploadingNew, setUploadingNew] = useState(false);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+
+  const uploadPhoto = async (file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const { error } = await supabase.storage.from("home-photos").upload(path, file, { upsert: false, contentType: file.type });
+    if (error) { toast({ title: "Erro no upload", description: error.message, variant: "destructive" }); return null; }
+    const { data } = supabase.storage.from("home-photos").getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -94,6 +105,18 @@ export default function AdminHomeConfig() {
   const updBloco = async (id: string, patch: Partial<Bloco>) => {
     await (supabase.from("secoes_home" as any) as any).update(patch).eq("id", id);
     load();
+  };
+  const onUploadExisting = async (id: string, file: File) => {
+    setUploadingId(id);
+    const url = await uploadPhoto(file);
+    setUploadingId(null);
+    if (url) await updBloco(id, { foto_url: url });
+  };
+  const onUploadNew = async (file: File) => {
+    setUploadingNew(true);
+    const url = await uploadPhoto(file);
+    setUploadingNew(false);
+    if (url) setNovoBloco(b => ({ ...b, foto_url: url }));
   };
   const delBloco = async (id: string) => {
     if (!confirm("Excluir bloco?")) return;
@@ -173,7 +196,13 @@ export default function AdminHomeConfig() {
                     <button onClick={() => moveBloco(b.id, -1)} disabled={i === 0} className="disabled:opacity-30"><ArrowUp className="h-3 w-3" /></button>
                     <button onClick={() => moveBloco(b.id, 1)} disabled={i === arr.length - 1} className="disabled:opacity-30"><ArrowDown className="h-3 w-3" /></button>
                   </div>
-                  <img src={b.foto_url} alt="" className="w-20 h-20 object-cover rounded" />
+                  <div className="relative">
+                    <img src={b.foto_url} alt="" className="w-20 h-20 object-cover rounded" />
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-xs opacity-0 hover:opacity-100 cursor-pointer rounded">
+                      {uploadingId === b.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && onUploadExisting(b.id, e.target.files[0])} />
+                    </label>
+                  </div>
                   <div className="flex-1 space-y-2">
                     <Input defaultValue={b.frase} onBlur={e => e.target.value !== b.frase && updBloco(b.id, { frase: e.target.value })} placeholder="Frase" />
                     <Input defaultValue={b.subtexto || ""} onBlur={e => e.target.value !== (b.subtexto || "") && updBloco(b.id, { subtexto: e.target.value })} placeholder="Subtexto" />
@@ -189,7 +218,16 @@ export default function AdminHomeConfig() {
 
             <div className="border rounded-lg p-4 space-y-2">
               <h3 className="font-medium">Adicionar bloco</h3>
-              <Input placeholder="URL da foto" value={novoBloco.foto_url} onChange={e => setNovoBloco({ ...novoBloco, foto_url: e.target.value })} />
+              <div className="flex gap-2 items-center">
+                <Input placeholder="URL da foto" value={novoBloco.foto_url} onChange={e => setNovoBloco({ ...novoBloco, foto_url: e.target.value })} />
+                <label className="cursor-pointer">
+                  <Button type="button" variant="outline" size="sm" asChild>
+                    <span>{uploadingNew ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-1" />Enviar</>}</span>
+                  </Button>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && onUploadNew(e.target.files[0])} />
+                </label>
+              </div>
+              {novoBloco.foto_url && <img src={novoBloco.foto_url} alt="prévia" className="w-32 h-32 object-cover rounded" />}
               <Input placeholder="Frase" value={novoBloco.frase} onChange={e => setNovoBloco({ ...novoBloco, frase: e.target.value })} />
               <Textarea placeholder="Subtexto (opcional)" value={novoBloco.subtexto} onChange={e => setNovoBloco({ ...novoBloco, subtexto: e.target.value })} />
               <Button onClick={addBloco}><Plus className="h-4 w-4 mr-1" />Adicionar bloco</Button>
