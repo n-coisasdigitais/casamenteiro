@@ -174,7 +174,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
 
                 {step === 1 && (
                   <div>
-                    <StepHeader num="Pergunta 1 de 4" title="Qual é o orçamento do casamento?" hint="Inclua tudo — buffet, espaço, decoração, foto e mais." />
+                    <StepHeader num="Pergunta 1 de 5" title="Qual é o orçamento do casamento?" hint="Inclua tudo — buffet, espaço, decoração, foto e mais." />
                     <div className="font-serif mb-5" style={{ fontSize: 38, color: "hsl(var(--color-dark))" }}>
                       {fmtOrc(orcamento)} <span className="font-sans font-light text-base ml-1" style={{ color: "hsl(var(--color-text-muted))" }}>estimado</span>
                     </div>
@@ -196,7 +196,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
 
                 {step === 2 && (
                   <div>
-                    <StepHeader num="Pergunta 2 de 4" title="Quantos convidados vocês esperam?" hint="Uma estimativa já ajuda bastante." />
+                    <StepHeader num="Pergunta 2 de 5" title="Quantos convidados vocês esperam?" hint="Uma estimativa já ajuda bastante." />
                     <div className="flex flex-col gap-2.5">
                       {GUEST_OPTIONS.map((g) => {
                         const sel = convidados === g.value;
@@ -233,7 +233,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
 
                 {step === 3 && (
                   <div>
-                    <StepHeader num="Pergunta 3 de 4" title="Em qual cidade será o casamento?" hint="Vamos encontrar os melhores fornecedores da sua região." />
+                    <StepHeader num="Pergunta 3 de 5" title="Em qual cidade será o casamento?" hint="Vamos encontrar os melhores fornecedores da sua região." />
                     <input
                       autoFocus
                       list="cidades-mg-tf"
