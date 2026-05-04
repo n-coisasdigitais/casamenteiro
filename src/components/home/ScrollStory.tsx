@@ -23,23 +23,24 @@ const CHAPTER_BG = [
 export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
-  const n = blocos.length;
-  // Mais respiro por capítulo: ~1.6 viewport cada — assim o texto tem tempo de aparecer e ser lido antes da imagem trocar
-  const sectionVh = Math.round((n + 0.6) * 160);
+  // O capítulo 0 é o título fixo de abertura; os demais são os blocos com foto trocando
+  const chapters = blocos.length; // chapters de imagem (incluindo a abertura usa a 1ª imagem)
+  // Cada capítulo dura ~150vh para ter tempo de entrada → centro → saída → troca
+  const sectionVh = chapters * 150 + 80;
 
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end end"],
   });
 
-  // Título fixo aparece apenas no primeiro capítulo (0..1/n)
-  const firstChapterEnd = 1 / n;
+  // Título fixo de abertura: visível só na entrada, some bem antes do capítulo 2 começar
+  const firstEnd = 1 / chapters;
   const introOpacity = useTransform(
     scrollYProgress,
-    [0, firstChapterEnd * 0.5, firstChapterEnd * 0.85],
-    [1, 0.7, 0]
+    [0, firstEnd * 0.35, firstEnd * 0.55],
+    [1, 1, 0]
   );
-  const introY = useTransform(scrollYProgress, [0, firstChapterEnd * 0.85], [0, -40]);
+  const introY = useTransform(scrollYProgress, [0, firstEnd * 0.55], [0, -60]);
 
   return (
     <div ref={ref} style={{ height: `${sectionVh}vh`, position: "relative" }}>
@@ -74,18 +75,20 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
           </h1>
         </motion.div>
 
-        {/* Texts per chapter — slide in from alternating sides */}
-        {blocos.map((b, i) => (
-          <TextLayer
-            key={i}
-            index={i}
-            total={n}
-            bloco={b}
-            progress={scrollYProgress}
-            onCTA={i === n - 1 ? onCTA : undefined}
-            isLast={i === n - 1}
-          />
-        ))}
+        {/* Texts per chapter — capítulo 0 já é coberto pelo título fixo, então pulamos */}
+        {blocos.map((b, i) =>
+          i === 0 ? null : (
+            <TextLayer
+              key={i}
+              index={i}
+              total={chapters}
+              bloco={b}
+              progress={scrollYProgress}
+              onCTA={i === chapters - 1 ? onCTA : undefined}
+              isLast={i === chapters - 1}
+            />
+          )
+        )}
 
         <ScrollHint progress={scrollYProgress} />
       </div>
@@ -96,23 +99,22 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
 function ImageLayer({ index, total, src, alt, progress }: {
   index: number; total: number; src: string; alt: string; progress: MotionValue<number>;
 }) {
-  // Cada capítulo ocupa 1/total. A imagem fica visível na maior parte do capítulo
-  // e só faz crossfade nos ~12% finais, depois que o texto já saiu.
+  // Cada capítulo ocupa 1/total. A imagem fica firme durante todo o ciclo do texto
+  // (entrada → centro → saída) e só faz crossfade nos últimos 8% do capítulo.
   const span = 1 / total;
   const start = index / total;
   const end = (index + 1) / total;
-  const fadeInEnd = start + span * 0.12;
-  const fadeOutStart = end - span * 0.12;
+  const swapStart = end - span * 0.08;
 
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
   const opacity = useTransform(
     progress,
-    [Math.max(0, start - 0.001), fadeInEnd, fadeOutStart, end],
+    [Math.max(0, start - span * 0.08), start, swapStart, end],
     [isFirst ? 1 : 0, 1, 1, isLast ? 1 : 0]
   );
-  const scale = useTransform(progress, [start, end], [1.06, 0.98]);
+  const scale = useTransform(progress, [start, end], [1.04, 1.0]);
 
   return (
     <motion.img
@@ -132,22 +134,21 @@ function TextLayer({ index, total, bloco, progress, onCTA, isLast }: {
   const span = 1 / total;
   const start = index / total;
   const end = (index + 1) / total;
-  const mid = (start + end) / 2;
-  // Texto entra cedo e sai cedo — fica legível durante a maior parte do capítulo
-  const inStart = start + span * 0.08;
-  const inEnd = start + span * 0.22;
-  const outStart = end - span * 0.25;
-  const outEnd = end - span * 0.10;
+  // Cadência: entra (5–25%) → centrado e estável (25–70%) → sai (70–88%) → troca de foto (88–100%)
+  const inStart = start + span * 0.05;
+  const inEnd = start + span * 0.25;
+  const outStart = start + span * 0.70;
+  const outEnd = start + span * 0.88;
+  const mid = start + span * 0.45;
 
-  // Alternate sides; intro chapter is centered-bottom so it doesn't fight the fixed headline
   const sideRight = index % 2 === 1;
-  const isIntro = index === 0;
-  const fromX = isIntro ? 0 : sideRight ? 80 : -80;
+  const fromX = sideRight ? 90 : -90;
 
   const opacity = useTransform(progress, [start, inStart, inEnd, outStart, outEnd], [0, 0, 1, 1, 0]);
-  const x = useTransform(progress, [inStart, mid, outEnd], [fromX, 0, -fromX / 3]);
+  const x = useTransform(progress, [inStart, mid, outEnd], [fromX, 0, sideRight ? -30 : 30]);
 
   const num = String(index + 1).padStart(2, "0");
+  const isIntro = false; // capítulo 0 não passa por aqui
   // All chapters show light text over the full-bleed photo
   const textCol = "hsl(48, 27%, 97%)";
   const mutedCol = "hsl(48, 27%, 97% / 0.82)";
