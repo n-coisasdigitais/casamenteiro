@@ -34,6 +34,18 @@ export default function Auth() {
     const finishRedirect = async () => {
       processingRedirect.current = true;
 
+      // Admin always goes to admin panel
+      try {
+        const { data: isAdmin } = await supabase.rpc("has_role", {
+          _user_id: session.user.id,
+          _role: "admin" as any,
+        });
+        if (isAdmin) {
+          navigate("/admin", { replace: true });
+          return;
+        }
+      } catch (_) { /* noop */ }
+
       if (profile.account_type !== "couple") {
         navigate("/fornecedor/painel", { replace: true });
         return;
