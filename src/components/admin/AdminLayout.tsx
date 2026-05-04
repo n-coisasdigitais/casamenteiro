@@ -64,15 +64,16 @@ const groups = [
 ];
 
 function AdminSidebar() {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  const collapsed = !isMobile && state === "collapsed";
   const { pathname } = useLocation();
   const { signOut } = useAuth();
+  const closeMobile = () => { if (isMobile) setOpenMobile(false); };
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <Link to="/admin" className="flex items-center gap-2 px-2 py-1.5">
+        <Link to="/admin" onClick={closeMobile} className="flex items-center gap-2 px-2 py-1.5">
           <Heart className="h-5 w-5 text-primary fill-primary shrink-0" />
           {!collapsed && <span className="text-base font-semibold">Admin</span>}
         </Link>
@@ -88,7 +89,7 @@ function AdminSidebar() {
                   return (
                     <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
-                        <NavLink to={item.url} end={item.end} className="flex items-center gap-2">
+                        <NavLink to={item.url} end={item.end} onClick={closeMobile} className="flex items-center gap-2">
                           <item.icon className="h-4 w-4" />
                           {!collapsed && <span>{item.title}</span>}
                         </NavLink>
@@ -105,7 +106,7 @@ function AdminSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Voltar ao site">
-              <Link to="/" className="flex items-center gap-2">
+              <Link to="/" onClick={closeMobile} className="flex items-center gap-2">
                 <ChevronLeft className="h-4 w-4" />
                 {!collapsed && <span>Voltar ao site</span>}
               </Link>
