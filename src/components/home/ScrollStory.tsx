@@ -24,7 +24,6 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const n = blocos.length;
-  // Each chapter ~ 1 viewport tall + 1 viewport for the final reveal
   const sectionVh = (n + 1) * 100;
 
   const { scrollYProgress } = useScroll({
@@ -32,29 +31,44 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
     offset: ["start start", "end end"],
   });
 
-  // Background color crossfade across chapters
-  const bgStops = blocos.map((_, i) => i / n);
-  const bgColor = useTransform(scrollYProgress, [...bgStops, 1], [...CHAPTER_BG.slice(0, n), CHAPTER_BG[Math.min(n, CHAPTER_BG.length - 1)]]);
+  // Fixed intro title fades out after the first scroll
+  const introOpacity = useTransform(scrollYProgress, [0, 0.06, 0.1], [1, 0.6, 0]);
+  const introY = useTransform(scrollYProgress, [0, 0.1], [0, -40]);
 
   return (
     <div ref={ref} style={{ height: `${sectionVh}vh`, position: "relative" }}>
-      <motion.div
-        className="sticky top-0 h-screen w-full overflow-hidden"
-        style={{ background: reduce ? CHAPTER_BG[0] : bgColor }}
-      >
-        {/* Fixed center image stack — each chapter has its own image, crossfading */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div
-            className="relative overflow-hidden shadow-2xl rounded-3xl"
-            style={{ width: "min(46vmin, 520px)", height: "min(60vmin, 640px)" }}
-          >
-            {blocos.map((b, i) => (
-              <ImageLayer key={i} index={i} total={n} src={b.foto_url} alt={b.frase} progress={scrollYProgress} />
-            ))}
-          </div>
-        </div>
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
+        {/* Full-bleed image stack — each chapter fills the screen */}
+        {blocos.map((b, i) => (
+          <ImageLayer key={i} index={i} total={n} src={b.foto_url} alt={b.frase} progress={scrollYProgress} />
+        ))}
 
-        {/* Texts — each chapter slides in from a side */}
+        {/* Dark gradient overlay for text legibility */}
+        <div
+          className="absolute inset-0 z-10 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(180deg, hsl(0 0% 0% / 0.55) 0%, hsl(0 0% 0% / 0.25) 35%, hsl(0 0% 0% / 0.25) 65%, hsl(0 0% 0% / 0.7) 100%)",
+          }}
+        />
+
+        {/* Fixed curiosity headline (visible only on first chapter) */}
+        <motion.div
+          style={{ opacity: reduce ? 1 : introOpacity, y: reduce ? 0 : introY }}
+          className="absolute top-0 left-0 right-0 z-30 pt-28 md:pt-32 px-6 md:px-16 flex flex-col items-center text-center pointer-events-none"
+        >
+          <p className="label-ui mb-3" style={{ color: "hsl(48, 27%, 96% / 0.85)" }}>
+            uma história em 5 capítulos
+          </p>
+          <h1
+            className="text-white max-w-3xl"
+            style={{ fontSize: "clamp(2rem, 5vw, 3.75rem)", lineHeight: 1.05, fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
+            E se planejar o casamento fosse a parte boa?
+          </h1>
+        </motion.div>
+
+        {/* Texts per chapter — slide in from alternating sides */}
         {blocos.map((b, i) => (
           <TextLayer
             key={i}
@@ -67,9 +81,8 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
           />
         ))}
 
-        {/* Scroll hint on first chapter only */}
         <ScrollHint progress={scrollYProgress} />
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -113,34 +126,35 @@ function TextLayer({ index, total, bloco, progress, onCTA, isLast }: {
   const end = (index + 1) / total;
   const mid = (start + end) / 2;
 
-  // Alternate sides
+  // Alternate sides; intro chapter is centered-bottom so it doesn't fight the fixed headline
   const sideRight = index % 2 === 1;
-  const fromX = sideRight ? 80 : -80;
+  const isIntro = index === 0;
+  const fromX = isIntro ? 0 : sideRight ? 80 : -80;
 
-  const opacity = useTransform(progress, [start, start + 0.04, end - 0.04, end], [0, 1, 1, 0]);
+  const opacity = useTransform(progress, [start, start + 0.04, end - 0.05, end], [0, 1, 1, 0]);
   const x = useTransform(progress, [start, mid, end], [fromX, 0, -fromX / 2]);
 
   const num = String(index + 1).padStart(2, "0");
-  const isIntro = index === 0;
-  // Dark chapters get light text
-  const isDark = index === total - 1;
-  const textCol = isDark ? "hsl(48, 27%, 96%)" : "hsl(var(--color-dark))";
-  const mutedCol = isDark ? "hsl(48, 27%, 96% / 0.75)" : "hsl(var(--color-text-muted))";
+  // All chapters show light text over the full-bleed photo
+  const textCol = "hsl(48, 27%, 97%)";
+  const mutedCol = "hsl(48, 27%, 97% / 0.82)";
 
   return (
     <motion.div
       style={{ opacity }}
-      className={`absolute inset-0 z-20 flex items-center px-6 md:px-16 pointer-events-none ${
-        sideRight ? "justify-end" : "justify-start"
+      className={`absolute inset-0 z-20 flex px-6 md:px-16 pb-20 md:pb-24 pointer-events-none ${
+        isIntro ? "items-end justify-center text-center" : sideRight ? "items-center justify-end" : "items-center justify-start"
       }`}
     >
       <motion.div
         style={{ x }}
         className="max-w-md md:max-w-lg pointer-events-auto"
       >
-        <p className="label-ui mb-4" style={{ color: isDark ? "hsl(var(--color-primary))" : "hsl(var(--color-primary))" }}>
-          {isIntro ? "Bem-vindo" : `Capítulo ${num}`}
-        </p>
+        {!isIntro && (
+          <p className="label-ui mb-4" style={{ color: "hsl(var(--color-primary))" }}>
+            Capítulo {num}
+          </p>
+        )}
         <h2
           className="text-3xl md:text-5xl lg:text-6xl mb-5"
           style={{ color: textCol, lineHeight: 1.1, fontWeight: 700, letterSpacing: "-0.02em" }}
@@ -158,9 +172,9 @@ function TextLayer({ index, total, bloco, progress, onCTA, isLast }: {
             to={`/fornecedor/${bloco.supplier_id}`}
             className="inline-flex items-center gap-3 px-4 py-2 rounded-full transition hover:opacity-90"
             style={{
-              background: isDark ? "hsl(48, 27%, 96% / 0.12)" : "hsl(0 0% 100% / 0.7)",
+              background: "hsl(48, 27%, 96% / 0.14)",
               backdropFilter: "blur(8px)",
-              border: `1px solid ${isDark ? "hsl(48, 27%, 96% / 0.2)" : "hsl(var(--color-border))"}`,
+              border: "1px solid hsl(48, 27%, 96% / 0.25)",
             }}
           >
             {bloco.supplier_category && (
@@ -193,8 +207,8 @@ function ScrollHint({ progress }: { progress: MotionValue<number> }) {
       style={{ opacity }}
       className="absolute bottom-8 left-0 right-0 z-30 flex flex-col items-center gap-2 pointer-events-none"
     >
-      <span className="label-ui" style={{ color: "hsl(var(--color-text-muted))" }}>role para descobrir</span>
-      <div className="w-[1px] h-10 bg-current opacity-40" style={{ color: "hsl(var(--color-dark))" }} />
+      <span className="label-ui" style={{ color: "hsl(48, 27%, 97% / 0.8)" }}>role para descobrir</span>
+      <div className="w-[1px] h-10 bg-white/60" />
     </motion.div>
   );
 }
