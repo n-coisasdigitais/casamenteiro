@@ -24,16 +24,22 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const n = blocos.length;
-  const sectionVh = (n + 1) * 100;
+  // Mais respiro por capítulo: ~1.6 viewport cada — assim o texto tem tempo de aparecer e ser lido antes da imagem trocar
+  const sectionVh = Math.round((n + 0.6) * 160);
 
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end end"],
   });
 
-  // Fixed intro title fades out after the first scroll
-  const introOpacity = useTransform(scrollYProgress, [0, 0.06, 0.1], [1, 0.6, 0]);
-  const introY = useTransform(scrollYProgress, [0, 0.1], [0, -40]);
+  // Título fixo aparece apenas no primeiro capítulo (0..1/n)
+  const firstChapterEnd = 1 / n;
+  const introOpacity = useTransform(
+    scrollYProgress,
+    [0, firstChapterEnd * 0.5, firstChapterEnd * 0.85],
+    [1, 0.7, 0]
+  );
+  const introY = useTransform(scrollYProgress, [0, firstChapterEnd * 0.85], [0, -40]);
 
   return (
     <div ref={ref} style={{ height: `${sectionVh}vh`, position: "relative" }}>
