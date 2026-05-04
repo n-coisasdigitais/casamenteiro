@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Heart, MapPin, Phone, Mail, Building, Star, Users,
   DollarSign, Tag, ChevronLeft, ChevronRight, Calendar,
-  Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send, Eye
+  Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send, Eye, MessageCircle
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
 import SupplierMap from "@/components/SupplierMap";
