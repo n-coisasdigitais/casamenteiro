@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_couple_id_for_user(uuid) TO anon;
