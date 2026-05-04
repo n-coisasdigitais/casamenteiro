@@ -27,6 +27,8 @@ type CoupleData = {
   estimated_budget: number | null;
   invite_code: string | null;
   onboarding_completed: boolean;
+  header_photo_url?: string | null;
+  header_quote?: string | null;
 };
 
 type TaskSummary = { total: number; completed: number };
@@ -130,20 +132,41 @@ export default function CoupleDashboard() {
       <DashboardNav />
 
       <main className="container px-4 py-8">
-        {/* Welcome */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">
-            Olá, {profile?.full_name || "Casal"}
-            {couple.partner_name && ` & ${couple.partner_name}`}
-          </h1>
-          {daysUntilWedding !== null && daysUntilWedding > 0 && (
-            <div className="flex items-center gap-3 mt-3">
-              <Calendar className="h-5 w-5 text-primary" />
-              <span className="text-lg">
-                <strong className="text-primary">{daysUntilWedding}</strong> dias para o grande dia!
-              </span>
-            </div>
+        {/* Header personalizado do casal (foto + frase) */}
+        <div className="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-primary/15 to-secondary/40 min-h-[180px] md:min-h-[240px]">
+          {couple.header_photo_url && (
+            <>
+              <img
+                src={couple.header_photo_url}
+                alt="Capa do casal"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+            </>
           )}
+          <div className={`relative px-6 py-8 md:py-12 ${couple.header_photo_url ? "text-white" : "text-foreground"}`}>
+            <p className="text-xs uppercase tracking-wider opacity-80">Meu casamento</p>
+            <h1 className="text-3xl md:text-4xl font-serif mt-1">
+              {profile?.full_name || "Casal"}
+              {couple.partner_name && ` & ${couple.partner_name}`}
+            </h1>
+            {couple.header_quote && (
+              <p className="mt-2 italic max-w-xl text-sm md:text-base">"{couple.header_quote}"</p>
+            )}
+            {daysUntilWedding !== null && daysUntilWedding > 0 && (
+              <div className="flex items-center gap-2 mt-4">
+                <Calendar className="h-5 w-5" />
+                <span className="text-base md:text-lg">
+                  <strong>{daysUntilWedding}</strong> dias para o grande dia!
+                </span>
+              </div>
+            )}
+            <div className="mt-4">
+              <Button asChild variant={couple.header_photo_url ? "secondary" : "outline"} size="sm">
+                <Link to="/perfil">Personalizar capa</Link>
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* KPIs */}
