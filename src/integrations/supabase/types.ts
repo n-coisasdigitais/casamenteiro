@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_distribution_defaults: {
+        Row: {
+          category_slug: string
+          display_order: number
+          essential: boolean
+          pct_grande: number
+          pct_medio: number
+          pct_simples: number
+        }
+        Insert: {
+          category_slug: string
+          display_order?: number
+          essential?: boolean
+          pct_grande: number
+          pct_medio: number
+          pct_simples: number
+        }
+        Update: {
+          category_slug?: string
+          display_order?: number
+          essential?: boolean
+          pct_grande?: number
+          pct_medio?: number
+          pct_simples?: number
+        }
+        Relationships: []
+      }
       budget_items: {
         Row: {
           category: string
@@ -375,30 +402,39 @@ export type Database = {
           cidade: string | null
           couple_id: string | null
           criado_em: string
+          data_evento: string | null
           estilo: string | null
           id: string
           num_convidados: number
           orcamento_total: number
+          prazo_meses: number | null
+          resultado: Json | null
           user_id: string | null
         }
         Insert: {
           cidade?: string | null
           couple_id?: string | null
           criado_em?: string
+          data_evento?: string | null
           estilo?: string | null
           id?: string
           num_convidados: number
           orcamento_total: number
+          prazo_meses?: number | null
+          resultado?: Json | null
           user_id?: string | null
         }
         Update: {
           cidade?: string | null
           couple_id?: string | null
           criado_em?: string
+          data_evento?: string | null
           estilo?: string | null
           id?: string
           num_convidados?: number
           orcamento_total?: number
+          prazo_meses?: number | null
+          resultado?: Json | null
           user_id?: string | null
         }
         Relationships: []
@@ -1073,6 +1109,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_promo_dates: {
+        Row: {
+          created_at: string
+          discount_pct: number
+          id: string
+          note: string | null
+          promo_date: string
+          supplier_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_pct: number
+          id?: string
+          note?: string | null
+          promo_date: string
+          supplier_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_pct?: number
+          id?: string
+          note?: string | null
+          promo_date?: string
+          supplier_id?: string
+        }
+        Relationships: []
       }
       suppliers: {
         Row: {
