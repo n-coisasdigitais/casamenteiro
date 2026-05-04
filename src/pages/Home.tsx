@@ -9,10 +9,10 @@ import StoryBlock from "@/components/home/StoryBlock";
 import SimulatorCTA from "@/components/home/SimulatorCTA";
 
 const FALLBACK_BLOCOS = [
-  { foto_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80", frase: "Cada detalhe importa. Cada escolha conta.", subtexto: "Da decoração ao buffet, a gente te ajuda a montar tudo." },
-  { foto_url: "https://images.unsplash.com/photo-1529636798458-92182e662485?w=1200&q=80", frase: "Seu orçamento, seu jeito, seu dia.", subtexto: "Comece pelo quanto você tem. A gente faz o resto encaixar." },
-  { foto_url: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1200&q=80", frase: "Datas que ninguém disputou. Preços que fazem sentido.", subtexto: "Casamentos em dias úteis com até 35% de economia real." },
-  { foto_url: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=1200&q=80", frase: "Você não precisa resolver tudo sozinho.", subtexto: "Fotógrafo, buffet, espaço, banda. Tudo num lugar só." },
+  { foto_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=1600&q=80", frase: "Cada detalhe importa. Cada escolha conta.", subtexto: "Da decoração ao buffet, a gente te ajuda a montar tudo.", supplier_id: null, supplier_name: "Ateliê Florescer", supplier_category: "Decoração" },
+  { foto_url: "https://images.unsplash.com/photo-1529636798458-92182e662485?w=1600&q=80", frase: "Seu orçamento, seu jeito, seu dia.", subtexto: "Comece pelo quanto você tem. A gente faz o resto encaixar.", supplier_id: null, supplier_name: "Buffet Casa Plena", supplier_category: "Buffet" },
+  { foto_url: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1600&q=80", frase: "Datas que ninguém disputou. Preços que fazem sentido.", subtexto: "Casamentos em dias úteis com até 35% de economia real.", supplier_id: null, supplier_name: "Espaço Vila Real", supplier_category: "Espaço" },
+  { foto_url: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=1600&q=80", frase: "Você não precisa resolver tudo sozinho.", subtexto: "Fotógrafo, buffet, espaço, banda. Tudo num lugar só.", supplier_id: null, supplier_name: "Estúdio Lume", supplier_category: "Fotografia" },
 ];
 
 export default function Home() {
@@ -24,8 +24,33 @@ export default function Home() {
 
   useEffect(() => {
     document.title = "Casamenteiro — planeje seu casamento com leveza";
-    (supabase.from("secoes_home" as any).select("foto_url,frase,subtexto").eq("ativo", true).order("ordem") as any)
-      .then(({ data }: any) => { if (data && data.length) setBlocos(data); });
+    (async () => {
+      const { data } = await (supabase
+        .from("secoes_home" as any)
+        .select("foto_url,frase,subtexto,supplier_id")
+        .eq("ativo", true)
+        .order("ordem") as any);
+      if (!data || !data.length) return;
+      const ids = (data as any[]).map(d => d.supplier_id).filter(Boolean);
+      let supMap: Record<string, { name: string; category: string | null }> = {};
+      if (ids.length) {
+        const { data: sups } = await supabase
+          .from("suppliers")
+          .select("id, company_name, categories(name)")
+          .in("id", ids);
+        (sups || []).forEach((s: any) => {
+          supMap[s.id] = { name: s.company_name, category: s.categories?.name ?? null };
+        });
+      }
+      setBlocos((data as any[]).map(d => ({
+        foto_url: d.foto_url,
+        frase: d.frase,
+        subtexto: d.subtexto,
+        supplier_id: d.supplier_id,
+        supplier_name: d.supplier_id ? supMap[d.supplier_id]?.name ?? null : null,
+        supplier_category: d.supplier_id ? supMap[d.supplier_id]?.category ?? null : null,
+      })));
+    })();
   }, []);
 
   const finishPreloader = () => {
@@ -62,7 +87,16 @@ export default function Home() {
         </section>
 
         {blocos.map((b, i) => (
-          <StoryBlock key={i} index={i} frase={b.frase} subtexto={b.subtexto} foto={b.foto_url} />
+          <StoryBlock
+            key={i}
+            index={i}
+            frase={b.frase}
+            subtexto={b.subtexto}
+            foto={b.foto_url}
+            supplierId={(b as any).supplier_id}
+            supplierName={(b as any).supplier_name}
+            supplierCategory={(b as any).supplier_category}
+          />
         ))}
 
         <SimulatorCTA ref={ctaRef} />
