@@ -64,7 +64,7 @@ export default function AdminSuppliers() {
         phone: r.phone, whatsapp: r.whatsapp, instagram: r.instagram, website: r.website,
         price_min: r.price_min, price_max: r.price_max, status: r.status as any,
         is_demo: r.is_demo, featured: r.featured, category_id: r.category_id,
-      }).eq("id", r.id);
+      } as any).eq("id", r.id);
       if (error) fail++; else ok++;
     }
     toast({ title: `${ok} salvos${fail ? `, ${fail} com erro` : ""}` });
@@ -80,7 +80,7 @@ export default function AdminSuppliers() {
 
   const deleteAllDemo = async () => {
     if (!confirm("Excluir TODOS os fornecedores marcados como demo?")) return;
-    const { error } = await supabase.from("suppliers").delete().eq("is_demo", true);
+    const { error } = await supabase.from("suppliers").delete().eq("is_demo" as any, true);
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
     else { toast({ title: "Todos os demos foram excluídos" }); load(); }
   };
