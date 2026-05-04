@@ -10,13 +10,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Heart, Search, Calendar, Users, DollarSign, Copy, Share2,
-  MessageSquare, Eye, CheckSquare, Store, ArrowRight, Calculator
+  MessageSquare, Eye, CheckSquare, Store, ArrowRight, Calculator, Image as ImageIcon, Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
 import QuoteProposalPanel from "@/components/QuoteProposalPanel";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
+import CouplePhotoUpload from "@/components/CouplePhotoUpload";
+import { Textarea } from "@/components/ui/textarea";
 
 type CoupleData = {
   id: string;
@@ -50,6 +52,10 @@ export default function CoupleDashboard() {
   const [supplierCount, setSupplierCount] = useState(0);
   const [urgentTasks, setUrgentTasks] = useState<any[]>([]);
   const [simulacoes, setSimulacoes] = useState<any[]>([]);
+  const [coverOpen, setCoverOpen] = useState(false);
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  const [coverQuote, setCoverQuote] = useState<string>("");
+  const [savingCover, setSavingCover] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -57,6 +63,8 @@ export default function CoupleDashboard() {
       if (!data) return;
       if (!data.onboarding_completed) { navigate("/onboarding"); return; }
       setCouple(data);
+      setCoverPhoto(data.header_photo_url || null);
+      setCoverQuote(data.header_quote || "");
       loadDashboardData(data.id);
     });
   }, [user, navigate]);
@@ -118,6 +126,25 @@ export default function CoupleDashboard() {
 
   if (!couple) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
 
+  const saveCover = async (overrides?: { photo?: string | null; quote?: string | null }) => {
+    if (!couple) return;
+    setSavingCover(true);
+    const photo = overrides && "photo" in overrides ? overrides.photo : coverPhoto;
+    const quote = overrides && "quote" in overrides ? overrides.quote : coverQuote;
+    const { error } = await (supabase.from("couples") as any)
+      .update({ header_photo_url: photo || null, header_quote: quote || null })
+      .eq("id", couple.id);
+    setSavingCover(false);
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      return;
+    }
+    setCouple({ ...couple, header_photo_url: photo || null, header_quote: quote || null } as CoupleData);
+    setCoverPhoto(photo || null);
+    setCoverQuote(quote || "");
+    toast({ title: "Capa atualizada!" });
+  };
+
   const taskPct = taskSummary.total > 0 ? Math.round((taskSummary.completed / taskSummary.total) * 100) : 0;
   const budgetPct = couple.estimated_budget && couple.estimated_budget > 0
     ? Math.round((budgetSummary.final / couple.estimated_budget) * 100)
@@ -134,15 +161,13 @@ export default function CoupleDashboard() {
       <main className="container px-4 py-8">
         {/* Header personalizado do casal (foto + frase) */}
         <div className="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-primary/15 to-secondary/40 min-h-[180px] md:min-h-[240px]">
-          {couple.header_photo_url && (
+          {couple.header_photo_url ? (
             <>
-              <img
-                src={couple.header_photo_url}
-                alt="Capa do casal"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+              <img src={couple.header_photo_url} alt="Capa do casal" className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
             </>
+          ) : (
+            <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top_left,theme(colors.primary/30),transparent_60%),radial-gradient(circle_at_bottom_right,theme(colors.secondary/40),transparent_60%)]" />
           )}
           <div className={`relative px-6 py-8 md:py-12 ${couple.header_photo_url ? "text-white" : "text-foreground"}`}>
             <p className="text-xs uppercase tracking-wider opacity-80">Meu casamento</p>
@@ -150,8 +175,14 @@ export default function CoupleDashboard() {
               {profile?.full_name || "Casal"}
               {couple.partner_name && ` & ${couple.partner_name}`}
             </h1>
-            {couple.header_quote && (
+            {couple.header_quote ? (
               <p className="mt-2 italic max-w-xl text-sm md:text-base">"{couple.header_quote}"</p>
+            ) : (
+              !couple.header_photo_url && (
+                <p className="mt-2 text-sm md:text-base text-muted-foreground max-w-xl">
+                  Adicione uma foto e uma frase do casal para deixar este espaço com a sua cara.
+                </p>
+              )
             )}
             {daysUntilWedding !== null && daysUntilWedding > 0 && (
               <div className="flex items-center gap-2 mt-4">
@@ -161,13 +192,67 @@ export default function CoupleDashboard() {
                 </span>
               </div>
             )}
-            <div className="mt-4">
-              <Button asChild variant={couple.header_photo_url ? "secondary" : "outline"} size="sm">
-                <Link to="/perfil">Personalizar capa</Link>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button onClick={() => setCoverOpen(true)} variant={couple.header_photo_url ? "secondary" : "outline"} size="sm">
+                <ImageIcon className="h-4 w-4 mr-1.5" />
+                Personalizar capa
               </Button>
+              {(couple.header_photo_url || couple.header_quote) && (
+                <Button
+                  onClick={() => saveCover({ photo: null, quote: null })}
+                  variant={couple.header_photo_url ? "secondary" : "ghost"}
+                  size="sm"
+                  disabled={savingCover}
+                >
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  Voltar ao padrão
+                </Button>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Dialog de personalização da capa */}
+        <Dialog open={coverOpen} onOpenChange={setCoverOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Personalizar capa</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Foto de capa</label>
+                <p className="text-xs text-muted-foreground mb-2">Use uma foto do casal ou um ambiente que represente vocês.</p>
+                <CouplePhotoUpload
+                  url={coverPhoto}
+                  fileName="header"
+                  label="Foto de capa"
+                  aspect="aspect-[16/9]"
+                  onUploaded={(u) => setCoverPhoto(u)}
+                />
+                {coverPhoto && (
+                  <Button variant="ghost" size="sm" className="mt-1 text-destructive" onClick={() => setCoverPhoto(null)}>
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Remover foto
+                  </Button>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium">Frase do casal</label>
+                <Textarea value={coverQuote} onChange={(e) => setCoverQuote(e.target.value)} placeholder="Ex.: 'Onde você for, irei contigo'" rows={2} />
+                {coverQuote && (
+                  <Button variant="ghost" size="sm" className="mt-1 text-destructive" onClick={() => setCoverQuote("")}>
+                    Limpar frase
+                  </Button>
+                )}
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="ghost" onClick={() => setCoverOpen(false)}>Cancelar</Button>
+                <Button disabled={savingCover} onClick={async () => { await saveCover(); setCoverOpen(false); }}>
+                  Salvar capa
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
