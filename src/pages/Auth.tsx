@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,16 +24,59 @@ export default function Auth() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { session, profile } = useAuth();
+  const processingRedirect = useRef(false);
 
   useEffect(() => {
-    if (session && profile) {
-      if (profile.account_type === "couple") {
-        navigate("/dashboard");
-      } else {
-        navigate("/fornecedor/painel");
+    if (!session || !profile || processingRedirect.current) return;
+
+    const finishRedirect = async () => {
+      processingRedirect.current = true;
+
+      if (profile.account_type !== "couple") {
+        navigate("/fornecedor/painel", { replace: true });
+        return;
       }
+
+      const pending = localStorage.getItem("pending_simulacao");
+      if (pending) {
+        try {
+          const payload = JSON.parse(pending);
+          const { data: couple } = await supabase
+            .from("couples")
+            .select("id")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+
+          const { data, error } = await (supabase.from("home_simulacoes" as any) as any)
+            .insert({ ...payload, user_id: session.user.id, couple_id: couple?.id || null })
+            .select("id")
+            .maybeSingle();
+
+          if (error) throw error;
+          localStorage.removeItem("pending_simulacao");
+          navigate(`/simulador/resultado?id=${data?.id}`, { replace: true });
+          return;
+        } catch (error: any) {
+          toast({ title: "Não foi possível recuperar a simulação", description: error.message, variant: "destructive" });
+        }
+      }
+
+      const redirect = searchParams.get("redirect");
+      if (redirect?.startsWith("/")) {
+        navigate(redirect, { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    };
+
+    finishRedirect();
+  }, [session, profile, navigate, searchParams, toast]);
+
+  useEffect(() => {
+    if (searchParams.get("redirect") === "simulador") {
+      setAccountType("couple");
     }
-  }, [session, profile, navigate]);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

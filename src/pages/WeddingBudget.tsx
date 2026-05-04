@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
-import { Plus, Calculator, Pencil } from "lucide-react";
+import { Plus, Calculator, Pencil, Eye } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import BudgetChart from "@/components/BudgetChart";
@@ -52,6 +52,7 @@ type CoupleData = {
   target_budget?: number | null;
   budget_mode?: string | null;
   estimated_budget?: number | null;
+  estimated_guests?: number | null;
   wedding_date?: string | null;
 };
 
@@ -73,6 +74,7 @@ export default function WeddingBudget() {
   const [simBudget, setSimBudget] = useState<number | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [coupleName, setCoupleName] = useState<string>("");
+  const [simulacoes, setSimulacoes] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -80,7 +82,7 @@ export default function WeddingBudget() {
       if (!data) return;
       if (!data.onboarding_completed) { navigate("/onboarding"); return; }
       setCouple(data as any);
-      loadBudgetData(data.id);
+      syncPlanIntoBudget(data as any).then(() => loadBudgetData(data.id));
       // última simulação para modo "simulation" (por couple_id ou user_id)
       (supabase as any)
         .from("home_simulacoes")
@@ -89,7 +91,16 @@ export default function WeddingBudget() {
         .order("criado_em", { ascending: false })
         .limit(1)
         .maybeSingle()
-        .then(({ data: s }: any) => setSimBudget(s?.orcamento_total ? Number(s.orcamento_total) : null));
+        .then(({ data: s, error }: any) => {
+          if (!error) setSimBudget(s?.orcamento_total ? Number(s.orcamento_total) : null);
+        });
+      (supabase as any)
+        .from("home_simulacoes")
+        .select("*")
+        .or(`couple_id.eq.${data.id},user_id.eq.${user.id}`)
+        .order("criado_em", { ascending: false })
+        .limit(5)
+        .then(({ data: sims }: any) => setSimulacoes(sims || []));
       // nome do casal para header
       supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle().then(({ data: p }) => {
         const me = p?.full_name || "";
@@ -97,6 +108,69 @@ export default function WeddingBudget() {
       });
     });
   }, [user, navigate]);
+
+  const syncPlanIntoBudget = async (coupleData: CoupleData) => {
+    const { data: latestSim } = await (supabase as any)
+      .from("home_simulacoes")
+      .select("*")
+      .or(`couple_id.eq.${coupleData.id},user_id.eq.${user?.id}`)
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if ((!coupleData.target_budget || Number(coupleData.target_budget) <= 0) && latestSim?.orcamento_total) {
+      const updates = {
+        target_budget: Number(latestSim.orcamento_total),
+        estimated_budget: Number(latestSim.orcamento_total),
+        estimated_guests: latestSim.num_convidados || coupleData.estimated_guests || null,
+        wedding_date: latestSim.data_evento || coupleData.wedding_date || null,
+        budget_mode: "fixed",
+      };
+      await (supabase.from("couples") as any).update(updates).eq("id", coupleData.id);
+      setCouple({ ...coupleData, ...updates } as CoupleData);
+    }
+
+    const { data: planSuppliers } = await supabase
+      .from("couple_suppliers")
+      .select("supplier_id, category_id, status, contract_value, estimated_value, proposed_value, final_value")
+      .eq("couple_id", coupleData.id);
+    const planRows = planSuppliers || [];
+    if (planRows.length === 0) return;
+
+    const { data: existingItems } = await supabase
+      .from("budget_items")
+      .select("supplier_id")
+      .eq("couple_id", coupleData.id);
+    const existingSupplierIds = new Set((existingItems || []).map((item) => item.supplier_id).filter(Boolean));
+    const missing = planRows.filter((row) => row.supplier_id && !existingSupplierIds.has(row.supplier_id));
+    if (missing.length === 0) return;
+
+    const supplierIds = missing.map((row) => row.supplier_id);
+    const categoryIds = Array.from(new Set(missing.map((row) => row.category_id).filter(Boolean)));
+    const [{ data: sups }, { data: cats }] = await Promise.all([
+      supabase.from("suppliers").select("id, company_name, category_id").in("id", supplierIds),
+      categoryIds.length
+        ? supabase.from("categories").select("id, slug, name").in("id", categoryIds as string[])
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const supplierMap = new Map((sups || []).map((s: any) => [s.id, s]));
+    const categoryMap = new Map((cats || []).map((c: any) => [c.id, c]));
+
+    await (supabase.from("budget_items") as any).insert(missing.map((row: any) => {
+      const supplier = supplierMap.get(row.supplier_id);
+      const category = categoryMap.get(row.category_id || supplier?.category_id);
+      const amount = Number(row.final_value || row.contract_value || row.proposed_value || row.estimated_value || 0);
+      return {
+        couple_id: coupleData.id,
+        supplier_id: row.supplier_id,
+        category: category?.slug || category?.name || "outros",
+        description: supplier?.company_name || "Fornecedor do plano",
+        estimated_cost: amount,
+        final_cost: row.status === "contracted" ? amount : null,
+        status: row.status === "contracted" ? "contracted" : "estimated",
+      };
+    }));
+  };
 
   const loadBudgetData = async (coupleId: string) => {
     setLoading(true);
@@ -278,6 +352,46 @@ export default function WeddingBudget() {
             </div>
             <QuotesKanban coupleId={couple.id} />
           </div>
+        )}
+
+        {simulacoes.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader className="flex flex-row items-center justify-between gap-3">
+              <div>
+                <CardTitle>Simulações salvas</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Planos simulados que você pode revisar e transformar em orçamento.</p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/#simulador">Nova simulação</Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2">
+                {simulacoes.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}
+                    className="text-left rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{s.cidade || "Sua cidade"} · {s.num_convidados} convidados</p>
+                        <p className="text-sm text-muted-foreground">
+                          R$ {Number(s.orcamento_total).toLocaleString("pt-BR")} · {s.estilo || "Plano"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(s.criado_em).toLocaleDateString("pt-BR")}
+                          {s.data_evento && ` · evento em ${new Date(s.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}`}
+                        </p>
+                      </div>
+                      <Eye className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Painel Resumo */}
