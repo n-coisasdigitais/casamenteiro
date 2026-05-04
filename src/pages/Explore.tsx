@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UserMenu from "@/components/UserMenu";
+import SEO from "@/components/SEO";
 import {
   Heart, Search, Building, Camera, Music, Utensils,
   Flower2, Mail, Shirt, Sparkles, Cake, ClipboardList, Car, Video,
@@ -202,6 +203,10 @@ const Explore = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Fornecedores de casamento — Meu Grande Dia"
+        description="Descubra espaços, buffets, fotógrafos, decoração e mais. Fornecedores avaliados para o seu casamento."
+      />
       {/* Header — Airbnb-style */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="container py-3 flex items-center justify-between gap-4">
