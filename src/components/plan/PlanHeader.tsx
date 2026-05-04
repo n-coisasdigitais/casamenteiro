@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
+import { Send, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 
 export type PlanHeaderData = {
   coupleName: string;
@@ -15,15 +16,41 @@ export type PlanHeaderData = {
   aPagar: number;
   proxVencimento?: { data: string; fornecedor: string } | null;
   hasUrgent: boolean;
+  newProposals?: { id: string; title: string; body: string | null; link: string | null }[];
 };
 
 const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
 
 export default function PlanHeader({ data, onRequestQuotes }: { data: PlanHeaderData; onRequestQuotes?: () => void }) {
-  const { coupleName, weddingDate, city, guests, style, orcamentoTotal, cotado, contratado, aPagar, proxVencimento, hasUrgent } = data;
+  const { coupleName, weddingDate, city, guests, style, orcamentoTotal, cotado, contratado, aPagar, proxVencimento, hasUrgent, newProposals } = data;
 
   return (
     <div className="space-y-4">
+      {newProposals && newProposals.length > 0 && (
+        <Card className="p-4 border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
+              <Bell className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-amber-900 dark:text-amber-100">
+                {newProposals.length === 1
+                  ? "Você recebeu uma nova proposta!"
+                  : `Você recebeu ${newProposals.length} novas propostas!`}
+              </p>
+              <ul className="mt-1 space-y-0.5 text-xs text-amber-900/80 dark:text-amber-100/80">
+                {newProposals.slice(0, 3).map((n) => (
+                  <li key={n.id} className="truncate">• {n.title}{n.body ? ` — ${n.body}` : ""}</li>
+                ))}
+              </ul>
+              <Button asChild size="sm" variant="outline" className="mt-2 h-7 text-xs border-amber-400 bg-white">
+                <Link to="/meus-fornecedores">Ver propostas</Link>
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-serif">

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Heart, MapPin, Phone, Mail, Building, Star, Users,
   DollarSign, Tag, ChevronLeft, ChevronRight, Calendar,
-  Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send, Eye
+  Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send, Eye, MessageCircle
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
 import SupplierMap from "@/components/SupplierMap";
@@ -308,18 +308,28 @@ export default function SupplierProfile() {
                       supplierId={supplier.id}
                       supplierName={supplier.company_name}
                     />
-                    {supplier.phone && phoneUnlocked && (
-                      <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" asChild>
-                        <a href={`tel:${supplier.phone}`}>
-                          <Phone className="h-5 w-5" />
+                    {phoneUnlocked && (supplier.whatsapp || supplier.phone) && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-12 w-12 shrink-0 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                        asChild
+                      >
+                        <a
+                          href={`https://wa.me/55${(supplier.whatsapp || supplier.phone).replace(/\D/g, "")}?text=${encodeURIComponent("Olá! Vim pelo Meu Grande Dia, gostaria de conversar sobre o casamento.")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Conversar no WhatsApp"
+                        >
+                          <MessageCircle className="h-5 w-5" />
                         </a>
                       </Button>
                     )}
                   </div>
-                  {supplier.phone && !phoneUnlocked && (
+                  {(supplier.whatsapp || supplier.phone) && !phoneUnlocked && (
                     <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      Telefone liberado após enviar o pedido de orçamento
+                      <MessageCircle className="h-3 w-3" />
+                      WhatsApp liberado após enviar o primeiro pedido de orçamento
                     </p>
                   )}
                 </CardContent>
