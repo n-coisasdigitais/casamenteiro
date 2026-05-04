@@ -7,6 +7,10 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Auth from "./pages/Auth";
+import EsqueciSenha from "./pages/EsqueciSenha";
+import RedefinirSenha from "./pages/RedefinirSenha";
+import Termos from "./pages/Termos";
+import Privacidade from "./pages/Privacidade";
 import CoupleOnboarding from "./pages/CoupleOnboarding";
 import CoupleDashboard from "./pages/CoupleDashboard";
 import WeddingTasks from "./pages/WeddingTasks";
@@ -43,6 +47,10 @@ const App = () => (
             <Route path="/explorar" element={<Explore />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/cadastro" element={<Auth />} />
+            <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+            <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+            <Route path="/termos" element={<Termos />} />
+            <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/onboarding" element={<CoupleOnboarding />} />
             <Route path="/dashboard" element={<CoupleDashboard />} />
             <Route path="/tarefas" element={<WeddingTasks />} />

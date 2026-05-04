@@ -69,6 +69,8 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <Link to="/explorar" className="hover:opacity-100 opacity-80">Explorar fornecedores</Link>
             <Link to="/login" className="hover:opacity-100 opacity-80">Entrar</Link>
+            <Link to="/termos" className="hover:opacity-100 opacity-80">Termos</Link>
+            <Link to="/privacidade" className="hover:opacity-100 opacity-80">Privacidade</Link>
           </div>
           <p className="text-xs flex items-center gap-1.5" style={{ opacity: 0.6 }}>
             Desenvolvido com carinho pela
