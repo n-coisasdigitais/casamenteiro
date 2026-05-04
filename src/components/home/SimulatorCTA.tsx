@@ -79,8 +79,10 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
         navigate("/cadastro?redirect=simulador");
         return;
       }
+      // pega o couple do usuário (se for casal) para vincular a simulação
+      const { data: c } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
       const { data, error } = await (supabase.from("home_simulacoes" as any) as any)
-        .insert({ ...payload, user_id: user.id })
+        .insert({ ...payload, user_id: user.id, couple_id: c?.id || null })
         .select("id")
         .maybeSingle();
       if (error) throw error;
