@@ -79,6 +79,20 @@ export default function QuoteProposalPanel({ quoteId, currentUserId, isSupplier,
       return;
     }
     setBusy(true);
+    // Buscar categoria do fornecedor para vincular
+    const { data: sup } = await supabase
+      .from("suppliers")
+      .select("id, company_name, category_id")
+      .eq("id", supplierId)
+      .maybeSingle();
+    const categoryId = sup?.category_id || null;
+    let categorySlug = "outros";
+    let categoryName = "";
+    if (categoryId) {
+      const { data: cat } = await supabase.from("categories").select("name, slug").eq("id", categoryId).maybeSingle();
+      categorySlug = cat?.slug || "outros";
+      categoryName = cat?.name || "";
+    }
     // upsert couple_suppliers
     const { data: existing } = await supabase
       .from("couple_suppliers")
@@ -91,20 +105,66 @@ export default function QuoteProposalPanel({ quoteId, currentUserId, isSupplier,
         status: "contracted",
         final_value: finalAmount,
         contract_value: finalAmount,
+        category_id: categoryId,
         contracted_at: new Date().toISOString(),
       }).eq("id", existing.id);
     } else {
       await (supabase.from("couple_suppliers") as any).insert({
         couple_id: coupleId,
         supplier_id: supplierId,
+        category_id: categoryId,
         status: "contracted",
         final_value: finalAmount,
         contract_value: finalAmount,
         contracted_at: new Date().toISOString(),
       });
     }
-    await (supabase.from("quotes") as any).update({ status: "accepted" }).eq("id", quoteId);
-    toast({ title: "Marcado como contratado!", description: "Aparece agora em Meus Fornecedores." });
+
+    // Cria/atualiza item de orçamento vinculado a este fornecedor
+    const { data: existingBI } = await supabase
+      .from("budget_items")
+      .select("id")
+      .eq("couple_id", coupleId)
+      .eq("supplier_id", supplierId)
+      .maybeSingle();
+    const description = sup?.company_name || "Fornecedor contratado";
+    if (existingBI) {
+      await (supabase.from("budget_items") as any).update({
+        estimated_cost: finalAmount,
+        final_cost: finalAmount,
+        status: "contracted",
+        category: categorySlug,
+        description,
+      }).eq("id", existingBI.id);
+    } else {
+      await (supabase.from("budget_items") as any).insert({
+        couple_id: coupleId,
+        supplier_id: supplierId,
+        category: categorySlug,
+        description,
+        estimated_cost: finalAmount,
+        final_cost: finalAmount,
+        status: "contracted",
+      });
+    }
+
+    // Marca tarefa "Contratar..." da categoria como concluída se existir
+    if (categoryName) {
+      const { data: tasks } = await supabase
+        .from("wedding_tasks")
+        .select("id")
+        .eq("couple_id", coupleId)
+        .eq("is_completed", false)
+        .ilike("title", `%contratar%${categoryName.toLowerCase()}%`);
+      if (tasks && tasks.length) {
+        await (supabase.from("wedding_tasks") as any)
+          .update({ is_completed: true, completed_at: new Date().toISOString() })
+          .in("id", tasks.map((t: any) => t.id));
+      }
+    }
+
+    await (supabase.from("quotes") as any).update({ status: "accepted", kanban_status: "fechado" }).eq("id", quoteId);
+    toast({ title: "Marcado como contratado!", description: "Atualizamos fornecedores, orçamento e tarefas." });
     onContracted?.();
     setBusy(false);
   };
