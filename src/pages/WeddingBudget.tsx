@@ -205,6 +205,16 @@ export default function WeddingBudget() {
               </Card>
             </div>
           </div>
+          {/* Kanban de Orçamentos disponível mesmo sem meta */}
+          {couple && (
+            <div className="max-w-6xl mx-auto mt-12">
+              <div className="mb-3">
+                <h2 className="text-xl font-semibold">Seus orçamentos e negociações</h2>
+                <p className="text-sm text-muted-foreground">Acompanhe propostas enviadas, negocie e marque contratos fechados.</p>
+              </div>
+              <QuotesKanban coupleId={couple.id} />
+            </div>
+          )}
         </div>
         <BudgetManualSetupDialog
           open={manualOpen}
