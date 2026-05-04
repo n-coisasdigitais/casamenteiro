@@ -203,8 +203,18 @@ export default function SupplierDashboard() {
           </Card>
         )}
 
-        <Tabs defaultValue="quotes" className="space-y-6">
+        {!supplier.onboarding_completed && (
+          <div className="mb-6">
+            <SupplierOnboardingWizard supplier={supplier} onComplete={loadSupplier} />
+          </div>
+        )}
+
+        <Tabs defaultValue={supplier.onboarding_completed ? "metrics" : "quotes"} className="space-y-6">
           <TabsList className="flex-wrap">
+            <TabsTrigger value="metrics" className="flex items-center gap-1.5">
+              <BarChart3 className="h-4 w-4" />
+              Painel
+            </TabsTrigger>
             <TabsTrigger value="quotes" className="flex items-center gap-1.5">
               <MessageSquare className="h-4 w-4" />
               Orçamentos {quotes.length > 0 && <Badge variant="secondary" className="ml-1 text-xs h-5 px-1.5">{quotes.length}</Badge>}
@@ -216,6 +226,11 @@ export default function SupplierDashboard() {
             <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
             <TabsTrigger value="photos">Fotos</TabsTrigger>
           </TabsList>
+
+          {/* METRICS TAB */}
+          <TabsContent value="metrics">
+            <SupplierMetrics supplierId={supplier.id} />
+          </TabsContent>
 
           {/* QUOTES TAB */}
           <TabsContent value="quotes">
