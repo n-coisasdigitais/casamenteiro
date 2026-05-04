@@ -22,6 +22,7 @@ import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
 import AdminTransacoes from "./pages/AdminTransacoes";
 import SimuladorResultado from "./pages/SimuladorResultado";
+import Simulador from "./pages/Simulador";
 import MeuPlano from "./pages/MeuPlano";
 import Favorites from "./pages/Favorites";
 import UserProfile from "./pages/UserProfile";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/admin/simulacoes" element={<AdminSimulacoes />} />
             <Route path="/admin/transacoes" element={<AdminTransacoes />} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
+            <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />
             <Route path="/meu-plano/:id" element={<MeuPlano />} />
             <Route path="*" element={<NotFound />} />
