@@ -52,6 +52,7 @@ type CoupleData = {
   target_budget?: number | null;
   budget_mode?: string | null;
   estimated_budget?: number | null;
+  estimated_guests?: number | null;
   wedding_date?: string | null;
 };
 
@@ -121,7 +122,7 @@ export default function WeddingBudget() {
       const updates = {
         target_budget: Number(latestSim.orcamento_total),
         estimated_budget: Number(latestSim.orcamento_total),
-        estimated_guests: latestSim.num_convidados || coupleData.estimated_budget || null,
+        estimated_guests: latestSim.num_convidados || coupleData.estimated_guests || null,
         wedding_date: latestSim.data_evento || coupleData.wedding_date || null,
         budget_mode: "fixed",
       };
