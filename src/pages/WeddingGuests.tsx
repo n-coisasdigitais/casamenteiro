@@ -385,6 +385,7 @@ function GuestGroupSection({
   rsvpLabel,
   invites,
   onSendInvite,
+  onSendWhatsApp,
   onSendGroup,
 }: {
   groupName?: string;
