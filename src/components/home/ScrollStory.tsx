@@ -47,7 +47,7 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
         {/* Full-bleed image stack — each chapter fills the screen */}
         {blocos.map((b, i) => (
-          <ImageLayer key={i} index={i} total={n} src={b.foto_url} alt={b.frase} progress={scrollYProgress} />
+          <ImageLayer key={i} index={i} total={chapters} src={b.foto_url} alt={b.frase} progress={scrollYProgress} />
         ))}
 
         {/* Dark gradient overlay for text legibility */}
