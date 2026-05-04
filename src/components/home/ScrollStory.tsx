@@ -96,22 +96,23 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
 function ImageLayer({ index, total, src, alt, progress }: {
   index: number; total: number; src: string; alt: string; progress: MotionValue<number>;
 }) {
-  // Each chapter occupies 1/total of total scroll
+  // Cada capítulo ocupa 1/total. A imagem fica visível na maior parte do capítulo
+  // e só faz crossfade nos ~12% finais, depois que o texto já saiu.
+  const span = 1 / total;
   const start = index / total;
   const end = (index + 1) / total;
-  const fadeIn = start - 0.04;
-  const fadeOut = end - 0.04;
-  const lastFadeOut = end + 0.05; // last chapter stays visible
+  const fadeInEnd = start + span * 0.12;
+  const fadeOutStart = end - span * 0.12;
 
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
   const opacity = useTransform(
     progress,
-    [Math.max(0, fadeIn), Math.max(0, fadeIn + 0.04), Math.max(0, fadeOut), Math.min(1, lastFadeOut)],
-    [isFirst ? 1 : 0, 1, isLast ? 1 : 0, isLast ? 1 : 0]
+    [Math.max(0, start - 0.001), fadeInEnd, fadeOutStart, end],
+    [isFirst ? 1 : 0, 1, 1, isLast ? 1 : 0]
   );
-  const scale = useTransform(progress, [start, (start + end) / 2, end], [1.08, 1, 0.96]);
+  const scale = useTransform(progress, [start, end], [1.06, 0.98]);
 
   return (
     <motion.img
@@ -128,17 +129,23 @@ function TextLayer({ index, total, bloco, progress, onCTA, isLast }: {
   index: number; total: number; bloco: Bloco; progress: MotionValue<number>;
   onCTA?: () => void; isLast?: boolean;
 }) {
+  const span = 1 / total;
   const start = index / total;
   const end = (index + 1) / total;
   const mid = (start + end) / 2;
+  // Texto entra cedo e sai cedo — fica legível durante a maior parte do capítulo
+  const inStart = start + span * 0.08;
+  const inEnd = start + span * 0.22;
+  const outStart = end - span * 0.25;
+  const outEnd = end - span * 0.10;
 
   // Alternate sides; intro chapter is centered-bottom so it doesn't fight the fixed headline
   const sideRight = index % 2 === 1;
   const isIntro = index === 0;
   const fromX = isIntro ? 0 : sideRight ? 80 : -80;
 
-  const opacity = useTransform(progress, [start, start + 0.04, end - 0.05, end], [0, 1, 1, 0]);
-  const x = useTransform(progress, [start, mid, end], [fromX, 0, -fromX / 2]);
+  const opacity = useTransform(progress, [start, inStart, inEnd, outStart, outEnd], [0, 0, 1, 1, 0]);
+  const x = useTransform(progress, [inStart, mid, outEnd], [fromX, 0, -fromX / 3]);
 
   const num = String(index + 1).padStart(2, "0");
   // All chapters show light text over the full-bleed photo
