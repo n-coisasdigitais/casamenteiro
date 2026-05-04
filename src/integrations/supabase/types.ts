@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Relationships: []
+      }
       budget_distribution_defaults: {
         Row: {
           category_slug: string
@@ -592,6 +622,9 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          suspended: boolean
+          suspended_at: string | null
+          suspended_reason: string | null
           updated_at: string
           user_id: string
         }
@@ -601,6 +634,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          suspended?: boolean
+          suspended_at?: string | null
+          suspended_reason?: string | null
           updated_at?: string
           user_id: string
         }
@@ -610,6 +646,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          suspended?: boolean
+          suspended_at?: string | null
+          suspended_reason?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1627,6 +1666,14 @@ export type Database = {
           _title: string
         }
         Returns: number
+      }
+      admin_set_user_suspended: {
+        Args: { _reason?: string; _suspended: boolean; _user_id: string }
+        Returns: undefined
+      }
+      admin_toggle_admin_role: {
+        Args: { _make_admin: boolean; _user_id: string }
+        Returns: undefined
       }
       get_couple_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_invite_by_token: {
