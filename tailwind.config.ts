@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"DM Sans"', 'sans-serif'],
-        serif: ['"Playfair Display"', 'serif'],
+        sans: ['"Figtree"', 'system-ui', 'sans-serif'],
+        serif: ['"Rufina"', 'Georgia', 'serif'],
+        display: ['"Rufina"', 'Georgia', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
