@@ -13,6 +13,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import AvatarUpload from "@/components/AvatarUpload";
 import { Textarea } from "@/components/ui/textarea";
+import CouplePhotoUpload from "@/components/CouplePhotoUpload";
 
 export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -36,6 +37,12 @@ export default function UserProfile() {
   const [receptionAddress, setReceptionAddress] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [dressCode, setDressCode] = useState("");
+
+  // Header pessoal + meta de orçamento
+  const [headerPhotoUrl, setHeaderPhotoUrl] = useState("");
+  const [headerQuote, setHeaderQuote] = useState("");
+  const [targetBudget, setTargetBudget] = useState("");
+  const [budgetMode, setBudgetMode] = useState<string>("fixed");
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -67,6 +74,10 @@ export default function UserProfile() {
         setReceptionAddress((data as any).reception_address || "");
         setContactPhone((data as any).contact_phone || "");
         setDressCode((data as any).dress_code || "");
+        setHeaderPhotoUrl((data as any).header_photo_url || "");
+        setHeaderQuote((data as any).header_quote || "");
+        setTargetBudget((data as any).target_budget?.toString() || "");
+        setBudgetMode((data as any).budget_mode || "fixed");
       }
     });
   }, [user, profile, authLoading, navigate]);
@@ -96,6 +107,10 @@ export default function UserProfile() {
             reception_address: receptionAddress || null,
             contact_phone: contactPhone || null,
             dress_code: dressCode || null,
+            header_photo_url: headerPhotoUrl || null,
+            header_quote: headerQuote || null,
+            target_budget: targetBudget ? parseFloat(targetBudget) : null,
+            budget_mode: budgetMode,
           })
           .eq("id", coupleId)
       : Promise.resolve({ error: null });
@@ -197,6 +212,21 @@ export default function UserProfile() {
               <Label htmlFor="budget">Orçamento estimado (R$)</Label>
               <Input id="budget" type="number" value={estimatedBudget} onChange={(e) => setEstimatedBudget(e.target.value)} />
             </div>
+            <div>
+              <Label htmlFor="target">Meta de orçamento (R$)</Label>
+              <Input id="target" type="number" value={targetBudget} onChange={(e) => setTargetBudget(e.target.value)} />
+              <p className="text-xs text-muted-foreground mt-1">Esse será o teto que você quer respeitar nos gastos.</p>
+            </div>
+            <div>
+              <Label>Modo do orçamento</Label>
+              <Select value={budgetMode} onValueChange={setBudgetMode}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">Fixo (meta acima)</SelectItem>
+                  <SelectItem value="simulation">Pela última simulação</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
 
@@ -204,6 +234,27 @@ export default function UserProfile() {
           <Save className="mr-2 h-4 w-4" />
           {saving ? "Salvando..." : "Salvar alterações"}
         </Button>
+
+        {/* Personalização do painel */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Personalize seu painel</CardTitle>
+            <p className="text-sm text-muted-foreground">Foto e frase que aparecem no topo da página de orçamento.</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Foto de capa</Label>
+              <CouplePhotoUpload url={headerPhotoUrl || null} onUploaded={setHeaderPhotoUrl} fileName="header" />
+            </div>
+            <div>
+              <Label htmlFor="headerQuote">Sua frase</Label>
+              <Textarea id="headerQuote" rows={2} value={headerQuote} onChange={(e) => setHeaderQuote(e.target.value)} placeholder="Ex.: Construindo o nosso grande dia, juntos." />
+            </div>
+            <Button onClick={handleSaveProfile} disabled={saving} variant="outline" className="w-full">
+              <Save className="mr-2 h-4 w-4" />Salvar personalização
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Dados do convite */}
         <Card className="mb-6">
@@ -213,9 +264,8 @@ export default function UserProfile() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="invitePhoto">Foto do convite (URL)</Label>
-              <Input id="invitePhoto" placeholder="https://..." value={invitePhotoUrl} onChange={(e) => setInvitePhotoUrl(e.target.value)} />
-              <p className="text-xs text-muted-foreground mt-1">Use uma foto de capa do casal. Em breve, upload direto.</p>
+              <Label>Foto do convite</Label>
+              <CouplePhotoUpload url={invitePhotoUrl || null} onUploaded={setInvitePhotoUrl} fileName="invite" />
             </div>
             <div>
               <Label htmlFor="inviteMessage">Mensagem para os convidados</Label>
