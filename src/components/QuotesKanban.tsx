@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import ConfirmFinishTaskDialog from "@/components/ConfirmFinishTaskDialog";
 
 type KanbanStatus = "enviado" | "respondido" | "negociando" | "fechado" | "recusado";
 
@@ -47,6 +48,9 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState<KanbanStatus>("fechado");
   const [saving, setSaving] = useState(false);
+  const [confirmTrigger, setConfirmTrigger] = useState(0);
+  const [confirmCategory, setConfirmCategory] = useState<string | null>(null);
+  const [confirmSupplierId, setConfirmSupplierId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -128,6 +132,15 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
         await (supabase.from("couple_suppliers") as any).insert({
           couple_id: coupleId, supplier_id: supId, ...payload,
         });
+      }
+      // pergunta para finalizar tarefa
+      if (sup?.category_id) {
+        const { data: cat } = await supabase.from("categories").select("name").eq("id", sup.category_id).maybeSingle();
+        if (cat?.name) {
+          setConfirmSupplierId(supId);
+          setConfirmCategory(cat.name);
+          setConfirmTrigger((n) => n + 1);
+        }
       }
     }
     toast({ title: "Adicionado ao kanban" });
@@ -252,6 +265,12 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmFinishTaskDialog
+        coupleId={coupleId}
+        supplierId={confirmSupplierId}
+        categoryName={confirmCategory}
+        trigger={confirmTrigger}
+      />
     </div>
   );
 }
