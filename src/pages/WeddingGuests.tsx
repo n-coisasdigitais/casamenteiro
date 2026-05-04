@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Users, Baby, Download, Printer, MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { Users, Baby, Download, Printer, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
@@ -30,6 +30,8 @@ type Guest = {
   group_id: string | null;
 };
 
+type InviteMap = Record<string, { token: string; sent_at: string | null; opened_at: string | null; responded_at: string | null }>;
+
 type Group = { id: string; name: string };
 
 export default function WeddingGuests() {
@@ -41,6 +43,7 @@ export default function WeddingGuests() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [invites, setInvites] = useState<InviteMap>({});
 
   useEffect(() => {
     if (!user) return;
@@ -52,12 +55,47 @@ export default function WeddingGuests() {
   }, [user]);
 
   const loadData = async (cId: string) => {
-    const [gRes, grRes] = await Promise.all([
+    const [gRes, grRes, invRes] = await Promise.all([
       supabase.from("wedding_guests").select("*").eq("couple_id", cId).order("name"),
       supabase.from("guest_groups").select("*").eq("couple_id", cId).order("name"),
+      (supabase as any).from("guest_invites").select("guest_id, token, sent_at, opened_at, responded_at").eq("couple_id", cId),
     ]);
     setGuests(gRes.data || []);
     setGroups(grRes.data || []);
+    const map: InviteMap = {};
+    (invRes.data || []).forEach((i: any) => { map[i.guest_id] = i; });
+    setInvites(map);
+  };
+
+  const ensureInvite = async (guestId: string): Promise<string | null> => {
+    if (!coupleId) return null;
+    if (invites[guestId]) return invites[guestId].token;
+    const { data, error } = await (supabase as any)
+      .from("guest_invites")
+      .insert({ guest_id: guestId, couple_id: coupleId })
+      .select("token")
+      .maybeSingle();
+    if (error || !data) {
+      toast({ title: "Erro ao gerar convite", description: error?.message, variant: "destructive" });
+      return null;
+    }
+    setInvites(prev => ({ ...prev, [guestId]: { token: data.token, sent_at: null, opened_at: null, responded_at: null } }));
+    return data.token;
+  };
+
+  const sendInvite = async (guest: Guest) => {
+    const token = await ensureInvite(guest.id);
+    if (!token) return;
+    const url = `${window.location.origin}/convite/${token}`;
+    await navigator.clipboard.writeText(url).catch(() => {});
+    await (supabase as any).from("guest_invites").update({ sent_at: new Date().toISOString() }).eq("guest_id", guest.id);
+    setInvites(prev => ({ ...prev, [guest.id]: { ...prev[guest.id], token, sent_at: new Date().toISOString() } }));
+    toast({ title: "Link do convite copiado!", description: "Cole no WhatsApp ou compartilhe. O envio por email é ativado quando o domínio estiver configurado." });
+  };
+
+  const sendInvitesGroup = async (groupGuests: Guest[]) => {
+    for (const g of groupGuests) await ensureInvite(g.id);
+    toast({ title: `${groupGuests.length} convite(s) gerado(s)`, description: "Use o ícone de link em cada convidado para copiar." });
   };
 
   const addGuest = async (guest: { name: string; email?: string; phone?: string; guest_type: string; group_id?: string }) => {
@@ -267,6 +305,9 @@ export default function WeddingGuests() {
                         onDelete={deleteGuest}
                         rsvpVariant={rsvpVariant}
                         rsvpLabel={rsvpLabel}
+                        invites={invites}
+                        onSendInvite={sendInvite}
+                        onSendGroup={() => sendInvitesGroup(groupGuests)}
                       />
                     );
                   })}
@@ -281,6 +322,8 @@ export default function WeddingGuests() {
                       onDelete={deleteGuest}
                       rsvpVariant={rsvpVariant}
                       rsvpLabel={rsvpLabel}
+                      invites={invites}
+                      onSendInvite={sendInvite}
                     />
                   )}
                 </tbody>
@@ -309,6 +352,9 @@ function GuestGroupSection({
   onDelete,
   rsvpVariant,
   rsvpLabel,
+  invites,
+  onSendInvite,
+  onSendGroup,
 }: {
   groupName?: string;
   guests: Guest[];
@@ -319,13 +365,23 @@ function GuestGroupSection({
   onDelete: (id: string) => void;
   rsvpVariant: (s: string) => "default" | "secondary" | "destructive" | "outline";
   rsvpLabel: (s: string) => string;
+  invites: InviteMap;
+  onSendInvite: (g: Guest) => void;
+  onSendGroup?: () => void;
 }) {
   return (
     <>
       {groupName && (
         <tr className="bg-muted/30">
           <td colSpan={6} className="p-2 pl-4">
-            <span className="text-xs font-semibold uppercase text-muted-foreground">{groupName} ({guests.length})</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase text-muted-foreground">{groupName} ({guests.length})</span>
+              {onSendGroup && (
+                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={onSendGroup}>
+                  <Send className="h-3 w-3 mr-1" /> Enviar convites do grupo
+                </Button>
+              )}
+            </div>
           </td>
         </tr>
       )}
@@ -336,7 +392,12 @@ function GuestGroupSection({
           </td>
           <td className="p-3">
             <p className="font-medium">{g.name}</p>
-            <p className="text-xs text-muted-foreground capitalize">{g.guest_type === "adult" ? "Adulto" : g.guest_type === "child" ? "Criança" : "Bebê"}</p>
+            <p className="text-xs text-muted-foreground capitalize">
+              {g.guest_type === "adult" ? "Adulto" : g.guest_type === "child" ? "Criança" : "Bebê"}
+              {invites[g.id]?.responded_at && <span className="ml-2 text-green-700">• respondeu</span>}
+              {invites[g.id]?.opened_at && !invites[g.id]?.responded_at && <span className="ml-2 text-blue-700">• abriu</span>}
+              {invites[g.id]?.sent_at && !invites[g.id]?.opened_at && <span className="ml-2">• enviado</span>}
+            </p>
           </td>
           <td className="p-3 hidden md:table-cell">
             <p className="text-xs">{g.email || "-"}</p>
@@ -364,19 +425,28 @@ function GuestGroupSection({
             />
           </td>
           <td className="p-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onDelete(g.id)} className="text-destructive focus:text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Remover
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSendInvite(g)} title="Enviar/copiar convite">
+                <Send className="h-4 w-4" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onSendInvite(g)}>
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Copiar link do convite
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDelete(g.id)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remover
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </td>
         </tr>
       ))}

@@ -13,6 +13,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import BudgetChart from "@/components/BudgetChart";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
+import QuotesKanban from "@/components/QuotesKanban";
 import { useToast } from "@/hooks/use-toast";
 
 type BudgetItem = {
@@ -146,6 +147,19 @@ export default function WeddingBudget() {
           <h1 className="text-3xl font-bold mb-2">Gestão de Orçamento</h1>
           <p className="text-muted-foreground">Acompanhe seus gastos e organize os pagamentos</p>
         </div>
+
+        {/* Kanban de Orçamentos */}
+        {couple && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-xl font-semibold">Orçamentos enviados</h2>
+                <p className="text-sm text-muted-foreground">Arraste pelo status ou aguarde a resposta do fornecedor</p>
+              </div>
+            </div>
+            <QuotesKanban coupleId={couple.id} />
+          </div>
+        )}
 
         {/* Painel Resumo */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

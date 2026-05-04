@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import AvatarUpload from "@/components/AvatarUpload";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -26,6 +27,15 @@ export default function UserProfile() {
   const [estimatedBudget, setEstimatedBudget] = useState("");
   const [coupleId, setCoupleId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Campos do convite
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [invitePhotoUrl, setInvitePhotoUrl] = useState("");
+  const [ceremonyTime, setCeremonyTime] = useState("");
+  const [ceremonyAddress, setCeremonyAddress] = useState("");
+  const [receptionAddress, setReceptionAddress] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [dressCode, setDressCode] = useState("");
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -50,6 +60,13 @@ export default function UserProfile() {
         setWeddingDate(data.wedding_date || "");
         setEstimatedGuests(data.estimated_guests?.toString() || "");
         setEstimatedBudget(data.estimated_budget?.toString() || "");
+        setInviteMessage((data as any).invite_message || "");
+        setInvitePhotoUrl((data as any).invite_photo_url || "");
+        setCeremonyTime((data as any).ceremony_time || "");
+        setCeremonyAddress((data as any).ceremony_address || "");
+        setReceptionAddress((data as any).reception_address || "");
+        setContactPhone((data as any).contact_phone || "");
+        setDressCode((data as any).dress_code || "");
       }
     });
   }, [user, profile, authLoading, navigate]);
@@ -72,6 +89,13 @@ export default function UserProfile() {
             wedding_date: weddingDate || null,
             estimated_guests: estimatedGuests ? parseInt(estimatedGuests) : null,
             estimated_budget: estimatedBudget ? parseFloat(estimatedBudget) : null,
+            invite_message: inviteMessage || null,
+            invite_photo_url: invitePhotoUrl || null,
+            ceremony_time: ceremonyTime || null,
+            ceremony_address: ceremonyAddress || null,
+            reception_address: receptionAddress || null,
+            contact_phone: contactPhone || null,
+            dress_code: dressCode || null,
           })
           .eq("id", coupleId)
       : Promise.resolve({ error: null });
@@ -180,6 +204,51 @@ export default function UserProfile() {
           <Save className="mr-2 h-4 w-4" />
           {saving ? "Salvando..." : "Salvar alterações"}
         </Button>
+
+        {/* Dados do convite */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Dados do convite</CardTitle>
+            <p className="text-sm text-muted-foreground">Esses dados aparecerão no convite enviado por email aos convidados.</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="invitePhoto">Foto do convite (URL)</Label>
+              <Input id="invitePhoto" placeholder="https://..." value={invitePhotoUrl} onChange={(e) => setInvitePhotoUrl(e.target.value)} />
+              <p className="text-xs text-muted-foreground mt-1">Use uma foto de capa do casal. Em breve, upload direto.</p>
+            </div>
+            <div>
+              <Label htmlFor="inviteMessage">Mensagem para os convidados</Label>
+              <Textarea id="inviteMessage" rows={4} value={inviteMessage} onChange={(e) => setInviteMessage(e.target.value)} placeholder="Ex.: É com muita alegria que convidamos vocês para celebrar conosco este momento tão especial..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="ceremonyTime">Horário da cerimônia</Label>
+                <Input id="ceremonyTime" placeholder="Ex.: 16h" value={ceremonyTime} onChange={(e) => setCeremonyTime(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="dressCode">Traje</Label>
+                <Input id="dressCode" placeholder="Ex.: Esporte fino" value={dressCode} onChange={(e) => setDressCode(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="ceremonyAddress">Endereço da cerimônia</Label>
+              <Input id="ceremonyAddress" value={ceremonyAddress} onChange={(e) => setCeremonyAddress(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="receptionAddress">Endereço da recepção</Label>
+              <Input id="receptionAddress" value={receptionAddress} onChange={(e) => setReceptionAddress(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="contactPhone">Telefone de contato</Label>
+              <Input id="contactPhone" placeholder="(11) 99999-9999" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+            </div>
+            <Button onClick={handleSaveProfile} disabled={saving} variant="outline" className="w-full">
+              <Save className="mr-2 h-4 w-4" />
+              Salvar dados do convite
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Alterar senha */}
         <Card>
