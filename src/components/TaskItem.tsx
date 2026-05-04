@@ -1,6 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 type TaskItemProps = {
   id: string;
@@ -10,6 +11,8 @@ type TaskItemProps = {
   isCompleted: boolean;
   actionLabel?: string | null;
   actionUrl?: string | null;
+  supplierId?: string | null;
+  supplierName?: string | null;
   onToggle: (id: string, completed: boolean) => void;
 };
 
@@ -41,7 +44,7 @@ const priorityVariant: Record<string, "default" | "secondary" | "outline"> = {
   optional: "outline",
 };
 
-export default function TaskItem({ id, title, category, priority, isCompleted, actionLabel, actionUrl, onToggle }: TaskItemProps) {
+export default function TaskItem({ id, title, category, priority, isCompleted, actionLabel, actionUrl, supplierId, supplierName, onToggle }: TaskItemProps) {
   return (
     <div className="flex items-start gap-3 py-3 px-4 rounded-lg hover:bg-muted/50 transition-colors group">
       <Checkbox
@@ -57,6 +60,11 @@ export default function TaskItem({ id, title, category, priority, isCompleted, a
           <Badge variant={priorityVariant[priority] || "secondary"} className="text-xs">
             {categoryLabels[category] || category}
           </Badge>
+          {supplierId && supplierName && (
+            <Link to={`/fornecedor/${supplierId}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+              <CheckCircle2 className="h-3 w-3" /> Contratado: {supplierName}
+            </Link>
+          )}
           {actionLabel && actionUrl && (
             <a
               href={actionUrl}
