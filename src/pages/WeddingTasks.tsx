@@ -20,6 +20,8 @@ type Task = {
   due_period: string | null;
   is_completed: boolean;
   sort_order: number;
+  supplier_id?: string | null;
+  supplier_name?: string | null;
 };
 
 const periodOrder = [
@@ -61,12 +63,19 @@ export default function WeddingTasks() {
   }, [user]);
 
   const loadTasks = async (cId: string) => {
-    const { data } = await supabase
-      .from("wedding_tasks")
-      .select("id, title, category, priority, due_period, is_completed, sort_order")
+    const { data } = await (supabase
+      .from("wedding_tasks") as any)
+      .select("id, title, category, priority, due_period, is_completed, sort_order, supplier_id")
       .eq("couple_id", cId)
       .order("sort_order", { ascending: true });
-    setTasks(data || []);
+    const list = (data || []) as Task[];
+    const supIds = Array.from(new Set(list.map((t) => t.supplier_id).filter(Boolean))) as string[];
+    let supMap = new Map<string, string>();
+    if (supIds.length) {
+      const { data: sups } = await supabase.from("suppliers").select("id, company_name").in("id", supIds);
+      supMap = new Map((sups || []).map((s: any) => [s.id, s.company_name]));
+    }
+    setTasks(list.map((t) => ({ ...t, supplier_name: t.supplier_id ? supMap.get(t.supplier_id) || null : null })));
   };
 
   const toggleTask = async (id: string, completed: boolean) => {
@@ -238,6 +247,8 @@ export default function WeddingTasks() {
                         category={t.category}
                         priority={t.priority}
                         isCompleted={t.is_completed}
+                        supplierId={t.supplier_id || null}
+                        supplierName={t.supplier_name || null}
                         onToggle={toggleTask}
                       />
                     ))}
