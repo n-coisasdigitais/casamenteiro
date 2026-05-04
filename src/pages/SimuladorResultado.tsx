@@ -138,25 +138,38 @@ export default function SimuladorResultado() {
         })
         .eq("id", coupleId);
 
-      const categoryRows = result.categories.map((cat) => ({
+      const { data: existingBudget } = await supabase
+        .from("budget_items")
+        .select("category, supplier_id")
+        .eq("couple_id", coupleId);
+      const existingCategories = new Set((existingBudget || []).map((item: any) => item.category));
+      const existingSupplierIds = new Set((existingBudget || []).map((item: any) => item.supplier_id).filter(Boolean));
+
+      const categoryRows = result.categories.filter((cat) => !picks[cat.category_slug]).map((cat) => ({
         couple_id: coupleId,
         category: cat.category_slug,
         description: cat.category_name,
         estimated_cost: Math.round(cat.budget_slice),
         status: "estimated",
       }));
-
-      const { data: existingBudget } = await supabase
-        .from("budget_items")
-        .select("category, supplier_id")
-        .eq("couple_id", coupleId);
-      const existingCategories = new Set(
-        (existingBudget || []).filter((item: any) => !item.supplier_id).map((item: any) => item.category)
-      );
       const missingCategories = categoryRows.filter((row) => !existingCategories.has(row.category));
-      if (missingCategories.length) {
-        await (supabase.from("budget_items") as any).insert(missingCategories);
-      }
+      const selectedBudgetRows = result.categories
+        .map((cat) => {
+          const sid = picks[cat.category_slug];
+          if (!sid || existingSupplierIds.has(sid)) return null;
+          const sup = cat.suppliers.find((s) => s.id === sid);
+          return {
+            couple_id: coupleId,
+            supplier_id: sid,
+            category: cat.category_slug,
+            description: sup?.company_name || cat.category_name,
+            estimated_cost: sup?.estimated_price || cat.budget_slice,
+            status: "estimated",
+          };
+        })
+        .filter(Boolean) as any[];
+      const budgetRows = [...missingCategories, ...selectedBudgetRows];
+      if (budgetRows.length) await (supabase.from("budget_items") as any).insert(budgetRows);
 
       const rows = result.categories
         .map((cat) => {
