@@ -86,7 +86,11 @@ export default function WeddingGuests() {
   const sendInvite = async (guest: Guest) => {
     const token = await ensureInvite(guest.id);
     if (!token) return;
-    const url = `${window.location.origin}/convite/${token}`;
+    // Usa o domínio publicado para garantir que o link funcione fora do preview
+    const origin = window.location.hostname.includes("lovable")
+      ? "https://ocasamenteiro.lovable.app"
+      : window.location.origin;
+    const url = `${origin}/convite/${token}`;
     await navigator.clipboard.writeText(url).catch(() => {});
     await (supabase as any).from("guest_invites").update({ sent_at: new Date().toISOString() }).eq("guest_id", guest.id);
     setInvites(prev => ({ ...prev, [guest.id]: { ...prev[guest.id], token, sent_at: new Date().toISOString() } }));

@@ -21,6 +21,8 @@ export default function UserProfile() {
   const { toast } = useToast();
 
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
   const [partnerName, setPartnerName] = useState("");
   const [coupleRole, setCoupleRole] = useState<string>("");
   const [weddingDate, setWeddingDate] = useState("");
@@ -58,6 +60,7 @@ export default function UserProfile() {
       setFullName(profile.full_name || "");
       setAvatarUrl(profile.avatar_url || null);
     }
+    setEmail(user.email || "");
 
     supabase.from("couples").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (data) {
@@ -146,6 +149,22 @@ export default function UserProfile() {
     setSavingPassword(false);
   };
 
+  const handleChangeEmail = async () => {
+    if (!email || !email.includes("@")) {
+      toast({ title: "Email inválido", variant: "destructive" });
+      return;
+    }
+    if (email === user?.email) return;
+    setSavingEmail(true);
+    const { error } = await supabase.auth.updateUser({ email });
+    if (error) {
+      toast({ title: "Erro ao alterar email", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Email atualizado!", description: "Verifique sua caixa de entrada para confirmar a alteração." });
+    }
+    setSavingEmail(false);
+  };
+
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
 
   return (
@@ -176,6 +195,16 @@ export default function UserProfile() {
             <div>
               <Label htmlFor="fullName">Nome completo</Label>
               <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <div className="flex gap-2">
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Button onClick={handleChangeEmail} disabled={savingEmail || email === user?.email} variant="outline">
+                  {savingEmail ? "Salvando..." : "Alterar"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Ao alterar, você precisará confirmar pelo link enviado ao novo email.</p>
             </div>
             <div>
               <Label htmlFor="partnerName">Nome do(a) parceiro(a)</Label>
