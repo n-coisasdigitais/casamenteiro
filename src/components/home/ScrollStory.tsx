@@ -23,24 +23,23 @@ const CHAPTER_BG = [
 export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
-  // O capítulo 0 é o título fixo de abertura; os demais são os blocos com foto trocando
-  const chapters = blocos.length; // chapters de imagem (incluindo a abertura usa a 1ª imagem)
-  // Cada capítulo dura ~150vh para ter tempo de entrada → centro → saída → troca
-  const sectionVh = chapters * 150 + 80;
+  const chapters = blocos.length;
+  // Cada capítulo dura ~200vh — entrada lateral → centro (hold) → saída + troca de foto
+  const sectionVh = chapters * 200;
 
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end end"],
   });
 
-  // Título fixo de abertura: visível só na entrada, some bem antes do capítulo 2 começar
+  // Título fixo de abertura — visível só dentro do capítulo 1, some antes do 2 entrar
   const firstEnd = 1 / chapters;
   const introOpacity = useTransform(
     scrollYProgress,
-    [0, firstEnd * 0.35, firstEnd * 0.55],
-    [1, 1, 0]
+    [0, firstEnd * 0.5, firstEnd * 0.7, 1],
+    [1, 1, 0, 0]
   );
-  const introY = useTransform(scrollYProgress, [0, firstEnd * 0.55], [0, -60]);
+  const introY = useTransform(scrollYProgress, [0, firstEnd * 0.7], [0, -80]);
 
   return (
     <div ref={ref} style={{ height: `${sectionVh}vh`, position: "relative" }}>
@@ -99,19 +98,19 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
 function ImageLayer({ index, total, src, alt, progress }: {
   index: number; total: number; src: string; alt: string; progress: MotionValue<number>;
 }) {
-  // Cada capítulo ocupa 1/total. A imagem fica firme durante todo o ciclo do texto
-  // (entrada → centro → saída) e só faz crossfade nos últimos 8% do capítulo.
+  // Imagem firme enquanto o texto está no centro; troca apenas quando o texto começa a sair (65–95%)
   const span = 1 / total;
   const start = index / total;
   const end = (index + 1) / total;
-  const swapStart = end - span * 0.08;
+  const swapStart = start + span * 0.65;
+  const swapEnd = start + span * 0.95;
 
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
   const opacity = useTransform(
     progress,
-    [Math.max(0, start - span * 0.08), start, swapStart, end],
+    [Math.max(0, start - span * 0.05), start, swapStart, swapEnd],
     [isFirst ? 1 : 0, 1, 1, isLast ? 1 : 0]
   );
   const scale = useTransform(progress, [start, end], [1.04, 1.0]);
@@ -134,12 +133,12 @@ function TextLayer({ index, total, bloco, progress, onCTA, isLast }: {
   const span = 1 / total;
   const start = index / total;
   const end = (index + 1) / total;
-  // Cadência: entra (5–25%) → centrado e estável (25–70%) → sai (70–88%) → troca de foto (88–100%)
-  const inStart = start + span * 0.05;
-  const inEnd = start + span * 0.25;
-  const outStart = start + span * 0.70;
-  const outEnd = start + span * 0.88;
-  const mid = start + span * 0.45;
+  // Cadência: entra (0–20%) → CENTRO firme (20–60%) → sai junto com a troca da foto (60–95%)
+  const inStart = start + span * 0.0;
+  const inEnd = start + span * 0.20;
+  const outStart = start + span * 0.60;
+  const outEnd = start + span * 0.95;
+  const mid = start + span * 0.40;
 
   const sideRight = index % 2 === 1;
   const fromX = sideRight ? 90 : -90;
