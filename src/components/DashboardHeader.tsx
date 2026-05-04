@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
+import NotificationsBell from "@/components/NotificationsBell";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function DashboardHeader() {
@@ -17,6 +18,7 @@ export default function DashboardHeader() {
           <span className="text-sm text-muted-foreground hidden sm:inline">
             Olá, {profile?.full_name || "Casal"}
           </span>
+          <NotificationsBell />
           <UserMenu />
         </div>
       </div>

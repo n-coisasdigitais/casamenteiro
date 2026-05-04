@@ -46,6 +46,7 @@ export default function SupplierProfile() {
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [userHasReview, setUserHasReview] = useState(false);
+  const [phoneUnlocked, setPhoneUnlocked] = useState(false);
 
   // Recommendations
   const [recommendations, setRecommendations] = useState<any[]>([]);
@@ -84,6 +85,9 @@ export default function SupplierProfile() {
           });
           supabase.from("reviews").select("id").eq("couple_id", data.id).eq("supplier_id", id).maybeSingle().then(({ data: rev }) => {
             setUserHasReview(!!rev);
+          });
+          supabase.from("quotes").select("id").eq("couple_id", data.id).eq("supplier_id", id).limit(1).then(({ data: q }) => {
+            setPhoneUnlocked(!!(q && q.length > 0));
           });
         }
       });
@@ -304,7 +308,7 @@ export default function SupplierProfile() {
                       supplierId={supplier.id}
                       supplierName={supplier.company_name}
                     />
-                    {supplier.phone && (
+                    {supplier.phone && phoneUnlocked && (
                       <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" asChild>
                         <a href={`tel:${supplier.phone}`}>
                           <Phone className="h-5 w-5" />
@@ -312,6 +316,12 @@ export default function SupplierProfile() {
                       </Button>
                     )}
                   </div>
+                  {supplier.phone && !phoneUnlocked && (
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      Telefone liberado após enviar o pedido de orçamento
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -592,7 +602,7 @@ export default function SupplierProfile() {
                       supplierId={supplier.id}
                       supplierName={supplier.company_name}
                     />
-                    {supplier.phone && (
+                    {supplier.phone && phoneUnlocked && (
                       <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" asChild>
                         <a href={`tel:${supplier.phone}`}>
                           <Phone className="h-5 w-5" />
@@ -608,11 +618,11 @@ export default function SupplierProfile() {
                 </CardContent>
               </Card>
 
-              {(supplier.email || supplier.phone) && (
+              {(supplier.email || (supplier.phone && phoneUnlocked)) && (
                 <Card>
                   <CardContent className="p-4 space-y-2">
                     <h3 className="font-semibold text-sm">Contato</h3>
-                    {supplier.phone && (
+                    {supplier.phone && phoneUnlocked && (
                       <p className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Phone className="h-4 w-4 text-primary" />{supplier.phone}
                       </p>
