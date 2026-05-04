@@ -16,69 +16,50 @@ export default function StoryBlock({ index, frase, subtexto, foto, supplierName,
   const reduce = useReducedMotion();
 
   // Section is 200vh, sticky pins for the duration.
-  // Progress 0 → 1: small centered square photo grows until it fills the viewport.
+  // Progress 0 → 1: phrase scrolls up, then the centered square expands into full screen.
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end end"],
   });
 
-  // We compute scale relative to a base size of 40vmin (the small square).
-  // To cover viewport we need ~ (max(100vw, 100vh) / 40vmin). Using 2.8 is safe on most ratios.
-  const scale = useTransform(scrollYProgress, [0, 1], reduce ? [1, 1] : [1, 2.8]);
-  const radius = useTransform(scrollYProgress, [0, 0.85, 1], [24, 8, 0]);
+  const animatedMediaSize = useTransform(scrollYProgress, [0, 0.32, 1], ["34vmin", "34vmin", "110vmax"]);
+  const mediaSize = reduce ? "34vmin" : animatedMediaSize;
+  const radius = useTransform(scrollYProgress, [0, 0.55, 1], [14, 14, 0]);
 
-  const textOpacity = useTransform(scrollYProgress, [0, 0.15, 0.35], [1, 1, 0]);
-  const textY = useTransform(scrollYProgress, [0, 0.35], [0, -30]);
+  const textOpacity = useTransform(scrollYProgress, [0, 0.22, 0.42], [1, 1, 0]);
+  const textY = useTransform(scrollYProgress, [0, 0.42], [0, -170]);
+  const mediaY = useTransform(scrollYProgress, [0, 0.25, 1], [80, 72, 0]);
 
-  const tagOpacity = useTransform(scrollYProgress, [0.7, 0.9], [0, 1]);
-  const captionOpacity = useTransform(scrollYProgress, [0.75, 0.95], [0, 1]);
-  const overlayOpacity = useTransform(scrollYProgress, [0.5, 1], [0, 0.45]);
+  const tagOpacity = useTransform(scrollYProgress, [0.72, 0.9], [0, 1]);
 
   return (
     <section ref={ref} className="relative h-[200vh]">
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-cream flex flex-col items-center justify-center">
-        {/* Centered text above the square */}
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-cream flex items-center justify-center">
+        {/* Phrase rises with the scroll and disappears before the photo fills the screen */}
         <motion.div
           style={{ opacity: textOpacity, y: textY }}
-          className="absolute top-[8vh] md:top-[10vh] left-0 right-0 z-20 text-center px-6 pointer-events-none"
+          className="absolute left-0 right-0 top-[16vh] md:top-[14vh] z-20 text-center px-6 pointer-events-none"
         >
           <p className="font-serif italic text-olive text-sm md:text-base mb-3">({num})</p>
-          <h2 className="font-serif text-3xl md:text-5xl lg:text-6xl text-ink leading-[1.1] max-w-3xl mx-auto mb-4">
+          <h2 className="font-serif text-4xl md:text-6xl lg:text-7xl text-ink leading-[1.02] max-w-4xl mx-auto mb-4">
             {frase}
           </h2>
           {subtexto && (
-            <p className="text-ink/60 text-base md:text-lg max-w-xl mx-auto leading-relaxed">{subtexto}</p>
+            <p className="text-ink/60 text-base md:text-xl max-w-2xl mx-auto leading-relaxed">{subtexto}</p>
           )}
         </motion.div>
 
-        {/* Centered square photo that scales up to fill the screen */}
+        {/* Centered square photo that expands until it covers the full viewport */}
         <motion.div
-          style={{ scale, borderRadius: radius }}
-          className="relative z-10 origin-center overflow-hidden will-change-transform shadow-2xl"
+          style={{ width: mediaSize, height: mediaSize, borderRadius: radius, y: mediaY }}
+          className="relative z-10 origin-center overflow-hidden will-change-[width,height,transform] shadow-2xl"
         >
-          <div className="relative w-[40vmin] h-[40vmin]">
-            <img
-              src={foto}
-              alt={frase}
-              loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </div>
-        </motion.div>
-
-        {/* Dark overlay + caption + supplier tag — appear when photo is fullscreen */}
-        <motion.div
-          style={{ opacity: overlayOpacity }}
-          className="absolute inset-0 z-20 bg-black pointer-events-none"
-        />
-
-        <motion.div
-          style={{ opacity: captionOpacity }}
-          className="absolute bottom-24 md:bottom-28 left-0 right-0 z-30 text-center px-6 pointer-events-none"
-        >
-          <p className="font-serif text-white text-2xl md:text-4xl leading-tight max-w-3xl mx-auto drop-shadow-lg">
-            {frase}
-          </p>
+          <img
+            src={foto}
+            alt={frase}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         </motion.div>
 
         {(supplierName || supplierCategory) && (
@@ -89,7 +70,7 @@ export default function StoryBlock({ index, frase, subtexto, foto, supplierName,
             {supplierId ? (
               <Link
                 to={`/fornecedor/${supplierId}`}
-                className="inline-flex items-center gap-3 bg-white/95 backdrop-blur px-5 py-2.5 rounded-full text-ink hover:bg-white transition shadow-xl"
+                className="inline-flex items-center gap-3 bg-cream/95 backdrop-blur px-5 py-2.5 rounded-full text-ink hover:bg-cream transition shadow-xl"
               >
                 {supplierCategory && (
                   <span className="text-[10px] md:text-xs uppercase tracking-wider text-rose-gold font-semibold">
@@ -101,7 +82,7 @@ export default function StoryBlock({ index, frase, subtexto, foto, supplierName,
                 )}
               </Link>
             ) : (
-              <div className="inline-flex items-center gap-3 bg-white/95 backdrop-blur px-5 py-2.5 rounded-full text-ink shadow-xl">
+              <div className="inline-flex items-center gap-3 bg-cream/95 backdrop-blur px-5 py-2.5 rounded-full text-ink shadow-xl">
                 {supplierCategory && (
                   <span className="text-[10px] md:text-xs uppercase tracking-wider text-rose-gold font-semibold">
                     {supplierCategory}
