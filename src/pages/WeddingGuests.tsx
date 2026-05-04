@@ -398,6 +398,7 @@ function GuestGroupSection({
   rsvpLabel: (s: string) => string;
   invites: InviteMap;
   onSendInvite: (g: Guest) => void;
+  onSendWhatsApp?: (g: Guest) => void;
   onSendGroup?: () => void;
 }) {
   return (
@@ -457,8 +458,13 @@ function GuestGroupSection({
           </td>
           <td className="p-3">
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSendInvite(g)} title="Enviar/copiar convite">
-                <Send className="h-4 w-4" />
+              {onSendWhatsApp && g.phone && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-700" onClick={() => onSendWhatsApp(g)} title="Enviar pelo WhatsApp">
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSendInvite(g)} title="Copiar link do convite">
+                <LinkIcon className="h-4 w-4" />
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -471,6 +477,12 @@ function GuestGroupSection({
                     <LinkIcon className="mr-2 h-4 w-4" />
                     Copiar link do convite
                   </DropdownMenuItem>
+                  {onSendWhatsApp && g.phone && (
+                    <DropdownMenuItem onClick={() => onSendWhatsApp(g)}>
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      Enviar pelo WhatsApp
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => onDelete(g.id)} className="text-destructive focus:text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Remover
