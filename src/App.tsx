@@ -30,6 +30,11 @@ import AdminCoupleCRM from "./pages/AdminCoupleCRM";
 import AdminSupplierCRM from "./pages/AdminSupplierCRM";
 import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminUsers from "./pages/AdminUsers";
+import AdminReviews from "./pages/AdminReviews";
+import AdminAuditLog from "./pages/AdminAuditLog";
+import AdminDefaultTasks from "./pages/AdminDefaultTasks";
+import AdminSettings from "./pages/AdminSettings";
+import AdminFinance from "./pages/AdminFinance";
 import SimuladorResultado from "./pages/SimuladorResultado";
 import Simulador from "./pages/Simulador";
 import MeuPlano from "./pages/MeuPlano";
@@ -81,6 +86,11 @@ const App = () => (
             <Route path="/admin/fornecedor/:id" element={<AdminSupplierCRM />} />
             <Route path="/admin/comunicacao" element={<AdminBroadcast />} />
             <Route path="/admin/usuarios" element={<AdminUsers />} />
+            <Route path="/admin/avaliacoes" element={<AdminReviews />} />
+            <Route path="/admin/auditoria" element={<AdminAuditLog />} />
+            <Route path="/admin/tarefas-padrao" element={<AdminDefaultTasks />} />
+            <Route path="/admin/configuracoes" element={<AdminSettings />} />
+            <Route path="/admin/financeiro" element={<AdminFinance />} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />
