@@ -180,9 +180,9 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
                             onClick={() => { setConvidados(g.value); setTimeout(() => goTo(3), 280); }}
                             className="flex items-center gap-3 text-left px-5 py-3.5 transition rounded-xl"
                             style={{
-                              background: sel ? "hsl(var(--color-accent) / 0.35)" : "hsl(var(--color-bg))",
+                              background: sel ? "hsl(var(--color-primary) / 0.10)" : "hsl(var(--color-bg))",
                               border: `1.5px solid ${sel ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
-                              color: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-text-body))",
+                              color: sel ? "hsl(var(--color-dark))" : "hsl(var(--color-text-body))",
                               fontWeight: sel ? 600 : 400,
                               fontSize: 15,
                             }}
@@ -190,8 +190,8 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
                             <span
                               className="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold flex-shrink-0"
                               style={{
-                                background: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-accent))",
-                                color: sel ? "hsl(var(--color-bg))" : "hsl(var(--color-primary))",
+                                background: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-secondary))",
+                                color: sel ? "hsl(var(--color-bg))" : "hsl(var(--color-text-muted))",
                               }}
                             >
                               {g.letter}
@@ -242,13 +242,13 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
                             onClick={() => { setEstilo(s.id); setTimeout(() => goTo(5), 320); }}
                             className="text-center px-4 py-5 transition"
                             style={{
-                              background: sel ? "hsl(var(--color-accent) / 0.35)" : "hsl(var(--color-bg))",
+                              background: sel ? "hsl(var(--color-primary) / 0.10)" : "hsl(var(--color-bg))",
                               border: `1.5px solid ${sel ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
                               borderRadius: 14,
                             }}
                           >
                             <Icon className="mx-auto mb-2" style={{ color: "hsl(var(--color-primary))" }} size={22} />
-                            <div className="font-serif text-[15px] mb-1" style={{ color: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-dark))" }}>
+                            <div className="text-[15px] mb-1" style={{ color: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-dark))", fontWeight: sel ? 600 : 500 }}>
                               {s.name}
                             </div>
                             <div className="text-[11px] font-light leading-relaxed" style={{ color: "hsl(var(--color-text-muted))" }}>
@@ -266,7 +266,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
                   <div className="text-center flex flex-col items-center">
                     <div
                       className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
-                      style={{ background: "hsl(var(--color-accent))" }}
+                      style={{ background: "hsl(var(--color-primary) / 0.12)" }}
                     >
                       <Check style={{ color: "hsl(var(--color-primary))" }} size={28} />
                     </div>
