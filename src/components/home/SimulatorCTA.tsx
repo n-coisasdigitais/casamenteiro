@@ -1,10 +1,11 @@
 import { forwardRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Leaf, Sparkles, PartyPopper } from "lucide-react";
+import { ArrowLeft, Check, Leaf, Sparkles, PartyPopper, Calendar as CalIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { computeSimulador } from "@/lib/simulador/match";
 
 const CIDADES_MG = [
   "Belo Horizonte","Uberlândia","Contagem","Juiz de Fora","Betim","Montes Claros","Ribeirão das Neves","Uberaba","Governador Valadares","Ipatinga","Sete Lagoas","Divinópolis","Santa Luzia","Ibirité","Poços de Caldas","Patos de Minas","Pouso Alegre","Teófilo Otoni","Barbacena","Sabará","Varginha","Conselheiro Lafaiete","Vespasiano","Itabira","Araguari","Ubá","Passos","Coronel Fabriciano","Muriaé","Lavras"
@@ -23,33 +24,55 @@ const STYLES = [
   { id: "Grande e memorável", icon: PartyPopper, name: "Grandioso", desc: "Festa completa, inesquecível e marcante" },
 ];
 
+const PRAZO_OPTIONS = [
+  { letter: "A", label: "Em até 6 meses", value: 6 },
+  { letter: "B", label: "Entre 6 e 12 meses", value: 12 },
+  { letter: "C", label: "Entre 1 e 2 anos", value: 18 },
+  { letter: "D", label: "Mais de 2 anos / ainda não sei", value: 36 },
+];
+
 const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [step, setStep] = useState(0); // 0 welcome, 1..4 questions, 5 done
+  const [step, setStep] = useState(0); // 0 welcome, 1..5 questions, 6 done
   const [orcamento, setOrcamento] = useState(20000);
   const [convidados, setConvidados] = useState<number | null>(null);
   const [cidade, setCidade] = useState("");
   const [estilo, setEstilo] = useState<string | null>(null);
+  const [dataMode, setDataMode] = useState<"exata" | "faixa" | null>(null);
+  const [dataEvento, setDataEvento] = useState<string>(""); // YYYY-MM-DD
+  const [prazoMeses, setPrazoMeses] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fmtOrc = (n: number) =>
     n >= 1000 ? `R$ ${(n / 1000).toLocaleString("pt-BR")} mil` : `R$ ${n}`;
 
-  const progressPct = [0, 20, 40, 60, 80, 100][step];
+  const progressPct = [0, 16, 32, 48, 64, 82, 100][step];
 
   const goTo = (n: number) => setStep(n);
 
   const submit = async () => {
     setLoading(true);
-    const payload = {
+    const payload: any = {
       orcamento_total: orcamento,
       num_convidados: convidados ?? 100,
       cidade,
       estilo: estilo ?? "Médio e elegante",
+      data_evento: dataMode === "exata" && dataEvento ? dataEvento : null,
+      prazo_meses: dataMode === "faixa" ? prazoMeses : null,
     };
     try {
+      // Computa o resultado já no cliente, antes de salvar — assim guarda snapshot
+      const resultado = await computeSimulador({
+        orcamento_total: payload.orcamento_total,
+        num_convidados: payload.num_convidados,
+        cidade: payload.cidade,
+        estilo: payload.estilo,
+        data_evento: payload.data_evento,
+      });
+      payload.resultado = resultado;
+
       if (!user) {
         localStorage.setItem("pending_simulacao", JSON.stringify(payload));
         toast({ title: "Seu simulador foi salvo!", description: "Crie sua conta gratuita pra ver o resultado." });
@@ -76,7 +99,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
       if (step === 0) goTo(1);
       else if (step === 1) goTo(2);
       else if (step === 3 && cidade.trim().length > 1) goTo(4);
-      else if (step === 5) submit();
+      else if (step === 6) submit();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
