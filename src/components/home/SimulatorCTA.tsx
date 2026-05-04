@@ -92,7 +92,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
   return (
     <section
       ref={ref}
-      className="relative py-16 md:py-24 px-4"
+      className="relative pt-4 md:pt-8 pb-20 md:pb-28 px-4 -mt-px"
       style={{ background: "hsl(var(--color-bg))" }}
     >
       <div className="max-w-2xl mx-auto">
