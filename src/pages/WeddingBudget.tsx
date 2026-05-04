@@ -78,11 +78,11 @@ export default function WeddingBudget() {
       if (!data.onboarding_completed) { navigate("/onboarding"); return; }
       setCouple(data as any);
       loadBudgetData(data.id);
-      // última simulação para modo "simulation"
+      // última simulação para modo "simulation" (por couple_id ou user_id)
       (supabase as any)
         .from("home_simulacoes")
-        .select("orcamento_total")
-        .eq("couple_id", data.id)
+        .select("orcamento_total, criado_em")
+        .or(`couple_id.eq.${data.id},user_id.eq.${user.id}`)
         .order("criado_em", { ascending: false })
         .limit(1)
         .maybeSingle()
