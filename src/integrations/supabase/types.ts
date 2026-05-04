@@ -44,6 +44,45 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_history: {
+        Row: {
+          admin_id: string
+          body: string
+          channel: string
+          created_at: string
+          filters: Json | null
+          id: string
+          link: string | null
+          recipients_count: number
+          segment: string
+          title: string
+        }
+        Insert: {
+          admin_id: string
+          body: string
+          channel?: string
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          link?: string | null
+          recipients_count?: number
+          segment: string
+          title: string
+        }
+        Update: {
+          admin_id?: string
+          body?: string
+          channel?: string
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          link?: string | null
+          recipients_count?: number
+          segment?: string
+          title?: string
+        }
+        Relationships: []
+      }
       budget_distribution_defaults: {
         Row: {
           category_slug: string
@@ -428,6 +467,48 @@ export type Database = {
           wedding_city?: string | null
           wedding_date?: string | null
           wedding_style?: string | null
+        }
+        Relationships: []
+      }
+      default_tasks: {
+        Row: {
+          action_label: string | null
+          action_url: string | null
+          active: boolean
+          category: string
+          created_at: string
+          due_period: string | null
+          id: string
+          priority: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_url?: string | null
+          active?: boolean
+          category: string
+          created_at?: string
+          due_period?: string | null
+          id?: string
+          priority?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_label?: string | null
+          action_url?: string | null
+          active?: boolean
+          category?: string
+          created_at?: string
+          due_period?: string | null
+          id?: string
+          priority?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1491,6 +1572,30 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1667,6 +1772,22 @@ export type Database = {
         }
         Returns: number
       }
+      admin_broadcast_segmented: {
+        Args: {
+          _body: string
+          _category_id?: string
+          _city?: string
+          _days_to_wedding_max?: number
+          _link?: string
+          _segment: string
+          _title: string
+        }
+        Returns: number
+      }
+      admin_mark_commission_paid: {
+        Args: { _amount: number; _lead_id: string }
+        Returns: undefined
+      }
       admin_set_user_suspended: {
         Args: { _reason?: string; _suspended: boolean; _user_id: string }
         Returns: undefined
@@ -1719,6 +1840,10 @@ export type Database = {
       }
       seed_default_tasks: {
         Args: { _couple_id: string; _wedding_date?: string }
+        Returns: undefined
+      }
+      seed_default_tasks_from_table: {
+        Args: { _couple_id: string }
         Returns: undefined
       }
     }
