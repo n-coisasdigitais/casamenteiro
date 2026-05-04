@@ -15,6 +15,7 @@ import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquar
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
+import PromoDatesManager from "@/components/PromoDatesManager";
 
 type Category = { id: string; name: string };
 
