@@ -246,7 +246,21 @@ const Explore = () => {
 
         {/* Search pill */}
         <div className="container pb-4">
-          <div className="mx-auto max-w-2xl flex items-stretch bg-background border border-border shadow-sm hover:shadow-md transition-shadow rounded-full overflow-hidden">
+          {/* Mobile: compact single search */}
+          <Link
+            to={`/buscar`}
+            className="sm:hidden flex items-center gap-3 bg-background border border-border shadow-sm rounded-full px-4 py-3 active:scale-[0.99] transition"
+            aria-label="Pesquisar"
+          >
+            <Search className="h-4 w-4 text-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground leading-tight">Comece sua busca</p>
+              <p className="text-xs text-muted-foreground leading-tight truncate">Local · Categoria · Fornecedor</p>
+            </div>
+          </Link>
+
+          {/* Desktop: full pill with inputs */}
+          <div className="hidden sm:flex mx-auto max-w-2xl items-stretch bg-background border border-border shadow-sm hover:shadow-md transition-shadow rounded-full overflow-hidden">
             <div className="flex-1 px-5 py-2.5">
               <p className="text-[11px] font-semibold text-foreground">Onde</p>
               <Input
@@ -257,7 +271,7 @@ const Explore = () => {
               />
             </div>
             <div className="w-px bg-border my-2" />
-            <div className="hidden sm:block flex-1 px-5 py-2.5">
+            <div className="flex-1 px-5 py-2.5">
               <p className="text-[11px] font-semibold text-foreground">O que</p>
               <Input
                 placeholder="Categoria ou fornecedor"
