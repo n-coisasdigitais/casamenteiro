@@ -171,6 +171,13 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
                     >
                       Começar agora →
                     </button>
+                    <button
+                      onClick={() => navigate("/simulador")}
+                      className="mt-4 text-xs underline-offset-2 hover:underline"
+                      style={{ color: "hsl(var(--color-text-muted))" }}
+                    >
+                      Quero responder com calma em tela cheia
+                    </button>
                   </div>
                 )}
 
