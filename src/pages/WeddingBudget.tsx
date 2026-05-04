@@ -176,22 +176,12 @@ export default function WeddingBudget() {
       <DashboardNav />
 
       <div className="container px-4 py-8">
-        {/* Header personalizado */}
-        <div className="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-primary/15 to-secondary/40">
-          {couple?.header_photo_url && (
-            <img
-              src={couple.header_photo_url}
-              alt="Capa do casal"
-              className="absolute inset-0 w-full h-full object-cover opacity-60"
-            />
-          )}
-          <div className="relative px-6 py-10 md:py-14 text-foreground">
+        {/* Header do orçamento (cor fixa para boa leitura dos valores) */}
+        <div className="rounded-2xl overflow-hidden mb-8 bg-primary text-primary-foreground">
+          <div className="px-6 py-8 md:py-10">
             <p className="text-xs uppercase tracking-wider opacity-80">Nosso orçamento</p>
-            <h1 className="text-3xl md:text-4xl font-serif mt-1">{coupleName || "Meu Grande Dia"}</h1>
-            {couple?.header_quote && (
-              <p className="mt-2 italic max-w-xl text-sm md:text-base">"{couple.header_quote}"</p>
-            )}
-            <div className="mt-6 flex flex-wrap gap-4 items-end">
+            <h1 className="text-2xl md:text-3xl font-serif mt-1">{coupleName || "Meu Grande Dia"}</h1>
+            <div className="mt-6 flex flex-wrap gap-6 items-end">
               <div>
                 <p className="text-xs opacity-80">Meta</p>
                 <p className="text-2xl font-bold">R$ {target.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
@@ -203,17 +193,17 @@ export default function WeddingBudget() {
               </div>
               <div>
                 <p className="text-xs opacity-80">Saldo</p>
-                <p className={`text-2xl font-bold ${remaining < 0 ? "text-destructive" : ""}`}>R$ {remaining.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
+                <p className="text-2xl font-bold">R$ {remaining.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
               </div>
               <div className="ml-auto">
-                <Button asChild variant="outline" size="sm">
-                  <a href="/perfil">Editar meta e capa</a>
+                <Button asChild variant="secondary" size="sm">
+                  <a href="/perfil">Editar meta</a>
                 </Button>
               </div>
             </div>
             {target > 0 && (
               <div className="mt-4 max-w-2xl">
-                <Progress value={usedPct} className="h-2" />
+                <Progress value={usedPct} className="h-2 bg-primary-foreground/20" />
                 <p className="text-xs mt-1 opacity-80">{usedPct.toFixed(0)}% da meta</p>
               </div>
             )}
