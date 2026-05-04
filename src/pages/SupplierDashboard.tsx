@@ -276,8 +276,9 @@ export default function SupplierDashboard() {
           </TabsContent>
 
           {/* AVAILABILITY TAB */}
-          <TabsContent value="availability">
+          <TabsContent value="availability" className="space-y-4">
             <AvailabilityCalendar supplierId={supplier.id} />
+            <PromoDatesManager supplierId={supplier.id} />
           </TabsContent>
 
           {/* PROFILE TAB */}
