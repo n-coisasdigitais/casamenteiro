@@ -19,6 +19,7 @@ export default function WeddingPlan() {
   const [couple, setCouple] = useState<any>(null);
   const [items, setItems] = useState<PlanSupplier[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [newProposals, setNewProposals] = useState<{ id: string; title: string; body: string | null; link: string | null }[]>([]);
 
   const load = useCallback(async (cId: string) => {
     // 1. Couple suppliers + categoria
@@ -71,7 +72,20 @@ export default function WeddingPlan() {
     const { data: pays } = await supabase
       .from("budget_payments").select("*").eq("couple_id", cId);
     setPayments((pays || []).map((p: any) => ({ ...p, supplier_id: biMap.get(p.budget_item_id) || null })));
-  }, []);
+
+    // 3. Notificações de propostas novas (não lidas)
+    if (user) {
+      const { data: notifs } = await supabase
+        .from("notifications")
+        .select("id, title, body, link")
+        .eq("user_id", user.id)
+        .eq("type", "proposal_received")
+        .eq("read", false)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      setNewProposals(notifs || []);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -135,6 +149,7 @@ export default function WeddingPlan() {
     aPagar,
     proxVencimento: prox ? { data: prox.due_date!, fornecedor: proxFornecedor } : null,
     hasUrgent,
+    newProposals,
   };
 
   return (
