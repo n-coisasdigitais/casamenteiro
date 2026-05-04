@@ -128,7 +128,11 @@ export default function MySuppliers() {
             const savedSup = !contractedSup ? csForCat[0]?.supplier : null;
             const linkedSup = contractedSup || savedSup;
             return (
-              <Card key={cat.id} className="relative overflow-hidden hover:shadow-md transition-shadow">
+              <Card
+                key={cat.id}
+                className={`relative overflow-hidden hover:shadow-md transition-shadow ${linkedSup ? "cursor-pointer" : ""}`}
+                onClick={() => { if (linkedSup) navigate(`/fornecedor/${linkedSup.id}`); }}
+              >
                 {status === "contracted" && (
                   <div className="absolute top-2 right-2">
                     <CheckCircle className="h-5 w-5 text-primary fill-primary/20" />
@@ -140,7 +144,11 @@ export default function MySuppliers() {
                   </div>
                   <h3 className="font-semibold text-sm">{cat.name}</h3>
                   {linkedSup && (
-                    <Link to={`/fornecedor/${linkedSup.id}`} className="text-xs text-primary hover:underline truncate max-w-full">
+                    <Link
+                      to={`/fornecedor/${linkedSup.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs text-primary hover:underline truncate max-w-full"
+                    >
                       {linkedSup.company_name}
                     </Link>
                   )}
@@ -149,7 +157,7 @@ export default function MySuppliers() {
                       {status === "contracted" ? "Contratado" : "Guardado"}
                     </Badge>
                   )}
-                  <div className="flex flex-col gap-1.5 w-full">
+                  <div className="flex flex-col gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
                     {linkedSup && (
                       <Button variant="default" size="sm" className="w-full" asChild>
                         <Link to={`/fornecedor/${linkedSup.id}`}>Abrir fornecedor</Link>
