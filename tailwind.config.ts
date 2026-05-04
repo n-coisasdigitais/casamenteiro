@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Nunito"', 'system-ui', 'sans-serif'],
-        serif: ['"Young Serif"', 'Georgia', 'serif'],
-        display: ['"Young Serif"', 'Georgia', 'serif'],
+        sans: ['"Libre Franklin"', 'system-ui', 'sans-serif'],
+        serif: ['"Faustina"', 'Georgia', 'serif'],
+        display: ['"Libre Franklin"', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
