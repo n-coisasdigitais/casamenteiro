@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -21,6 +22,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { session, profile } = useAuth();
@@ -80,6 +82,14 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === "signup" && !acceptedTerms) {
+      toast({
+        title: "Aceite necessário",
+        description: "Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar sua conta.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(true);
 
     try {
@@ -178,6 +188,28 @@ export default function Auth() {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
+            {mode === "login" && (
+              <div className="text-right">
+                <Link to="/esqueci-senha" className="text-xs text-primary underline">
+                  Esqueci minha senha
+                </Link>
+              </div>
+            )}
+            {mode === "signup" && (
+              <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                <Checkbox
+                  checked={acceptedTerms}
+                  onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                  className="mt-0.5"
+                />
+                <span>
+                  Li e aceito os{" "}
+                  <Link to="/termos" target="_blank" className="text-primary underline">Termos de Uso</Link>{" "}
+                  e a{" "}
+                  <Link to="/privacidade" target="_blank" className="text-primary underline">Política de Privacidade</Link>.
+                </span>
+              </label>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Cadastrar"}
             </Button>
