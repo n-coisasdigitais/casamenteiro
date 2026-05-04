@@ -309,6 +309,55 @@ export default function CoupleDashboard() {
           </Card>
         </div>
 
+        {/* Minhas simulações */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-primary" />
+              Minhas simulações ({simulacoes.length})
+            </h2>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/#simulador">Nova simulação</Link>
+            </Button>
+          </div>
+          {simulacoes.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Você ainda não fez nenhuma simulação. Faça uma para descobrir os melhores fornecedores para seu orçamento.
+                </p>
+                <Button asChild>
+                  <Link to="/#simulador">Simular meu casamento</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-3">
+              {simulacoes.map((s) => (
+                <Card key={s.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">
+                          {s.cidade || "Sua cidade"} · {s.num_convidados} convidados
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          R$ {Number(s.orcamento_total).toLocaleString("pt-BR")} · {s.estilo || "—"}
+                        </p>
+                      </div>
+                      <Eye className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(s.criado_em).toLocaleDateString("pt-BR")}
+                      {s.data_evento && ` · evento em ${new Date(s.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}`}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Quotes */}
         {quotes.length > 0 && (
           <div className="mb-8">
