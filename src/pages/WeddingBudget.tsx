@@ -44,6 +44,13 @@ type Supplier = {
 type CoupleData = {
   id: string;
   onboarding_completed: boolean;
+  partner_name?: string | null;
+  header_photo_url?: string | null;
+  header_quote?: string | null;
+  target_budget?: number | null;
+  budget_mode?: string | null;
+  estimated_budget?: number | null;
+  wedding_date?: string | null;
 };
 
 const COLORS = [
@@ -61,14 +68,30 @@ export default function WeddingBudget() {
   const [suppliers, setSuppliers] = useState<Record<string, Supplier>>({});
   const [loading, setLoading] = useState(true);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [simBudget, setSimBudget] = useState<number | null>(null);
+  const [coupleName, setCoupleName] = useState<string>("");
 
   useEffect(() => {
     if (!user) return;
     supabase.from("couples").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (!data) return;
       if (!data.onboarding_completed) { navigate("/onboarding"); return; }
-      setCouple(data);
+      setCouple(data as any);
       loadBudgetData(data.id);
+      // última simulação para modo "simulation"
+      (supabase as any)
+        .from("home_simulacoes")
+        .select("orcamento_total")
+        .eq("couple_id", data.id)
+        .order("criado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data: s }: any) => setSimBudget(s?.orcamento_total ? Number(s.orcamento_total) : null));
+      // nome do casal para header
+      supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle().then(({ data: p }) => {
+        const me = p?.full_name || "";
+        setCoupleName([me, (data as any).partner_name].filter(Boolean).join(" & "));
+      });
     });
   }, [user, navigate]);
 
@@ -100,6 +123,16 @@ export default function WeddingBudget() {
   const estimatedTotal = budgetItems.reduce((sum, item) => sum + Number(item.estimated_cost || 0), 0);
   const finalTotal = budgetItems.reduce((sum, item) => sum + Number(item.final_cost || 0), 0);
   const balance = estimatedTotal - finalTotal;
+
+  // Meta de orçamento (fixa do cadastro ou pela última simulação)
+  const mode = couple?.budget_mode || "fixed";
+  const target =
+    mode === "simulation"
+      ? (simBudget ?? Number(couple?.target_budget || couple?.estimated_budget || 0))
+      : Number(couple?.target_budget || couple?.estimated_budget || 0);
+  const spent = finalTotal || estimatedTotal;
+  const remaining = target - spent;
+  const usedPct = target > 0 ? Math.min((spent / target) * 100, 100) : 0;
 
   // Agrupar por categoria para o gráfico
   const categoryData = budgetItems.reduce((acc, item) => {
@@ -143,9 +176,48 @@ export default function WeddingBudget() {
       <DashboardNav />
 
       <div className="container px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Gestão de Orçamento</h1>
-          <p className="text-muted-foreground">Acompanhe seus gastos e organize os pagamentos</p>
+        {/* Header personalizado */}
+        <div className="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-primary/15 to-secondary/40">
+          {couple?.header_photo_url && (
+            <img
+              src={couple.header_photo_url}
+              alt="Capa do casal"
+              className="absolute inset-0 w-full h-full object-cover opacity-60"
+            />
+          )}
+          <div className="relative px-6 py-10 md:py-14 text-foreground">
+            <p className="text-xs uppercase tracking-wider opacity-80">Nosso orçamento</p>
+            <h1 className="text-3xl md:text-4xl font-serif mt-1">{coupleName || "Meu Grande Dia"}</h1>
+            {couple?.header_quote && (
+              <p className="mt-2 italic max-w-xl text-sm md:text-base">"{couple.header_quote}"</p>
+            )}
+            <div className="mt-6 flex flex-wrap gap-4 items-end">
+              <div>
+                <p className="text-xs opacity-80">Meta</p>
+                <p className="text-2xl font-bold">R$ {target.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
+                <p className="text-xs opacity-70">{mode === "simulation" ? "Pela última simulação" : "Definida no cadastro"}</p>
+              </div>
+              <div>
+                <p className="text-xs opacity-80">Gasto/comprometido</p>
+                <p className="text-2xl font-bold">R$ {spent.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
+              </div>
+              <div>
+                <p className="text-xs opacity-80">Saldo</p>
+                <p className={`text-2xl font-bold ${remaining < 0 ? "text-destructive" : ""}`}>R$ {remaining.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
+              </div>
+              <div className="ml-auto">
+                <Button asChild variant="outline" size="sm">
+                  <a href="/perfil">Editar meta e capa</a>
+                </Button>
+              </div>
+            </div>
+            {target > 0 && (
+              <div className="mt-4 max-w-2xl">
+                <Progress value={usedPct} className="h-2" />
+                <p className="text-xs mt-1 opacity-80">{usedPct.toFixed(0)}% da meta</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Kanban de Orçamentos */}

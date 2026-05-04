@@ -313,6 +313,7 @@ export type Database = {
       }
       couples: {
         Row: {
+          budget_mode: string
           ceremony_address: string | null
           ceremony_time: string | null
           contact_phone: string | null
@@ -321,6 +322,8 @@ export type Database = {
           dress_code: string | null
           estimated_budget: number | null
           estimated_guests: number | null
+          header_photo_url: string | null
+          header_quote: string | null
           id: string
           invite_code: string | null
           invite_message: string | null
@@ -329,11 +332,13 @@ export type Database = {
           onboarding_completed: boolean
           partner_name: string | null
           reception_address: string | null
+          target_budget: number | null
           updated_at: string
           user_id: string
           wedding_date: string | null
         }
         Insert: {
+          budget_mode?: string
           ceremony_address?: string | null
           ceremony_time?: string | null
           contact_phone?: string | null
@@ -342,6 +347,8 @@ export type Database = {
           dress_code?: string | null
           estimated_budget?: number | null
           estimated_guests?: number | null
+          header_photo_url?: string | null
+          header_quote?: string | null
           id?: string
           invite_code?: string | null
           invite_message?: string | null
@@ -350,11 +357,13 @@ export type Database = {
           onboarding_completed?: boolean
           partner_name?: string | null
           reception_address?: string | null
+          target_budget?: number | null
           updated_at?: string
           user_id: string
           wedding_date?: string | null
         }
         Update: {
+          budget_mode?: string
           ceremony_address?: string | null
           ceremony_time?: string | null
           contact_phone?: string | null
@@ -363,6 +372,8 @@ export type Database = {
           dress_code?: string | null
           estimated_budget?: number | null
           estimated_guests?: number | null
+          header_photo_url?: string | null
+          header_quote?: string | null
           id?: string
           invite_code?: string | null
           invite_message?: string | null
@@ -371,6 +382,7 @@ export type Database = {
           onboarding_completed?: boolean
           partner_name?: string | null
           reception_address?: string | null
+          target_budget?: number | null
           updated_at?: string
           user_id?: string
           wedding_date?: string | null
