@@ -308,7 +308,7 @@ export default function SupplierProfile() {
                       supplierId={supplier.id}
                       supplierName={supplier.company_name}
                     />
-                    {supplier.phone && (
+                    {supplier.phone && phoneUnlocked && (
                       <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" asChild>
                         <a href={`tel:${supplier.phone}`}>
                           <Phone className="h-5 w-5" />
@@ -596,7 +596,7 @@ export default function SupplierProfile() {
                       supplierId={supplier.id}
                       supplierName={supplier.company_name}
                     />
-                    {supplier.phone && (
+                    {supplier.phone && phoneUnlocked && (
                       <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" asChild>
                         <a href={`tel:${supplier.phone}`}>
                           <Phone className="h-5 w-5" />
@@ -612,11 +612,11 @@ export default function SupplierProfile() {
                 </CardContent>
               </Card>
 
-              {(supplier.email || supplier.phone) && (
+              {(supplier.email || (supplier.phone && phoneUnlocked)) && (
                 <Card>
                   <CardContent className="p-4 space-y-2">
                     <h3 className="font-semibold text-sm">Contato</h3>
-                    {supplier.phone && (
+                    {supplier.phone && phoneUnlocked && (
                       <p className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Phone className="h-4 w-4 text-primary" />{supplier.phone}
                       </p>
