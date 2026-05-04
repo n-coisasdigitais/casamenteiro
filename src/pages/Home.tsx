@@ -53,6 +53,10 @@ export default function Home() {
 
   return (
     <div className="bg-cream text-ink min-h-screen scroll-smooth">
+      <SEO
+        title="Meu Grande Dia — Planeje seu casamento dos sonhos"
+        description="Simulador de orçamento, fornecedores avaliados, checklist e RSVP. Tudo em um só lugar para o seu grande dia."
+      />
       <HomeNavbar onSimularClick={scrollToCTA} />
 
       <main>
