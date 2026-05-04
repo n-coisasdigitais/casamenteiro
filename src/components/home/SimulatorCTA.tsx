@@ -1,10 +1,11 @@
 import { forwardRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Leaf, Sparkles, PartyPopper } from "lucide-react";
+import { ArrowLeft, Check, Leaf, Sparkles, PartyPopper, Calendar as CalIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { computeSimulador } from "@/lib/simulador/match";
 
 const CIDADES_MG = [
   "Belo Horizonte","Uberlândia","Contagem","Juiz de Fora","Betim","Montes Claros","Ribeirão das Neves","Uberaba","Governador Valadares","Ipatinga","Sete Lagoas","Divinópolis","Santa Luzia","Ibirité","Poços de Caldas","Patos de Minas","Pouso Alegre","Teófilo Otoni","Barbacena","Sabará","Varginha","Conselheiro Lafaiete","Vespasiano","Itabira","Araguari","Ubá","Passos","Coronel Fabriciano","Muriaé","Lavras"
@@ -23,33 +24,55 @@ const STYLES = [
   { id: "Grande e memorável", icon: PartyPopper, name: "Grandioso", desc: "Festa completa, inesquecível e marcante" },
 ];
 
+const PRAZO_OPTIONS = [
+  { letter: "A", label: "Em até 6 meses", value: 6 },
+  { letter: "B", label: "Entre 6 e 12 meses", value: 12 },
+  { letter: "C", label: "Entre 1 e 2 anos", value: 18 },
+  { letter: "D", label: "Mais de 2 anos / ainda não sei", value: 36 },
+];
+
 const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [step, setStep] = useState(0); // 0 welcome, 1..4 questions, 5 done
+  const [step, setStep] = useState(0); // 0 welcome, 1..5 questions, 6 done
   const [orcamento, setOrcamento] = useState(20000);
   const [convidados, setConvidados] = useState<number | null>(null);
   const [cidade, setCidade] = useState("");
   const [estilo, setEstilo] = useState<string | null>(null);
+  const [dataMode, setDataMode] = useState<"exata" | "faixa" | null>(null);
+  const [dataEvento, setDataEvento] = useState<string>(""); // YYYY-MM-DD
+  const [prazoMeses, setPrazoMeses] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fmtOrc = (n: number) =>
     n >= 1000 ? `R$ ${(n / 1000).toLocaleString("pt-BR")} mil` : `R$ ${n}`;
 
-  const progressPct = [0, 20, 40, 60, 80, 100][step];
+  const progressPct = [0, 16, 32, 48, 64, 82, 100][step];
 
   const goTo = (n: number) => setStep(n);
 
   const submit = async () => {
     setLoading(true);
-    const payload = {
+    const payload: any = {
       orcamento_total: orcamento,
       num_convidados: convidados ?? 100,
       cidade,
       estilo: estilo ?? "Médio e elegante",
+      data_evento: dataMode === "exata" && dataEvento ? dataEvento : null,
+      prazo_meses: dataMode === "faixa" ? prazoMeses : null,
     };
     try {
+      // Computa o resultado já no cliente, antes de salvar — assim guarda snapshot
+      const resultado = await computeSimulador({
+        orcamento_total: payload.orcamento_total,
+        num_convidados: payload.num_convidados,
+        cidade: payload.cidade,
+        estilo: payload.estilo,
+        data_evento: payload.data_evento,
+      });
+      payload.resultado = resultado;
+
       if (!user) {
         localStorage.setItem("pending_simulacao", JSON.stringify(payload));
         toast({ title: "Seu simulador foi salvo!", description: "Crie sua conta gratuita pra ver o resultado." });
@@ -76,7 +99,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
       if (step === 0) goTo(1);
       else if (step === 1) goTo(2);
       else if (step === 3 && cidade.trim().length > 1) goTo(4);
-      else if (step === 5) submit();
+      else if (step === 6) submit();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -151,7 +174,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
 
                 {step === 1 && (
                   <div>
-                    <StepHeader num="Pergunta 1 de 4" title="Qual é o orçamento do casamento?" hint="Inclua tudo — buffet, espaço, decoração, foto e mais." />
+                    <StepHeader num="Pergunta 1 de 5" title="Qual é o orçamento do casamento?" hint="Inclua tudo — buffet, espaço, decoração, foto e mais." />
                     <div className="font-serif mb-5" style={{ fontSize: 38, color: "hsl(var(--color-dark))" }}>
                       {fmtOrc(orcamento)} <span className="font-sans font-light text-base ml-1" style={{ color: "hsl(var(--color-text-muted))" }}>estimado</span>
                     </div>
@@ -173,7 +196,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
 
                 {step === 2 && (
                   <div>
-                    <StepHeader num="Pergunta 2 de 4" title="Quantos convidados vocês esperam?" hint="Uma estimativa já ajuda bastante." />
+                    <StepHeader num="Pergunta 2 de 5" title="Quantos convidados vocês esperam?" hint="Uma estimativa já ajuda bastante." />
                     <div className="flex flex-col gap-2.5">
                       {GUEST_OPTIONS.map((g) => {
                         const sel = convidados === g.value;
@@ -210,7 +233,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
 
                 {step === 3 && (
                   <div>
-                    <StepHeader num="Pergunta 3 de 4" title="Em qual cidade será o casamento?" hint="Vamos encontrar os melhores fornecedores da sua região." />
+                    <StepHeader num="Pergunta 3 de 5" title="Em qual cidade será o casamento?" hint="Vamos encontrar os melhores fornecedores da sua região." />
                     <input
                       autoFocus
                       list="cidades-mg-tf"
@@ -234,7 +257,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
 
                 {step === 4 && (
                   <div>
-                    <StepHeader num="Pergunta 4 de 4" title="Qual é o estilo do casamento?" hint="Isso ajuda a selecionar fornecedores com a sua cara." />
+                    <StepHeader num="Pergunta 4 de 5" title="Qual é o estilo do casamento?" hint="Isso ajuda a selecionar fornecedores com a sua cara." />
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                       {STYLES.map((s) => {
                         const Icon = s.icon;
@@ -261,11 +284,105 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
                         );
                       })}
                     </div>
-                    <Nav onBack={() => goTo(3)} onNext={() => goTo(5)} disabled={!estilo} label="Ver meu plano →" />
+                    <Nav onBack={() => goTo(3)} onNext={() => goTo(5)} disabled={!estilo} />
                   </div>
                 )}
 
                 {step === 5 && (
+                  <div>
+                    <StepHeader num="Pergunta 5 de 5" title="Quando vocês querem casar?" hint="Se já tem data, conseguimos ver disponibilidade real e descontos em dias ociosos." />
+                    {!dataMode && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <button
+                          onClick={() => setDataMode("exata")}
+                          className="text-left px-5 py-4 rounded-xl transition hover:opacity-90"
+                          style={{ background: "hsl(var(--color-bg))", border: "1.5px solid hsl(var(--color-border))" }}
+                        >
+                          <CalIcon className="mb-2" style={{ color: "hsl(var(--color-primary))" }} size={22} />
+                          <div className="text-[15px] font-semibold" style={{ color: "hsl(var(--color-dark))" }}>Já temos a data</div>
+                          <div className="text-[12px]" style={{ color: "hsl(var(--color-text-muted))" }}>
+                            Vamos checar agenda dos fornecedores e descontos do dia.
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setDataMode("faixa")}
+                          className="text-left px-5 py-4 rounded-xl transition hover:opacity-90"
+                          style={{ background: "hsl(var(--color-bg))", border: "1.5px solid hsl(var(--color-border))" }}
+                        >
+                          <Sparkles className="mb-2" style={{ color: "hsl(var(--color-primary))" }} size={22} />
+                          <div className="text-[15px] font-semibold" style={{ color: "hsl(var(--color-dark))" }}>Ainda não sei</div>
+                          <div className="text-[12px]" style={{ color: "hsl(var(--color-text-muted))" }}>
+                            Escolha um prazo aproximado.
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                    {dataMode === "exata" && (
+                      <div>
+                        <input
+                          type="date"
+                          value={dataEvento}
+                          min={new Date().toISOString().slice(0, 10)}
+                          onChange={(e) => setDataEvento(e.target.value)}
+                          className="w-full bg-transparent border-0 outline-none font-serif"
+                          style={{
+                            fontSize: 26,
+                            color: "hsl(var(--color-dark))",
+                            borderBottom: "2px solid hsl(var(--color-primary))",
+                            padding: "8px 0 12px",
+                          }}
+                        />
+                        <button
+                          onClick={() => setDataMode(null)}
+                          className="text-[12px] mt-3"
+                          style={{ color: "hsl(var(--color-text-muted))", background: "transparent", border: "none", cursor: "pointer" }}
+                        >
+                          ← trocar opção
+                        </button>
+                      </div>
+                    )}
+                    {dataMode === "faixa" && (
+                      <div className="flex flex-col gap-2.5">
+                        {PRAZO_OPTIONS.map((p) => {
+                          const sel = prazoMeses === p.value;
+                          return (
+                            <button
+                              key={p.letter}
+                              onClick={() => { setPrazoMeses(p.value); setTimeout(() => goTo(6), 280); }}
+                              className="flex items-center gap-3 text-left px-5 py-3.5 rounded-xl"
+                              style={{
+                                background: sel ? "hsl(var(--color-primary) / 0.10)" : "hsl(var(--color-bg))",
+                                border: `1.5px solid ${sel ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
+                                fontSize: 15,
+                              }}
+                            >
+                              <span className="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold"
+                                style={{ background: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-secondary))", color: sel ? "hsl(var(--color-bg))" : "hsl(var(--color-text-muted))" }}>
+                                {p.letter}
+                              </span>
+                              {p.label}
+                            </button>
+                          );
+                        })}
+                        <button
+                          onClick={() => { setDataMode(null); setPrazoMeses(null); }}
+                          className="text-[12px] mt-1 self-start"
+                          style={{ color: "hsl(var(--color-text-muted))", background: "transparent", border: "none", cursor: "pointer" }}
+                        >
+                          ← trocar opção
+                        </button>
+                      </div>
+                    )}
+                    <Nav
+                      onBack={() => goTo(4)}
+                      onNext={() => goTo(6)}
+                      disabled={!dataMode || (dataMode === "exata" && !dataEvento) || (dataMode === "faixa" && prazoMeses === null)}
+                      label="Ver meu plano →"
+                    />
+                  </div>
+                )}
+
+                {step === 6 && (
                   <div className="text-center flex flex-col items-center">
                     <div
                       className="w-16 h-16 rounded-full flex items-center justify-center mb-6"

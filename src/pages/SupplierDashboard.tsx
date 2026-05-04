@@ -15,6 +15,7 @@ import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquar
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
+import PromoDatesManager from "@/components/PromoDatesManager";
 
 type Category = { id: string; name: string };
 
@@ -275,8 +276,9 @@ export default function SupplierDashboard() {
           </TabsContent>
 
           {/* AVAILABILITY TAB */}
-          <TabsContent value="availability">
+          <TabsContent value="availability" className="space-y-4">
             <AvailabilityCalendar supplierId={supplier.id} />
+            <PromoDatesManager supplierId={supplier.id} />
           </TabsContent>
 
           {/* PROFILE TAB */}

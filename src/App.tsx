@@ -19,6 +19,8 @@ import SupplierDashboard from "./pages/SupplierDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import AdminSuppliers from "./pages/AdminSuppliers";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
+import AdminSimulacoes from "./pages/AdminSimulacoes";
+import SimuladorResultado from "./pages/SimuladorResultado";
 import Favorites from "./pages/Favorites";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
@@ -51,6 +53,8 @@ const App = () => (
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/fornecedores" element={<AdminSuppliers />} />
             <Route path="/admin/home-config" element={<AdminHomeConfig />} />
+            <Route path="/admin/simulacoes" element={<AdminSimulacoes />} />
+            <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
