@@ -25,6 +25,7 @@ import AdminSuppliers from "./pages/AdminSuppliers";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
 import AdminTransacoes from "./pages/AdminTransacoes";
+import AdminMetrics from "./pages/AdminMetrics";
 import SimuladorResultado from "./pages/SimuladorResultado";
 import Simulador from "./pages/Simulador";
 import MeuPlano from "./pages/MeuPlano";
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/admin/home-config" element={<AdminHomeConfig />} />
             <Route path="/admin/simulacoes" element={<AdminSimulacoes />} />
             <Route path="/admin/transacoes" element={<AdminTransacoes />} />
+            <Route path="/admin/metricas" element={<AdminMetrics />} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />
