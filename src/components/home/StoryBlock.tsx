@@ -22,9 +22,8 @@ export default function StoryBlock({ index, frase, subtexto, foto, supplierName,
     offset: ["start start", "end end"],
   });
 
-  const mediaSize = reduce
-    ? "34vmin"
-    : useTransform(scrollYProgress, [0, 0.32, 1], ["34vmin", "34vmin", "110vmax"]);
+  const animatedMediaSize = useTransform(scrollYProgress, [0, 0.32, 1], ["34vmin", "34vmin", "110vmax"]);
+  const mediaSize = reduce ? "34vmin" : animatedMediaSize;
   const radius = useTransform(scrollYProgress, [0, 0.55, 1], [14, 14, 0]);
 
   const textOpacity = useTransform(scrollYProgress, [0, 0.22, 0.42], [1, 1, 0]);
