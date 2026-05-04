@@ -43,6 +43,7 @@ import Favorites from "./pages/Favorites";
 import UserProfile from "./pages/UserProfile";
 import InviteRSVP from "./pages/InviteRSVP";
 import NotFound from "./pages/NotFound";
+import AdminLayout from "./components/admin/AdminLayout";
 
 const queryClient = new QueryClient();
 
@@ -75,24 +76,24 @@ const App = () => (
             <Route path="/favoritos" element={<Favorites />} />
             <Route path="/perfil" element={<UserProfile />} />
             <Route path="/convite/:token" element={<InviteRSVP />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/admin/fornecedores" element={<AdminSuppliers />} />
-            <Route path="/admin/home-config" element={<AdminHomeConfig />} />
-            <Route path="/admin/simulacoes" element={<AdminSimulacoes />} />
-            <Route path="/admin/transacoes" element={<AdminTransacoes />} />
-            <Route path="/admin/metricas" element={<AdminMetrics />} />
-            <Route path="/admin/casais" element={<AdminCoupleCRM />} />
-            <Route path="/admin/casais/:id" element={<AdminCoupleCRM />} />
-            <Route path="/admin/fornecedores-crm" element={<AdminSupplierCRM />} />
-            <Route path="/admin/fornecedor/:id" element={<AdminSupplierCRM />} />
-            <Route path="/admin/comunicacao" element={<AdminBroadcast />} />
-            <Route path="/admin/comunicacao/historico" element={<AdminBroadcastHistory />} />
-            <Route path="/admin/usuarios" element={<AdminUsers />} />
-            <Route path="/admin/avaliacoes" element={<AdminReviews />} />
-            <Route path="/admin/auditoria" element={<AdminAuditLog />} />
-            <Route path="/admin/tarefas-padrao" element={<AdminDefaultTasks />} />
-            <Route path="/admin/configuracoes" element={<AdminSettings />} />
-            <Route path="/admin/financeiro" element={<AdminFinance />} />
+            <Route path="/admin" element={<AdminLayout><AdminPanel /></AdminLayout>} />
+            <Route path="/admin/fornecedores" element={<AdminLayout><AdminSuppliers /></AdminLayout>} />
+            <Route path="/admin/home-config" element={<AdminLayout><AdminHomeConfig /></AdminLayout>} />
+            <Route path="/admin/simulacoes" element={<AdminLayout><AdminSimulacoes /></AdminLayout>} />
+            <Route path="/admin/transacoes" element={<AdminLayout><AdminTransacoes /></AdminLayout>} />
+            <Route path="/admin/metricas" element={<AdminLayout><AdminMetrics /></AdminLayout>} />
+            <Route path="/admin/casais" element={<AdminLayout><AdminCoupleCRM /></AdminLayout>} />
+            <Route path="/admin/casais/:id" element={<AdminLayout><AdminCoupleCRM /></AdminLayout>} />
+            <Route path="/admin/fornecedores-crm" element={<AdminLayout><AdminSupplierCRM /></AdminLayout>} />
+            <Route path="/admin/fornecedor/:id" element={<AdminLayout><AdminSupplierCRM /></AdminLayout>} />
+            <Route path="/admin/comunicacao" element={<AdminLayout><AdminBroadcast /></AdminLayout>} />
+            <Route path="/admin/comunicacao/historico" element={<AdminLayout><AdminBroadcastHistory /></AdminLayout>} />
+            <Route path="/admin/usuarios" element={<AdminLayout><AdminUsers /></AdminLayout>} />
+            <Route path="/admin/avaliacoes" element={<AdminLayout><AdminReviews /></AdminLayout>} />
+            <Route path="/admin/auditoria" element={<AdminLayout><AdminAuditLog /></AdminLayout>} />
+            <Route path="/admin/tarefas-padrao" element={<AdminLayout><AdminDefaultTasks /></AdminLayout>} />
+            <Route path="/admin/configuracoes" element={<AdminLayout><AdminSettings /></AdminLayout>} />
+            <Route path="/admin/financeiro" element={<AdminLayout><AdminFinance /></AdminLayout>} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />
