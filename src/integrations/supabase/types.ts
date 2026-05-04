@@ -996,6 +996,7 @@ export type Database = {
           id: string
           idle_discount_pct: number | null
           instagram: string | null
+          is_demo: boolean
           phone: string | null
           price_max: number | null
           price_min: number | null
@@ -1024,6 +1025,7 @@ export type Database = {
           id?: string
           idle_discount_pct?: number | null
           instagram?: string | null
+          is_demo?: boolean
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
@@ -1052,6 +1054,7 @@ export type Database = {
           id?: string
           idle_discount_pct?: number | null
           instagram?: string | null
+          is_demo?: boolean
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
