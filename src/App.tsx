@@ -4,7 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import Index from "./pages/Index";
+import Home from "./pages/Home";
+import Explore from "./pages/Explore";
 import Auth from "./pages/Auth";
 import CoupleOnboarding from "./pages/CoupleOnboarding";
 import CoupleDashboard from "./pages/CoupleDashboard";
@@ -17,6 +18,7 @@ import SupplierProfile from "./pages/SupplierProfile";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import AdminSuppliers from "./pages/AdminSuppliers";
+import AdminHomeConfig from "./pages/AdminHomeConfig";
 import Favorites from "./pages/Favorites";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
@@ -31,7 +33,8 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/explorar" element={<Explore />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/cadastro" element={<Auth />} />
             <Route path="/onboarding" element={<CoupleOnboarding />} />
@@ -47,6 +50,7 @@ const App = () => (
             <Route path="/perfil" element={<UserProfile />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/fornecedores" element={<AdminSuppliers />} />
+            <Route path="/admin/home-config" element={<AdminHomeConfig />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
