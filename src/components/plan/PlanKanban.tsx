@@ -11,6 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 import ContractSupplierDialog, { ContractTarget } from "./ContractSupplierDialog";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 export type KanbanStatus = "nao_iniciado" | "em_orcamento" | "negociando" | "contratado" | "descartado";
 
@@ -45,6 +49,7 @@ export default function PlanKanban({
 }) {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [contractTarget, setContractTarget] = useState<ContractTarget | null>(null);
@@ -93,7 +98,11 @@ export default function PlanKanban({
     if (!item) return;
     const newStatus = over as KanbanStatus;
     if (newStatus === item.kanban_status) return;
+    await requestStatusChange(item, newStatus);
+  };
 
+  const requestStatusChange = async (item: PlanSupplier, newStatus: KanbanStatus) => {
+    if (newStatus === item.kanban_status) return;
     if (newStatus === "contratado") {
       setContractTarget({
         coupleSupplierId: item.id,
@@ -115,6 +124,58 @@ export default function PlanKanban({
     }
     await updateStatus(item, newStatus);
   };
+
+  if (isMobile) {
+    return (
+      <>
+        <div className="space-y-4">
+          {COLUMNS.map((col) => {
+            const colItems = grouped[col.key];
+            if (colItems.length === 0) return null;
+            return (
+              <div key={col.key} className={cn("rounded-lg p-3", col.tone)}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold">{col.label}</h3>
+                  <Badge variant="secondary" className="h-5">{colItems.length}</Badge>
+                </div>
+                <div className="space-y-2">
+                  {colItems.map((item) => (
+                    <div key={item.id} className="space-y-2">
+                      <KanbanCard item={item} />
+                      <Select
+                        value={item.kanban_status}
+                        onValueChange={(v) => requestStatusChange(item, v as KanbanStatus)}
+                      >
+                        <SelectTrigger className="h-8 text-xs bg-background">
+                          <SelectValue placeholder="Mover para..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COLUMNS.map((c) => (
+                            <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {items.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nenhum fornecedor no plano ainda.
+            </p>
+          )}
+        </div>
+        <ContractSupplierDialog
+          open={contractOpen}
+          onOpenChange={setContractOpen}
+          target={contractTarget}
+          onConfirmed={() => { setContractTarget(null); onChange(); }}
+        />
+      </>
+    );
+  }
 
   return (
     <>

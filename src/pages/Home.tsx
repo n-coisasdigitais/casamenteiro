@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import HomeNavbar from "@/components/home/HomeNavbar";
 import ScrollStory from "@/components/home/ScrollStory";
 import SimulatorCTA from "@/components/home/SimulatorCTA";
+import SEO from "@/components/SEO";
 
 const FALLBACK_BLOCOS = [
   { foto_url: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1600&q=80", frase: "Casar é o melhor dia da vida. Organizar é a parte que ninguém te conta.", subtexto: "A gente existe pra simplificar. Role pra entender.", supplier_id: null, supplier_name: null, supplier_category: null },
@@ -19,7 +20,6 @@ export default function Home() {
   const ctaRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    document.title = "Casamenteiro — planeje seu casamento com leveza";
     (async () => {
       const { data } = await (supabase
         .from("secoes_home" as any)
@@ -53,6 +53,10 @@ export default function Home() {
 
   return (
     <div className="bg-cream text-ink min-h-screen scroll-smooth">
+      <SEO
+        title="Meu Grande Dia — Planeje seu casamento dos sonhos"
+        description="Simulador de orçamento, fornecedores avaliados, checklist e RSVP. Tudo em um só lugar para o seu grande dia."
+      />
       <HomeNavbar onSimularClick={scrollToCTA} />
 
       <main>

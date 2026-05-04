@@ -17,6 +17,7 @@ import {
 import QuoteRequestForm from "@/components/QuoteRequestForm";
 import SupplierMap from "@/components/SupplierMap";
 import { buildWhatsAppLink } from "@/lib/phone";
+import SEO from "@/components/SEO";
 
 type Review = {
   id: string;
@@ -176,6 +177,13 @@ export default function SupplierProfile() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${supplier.company_name} — Meu Grande Dia`}
+        description={
+          (supplier.description || `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`).slice(0, 155)
+        }
+        ogImage={supplier.profile_photo_url || undefined}
+      />
       {/* Header */}
       <header className="bg-background border-b border-border sticky top-0 z-50">
         <div className="container flex items-center h-14 gap-4">
