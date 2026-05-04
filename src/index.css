@@ -4,92 +4,92 @@
 
 @layer base {
   :root {
-    /* Casamenteiro — Libre Franklin + Faustina brand kit */
-    --background: 0 0% 98%;         /* #FAFAFA */
-    --foreground: 1 100% 10%;       /* deep red #330100 */
+    /* Casamenteiro — warm neutral palette with terracotta + sage */
+    --background: 48 27% 98%;        /* #FAFAF7 */
+    --foreground: 30 10% 12%;        /* #1F1D1B */
 
     --card: 0 0% 100%;
-    --card-foreground: 1 100% 10%;
+    --card-foreground: 30 10% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 1 100% 10%;
+    --popover-foreground: 30 10% 12%;
 
-    --primary: 25 96% 62%;          /* orange #FB923C */
-    --primary-foreground: 0 0% 98%;
+    --primary: 23 58% 60%;           /* terracotta #D9905A */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 22 100% 21%;       /* dark orange #6C2800 */
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 36 25% 93%;         /* sand #F2EEE8 */
+    --secondary-foreground: 30 10% 12%;
 
-    --muted: 25 30% 92%;
-    --muted-foreground: 22 30% 35%;
+    --muted: 36 22% 94%;             /* #F4F1EC */
+    --muted-foreground: 30 8% 40%;   /* #6B645C */
 
-    --accent: 22 100% 21%;          /* dark orange */
-    --accent-foreground: 0 0% 98%;
+    --accent: 156 26% 39%;           /* sage #4A7C6A */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 1 100% 25%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 12 60% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 25 25% 88%;
-    --input: 25 25% 88%;
-    --ring: 25 96% 62%;
+    --border: 34 22% 88%;            /* #E6E1D9 */
+    --input: 34 22% 88%;
+    --ring: 23 58% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 1 100% 10%;
-    --sidebar-primary: 25 96% 62%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 22 100% 21%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 25 25% 88%;
-    --sidebar-ring: 25 96% 62%;
+    --sidebar-background: 48 27% 98%;
+    --sidebar-foreground: 30 10% 12%;
+    --sidebar-primary: 23 58% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 36 25% 93%;
+    --sidebar-accent-foreground: 30 10% 12%;
+    --sidebar-border: 34 22% 88%;
+    --sidebar-ring: 23 58% 60%;
 
     /* Brand semantic tokens */
-    --color-primary: 25 96% 62%;       /* orange #FB923C */
-    --color-secondary: 22 100% 21%;    /* dark orange #6C2800 */
-    --color-accent: 22 100% 21%;       /* dark orange */
-    --color-bg: 0 0% 98%;              /* #FAFAFA */
-    --color-dark: 1 100% 10%;          /* deep red #330100 */
-    --color-text-body: 1 100% 10%;     /* deep red */
-    --color-text-muted: 22 30% 35%;
-    --color-border: 25 25% 88%;
+    --color-primary: 23 58% 60%;
+    --color-secondary: 156 26% 39%;
+    --color-accent: 156 26% 39%;
+    --color-bg: 48 27% 98%;
+    --color-dark: 30 10% 12%;
+    --color-text-body: 30 10% 18%;
+    --color-text-muted: 30 8% 40%;
+    --color-border: 34 22% 88%;
     --color-success-bg: 132 18% 91%;
     --color-success-fg: 145 24% 38%;
 
-    /* Legacy aliases mapped to new palette */
-    --gold: 25 96% 62%;
-    --gold-light: 25 96% 75%;
-    --gold-dark: 22 100% 21%;
-    --beige: 0 0% 98%;
-    --beige-dark: 25 25% 88%;
-    --coral: 25 96% 62%;
-    --coral-light: 25 96% 75%;
-    --cream: 0 0% 98%;
-    --ink: 1 100% 10%;
-    --rose-gold: 25 96% 62%;
-    --olive: 22 100% 21%;
+    /* Legacy aliases mapped to the new palette */
+    --gold: 23 58% 60%;
+    --gold-light: 23 58% 75%;
+    --gold-dark: 23 58% 45%;
+    --beige: 36 25% 93%;
+    --beige-dark: 34 22% 88%;
+    --coral: 23 58% 60%;
+    --coral-light: 23 58% 90%;
+    --cream: 48 27% 98%;
+    --ink: 30 10% 12%;
+    --rose-gold: 23 58% 60%;
+    --olive: 156 26% 39%;
   }
 
   .dark {
-    --background: 1 100% 6%;
-    --foreground: 0 0% 98%;
-    --card: 1 100% 8%;
-    --card-foreground: 0 0% 98%;
-    --popover: 1 100% 8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 25 96% 62%;
-    --primary-foreground: 1 100% 10%;
-    --secondary: 22 100% 21%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 22 50% 15%;
-    --muted-foreground: 25 30% 70%;
-    --accent: 22 100% 30%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 22 50% 18%;
-    --input: 22 50% 18%;
-    --ring: 25 96% 62%;
+    --background: 30 10% 8%;
+    --foreground: 48 27% 96%;
+    --card: 30 10% 11%;
+    --card-foreground: 48 27% 96%;
+    --popover: 30 10% 11%;
+    --popover-foreground: 48 27% 96%;
+    --primary: 23 58% 60%;
+    --primary-foreground: 30 10% 8%;
+    --secondary: 30 10% 16%;
+    --secondary-foreground: 48 27% 96%;
+    --muted: 30 10% 16%;
+    --muted-foreground: 30 8% 65%;
+    --accent: 156 26% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 12 60% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 10% 20%;
+    --input: 30 10% 20%;
+    --ring: 23 58% 60%;
   }
 }
 
@@ -100,38 +100,41 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Faustina', Georgia, serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-weight: 400;
-    line-height: 1.7;
+    line-height: 1.6;
     font-size: 15px;
     color: hsl(var(--color-text-body));
+    -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Libre Franklin', system-ui, sans-serif;
-    font-weight: 700;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 600;
     color: hsl(var(--color-dark));
     line-height: 1.2;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
 
-  h1 { font-size: clamp(2.25rem, 5vw, 3rem); }
+  h1 { font-size: clamp(2.25rem, 5vw, 3rem); font-weight: 700; }
   h2 { font-size: clamp(1.6rem, 3.5vw, 2.125rem); }
 }
 
 @layer components {
   .label-ui {
-    font-family: 'Libre Franklin', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 600;
     font-size: 11px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: hsl(var(--color-text-muted));
   }
   .btn-pill {
     @apply inline-flex items-center justify-center rounded-full font-semibold transition;
-    font-family: 'Libre Franklin', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 14px;
     padding: 12px 28px;
   }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 }
