@@ -77,6 +77,12 @@ export default function SupplierProfile() {
     supabase.from("supplier_photos").select("*").eq("supplier_id", id).order("display_order").then(({ data }) => setPhotos(data || []));
     loadReviews();
 
+    // Registra visita ao perfil (1x por carregamento)
+    (supabase.from("supplier_profile_views") as any).insert({
+      supplier_id: id,
+      viewer_id: user?.id ?? null,
+    }).then(() => { /* fire-and-forget */ });
+
     if (user) {
       supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle().then(({ data }) => {
         if (data) {
