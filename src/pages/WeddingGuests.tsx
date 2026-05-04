@@ -11,12 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Users, Baby, Download, Printer, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon } from "lucide-react";
+import { Users, Baby, Download, Printer, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import AddGuestDialog from "@/components/AddGuestDialog";
 import AddGroupDialog from "@/components/AddGroupDialog";
+import ImportGuestsDialog from "@/components/ImportGuestsDialog";
+import { buildWhatsAppLink } from "@/lib/phone";
 
 type Guest = {
   id: string;
@@ -95,6 +97,28 @@ export default function WeddingGuests() {
     await (supabase as any).from("guest_invites").update({ sent_at: new Date().toISOString() }).eq("guest_id", guest.id);
     setInvites(prev => ({ ...prev, [guest.id]: { ...prev[guest.id], token, sent_at: new Date().toISOString() } }));
     toast({ title: "Link do convite copiado!", description: "Cole no WhatsApp ou compartilhe. O envio por email é ativado quando o domínio estiver configurado." });
+  };
+
+  const sendInviteWhatsApp = async (guest: Guest) => {
+    if (!guest.phone) {
+      toast({ title: "Convidado sem WhatsApp", description: "Edite o convidado e adicione um número.", variant: "destructive" });
+      return;
+    }
+    const token = await ensureInvite(guest.id);
+    if (!token) return;
+    const origin = window.location.hostname.includes("lovable")
+      ? "https://ocasamenteiro.lovable.app"
+      : window.location.origin;
+    const url = `${origin}/convite/${token}`;
+    const msg = `Olá, ${guest.name}! 💍 Você está convidado(a) para o nosso casamento. Confirme sua presença aqui: ${url}`;
+    const wa = buildWhatsAppLink(guest.phone, msg);
+    if (!wa) {
+      toast({ title: "WhatsApp inválido", description: "Confira o telefone do convidado (DDD + número).", variant: "destructive" });
+      return;
+    }
+    await (supabase as any).from("guest_invites").update({ sent_at: new Date().toISOString() }).eq("guest_id", guest.id);
+    setInvites(prev => ({ ...prev, [guest.id]: { ...prev[guest.id], token, sent_at: new Date().toISOString() } }));
+    window.open(wa, "_blank");
   };
 
   const sendInvitesGroup = async (groupGuests: Guest[]) => {
@@ -252,6 +276,7 @@ export default function WeddingGuests() {
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <AddGuestDialog groups={groups} onAdd={addGuest} />
           <AddGroupDialog onAdd={addGroup} />
+          {coupleId && <ImportGuestsDialog coupleId={coupleId} groups={groups} onImported={() => loadData(coupleId)} />}
           {selected.size > 0 && (
             <Button variant="destructive" size="sm" onClick={deleteSelected}>
               <Trash2 className="mr-2 h-4 w-4" />
