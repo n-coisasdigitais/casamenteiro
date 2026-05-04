@@ -1,91 +1,77 @@
-Plano de ajuste
+# Plano de atualização — Explore, paleta e tipografia
 
-1. Corrigir a animação dos blocos da Home
-- Reestruturar `StoryBlock` para ter duas fases claras no scroll:
-  - Fase 1: frase centralizada aparece acima da imagem e sobe com o scroll.
-  - Fase 2: depois que a frase já saiu/desapareceu, a imagem quadrada começa a expandir até cobrir toda a tela.
-- Remover o comportamento em que o texto fica por cima da imagem durante a expansão.
-- Ajustar os pontos de animação do Framer Motion para a frase sair mais cedo, especialmente no 2º bloco, evitando overlay.
-- Manter a imagem sempre começando como um quadrado/card centralizado com borda arredondada e sombra suave.
-- Fazer a expansão preencher a tela inteira de forma limpa, sem parecer que está cobrindo só o centro.
-- Manter a tag do fornecedor aparecendo apenas quando a foto já estiver praticamente em tela cheia.
+## 1. Nova paleta (sem vermelho, sem roxo)
 
-Estrutura visual pretendida:
+Paleta neutra quente com acento âmbar/dourado suave — caloroso, moderno e elegante:
 
-```text
-[frase centralizada]
+- `--background`: #FAFAF7 (off-white quente)
+- `--foreground`: #1F1D1B (quase preto, marrom muito escuro)
+- `--primary`: #D9905A (terracota suave / âmbar)
+- `--primary-foreground`: #FFFFFF
+- `--secondary`: #F2EEE8 (areia clara — usada para superfícies/seções)
+- `--secondary-foreground`: #1F1D1B
+- `--muted`: #F4F1EC
+- `--muted-foreground`: #6B645C
+- `--accent`: #4A7C6A (verde sálvia escuro — para destaques/badges)
+- `--accent-foreground`: #FFFFFF
+- `--border`: #E6E1D9
+- `--input`: #E6E1D9
+- `--ring`: #D9905A
+- Aliases legados (`gold`, `coral`, `beige`, `cream`, `ink`, `olive`, `rose-gold`) remapeados para os novos tokens para não quebrar componentes existentes.
 
-      [foto quadrada]
+Atualizado em `src/index.css` (light + dark) e refletido nos tokens semânticos `--color-*`.
 
-scroll ↓
+## 2. Tipografia — Inter (sem serifa)
 
-[frase sobe e some]
+Trocar Libre Franklin + Faustina por **Inter** como família única (display + body).
 
-      [foto cresce]
+- `index.html`: substituir o `<link>` do Google Fonts por Inter (300, 400, 500, 600, 700).
+- `src/index.css`:
+  - `body` → `font-family: 'Inter', system-ui, sans-serif;` peso 400, line-height 1.6.
+  - `h1–h6` → `Inter`, peso 600/700, letter-spacing -0.02em.
+  - `.label-ui` e `.btn-pill` → `Inter`.
+- `tailwind.config.ts`: `fontFamily.sans/serif/display` todas apontando para Inter.
 
-scroll ↓
+## 3. Página Explore estilo Airbnb
 
-[foto ocupa a tela inteira]
-[tag do fornecedor]
-```
+Reconstruir `src/pages/Explore.tsx` com layout inspirado no anexo:
 
-2. Atualizar a identidade visual de fontes
-- Trocar o import atual de fontes em `index.html` para:
-  `Young Serif + Nunito`
-- Atualizar `tailwind.config.ts`:
-  - `font-serif` / `font-display`: Young Serif
-  - `font-sans`: Nunito
-- Atualizar `src/index.css`:
-  - `body`: Nunito 300, 14–16px, line-height 1.8
-  - headings: Young Serif regular
-  - labels/badges/navegação: Nunito 600, uppercase, letter-spacing 0.1em
-  - botões: Nunito 600, 13–14px
-- Remover o uso de Rufina/Figtree como identidade principal.
-- Garantir que Young Serif não seja usado em labels, botões ou textos pequenos abaixo de 20px.
+**Header fixo (estilo Airbnb)**
+- Logo à esquerda.
+- Barra de busca pill central com 3 campos divididos por separadores: **Onde** (cidade), **Quando** (data do casamento) e **Quem** (categoria/serviço), com botão circular âmbar de busca à direita.
+- Menu de usuário (avatar + hambúrguer) à direita.
+- Em mobile: barra colapsa em um único pill compacto que abre um drawer com os filtros.
 
-3. Confirmar e aplicar os tokens de cor globais
-- Manter/ajustar as variáveis globais para os valores informados:
-  - `--color-primary: #C4856A`
-  - `--color-secondary: #7A9E7E`
-  - `--color-accent: #E8D5B7`
-  - `--color-bg: #FAF7F2`
-  - `--color-dark: #2C2420`
-  - `--color-text-body: #5A4035`
-  - `--color-text-muted: #9A857A`
-  - `--color-border: #E8DDD6`
-- Ajustar componentes da Home para evitar branco puro como fundo de página e preto puro como texto.
-- Atualizar botões para pill radius (`rounded-full`) conforme regra visual.
-- Ajustar cards, inputs e badges para radius e bordas corretas.
+**Tiras horizontais de cards (carrosséis)**
+Cada seção segue o padrão do Airbnb: título à esquerda com seta, setas de navegação à direita, scroll horizontal de cards. Seções:
+1. "Vistos recentemente" (últimos fornecedores que o usuário visitou — via localStorage; some se vazio).
+2. "Fornecedores em destaque em {cidade do usuário}" (ou cidade padrão se sem login).
+3. "Espaços e buffets muito procurados".
+4. "Fotografia em alta".
+5. "Decoração e flores".
+6. Mais uma tira por categoria principal restante (música, doces, etc.).
 
-4. Refazer o simulador da Home em estilo Typeform
-- Substituir o formulário grande atual de `SimulatorCTA` por uma experiência em etapas inspirada no HTML anexado.
-- Criar fluxo com:
-  - tela inicial do simulador
-  - pergunta 1: orçamento com slider e valor grande
-  - pergunta 2: quantidade de convidados em opções clicáveis
-  - pergunta 3: cidade com input elegante e datalist de cidades MG
-  - pergunta 4: estilo do casamento com cards selecionáveis
-  - tela final de confirmação
-- Manter a lógica atual:
-  - se não estiver logado, salvar `pending_simulacao` no `localStorage` e levar para cadastro/login
-  - se estiver logado, inserir no banco e navegar para o resultado
-- Usar transições suaves entre etapas, barra de progresso e botões estilo pill.
-- Adaptar visual do HTML anexado para o design atual do projeto com Young Serif + Nunito, sem copiar como HTML bruto.
-- Garantir mobile-first: espaçamentos menores no celular, opções empilhadas e cards responsivos.
+**Card de fornecedor (estilo Airbnb)**
+- Imagem quadrada com `rounded-xl`, badge sobreposta no topo-esquerdo ("Destaque" / "Novo" / "Mais procurado") e ícone de coração (favoritar) no topo-direito.
+- Abaixo: nome • cidade, faixa de convidados, faixa de preço "A partir de R$ X", nota com estrela. Tudo em texto pequeno e discreto, igual Airbnb.
+- Carrossel interno de fotos opcional (setas só no hover) — versão simples primeiro: foto principal apenas.
 
-5. Acabamento geral na Home
-- Ajustar `HomeNavbar`, hero, preloader, footer e CTA para a nova tipografia.
-- Trocar botões quadrados atuais por botões arredondados/pill.
-- Revisar espaçamentos para deixar a página mais calorosa, limpa e acolhedora.
-- Atualizar a memória de identidade visual do projeto para Young Serif + Nunito, evitando que as fontes antigas voltem em futuras alterações.
+**Rodapé**
+- Mantém o rodapé atual com créditos da N Coisas Digitais.
 
-Arquivos principais que serão alterados
-- `index.html`
-- `src/index.css`
-- `tailwind.config.ts`
-- `src/components/home/StoryBlock.tsx`
-- `src/components/home/SimulatorCTA.tsx`
-- `src/components/home/HomeNavbar.tsx`
-- `src/components/home/Preloader.tsx`
-- `src/pages/Home.tsx`
-- memória visual do projeto
+**Detalhes técnicos**
+- Carrosséis usando scroll horizontal nativo (`overflow-x-auto snap-x`) com botões de seta sobrepostos que chamam `scrollBy`. Sem nova dependência.
+- Reaproveita `SupplierCard` existente apenas como fallback; cria `ExploreSupplierCard` interno mais enxuto para casar com o visual Airbnb.
+- Busca de dados: uma query por seção (limit 12), filtrando por `status='approved'` e ordenando por `featured` + `created_at`. Categorias carregadas uma vez.
+- Favoritar continua usando a tabela `favorites` existente; sem login → toast pedindo para entrar.
+
+## Arquivos editados
+- `index.html` (fonte Inter)
+- `src/index.css` (paleta + tipografia)
+- `tailwind.config.ts` (fontFamily)
+- `src/pages/Explore.tsx` (reescrita Airbnb-style)
+- `mem://style/visual-identity` (atualizar paleta + fonte)
+
+## Fora do escopo
+- Não toco em `Home.tsx`, `StoryBlock`, `SimulatorCTA` nesta rodada — só herdam a nova paleta/fonte automaticamente via tokens.
+- Não adiciono filtros avançados nem mapa nesta página (já existem em `/buscar`).

@@ -1,71 +1,230 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import SupplierCard from "@/components/SupplierCard";
 import UserMenu from "@/components/UserMenu";
-import heroImage from "@/assets/hero-wedding.jpg";
-import { 
-  Heart, Search, Building, Camera, Music, Utensils, 
+import {
+  Heart, Search, Building, Camera, Music, Utensils,
   Flower2, Mail, Shirt, Sparkles, Cake, ClipboardList, Car, Video,
-  ChevronRight, User
+  ChevronLeft, ChevronRight, Star, User, Menu
 } from "lucide-react";
 
 const categoryIcons: Record<string, any> = {
   "building": Building, "camera": Camera, "video": Video, "music": Music,
   "flower": Flower2, "mail": Mail, "shirt": Shirt, "sparkles": Sparkles,
-  "cake": Cake, "clipboard": ClipboardList, "car": Car,
+  "cake": Cake, "clipboard": ClipboardList, "car": Car, "utensils": Utensils,
 };
 
 type Category = { id: string; name: string; slug: string; icon: string | null };
+type Supplier = {
+  id: string;
+  company_name: string;
+  city: string | null;
+  state: string | null;
+  rating: number | null;
+  review_count: number | null;
+  price_min: number | null;
+  guest_min: number | null;
+  guest_max: number | null;
+  featured: boolean;
+  categories?: { name: string } | null;
+  supplier_photos?: { photo_url: string }[];
+};
+
+const formatPrice = (n: number | null) => {
+  if (!n) return null;
+  if (n >= 1000) return `R$ ${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
+  return `R$ ${n}`;
+};
+
+function ExploreCard({ s }: { s: Supplier }) {
+  const photo = s.supplier_photos?.[0]?.photo_url;
+  const badge = s.featured ? "Destaque" : (s.rating && s.rating >= 4.7 ? "Preferido" : null);
+  return (
+    <Link
+      to={`/fornecedor/${s.id}`}
+      className="group flex-shrink-0 w-[180px] md:w-[210px] snap-start"
+    >
+      <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted">
+        {photo ? (
+          <img
+            src={photo}
+            alt={s.company_name}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+            <Building className="h-8 w-8" />
+          </div>
+        )}
+        {badge && (
+          <span className="absolute top-2 left-2 bg-background/95 text-foreground text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
+            {badge}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); }}
+          aria-label="Favoritar"
+          className="absolute top-2 right-2 text-white/90 hover:text-primary transition-colors"
+        >
+          <Heart className="h-5 w-5 drop-shadow-md" strokeWidth={2.2} />
+        </button>
+      </div>
+      <div className="pt-2 px-0.5">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground truncate">{s.company_name}</p>
+          {s.rating != null && s.rating > 0 && (
+            <span className="flex items-center gap-0.5 text-xs text-foreground shrink-0">
+              <Star className="h-3 w-3 fill-foreground" /> {Number(s.rating).toFixed(1)}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground truncate">
+          {s.categories?.name || "Fornecedor"}{s.city ? ` · ${s.city}` : ""}
+        </p>
+        {s.guest_min && (
+          <p className="text-xs text-muted-foreground">
+            {s.guest_min}{s.guest_max ? `–${s.guest_max}` : "+"} convidados
+          </p>
+        )}
+        {s.price_min && (
+          <p className="text-xs text-foreground mt-0.5">
+            <span className="font-semibold">{formatPrice(s.price_min)}</span>
+            <span className="text-muted-foreground"> · a partir de</span>
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function CarouselRow({
+  title,
+  subtitle,
+  items,
+  href,
+}: {
+  title: string;
+  subtitle?: string;
+  items: Supplier[];
+  href?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scroll = (dir: 1 | -1) => {
+    ref.current?.scrollBy({ left: dir * (ref.current.clientWidth * 0.8), behavior: "smooth" });
+  };
+  if (!items.length) return null;
+  return (
+    <section className="container py-6">
+      <div className="flex items-end justify-between mb-3">
+        <div>
+          <h2 className="text-lg md:text-xl font-semibold tracking-tight flex items-center gap-1.5">
+            {href ? (
+              <Link to={href} className="hover:underline inline-flex items-center gap-1">
+                {title} <ChevronRight className="h-5 w-5" />
+              </Link>
+            ) : title}
+          </h2>
+          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
+        <div className="hidden md:flex gap-1">
+          <button
+            type="button"
+            onClick={() => scroll(-1)}
+            className="h-8 w-8 rounded-full border border-border bg-background hover:bg-secondary flex items-center justify-center transition"
+            aria-label="Anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scroll(1)}
+            className="h-8 w-8 rounded-full border border-border bg-background hover:bg-secondary flex items-center justify-center transition"
+            aria-label="Próximo"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <div
+        ref={ref}
+        className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4"
+      >
+        {items.map((s) => <ExploreCard key={s.id} s={s} />)}
+      </div>
+    </section>
+  );
+}
 
 const Explore = () => {
   const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [featuredSuppliers, setFeaturedSuppliers] = useState<any[]>([]);
+  const [featured, setFeatured] = useState<Supplier[]>([]);
+  const [byCategory, setByCategory] = useState<Record<string, Supplier[]>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
 
   useEffect(() => {
-    supabase.from("categories").select("*").then(({ data }) => setCategories(data || []));
-    
-    // Load featured/approved suppliers for showcase
-    supabase
-      .from("suppliers")
-      .select("*, categories(name), supplier_photos(photo_url)")
-      .eq("status", "approved")
-      .order("featured", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(8)
-      .then(({ data }) => setFeaturedSuppliers(data || []));
+    (async () => {
+      const { data: cats } = await supabase.from("categories").select("*").order("name");
+      setCategories(cats || []);
+
+      const { data: feat } = await supabase
+        .from("suppliers")
+        .select("id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url)")
+        .eq("status", "approved")
+        .order("featured", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(12);
+      setFeatured((feat as any) || []);
+
+      // load up to 5 categories with items
+      const slugs = (cats || []).slice(0, 6);
+      const results: Record<string, Supplier[]> = {};
+      await Promise.all(slugs.map(async (c) => {
+        const { data } = await supabase
+          .from("suppliers")
+          .select("id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url)")
+          .eq("status", "approved")
+          .eq("category_id", c.id)
+          .order("featured", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(12);
+        if (data && data.length) results[c.slug] = data as any;
+      }));
+      setByCategory(results);
+    })();
   }, []);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="container flex items-center justify-between h-14">
-          <Link to="/" className="flex items-center gap-2">
+      {/* Header — Airbnb-style */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+        <div className="container py-3 flex items-center justify-between gap-4">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="text-lg font-bold text-foreground">Meu Grande Dia</span>
+            <span className="text-lg font-semibold tracking-tight hidden sm:inline">Casamenteiro</span>
           </Link>
+
           <nav className="hidden md:flex items-center gap-6 text-sm">
-            <Link to="/buscar" className="text-muted-foreground hover:text-foreground transition-colors">Fornecedores</Link>
-            <Link to="/buscar?cat=espacos-buffet" className="text-muted-foreground hover:text-foreground transition-colors">Espaços</Link>
-            <Link to="/buscar?cat=fotografia" className="text-muted-foreground hover:text-foreground transition-colors">Fotografia</Link>
+            <Link to="/explorar" className="font-semibold border-b-2 border-foreground pb-3 -mb-3">Fornecedores</Link>
+            <Link to="/buscar" className="text-muted-foreground hover:text-foreground transition">Espaços</Link>
+            <Link to="/buscar?cat=fotografia" className="text-muted-foreground hover:text-foreground transition">Fotografia</Link>
           </nav>
+
           <div className="flex items-center gap-2">
             {user ? (
               <UserMenu />
             ) : (
               <>
-                <Button variant="ghost" size="sm" asChild>
+                <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
                   <Link to="/login">Entrar</Link>
                 </Button>
-                <Button size="sm" asChild>
+                <Button size="sm" className="rounded-full" asChild>
                   <Link to="/cadastro">
                     <User className="mr-1.5 h-3.5 w-3.5" />
                     Cadastrar
@@ -75,167 +234,79 @@ const Explore = () => {
             )}
           </div>
         </div>
+
+        {/* Search pill */}
+        <div className="container pb-4">
+          <div className="mx-auto max-w-2xl flex items-stretch bg-background border border-border shadow-sm hover:shadow-md transition-shadow rounded-full overflow-hidden">
+            <div className="flex-1 px-5 py-2.5">
+              <p className="text-[11px] font-semibold text-foreground">Onde</p>
+              <Input
+                placeholder="Buscar destinos"
+                className="border-0 shadow-none focus-visible:ring-0 px-0 h-5 text-sm placeholder:text-muted-foreground"
+                value={searchLocation}
+                onChange={(e) => setSearchLocation(e.target.value)}
+              />
+            </div>
+            <div className="w-px bg-border my-2" />
+            <div className="hidden sm:block flex-1 px-5 py-2.5">
+              <p className="text-[11px] font-semibold text-foreground">O que</p>
+              <Input
+                placeholder="Categoria ou fornecedor"
+                className="border-0 shadow-none focus-visible:ring-0 px-0 h-5 text-sm placeholder:text-muted-foreground"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center pr-2">
+              <Button asChild size="icon" className="rounded-full h-11 w-11 bg-primary hover:bg-primary/90">
+                <Link to={`/buscar?q=${encodeURIComponent(searchQuery)}&loc=${encodeURIComponent(searchLocation)}`} aria-label="Pesquisar">
+                  <Search className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Category chips strip */}
+        <div className="border-t border-border">
+          <div className="container">
+            <div className="flex gap-7 overflow-x-auto scrollbar-hide py-3">
+              {categories.map((cat) => {
+                const Icon = categoryIcons[cat.icon || "building"] || Building;
+                return (
+                  <Link
+                    key={cat.id}
+                    to={`/buscar?cat=${cat.slug}`}
+                    className="flex flex-col items-center gap-1 min-w-[64px] text-muted-foreground hover:text-foreground transition group"
+                  >
+                    <Icon className="h-5 w-5 group-hover:text-primary transition-colors" />
+                    <span className="text-[11px] font-medium whitespace-nowrap">{cat.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative pt-14">
-        <div className="relative h-[480px] md:h-[520px] overflow-hidden">
-          <img 
-            src={heroImage} 
-            alt="Casamento dos sonhos" 
-            className="w-full h-full object-cover"
+      {/* Carousels */}
+      <main className="pb-12">
+        <CarouselRow
+          title="Fornecedores em destaque"
+          subtitle="Os mais bem avaliados da plataforma"
+          items={featured}
+          href="/buscar"
+        />
+        {categories.map((c) => byCategory[c.slug] && (
+          <CarouselRow
+            key={c.id}
+            title={c.name}
+            subtitle={`Os mais procurados em ${c.name.toLowerCase()}`}
+            items={byCategory[c.slug]}
+            href={`/buscar?cat=${c.slug}`}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-foreground/70 via-foreground/40 to-transparent" />
-          <div className="absolute inset-0 flex items-center">
-            <div className="container">
-              <div className="max-w-lg">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">
-                  Encontre tudo o que precisa para o seu casamento
-                </h1>
-                <p className="text-white/80 text-base md:text-lg mb-8">
-                  Mais de 80.000 fornecedores para escolher
-                </p>
-                {/* Search bar */}
-                <div className="flex bg-background rounded-lg shadow-xl overflow-hidden">
-                  <div className="flex-1 flex items-center gap-2 px-4">
-                    <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <Input 
-                      placeholder="Pesquisar por nome ou categoria..." 
-                      className="border-0 shadow-none focus-visible:ring-0 px-0 text-sm"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <div className="hidden sm:flex items-center border-l border-border px-4">
-                    <Input 
-                      placeholder="Estado" 
-                      className="border-0 shadow-none focus-visible:ring-0 px-0 w-24 text-sm"
-                      value={searchLocation}
-                      onChange={(e) => setSearchLocation(e.target.value)}
-                    />
-                  </div>
-                  <Button className="rounded-none rounded-r-lg px-6 h-12" asChild>
-                    <Link to={`/buscar?q=${searchQuery}&loc=${searchLocation}`}>Pesquisar</Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Category chips - horizontal scroll */}
-      <section className="py-6 border-b border-border">
-        <div className="container">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {categories.map((cat) => {
-              const Icon = categoryIcons[cat.icon || "building"] || Building;
-              return (
-                <Link
-                  key={cat.id}
-                  to={`/buscar?cat=${cat.slug}`}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background hover:bg-secondary hover:border-primary/30 transition-all text-sm whitespace-nowrap"
-                >
-                  <Icon className="h-4 w-4 text-primary" />
-                  {cat.name}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured suppliers */}
-      {featuredSuppliers.length > 0 && (
-        <section className="py-12">
-          <div className="container">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">Empresas de casamentos destacadas</h2>
-                <p className="text-sm text-muted-foreground mt-1">Confira os melhores fornecedores da sua região</p>
-              </div>
-              <Button variant="ghost" className="text-primary" asChild>
-                <Link to="/buscar">
-                  Ver todos <ChevronRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {featuredSuppliers.map((sup) => (
-                <SupplierCard
-                  key={sup.id}
-                  id={sup.id}
-                  company_name={sup.company_name}
-                  city={sup.city}
-                  state={sup.state}
-                  rating={(sup as any).rating}
-                  review_count={(sup as any).review_count}
-                  price_min={(sup as any).price_min}
-                  guest_min={(sup as any).guest_min}
-                  guest_max={(sup as any).guest_max}
-                  promo_percentage={(sup as any).promo_percentage}
-                  featured={(sup as any).featured}
-                  category_name={(sup.categories as any)?.name}
-                  photo_url={sup.supplier_photos?.[0]?.photo_url}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* How it works */}
-      <section className="py-16 bg-secondary">
-        <div className="container">
-          <h2 className="text-2xl font-bold text-center mb-3">Como funciona</h2>
-          <p className="text-center text-muted-foreground mb-12 max-w-md mx-auto text-sm">
-            Em três passos simples, encontre tudo para o seu casamento perfeito
-          </p>
-          <div className="grid md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-            {[
-              { num: "1", title: "Cadastre-se", desc: "Crie sua conta gratuita e conte-nos sobre o casamento dos sonhos." },
-              { num: "2", title: "Busque fornecedores", desc: "Explore nossa rede de fornecedores verificados por categoria e localização." },
-              { num: "3", title: "Planeje com amor", desc: "Favorite, compare e organize tudo em um só lugar." },
-            ].map((step) => (
-              <div key={step.num} className="text-center">
-                <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-lg font-bold">
-                  {step.num}
-                </div>
-                <h3 className="font-bold text-lg mb-2">{step.title}</h3>
-                <p className="text-sm text-muted-foreground">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA - Two types */}
-      <section className="py-16">
-        <div className="container">
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            <div className="bg-coral-light rounded-xl p-8 text-center">
-              <Heart className="h-10 w-10 text-primary mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Sou Casal</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                Encontre os melhores fornecedores e planeje cada detalhe do seu grande dia.
-              </p>
-              <Button size="lg" className="w-full" asChild>
-                <Link to="/cadastro?tipo=couple">Começar agora</Link>
-              </Button>
-            </div>
-            <div className="bg-secondary rounded-xl p-8 text-center">
-              <Building className="h-10 w-10 text-primary mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Sou Fornecedor</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                Cadastre sua empresa e alcance milhares de casais procurando seus serviços.
-              </p>
-              <Button size="lg" variant="outline" className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground" asChild>
-                <Link to="/cadastro?tipo=supplier">Cadastrar empresa</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+        ))}
+      </main>
 
       {/* Footer */}
       <footer className="py-10 bg-foreground text-background">
@@ -244,7 +315,7 @@ const Explore = () => {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Heart className="h-5 w-5 fill-primary text-primary" />
-                <span className="text-lg font-bold">Meu Grande Dia</span>
+                <span className="text-lg font-semibold">Casamenteiro</span>
               </div>
               <p className="text-background/60 text-sm">
                 A plataforma completa para planejar o casamento dos seus sonhos.
@@ -278,7 +349,7 @@ const Explore = () => {
           </div>
           <div className="border-t border-background/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-background/40 text-xs">
-              © 2026 Meu Grande Dia. Todos os direitos reservados.
+              © 2026 Casamenteiro. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-1.5 text-xs text-background/60">
               <span>Desenvolvido com carinho pela</span>
