@@ -377,6 +377,15 @@ export default function SupplierDashboard() {
             {selectedQuote && user && (
               <QuoteThread quoteId={selectedQuote.id} currentUserId={user.id} />
             )}
+            {selectedQuote && user && supplier && (
+              <QuoteProposalPanel
+                quoteId={selectedQuote.id}
+                currentUserId={user.id}
+                isSupplier={true}
+                coupleId={selectedQuote.couple_id}
+                supplierId={supplier.id}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </main>
