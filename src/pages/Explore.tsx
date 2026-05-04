@@ -352,9 +352,13 @@ const Explore = () => {
             </div>
           </div>
           <div className="border-t border-background/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-background/40 text-xs">
-              © 2026 Casamenteiro. Todos os direitos reservados.
-            </p>
+            <div className="flex flex-col md:flex-row items-center gap-3 text-xs text-background/40">
+              <p>© 2026 Casamenteiro. Todos os direitos reservados.</p>
+              <div className="flex items-center gap-3">
+                <Link to="/termos" className="hover:text-background">Termos de Uso</Link>
+                <Link to="/privacidade" className="hover:text-background">Privacidade</Link>
+              </div>
+            </div>
             <div className="flex items-center gap-1.5 text-xs text-background/60">
               <span>Desenvolvido com carinho pela</span>
               <a href="https://ncoisas.digital/" target="_blank" rel="noopener noreferrer" className="font-semibold text-background/80 hover:text-background transition-colors">N Coisas Digitais</a>
