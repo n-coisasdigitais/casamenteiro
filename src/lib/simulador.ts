@@ -138,10 +138,9 @@ function enriquecer(s: any, verba: number, convidados: number, aceitaOciosas: bo
   const base = precoBase(s);
   const economiaEstimada = tem && base ? Math.round(base * (desconto / 100)) : 0;
   const fone = (s.whatsapp || s.phone || "");
-  const msg = encodeURIComponent(
+  const msg =
     `Olá! Vim pela plataforma Casamenteiro e tenho interesse no seu serviço. ` +
-    `Orçamento estimado: R$ ${verba.toLocaleString("pt-BR")} para ${convidados} convidados.`
-  );
+    `Orçamento estimado: R$ ${verba.toLocaleString("pt-BR")} para ${convidados} convidados.`;
   return {
     id: s.id,
     nome: s.company_name,
@@ -155,7 +154,7 @@ function enriquecer(s: any, verba: number, convidados: number, aceitaOciosas: bo
     temDesconto: tem,
     desconto,
     economiaEstimada,
-    linkWhatsApp: buildWhatsAppLink(fone, decodeURIComponent(msg)) || "",
+    linkWhatsApp: buildWhatsAppLink(fone, msg) || "",
     aceita_datas_ociosas: !!s.accepts_idle_dates,
   };
 }
