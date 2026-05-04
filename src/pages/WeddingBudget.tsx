@@ -290,6 +290,46 @@ export default function WeddingBudget() {
           </div>
         )}
 
+        {simulacoes.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader className="flex flex-row items-center justify-between gap-3">
+              <div>
+                <CardTitle>Simulações salvas</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Planos simulados que você pode revisar e transformar em orçamento.</p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/#simulador">Nova simulação</Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2">
+                {simulacoes.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}
+                    className="text-left rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{s.cidade || "Sua cidade"} · {s.num_convidados} convidados</p>
+                        <p className="text-sm text-muted-foreground">
+                          R$ {Number(s.orcamento_total).toLocaleString("pt-BR")} · {s.estilo || "Plano"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(s.criado_em).toLocaleDateString("pt-BR")}
+                          {s.data_evento && ` · evento em ${new Date(s.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}`}
+                        </p>
+                      </div>
+                      <Eye className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Painel Resumo */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
