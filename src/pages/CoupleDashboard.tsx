@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Heart, Search, Calendar, Users, DollarSign, Copy, Share2,
-  MessageSquare, Eye, CheckSquare, Store, ArrowRight
+  MessageSquare, Eye, CheckSquare, Store, ArrowRight, Calculator
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
@@ -46,6 +46,7 @@ export default function CoupleDashboard() {
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary>({ estimated: 0, final: 0 });
   const [supplierCount, setSupplierCount] = useState(0);
   const [urgentTasks, setUrgentTasks] = useState<any[]>([]);
+  const [simulacoes, setSimulacoes] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -59,7 +60,7 @@ export default function CoupleDashboard() {
 
   const loadDashboardData = async (coupleId: string) => {
     // All queries in parallel
-    const [favRes, quotesRes, tasksRes, guestsRes, budgetRes, suppRes, urgentRes] = await Promise.all([
+    const [favRes, quotesRes, tasksRes, guestsRes, budgetRes, suppRes, urgentRes, simRes] = await Promise.all([
       supabase.from("couple_favorites").select("id", { count: "exact", head: true }).eq("couple_id", coupleId),
       supabase.from("quotes").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }),
       supabase.from("wedding_tasks").select("id, is_completed").eq("couple_id", coupleId),
@@ -67,6 +68,7 @@ export default function CoupleDashboard() {
       supabase.from("budget_items").select("estimated_cost, final_cost").eq("couple_id", coupleId),
       supabase.from("couple_suppliers").select("id", { count: "exact", head: true }).eq("couple_id", coupleId).eq("status", "contracted"),
       supabase.from("wedding_tasks").select("id, title, category, is_completed").eq("couple_id", coupleId).eq("is_completed", false).order("sort_order", { ascending: true }).limit(3),
+      (supabase.from("home_simulacoes" as any) as any).select("*").or(`couple_id.eq.${coupleId},user_id.eq.${user?.id}`).order("criado_em", { ascending: false }).limit(5),
     ]);
 
     setFavCount(favRes.count || 0);
@@ -91,6 +93,7 @@ export default function CoupleDashboard() {
 
     setSupplierCount(suppRes.count || 0);
     setUrgentTasks(urgentRes.data || []);
+    setSimulacoes((simRes as any).data || []);
   };
 
   const toggleUrgentTask = async (id: string) => {
