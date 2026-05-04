@@ -314,6 +314,33 @@ export type Database = {
         }
         Relationships: []
       }
+      frases_home: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          grupo: string
+          id: string
+          ordem: number
+          texto: string
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          grupo: string
+          id?: string
+          ordem?: number
+          texto: string
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          grupo?: string
+          id?: string
+          ordem?: number
+          texto?: string
+        }
+        Relationships: []
+      }
       guest_groups: {
         Row: {
           couple_id: string
@@ -342,6 +369,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      home_simulacoes: {
+        Row: {
+          cidade: string | null
+          couple_id: string | null
+          criado_em: string
+          estilo: string | null
+          id: string
+          num_convidados: number
+          orcamento_total: number
+          user_id: string | null
+        }
+        Insert: {
+          cidade?: string | null
+          couple_id?: string | null
+          criado_em?: string
+          estilo?: string | null
+          id?: string
+          num_convidados: number
+          orcamento_total: number
+          user_id?: string | null
+        }
+        Update: {
+          cidade?: string | null
+          couple_id?: string | null
+          criado_em?: string
+          estilo?: string | null
+          id?: string
+          num_convidados?: number
+          orcamento_total?: number
+          user_id?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -521,6 +581,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      secoes_home: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          foto_url: string
+          frase: string
+          id: string
+          ordem: number
+          subtexto: string | null
+          supplier_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          foto_url: string
+          frase: string
+          id?: string
+          ordem?: number
+          subtexto?: string | null
+          supplier_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          foto_url?: string
+          frase?: string
+          id?: string
+          ordem?: number
+          subtexto?: string | null
+          supplier_id?: string | null
+        }
+        Relationships: []
       }
       simulated_budgets: {
         Row: {
