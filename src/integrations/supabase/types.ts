@@ -313,43 +313,64 @@ export type Database = {
       }
       couples: {
         Row: {
+          ceremony_address: string | null
+          ceremony_time: string | null
+          contact_phone: string | null
           couple_role: Database["public"]["Enums"]["couple_role"] | null
           created_at: string
+          dress_code: string | null
           estimated_budget: number | null
           estimated_guests: number | null
           id: string
           invite_code: string | null
+          invite_message: string | null
+          invite_photo_url: string | null
           needed_services: string[] | null
           onboarding_completed: boolean
           partner_name: string | null
+          reception_address: string | null
           updated_at: string
           user_id: string
           wedding_date: string | null
         }
         Insert: {
+          ceremony_address?: string | null
+          ceremony_time?: string | null
+          contact_phone?: string | null
           couple_role?: Database["public"]["Enums"]["couple_role"] | null
           created_at?: string
+          dress_code?: string | null
           estimated_budget?: number | null
           estimated_guests?: number | null
           id?: string
           invite_code?: string | null
+          invite_message?: string | null
+          invite_photo_url?: string | null
           needed_services?: string[] | null
           onboarding_completed?: boolean
           partner_name?: string | null
+          reception_address?: string | null
           updated_at?: string
           user_id: string
           wedding_date?: string | null
         }
         Update: {
+          ceremony_address?: string | null
+          ceremony_time?: string | null
+          contact_phone?: string | null
           couple_role?: Database["public"]["Enums"]["couple_role"] | null
           created_at?: string
+          dress_code?: string | null
           estimated_budget?: number | null
           estimated_guests?: number | null
           id?: string
           invite_code?: string | null
+          invite_message?: string | null
+          invite_photo_url?: string | null
           needed_services?: string[] | null
           onboarding_completed?: boolean
           partner_name?: string | null
+          reception_address?: string | null
           updated_at?: string
           user_id?: string
           wedding_date?: string | null
@@ -408,6 +429,59 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_invites: {
+        Row: {
+          couple_id: string
+          created_at: string
+          guest_id: string
+          id: string
+          opened_at: string | null
+          reminder_sent_at: string | null
+          responded_at: string | null
+          rsvp_companions: number | null
+          rsvp_note: string | null
+          rsvp_response: string | null
+          sent_at: string | null
+          token: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          guest_id: string
+          id?: string
+          opened_at?: string | null
+          reminder_sent_at?: string | null
+          responded_at?: string | null
+          rsvp_companions?: number | null
+          rsvp_note?: string | null
+          rsvp_response?: string | null
+          sent_at?: string | null
+          token?: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          guest_id?: string
+          id?: string
+          opened_at?: string | null
+          reminder_sent_at?: string | null
+          responded_at?: string | null
+          rsvp_companions?: number | null
+          rsvp_note?: string | null
+          rsvp_response?: string | null
+          sent_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_invites_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "wedding_guests"
             referencedColumns: ["id"]
           },
         ]
@@ -598,6 +672,7 @@ export type Database = {
           event_date: string | null
           guest_count: number | null
           id: string
+          kanban_status: string
           message: string
           phone: string | null
           phone_visible: boolean
@@ -612,6 +687,7 @@ export type Database = {
           event_date?: string | null
           guest_count?: number | null
           id?: string
+          kanban_status?: string
           message: string
           phone?: string | null
           phone_visible?: boolean
@@ -626,6 +702,7 @@ export type Database = {
           event_date?: string | null
           guest_count?: number | null
           id?: string
+          kanban_status?: string
           message?: string
           phone?: string | null
           phone_visible?: boolean
@@ -1471,10 +1548,40 @@ export type Database = {
     }
     Functions: {
       get_couple_id_for_user: { Args: { _user_id: string }; Returns: string }
+      get_invite_by_token: {
+        Args: { _token: string }
+        Returns: {
+          ceremony_address: string
+          ceremony_time: string
+          contact_phone: string
+          dress_code: string
+          guest_name: string
+          invite_id: string
+          invite_message: string
+          invite_photo_url: string
+          partner_name: string
+          reception_address: string
+          responded_at: string
+          rsvp_companions: number
+          rsvp_note: string
+          rsvp_response: string
+          user_full_name: string
+          wedding_date: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      respond_invite: {
+        Args: {
+          _companions?: number
+          _note?: string
+          _response: string
+          _token: string
         }
         Returns: boolean
       }
