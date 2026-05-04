@@ -52,6 +52,12 @@
     --beige-dark: 30 20% 92%;
     --coral: 352 85% 50%;
     --coral-light: 352 75% 95%;
+
+    /* Casamenteiro Home tokens */
+    --cream: 36 33% 97%;
+    --ink: 0 0% 10%;
+    --rose-gold: 28 44% 60%;
+    --olive: 110 14% 54%;
   }
 
   .dark {

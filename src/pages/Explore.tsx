@@ -22,7 +22,7 @@ const categoryIcons: Record<string, any> = {
 
 type Category = { id: string; name: string; slug: string; icon: string | null };
 
-const Index = () => {
+const Explore = () => {
   const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredSuppliers, setFeaturedSuppliers] = useState<any[]>([]);
@@ -292,4 +292,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Explore;

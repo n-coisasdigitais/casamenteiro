@@ -1,101 +1,159 @@
-# Plano: Estrutura de Banco para Simulador de Orçamento
 
-Objetivo: preparar o banco para a nova versão centrada no **simulador**, sem mexer em layout/UX agora. Apenas adicionar/criar o que falta, preservando o que já existe.
+# Nova Home "Casamenteiro" + Renomeação da Home Atual
 
-## 1. Estender `suppliers` (campos faltantes)
+Vamos transformar a home atual numa página de busca, e criar uma nova home cinematográfica com preloader animado, blocos scroll-driven com fotos e um simulador de orçamento como CTA principal. Tudo gerenciável por um novo painel admin.
 
-Adicionar colunas via migration (todas nullable para não quebrar dados atuais):
+## Etapa 1 — Preservar a home atual como página de busca
 
-- `whatsapp text`
-- `instagram text`
-- `website text`
-- `profile_photo_url text`
-- `accepts_idle_dates boolean default false`
-- `idle_discount_pct integer` (desconto específico para datas ociosas, distinto de `promo_percentage`)
+A home atual (`src/pages/Index.tsx`) já tem hero com busca, chips de categorias, fornecedores em destaque e CTAs. Em vez de destruir, vamos:
 
-Campos já existentes que cobrem a proposta: `id`, `category_id` (categoria), `company_name` (nome), `city`, `state`, `phone`, `price_min`/`price_max` (faixa de preço), `status`, `featured` (destaque), `created_at`. Galeria já está em `supplier_photos` (mantém normalizado, melhor que array).
+- Renomear `src/pages/Index.tsx` → `src/pages/Explore.tsx` (componente `Explore`).
+- No `App.tsx`:
+  - `/` passa a renderizar a **nova** `Home`.
+  - `/explorar` renderiza `Explore` (a antiga home, intacta).
+  - Mantém `/buscar` apontando para `SupplierSearch` (já existe e é a busca avançada).
+- Atualizar os links internos que apontavam para a antiga home onde fizer sentido (logo "Casamenteiro" continua indo para `/`).
 
-## 2. Tabelas de detalhes por categoria (novas)
+Resultado: nada se perde, a experiência antiga fica acessível em `/explorar`.
 
-Padrão: cada tabela tem `id uuid pk`, `supplier_id uuid unique references suppliers(id) on delete cascade`, `created_at`, `updated_at`, RLS pública para leitura (fornecedores aprovados) e edição apenas pelo dono.
+## Etapa 2 — Banco de dados
 
-Tabelas a criar (uma por categoria principal — ajustamos conforme os CSVs reais):
+Três novas tabelas (migration), seguindo o padrão atual em português dos nomes recentes (`simulated_budgets`, `supplier_leads`):
 
-- `supplier_details_buffet` — tipo de cardápio, opções de menu, bebidas inclusas, capacidade, etc.
-- `supplier_details_fotografo` — estilos, entrega de fotos, álbum, horas inclusas, etc.
-- `supplier_details_local` — capacidade, tipo (salão/sítio/igreja), estacionamento, hospedagem, etc.
-- `supplier_details_decoracao` — estilos atendidos, itens inclusos, flores naturais/artificiais, etc.
-- `supplier_details_musica` — formato (DJ/banda/ambiente), repertório, equipamentos, horas, etc.
-- `supplier_details_cerimonialista` — pacotes, equipe, assessoria pré/dia, etc.
-- `supplier_details_beleza` — serviços (cabelo/maquiagem/spa), atende noiva/madrinhas, etc.
-- `supplier_details_trajes` — aluguel/venda, sob medida, prazo, ajustes inclusos, etc.
-- `supplier_details_convites` — tipos (impresso/digital), prazo, personalização, etc.
+```text
+frases_home
+  id uuid PK, grupo text, texto text, ordem int,
+  ativo boolean default true, criado_em timestamptz default now()
 
-> Observação: as colunas exatas de cada tabela serão derivadas dos CSVs que você tem. Como ainda não vi os CSVs, no momento da implementação você me envia (ou eu uso uma base mínima) e eu modelo coluna a coluna. Os scripts ficam idempotentes.
+secoes_home
+  id uuid PK, supplier_id uuid (nullable, sem FK rígida — padrão do projeto),
+  foto_url text, frase text, subtexto text,
+  ordem int default 0, ativo boolean default true,
+  criado_em timestamptz default now()
 
-## 3. Nova tabela `supplier_leads` (rastreio de leads do simulador)
-
-Diferente de `quotes` (que é uma conversa formal de orçamento). Leads vêm do simulador e podem ser anônimos no início.
-
-Colunas:
-- `id uuid pk`
-- `supplier_id uuid references suppliers(id) on delete cascade`
-- `couple_id uuid` nullable (se o casal estiver logado)
-- `nome_casal text`
-- `whatsapp_casal text`
-- `email_casal text` nullable
-- `orcamento_total numeric`
-- `num_convidados integer`
-- `cidade_evento text`
-- `data_evento date` nullable
-- `data_contato timestamptz default now()`
-- `status_lead text` com check em `('novo','em_conversa','fechado','perdido')` default `'novo'`
-- `valor_fechado numeric` nullable
-- `comissao_gerada numeric` nullable
-- `origem text` default `'simulador'`
-- `created_at`, `updated_at`
+home_simulacoes
+  id uuid PK, user_id uuid nullable, couple_id uuid nullable,
+  orcamento_total numeric, num_convidados int, cidade text, estilo text,
+  criado_em timestamptz default now()
+```
 
 RLS:
-- INSERT permitido para qualquer um (inclusive anônimo) — para o simulador funcionar sem login.
-- SELECT/UPDATE: o fornecedor dono (`suppliers.user_id = auth.uid()`), o casal dono (`couple_id = get_couple_id_for_user(auth.uid())`), e admin.
+- `frases_home` e `secoes_home`: SELECT público (anon + authenticated) somente onde `ativo = true`; ALL para admin (`has_role(auth.uid(),'admin')`).
+- `home_simulacoes`: INSERT público (anyone); SELECT só pelo dono (`user_id = auth.uid()` ou `couple_id` do user) ou admin.
 
-## 4. Nova tabela `simulated_budgets` (orçamentos do simulador)
+Seed inicial:
+- Grupo `intro` com as 4 frases padrão do briefing.
+- 4 registros em `secoes_home` com as frases/subtextos do briefing e fotos Unsplash de fallback.
 
-Salva cada simulação feita (anônima ou logada), para analytics e para o casal recuperar depois.
+Observação: já existe a tabela `simulated_budgets` (do simulador completo). A `home_simulacoes` é especificamente para o mini-simulador de 4 campos da home, mas no submit também espelhamos em `simulated_budgets` para manter o histórico unificado e reaproveitar a tela de resultado quando ela existir.
 
-Colunas:
-- `id uuid pk`
-- `couple_id uuid` nullable
-- `orcamento_total numeric not null`
-- `num_convidados integer not null`
-- `cidade text`
-- `estado text`
-- `estilo text` (clássico, rústico, praia, mini-wedding, etc.)
-- `distribuicao jsonb` — ex: `{ "buffet": 35, "decoracao": 15, "fotografia": 10, ... }`
-- `categorias_selecionadas text[]`
-- `created_at timestamptz default now()`
+## Etapa 3 — Nova página Home (`src/pages/Home.tsx`)
 
-RLS:
-- INSERT público (anônimo ok).
-- SELECT: dono via `couple_id` e admin. Admin pode ler todas para analytics.
+Mobile-first. Tailwind + Framer Motion (já no stack disponível; se não estiver, instalar `framer-motion`).
 
-## 5. O que **não** muda
+### Tokens visuais
+Adicionar em `tailwind.config.ts` / `index.css`:
+- `--bg-cream: #FAF8F5`
+- `--ink: #1A1A1A`
+- `--rose-gold: #C9956C`
+- `--olive: #7D9B76`
+- Fontes via Google Fonts no `index.html`: **Playfair Display** (headings) e **Inter** (corpo).
 
-- `quotes` e `quote_messages` continuam para conversas formais de orçamento.
-- `couple_suppliers`, `couple_favorites`, `wedding_tasks`, `budget_items`, etc. — intactos.
-- `supplier_photos` continua sendo a galeria (não viramos array).
-- Layouts e páginas atuais não são alterados nesta etapa.
+### Seção 1 — Preloader (100vh)
+- Fundo `#1A1A1A` com foto desfocada + overlay escuro 70%.
+- Sem navbar enquanto ativo.
+- Barra de progresso fina rose-gold na base, anima 0→100% em 4s.
+- Frases buscadas de `frases_home` onde `grupo='intro'` e `ativo=true`, ordenadas por `ordem`. Fallback hardcoded com as 4 frases do briefing.
+- Cada frase: fade in (300ms) → hold 1.2s → fade out (300ms), centralizada, Playfair grande, branca.
+- Ao chegar 100%: dissolve (500ms) e desmonta o preloader. Trava scroll (`overflow:hidden` no body) durante a animação.
+- Usa `sessionStorage` para não repetir o preloader em navegações internas dentro da mesma sessão (evita irritação).
 
-## Detalhes técnicos
+### Navbar pós-preloader
+- Fixa no topo, fundo `#FAF8F5/90` com blur, borda inferior sutil.
+- Esquerda: logo "Casamenteiro" (Heart + wordmark Playfair).
+- Direita: link "Entrar" (ghost) + botão "Simular" (rose-gold) que faz scroll suave para a seção 3.
+- Fade in 400ms quando o preloader sai.
 
-- Tudo em uma única migration SQL (alterações + criações + RLS + índices em FKs).
-- `supplier_id` indexado em todas as novas tabelas.
-- Triggers `update_updated_at_column` aplicados onde houver `updated_at`.
-- Tipos enum não vou criar para `status_lead` (uso `text + check`) para facilitar evolução.
-- `src/integrations/supabase/types.ts` é regenerado automaticamente após a migration.
+### Seção 2 — 4 blocos scroll-driven (cada um 100vh)
+- Dados de `secoes_home` ativos, ordenados por `ordem`. Fallback com os 4 blocos do briefing.
+- Layout: grid 2 colunas no desktop (texto / foto), coluna única no mobile (texto em cima, foto embaixo).
+- Texto: número editorial "(01)", "(02)"… em Playfair italic, cor olive; frase principal grande em Playfair; subtexto em Inter, cinza médio.
+- Foto: `aspect-square` lg, `rounded-xl`, sombra suave.
+- Animações com Framer Motion `whileInView`:
+  - Texto: `opacity 0→1`, `y +30→0`, duração 0.6s ease-out.
+  - Foto: `scale 0.95→1`, `opacity 0→1`, mesma duração.
+- `lazy loading` nas imagens (`loading="lazy"`).
 
-## Próximo passo (após aprovação)
+### Seção 3 — CTA Simulador (≥80vh)
+- Fundo escuro com foto + overlay 60%.
+- Heading Playfair branco: "Quanto você quer investir no seu casamento?"
+- Subtexto: "Responde 4 perguntas. A gente monta o plano pra você."
+- Card translúcido (`bg-white/10 backdrop-blur`) com formulário grid 2x2 (desktop) / 1col (mobile):
+  1. Orçamento total — slider (R$ 10k–R$ 500k) + display do valor formatado.
+  2. Nº de convidados — input numérico.
+  3. Cidade — input com datalist autocomplete de ~30 principais cidades de MG.
+  4. Estilo — select: "Simples e emocionante" / "Médio e elegante" / "Grande e memorável".
+- Botão "Simular meu casamento →" rose-gold, full-width no mobile.
+- Submit:
+  - Insert em `home_simulacoes` (e espelha em `simulated_budgets`).
+  - Se logado e tem `couple_id`: vincula.
+  - Se NÃO logado: salva payload em `localStorage.pending_simulacao` e redireciona para `/cadastro?redirect=simulador` com toast: "Seu simulador foi salvo! Crie sua conta gratuita pra ver o resultado completo."
+  - Após simulação criada, redireciona para `/simulador/resultado?id=...` (rota placeholder por ora — exibe os dados salvos; lógica de matching com fornecedores fica para o próximo ciclo).
 
-1. Eu rodo a migration com as colunas extras de `suppliers`, as 4 estruturas (`supplier_leads`, `simulated_budgets`) e tabelas de detalhes vazias com `supplier_id`.
-2. Você me envia os CSVs (ou me diz as colunas) por categoria, e eu adiciono as colunas específicas em cada `supplier_details_*` numa segunda migration.
-3. A partir daí podemos começar a página/lógica do simulador.
+### Footer
+Reutiliza o footer atual (créditos N Coisas Digitais — memória obrigatória).
+
+## Etapa 4 — Painel admin `/admin/home-config`
+
+Nova página `src/pages/AdminHomeConfig.tsx`, protegida por `has_role(...,'admin')` (mesmo padrão do `AdminPanel`). Link adicionado no `AdminPanel`.
+
+Três abas (`Tabs` shadcn):
+
+**1. Frases**
+- Lista grupos distintos de `frases_home`.
+- Criar grupo (nome + descrição opcional armazenada como primeira frase meta, ou simplesmente um grupo vazio).
+- Selecionar grupo → tabela com frases (texto + ordem + ativo), CRUD inline.
+- Toggle "grupo ativo" para a seção `intro` — garante apenas um grupo ativo por seção via update transacional (desativa os outros do mesmo escopo).
+
+**2. Blocos da Home (fotos)**
+- Lista `secoes_home` com preview da foto, frase, subtexto, fornecedor vinculado (se houver).
+- Botão "Adicionar bloco": escolher fornecedor da lista (`suppliers` aprovados) OU upload livre, definir frase/subtexto.
+- Toggle ativo/inativo.
+- Drag & drop para reordenar (atualiza `ordem` em batch). Usa `@dnd-kit` (leve) ou um sortable simples baseado em botões ↑↓ para evitar dependência nova.
+
+**3. Preview**
+- Botão "Ver como ficará" → abre `/?preview=1` em nova aba (a Home respeita `?preview=1` pulando o cache de sessionStorage do preloader).
+
+## Etapa 5 — Detalhes técnicos
+
+- **Roteamento**: `/` = nova Home, `/explorar` = antiga Home (renomeada), `/admin/home-config` = novo painel.
+- **SEO**: atualizar `index.html` com title "Casamenteiro — planeje seu casamento com leveza", meta description e og:image (foto Unsplash de casamento).
+- **Performance**: imagens da seção 2 com `loading="lazy"`, Playfair carregada com `display=swap`.
+- **Acessibilidade**: preloader respeita `prefers-reduced-motion` (pula direto para o conteúdo); botões com aria-labels.
+- **Sem libs pesadas**: Framer Motion só (já leve); sem GSAP.
+- **Padrões do projeto**: usar `.maybeSingle()` em queries Supabase (regra de memória), pt-BR em toda UI/toasts.
+
+## Arquivos novos / alterados
+
+Criados:
+- `supabase/migrations/<timestamp>_home_tables.sql`
+- `src/pages/Home.tsx`
+- `src/components/home/Preloader.tsx`
+- `src/components/home/HomeNavbar.tsx`
+- `src/components/home/StoryBlock.tsx`
+- `src/components/home/SimulatorCTA.tsx`
+- `src/pages/AdminHomeConfig.tsx`
+- `src/pages/Explore.tsx` (renomeado de `Index.tsx`)
+
+Editados:
+- `src/App.tsx` — rotas `/` e `/explorar`
+- `src/pages/AdminPanel.tsx` — link para `/admin/home-config`
+- `tailwind.config.ts` / `src/index.css` — tokens de cor + fontes
+- `index.html` — Google Fonts + meta SEO
+- `package.json` — adiciona `framer-motion` (e opcionalmente `@dnd-kit/core` se formos com drag-drop real)
+
+## Pontos para confirmar antes de implementar
+
+1. Para o **drag & drop** dos blocos no admin, prefere a solução leve com setas ↑↓ (zero dependência) ou o drag real com `@dnd-kit` (UX melhor, +1 lib)?
+2. A página `/simulador/resultado` ainda não existe. Confirma que por ora ela pode ser uma tela placeholder que mostra os dados salvos + lista os fornecedores demo aprovados que se encaixam na cidade/orçamento, deixando o matching avançado para um próximo ciclo?
+3. Posso usar fotos do Unsplash diretamente como fallback (links externos), ou prefere que eu já as suba para o bucket `supplier-photos` para evitar dependência externa?

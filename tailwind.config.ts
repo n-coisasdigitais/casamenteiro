@@ -74,6 +74,10 @@ export default {
           DEFAULT: "hsl(var(--coral))",
           light: "hsl(var(--coral-light))",
         },
+        cream: "hsl(var(--cream))",
+        ink: "hsl(var(--ink))",
+        "rose-gold": "hsl(var(--rose-gold))",
+        olive: "hsl(var(--olive))",
       },
       borderRadius: {
         lg: "var(--radius)",

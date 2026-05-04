@@ -68,7 +68,7 @@ export default function AdminPanel() {
             <Heart className="h-5 w-5 text-primary fill-primary" />
             <span className="text-lg font-bold">Admin</span>
           </Link>
-          <div className="flex items-center gap-2"><Button variant="outline" size="sm" asChild><Link to="/admin/fornecedores">Edição em massa</Link></Button><Button variant="ghost" size="icon" onClick={signOut}><LogOut className="h-4 w-4" /></Button></div>
+          <div className="flex items-center gap-2"><Button variant="outline" size="sm" asChild><Link to="/admin/home-config">Home</Link></Button><Button variant="outline" size="sm" asChild><Link to="/admin/fornecedores">Edição em massa</Link></Button><Button variant="ghost" size="icon" onClick={signOut}><LogOut className="h-4 w-4" /></Button></div>
         </div>
       </header>
 
