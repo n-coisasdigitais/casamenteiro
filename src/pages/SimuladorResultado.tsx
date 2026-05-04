@@ -128,6 +128,36 @@ export default function SimuladorResultado() {
     }
     setSavingPlan(true);
     try {
+      await (supabase.from("couples") as any)
+        .update({
+          target_budget: totalBudget,
+          estimated_budget: totalBudget,
+          estimated_guests: sim.num_convidados || null,
+          wedding_date: sim.data_evento || null,
+          budget_mode: "fixed",
+        })
+        .eq("id", coupleId);
+
+      const categoryRows = result.categories.map((cat) => ({
+        couple_id: coupleId,
+        category: cat.category_slug,
+        description: cat.category_name,
+        estimated_cost: Math.round(cat.budget_slice),
+        status: "estimated",
+      }));
+
+      const { data: existingBudget } = await supabase
+        .from("budget_items")
+        .select("category, supplier_id")
+        .eq("couple_id", coupleId);
+      const existingCategories = new Set(
+        (existingBudget || []).filter((item: any) => !item.supplier_id).map((item: any) => item.category)
+      );
+      const missingCategories = categoryRows.filter((row) => !existingCategories.has(row.category));
+      if (missingCategories.length) {
+        await (supabase.from("budget_items") as any).insert(missingCategories);
+      }
+
       const rows = result.categories
         .map((cat) => {
           const sid = picks[cat.category_slug];
@@ -155,8 +185,8 @@ export default function SimuladorResultado() {
       }
       const { error } = await supabase.from("couple_suppliers").insert(rows);
       if (error) throw error;
-      toast({ title: "Plano salvo!", description: `${rows.length} fornecedor(es) adicionados ao seu painel.` });
-      navigate(`/meu-plano/${id}`);
+      toast({ title: "Plano salvo!", description: "Sua simulação agora aparece em Orçamento e Fornecedores." });
+      navigate("/orcamento");
     } catch (e: any) {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
     } finally {
