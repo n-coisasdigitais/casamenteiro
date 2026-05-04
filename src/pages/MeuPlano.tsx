@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Save, MessageSquare, ArrowLeft } from "lucide-react";
+import { ExternalLink, Save, MessageSquare, ArrowLeft, Plus, Trash2 } from "lucide-react";
 
 type Row = {
   id: string;
@@ -40,6 +40,11 @@ export default function MeuPlano() {
   const [coupleId, setCoupleId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, { est?: string; status?: string }>>({});
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [allSuppliers, setAllSuppliers] = useState<{ id: string; company_name: string }[]>([]);
+  const [newSup, setNewSup] = useState<string>("");
+  const [newEst, setNewEst] = useState<string>("");
+  const [newCat, setNewCat] = useState<string>("");
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
@@ -52,6 +57,10 @@ export default function MeuPlano() {
         setSim(s);
       }
       await load(c.id);
+      const { data: cats } = await supabase.from("categories").select("id, name").order("name");
+      setCategories(cats || []);
+      const { data: sups } = await supabase.from("suppliers").select("id, company_name").eq("status", "approved").order("company_name");
+      setAllSuppliers(sups || []);
     })();
     // eslint-disable-next-line
   }, [user, simId]);
@@ -66,6 +75,26 @@ export default function MeuPlano() {
       const map = new Map((sups || []).map((s: any) => [s.id, s]));
       setRows(list.map((r) => ({ ...r, supplier: map.get(r.supplier_id) })));
     } else setRows([]);
+  };
+
+  const addRow = async () => {
+    if (!coupleId || !newSup) { toast({ title: "Selecione um fornecedor", variant: "destructive" }); return; }
+    const { error } = await (supabase.from("couple_suppliers") as any).insert({
+      couple_id: coupleId,
+      supplier_id: newSup,
+      category_id: newCat || null,
+      estimated_value: newEst ? Number(newEst) : null,
+      status: "saved",
+    });
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    setNewSup(""); setNewEst(""); setNewCat("");
+    toast({ title: "Adicionado ao plano" });
+    load(coupleId);
+  };
+
+  const removeRow = async (id: string) => {
+    await (supabase.from("couple_suppliers") as any).delete().eq("id", id);
+    if (coupleId) load(coupleId);
   };
 
   const totalEstimated = rows.reduce((sum, r) => sum + Number(r.estimated_value || r.contract_value || 0), 0);
@@ -111,6 +140,28 @@ export default function MeuPlano() {
         <Card>
           <CardHeader><CardTitle className="text-base">Fornecedores ({rows.length})</CardTitle></CardHeader>
           <CardContent className="space-y-2">
+            {/* Adicionar novo */}
+            <div className="flex flex-wrap items-end gap-2 border border-dashed border-border rounded-md p-3 mb-3">
+              <div className="flex-1 min-w-[180px]">
+                <label className="text-xs text-muted-foreground">Fornecedor</label>
+                <select value={newSup} onChange={(e) => setNewSup(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm">
+                  <option value="">Selecione...</option>
+                  {allSuppliers.map((s) => <option key={s.id} value={s.id}>{s.company_name}</option>)}
+                </select>
+              </div>
+              <div className="w-40">
+                <label className="text-xs text-muted-foreground">Categoria</label>
+                <select value={newCat} onChange={(e) => setNewCat(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm">
+                  <option value="">—</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="w-32">
+                <label className="text-xs text-muted-foreground">Estimado (R$)</label>
+                <Input type="number" value={newEst} onChange={(e) => setNewEst(e.target.value)} className="h-9" />
+              </div>
+              <Button size="sm" onClick={addRow}><Plus className="w-3.5 h-3.5 mr-1" /> Adicionar</Button>
+            </div>
             {rows.length === 0 && <p className="text-sm text-muted-foreground">Nenhum fornecedor no seu plano ainda.</p>}
             {rows.map((r) => {
               const e = edits[r.id] || {};
@@ -147,6 +198,9 @@ export default function MeuPlano() {
                     </Button>
                     <Button size="sm" variant="ghost" asChild>
                       <Link to="/dashboard"><MessageSquare className="w-3.5 h-3.5" /></Link>
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => removeRow(r.id)}>
+                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
                     </Button>
                   </div>
                 </div>

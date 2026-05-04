@@ -10,7 +10,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 
 type Category = { id: string; name: string; slug: string; icon: string | null };
-type CoupleSupplier = { id: string; supplier_id: string; category_id: string | null; status: string };
+type CoupleSupplier = { id: string; supplier_id: string; category_id: string | null; status: string; supplier?: { id: string; company_name: string; profile_photo_url: string | null; category_id: string | null } };
 type Favorite = { id: string; supplier_id: string };
 
 export default function MySuppliers() {
@@ -38,7 +38,14 @@ export default function MySuppliers() {
       supabase.from("couple_favorites").select("id, supplier_id").eq("couple_id", cId),
     ]);
     setCategories(catRes.data || []);
-    setCoupleSuppliers(csRes.data || []);
+    const list = csRes.data || [];
+    const ids = Array.from(new Set(list.map((s: any) => s.supplier_id)));
+    let supMap = new Map<string, any>();
+    if (ids.length) {
+      const { data: sups } = await supabase.from("suppliers").select("id, company_name, profile_photo_url, category_id").in("id", ids);
+      supMap = new Map((sups || []).map((s: any) => [s.id, s]));
+    }
+    setCoupleSuppliers(list.map((s: any) => ({ ...s, supplier: supMap.get(s.supplier_id), category_id: s.category_id || supMap.get(s.supplier_id)?.category_id || null })));
     setFavorites(favRes.data || []);
   };
 
@@ -116,6 +123,10 @@ export default function MySuppliers() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredCategories.map((cat) => {
             const status = getCategoryStatus(cat.id);
+            const csForCat = coupleSuppliers.filter((s) => s.category_id === cat.id);
+            const contractedSup = csForCat.find((s) => s.status === "contracted")?.supplier;
+            const savedSup = !contractedSup ? csForCat[0]?.supplier : null;
+            const linkedSup = contractedSup || savedSup;
             return (
               <Card key={cat.id} className="relative overflow-hidden hover:shadow-md transition-shadow">
                 {status === "contracted" && (
@@ -128,17 +139,29 @@ export default function MySuppliers() {
                     {cat.icon || "📦"}
                   </div>
                   <h3 className="font-semibold text-sm">{cat.name}</h3>
+                  {linkedSup && (
+                    <Link to={`/fornecedor/${linkedSup.id}`} className="text-xs text-primary hover:underline truncate max-w-full">
+                      {linkedSup.company_name}
+                    </Link>
+                  )}
                   {status && (
                     <Badge variant={status === "contracted" ? "default" : "secondary"} className="text-xs">
                       {status === "contracted" ? "Contratado" : "Guardado"}
                     </Badge>
                   )}
-                  <Button variant="outline" size="sm" className="w-full" asChild>
-                    <Link to={`/buscar?categoria=${cat.slug}`}>
-                      <Search className="mr-2 h-3 w-3" />
-                      Pesquisar
-                    </Link>
-                  </Button>
+                  <div className="flex flex-col gap-1.5 w-full">
+                    {linkedSup && (
+                      <Button variant="default" size="sm" className="w-full" asChild>
+                        <Link to={`/fornecedor/${linkedSup.id}`}>Abrir fornecedor</Link>
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" className="w-full" asChild>
+                      <Link to={`/buscar?categoria=${cat.slug}`}>
+                        <Search className="mr-2 h-3 w-3" />
+                        {linkedSup ? "Trocar" : "Pesquisar"}
+                      </Link>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
