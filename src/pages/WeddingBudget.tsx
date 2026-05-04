@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
-import { Plus, Calculator, Pencil } from "lucide-react";
+import { Plus, Calculator, Pencil, Eye } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import BudgetChart from "@/components/BudgetChart";
@@ -73,6 +73,7 @@ export default function WeddingBudget() {
   const [simBudget, setSimBudget] = useState<number | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [coupleName, setCoupleName] = useState<string>("");
+  const [simulacoes, setSimulacoes] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -87,9 +88,18 @@ export default function WeddingBudget() {
         .select("orcamento_total, criado_em")
         .or(`couple_id.eq.${data.id},user_id.eq.${user.id}`)
         .order("criado_em", { ascending: false })
-        .limit(1)
+        .limit(5)
         .maybeSingle()
-        .then(({ data: s }: any) => setSimBudget(s?.orcamento_total ? Number(s.orcamento_total) : null));
+        .then(({ data: s, error }: any) => {
+          if (!error) setSimBudget(s?.orcamento_total ? Number(s.orcamento_total) : null);
+        });
+      (supabase as any)
+        .from("home_simulacoes")
+        .select("*")
+        .or(`couple_id.eq.${data.id},user_id.eq.${user.id}`)
+        .order("criado_em", { ascending: false })
+        .limit(5)
+        .then(({ data: sims }: any) => setSimulacoes(sims || []));
       // nome do casal para header
       supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle().then(({ data: p }) => {
         const me = p?.full_name || "";
