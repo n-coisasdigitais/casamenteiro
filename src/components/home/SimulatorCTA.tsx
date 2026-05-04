@@ -257,7 +257,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
 
                 {step === 4 && (
                   <div>
-                    <StepHeader num="Pergunta 4 de 4" title="Qual é o estilo do casamento?" hint="Isso ajuda a selecionar fornecedores com a sua cara." />
+                    <StepHeader num="Pergunta 4 de 5" title="Qual é o estilo do casamento?" hint="Isso ajuda a selecionar fornecedores com a sua cara." />
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                       {STYLES.map((s) => {
                         const Icon = s.icon;
@@ -284,11 +284,105 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
                         );
                       })}
                     </div>
-                    <Nav onBack={() => goTo(3)} onNext={() => goTo(5)} disabled={!estilo} label="Ver meu plano →" />
+                    <Nav onBack={() => goTo(3)} onNext={() => goTo(5)} disabled={!estilo} />
                   </div>
                 )}
 
                 {step === 5 && (
+                  <div>
+                    <StepHeader num="Pergunta 5 de 5" title="Quando vocês querem casar?" hint="Se já tem data, conseguimos ver disponibilidade real e descontos em dias ociosos." />
+                    {!dataMode && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <button
+                          onClick={() => setDataMode("exata")}
+                          className="text-left px-5 py-4 rounded-xl transition hover:opacity-90"
+                          style={{ background: "hsl(var(--color-bg))", border: "1.5px solid hsl(var(--color-border))" }}
+                        >
+                          <CalIcon className="mb-2" style={{ color: "hsl(var(--color-primary))" }} size={22} />
+                          <div className="text-[15px] font-semibold" style={{ color: "hsl(var(--color-dark))" }}>Já temos a data</div>
+                          <div className="text-[12px]" style={{ color: "hsl(var(--color-text-muted))" }}>
+                            Vamos checar agenda dos fornecedores e descontos do dia.
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setDataMode("faixa")}
+                          className="text-left px-5 py-4 rounded-xl transition hover:opacity-90"
+                          style={{ background: "hsl(var(--color-bg))", border: "1.5px solid hsl(var(--color-border))" }}
+                        >
+                          <Sparkles className="mb-2" style={{ color: "hsl(var(--color-primary))" }} size={22} />
+                          <div className="text-[15px] font-semibold" style={{ color: "hsl(var(--color-dark))" }}>Ainda não sei</div>
+                          <div className="text-[12px]" style={{ color: "hsl(var(--color-text-muted))" }}>
+                            Escolha um prazo aproximado.
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                    {dataMode === "exata" && (
+                      <div>
+                        <input
+                          type="date"
+                          value={dataEvento}
+                          min={new Date().toISOString().slice(0, 10)}
+                          onChange={(e) => setDataEvento(e.target.value)}
+                          className="w-full bg-transparent border-0 outline-none font-serif"
+                          style={{
+                            fontSize: 26,
+                            color: "hsl(var(--color-dark))",
+                            borderBottom: "2px solid hsl(var(--color-primary))",
+                            padding: "8px 0 12px",
+                          }}
+                        />
+                        <button
+                          onClick={() => setDataMode(null)}
+                          className="text-[12px] mt-3"
+                          style={{ color: "hsl(var(--color-text-muted))", background: "transparent", border: "none", cursor: "pointer" }}
+                        >
+                          ← trocar opção
+                        </button>
+                      </div>
+                    )}
+                    {dataMode === "faixa" && (
+                      <div className="flex flex-col gap-2.5">
+                        {PRAZO_OPTIONS.map((p) => {
+                          const sel = prazoMeses === p.value;
+                          return (
+                            <button
+                              key={p.letter}
+                              onClick={() => { setPrazoMeses(p.value); setTimeout(() => goTo(6), 280); }}
+                              className="flex items-center gap-3 text-left px-5 py-3.5 rounded-xl"
+                              style={{
+                                background: sel ? "hsl(var(--color-primary) / 0.10)" : "hsl(var(--color-bg))",
+                                border: `1.5px solid ${sel ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
+                                fontSize: 15,
+                              }}
+                            >
+                              <span className="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold"
+                                style={{ background: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-secondary))", color: sel ? "hsl(var(--color-bg))" : "hsl(var(--color-text-muted))" }}>
+                                {p.letter}
+                              </span>
+                              {p.label}
+                            </button>
+                          );
+                        })}
+                        <button
+                          onClick={() => { setDataMode(null); setPrazoMeses(null); }}
+                          className="text-[12px] mt-1 self-start"
+                          style={{ color: "hsl(var(--color-text-muted))", background: "transparent", border: "none", cursor: "pointer" }}
+                        >
+                          ← trocar opção
+                        </button>
+                      </div>
+                    )}
+                    <Nav
+                      onBack={() => goTo(4)}
+                      onNext={() => goTo(6)}
+                      disabled={!dataMode || (dataMode === "exata" && !dataEvento) || (dataMode === "faixa" && prazoMeses === null)}
+                      label="Ver meu plano →"
+                    />
+                  </div>
+                )}
+
+                {step === 6 && (
                   <div className="text-center flex flex-col items-center">
                     <div
                       className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
