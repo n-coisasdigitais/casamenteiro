@@ -24,25 +24,33 @@ export default function Home() {
 
   useEffect(() => {
     document.title = "Casamenteiro — planeje seu casamento com leveza";
-    (supabase
-      .from("secoes_home" as any)
-      .select("foto_url,frase,subtexto,supplier_id,suppliers:supplier_id(company_name,categories(name))")
-      .eq("ativo", true)
-      .order("ordem") as any
-    ).then(({ data }: any) => {
-      if (data && data.length) {
-        setBlocos(
-          data.map((d: any) => ({
-            foto_url: d.foto_url,
-            frase: d.frase,
-            subtexto: d.subtexto,
-            supplier_id: d.supplier_id,
-            supplier_name: d.suppliers?.company_name ?? null,
-            supplier_category: d.suppliers?.categories?.name ?? null,
-          }))
-        );
+    (async () => {
+      const { data } = await (supabase
+        .from("secoes_home" as any)
+        .select("foto_url,frase,subtexto,supplier_id")
+        .eq("ativo", true)
+        .order("ordem") as any);
+      if (!data || !data.length) return;
+      const ids = (data as any[]).map(d => d.supplier_id).filter(Boolean);
+      let supMap: Record<string, { name: string; category: string | null }> = {};
+      if (ids.length) {
+        const { data: sups } = await supabase
+          .from("suppliers")
+          .select("id, company_name, categories(name)")
+          .in("id", ids);
+        (sups || []).forEach((s: any) => {
+          supMap[s.id] = { name: s.company_name, category: s.categories?.name ?? null };
+        });
       }
-    });
+      setBlocos((data as any[]).map(d => ({
+        foto_url: d.foto_url,
+        frase: d.frase,
+        subtexto: d.subtexto,
+        supplier_id: d.supplier_id,
+        supplier_name: d.supplier_id ? supMap[d.supplier_id]?.name ?? null : null,
+        supplier_category: d.supplier_id ? supMap[d.supplier_id]?.category ?? null : null,
+      })));
+    })();
   }, []);
 
   const finishPreloader = () => {
