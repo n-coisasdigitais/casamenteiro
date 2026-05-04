@@ -63,12 +63,21 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA:
           style={{ opacity: reduce ? 1 : introOpacity, y: reduce ? 0 : introY }}
           className="absolute top-0 left-0 right-0 z-30 pt-28 md:pt-32 px-6 md:px-16 flex flex-col items-center text-center pointer-events-none"
         >
-          <p className="label-ui mb-3" style={{ color: "hsl(48, 27%, 96% / 0.85)" }}>
+          <p
+            className="label-ui mb-3"
+            style={{ color: "hsl(48, 27%, 98%)", textShadow: "0 2px 10px hsl(0 0% 0% / 0.6)" }}
+          >
             uma história em 5 capítulos
           </p>
           <h1
             className="text-white max-w-3xl"
-            style={{ fontSize: "clamp(2rem, 5vw, 3.75rem)", lineHeight: 1.05, fontWeight: 700, letterSpacing: "-0.02em" }}
+            style={{
+              fontSize: "clamp(2rem, 5vw, 3.75rem)",
+              lineHeight: 1.05,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              textShadow: "0 2px 16px hsl(0 0% 0% / 0.55), 0 1px 3px hsl(0 0% 0% / 0.4)",
+            }}
           >
             E se planejar o casamento fosse a parte boa?
           </h1>
