@@ -332,7 +332,7 @@ function Nav({ onBack, onNext, disabled, hint, label = "Próxima →" }: { onBac
           className="rounded-full px-6 py-3 text-[14px] font-semibold transition hover:opacity-90 disabled:opacity-40 disabled:cursor-default flex items-center gap-2"
           style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
         >
-          {label} <ArrowRight className="w-4 h-4" />
+          {label}
         </button>
       </div>
     </div>
