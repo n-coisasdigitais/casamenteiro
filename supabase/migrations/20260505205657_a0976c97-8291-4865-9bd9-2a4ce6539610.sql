@@ -1,0 +1,1 @@
+UPDATE public.categories SET name='Maquiagem' WHERE slug='beleza-maquiagem';
