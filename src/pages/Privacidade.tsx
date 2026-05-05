@@ -8,7 +8,7 @@ export default function Privacidade() {
         <div className="container py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="font-semibold">Meu Grande Dia</span>
+            <span className="font-semibold">Casamenteiro</span>
           </Link>
           <Link to="/" className="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Voltar
@@ -20,7 +20,7 @@ export default function Privacidade() {
         <p className="text-sm text-muted-foreground mb-8">Última atualização: maio de 2026</p>
 
         <section className="space-y-4 text-foreground/90">
-          <p>Esta política descreve como o Meu Grande Dia coleta, usa e protege seus dados pessoais, em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD — Lei 13.709/2018)</strong>.</p>
+          <p>Esta política descreve como o Casamenteiro coleta, usa e protege seus dados pessoais, em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD — Lei 13.709/2018)</strong>.</p>
 
           <h2 className="text-xl font-semibold mt-6">1. Dados que coletamos</h2>
           <ul className="list-disc pl-6 space-y-2">
@@ -55,7 +55,7 @@ export default function Privacidade() {
             <li>Solicitar portabilidade.</li>
             <li>Revogar consentimentos.</li>
           </ul>
-          <p>Para exercer esses direitos, escreva para <a href="mailto:privacidade@meugrandedia.com" className="text-primary underline">privacidade@meugrandedia.com</a>.</p>
+          <p>Para exercer esses direitos, escreva para <a href="mailto:privacidade@casamenteiro.com.br" className="text-primary underline">privacidade@casamenteiro.com.br</a>.</p>
 
           <h2 className="text-xl font-semibold mt-6">5. Segurança</h2>
           <p>Aplicamos boas práticas: senhas criptografadas, conexão HTTPS, controle de acesso por linha (RLS), verificação de senhas vazadas, proteção contra ataques comuns.</p>
@@ -67,7 +67,7 @@ export default function Privacidade() {
           <p>Mantemos seus dados enquanto sua conta estiver ativa. Após exclusão, dados pessoais são apagados em até 30 dias, exceto quando a lei exigir retenção.</p>
 
           <h2 className="text-xl font-semibold mt-6">8. Encarregado (DPO)</h2>
-          <p>Contato: <a href="mailto:privacidade@meugrandedia.com" className="text-primary underline">privacidade@meugrandedia.com</a>.</p>
+          <p>Contato: <a href="mailto:privacidade@casamenteiro.com.br" className="text-primary underline">privacidade@casamenteiro.com.br</a>.</p>
         </section>
       </main>
     </div>

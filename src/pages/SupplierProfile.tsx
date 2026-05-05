@@ -178,7 +178,7 @@ export default function SupplierProfile() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title={`${supplier.company_name} — Meu Grande Dia`}
+        title={`${supplier.company_name} — Casamenteiro`}
         description={
           (supplier.description || `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`).slice(0, 155)
         }
@@ -189,7 +189,7 @@ export default function SupplierProfile() {
         <div className="container flex items-center h-14 gap-4">
           <Link to="/" className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="text-lg font-bold hidden sm:inline">Meu Grande Dia</span>
+            <span className="text-lg font-bold hidden sm:inline">Casamenteiro</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm ml-6">
             <Link to="/buscar?cat=espacos-buffet" className="text-muted-foreground hover:text-foreground transition-colors">Espaços</Link>
@@ -323,7 +323,7 @@ export default function SupplierProfile() {
                       supplierId={supplier.id}
                       supplierName={supplier.company_name}
                     />
-                    {phoneUnlocked && buildWhatsAppLink(supplier.whatsapp || supplier.phone || "", "Olá! Vim pelo Meu Grande Dia, gostaria de conversar sobre o casamento.") && (
+                    {phoneUnlocked && buildWhatsAppLink(supplier.whatsapp || supplier.phone || "", "Olá! Vim pelo Casamenteiro, gostaria de conversar sobre o casamento.") && (
                       <Button
                         variant="outline"
                         size="icon"
@@ -331,7 +331,7 @@ export default function SupplierProfile() {
                         asChild
                       >
                         <a
-                          href={buildWhatsAppLink(supplier.whatsapp || supplier.phone || "", "Olá! Vim pelo Meu Grande Dia, gostaria de conversar sobre o casamento.")!}
+                          href={buildWhatsAppLink(supplier.whatsapp || supplier.phone || "", "Olá! Vim pelo Casamenteiro, gostaria de conversar sobre o casamento.")!}
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label="Conversar no WhatsApp"

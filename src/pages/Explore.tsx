@@ -204,7 +204,7 @@ const Explore = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Fornecedores de casamento — Meu Grande Dia"
+        title="Fornecedores de casamento — Casamenteiro"
         description="Descubra espaços, buffets, fotógrafos, decoração e mais. Fornecedores avaliados para o seu casamento."
       />
       {/* Header — Airbnb-style */}

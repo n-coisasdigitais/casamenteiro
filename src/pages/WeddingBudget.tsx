@@ -311,7 +311,7 @@ export default function WeddingBudget() {
         <div className="rounded-2xl overflow-hidden mb-8 bg-primary text-primary-foreground">
           <div className="px-6 py-8 md:py-10">
             <p className="text-xs uppercase tracking-wider opacity-80">Nosso orçamento</p>
-            <h1 className="text-2xl md:text-3xl font-serif mt-1">{coupleName || "Meu Grande Dia"}</h1>
+            <h1 className="text-2xl md:text-3xl font-serif mt-1">{coupleName || "Casamenteiro"}</h1>
             <div className="mt-6 flex flex-wrap gap-6 items-end">
               <div>
                 <p className="text-xs opacity-80">Meta</p>
