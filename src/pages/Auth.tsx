@@ -147,7 +147,7 @@ export default function Auth() {
         <CardHeader className="text-center">
           <Link to="/" className="flex items-center justify-center gap-2 mb-4">
             <Heart className="h-6 w-6 text-primary fill-primary" />
-            <span className="text-xl font-bold">Meu Grande Dia</span>
+            <span className="text-xl font-bold">Casamenteiro</span>
           </Link>
           <CardTitle className="text-2xl">
             {mode === "login" ? "Entrar" : "Criar conta"}

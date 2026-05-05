@@ -183,7 +183,7 @@ export default function InviteRSVP() {
           </div>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">Convite enviado pelo Meu Grande Dia</p>
+        <p className="text-center text-xs text-muted-foreground mt-6">Convite enviado pelo Casamenteiro</p>
       </div>
     </div>
   );

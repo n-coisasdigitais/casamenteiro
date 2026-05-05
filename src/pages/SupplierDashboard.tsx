@@ -172,7 +172,7 @@ export default function SupplierDashboard() {
         <div className="container flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="text-lg font-bold">Meu Grande Dia</span>
+            <span className="text-lg font-bold">Casamenteiro</span>
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">{profile?.full_name}</span>

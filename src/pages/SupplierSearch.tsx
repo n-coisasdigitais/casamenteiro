@@ -230,7 +230,7 @@ export default function SupplierSearch() {
         <div className="container flex items-center h-14 gap-2 sm:gap-4 px-3 sm:px-4">
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="text-lg font-bold hidden sm:inline">Meu Grande Dia</span>
+            <span className="text-lg font-bold hidden sm:inline">Casamenteiro</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm ml-6">
             <Link to="/buscar" className="text-muted-foreground hover:text-foreground transition-colors">Fornecedores</Link>

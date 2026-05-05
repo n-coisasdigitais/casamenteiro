@@ -60,7 +60,7 @@ export default function RedefinirSenha() {
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Heart className="h-6 w-6 text-primary fill-primary" />
-            <span className="text-xl font-bold">Meu Grande Dia</span>
+            <span className="text-xl font-bold">Casamenteiro</span>
           </div>
           <CardTitle className="text-2xl">Definir nova senha</CardTitle>
           <CardDescription>

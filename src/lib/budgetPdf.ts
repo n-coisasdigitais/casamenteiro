@@ -178,7 +178,7 @@ export function generateBudgetPdf(opts: {
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.text(
-      `Gerado pelo Meu Grande Dia em ${new Date().toLocaleDateString("pt-BR")}`,
+      `Gerado pelo Casamenteiro em ${new Date().toLocaleDateString("pt-BR")}`,
       margin,
       doc.internal.pageSize.getHeight() - 16
     );
