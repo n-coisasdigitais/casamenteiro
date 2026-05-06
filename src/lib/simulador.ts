@@ -459,9 +459,40 @@ export async function criarPlano(
   }
   const csRows = Array.from(csRowsMap.values());
   if (csRows.length) {
-    const { error } = await (supabase.from("couple_suppliers") as any)
-      .upsert(csRows, { onConflict: "couple_id,supplier_id", ignoreDuplicates: false });
-    if (error && (error as any).code !== "23505") throw error;
+    // Busca fornecedores já existentes para o casal e separa entre update / insert.
+    // Isso evita qualquer chance de erro 23505 mesmo que o upsert se comporte de forma inesperada.
+    const supplierIds = csRows.map((r) => r.supplier_id);
+    const { data: existentes } = await (supabase.from("couple_suppliers") as any)
+      .select("id, supplier_id, kanban_status")
+      .eq("couple_id", coupleId)
+      .in("supplier_id", supplierIds);
+    const existMap = new Map<string, any>();
+    (existentes || []).forEach((e: any) => existMap.set(e.supplier_id, e));
+
+    const novos: any[] = [];
+    for (const row of csRows) {
+      const ex = existMap.get(row.supplier_id);
+      if (ex) {
+        // Não sobrescreve fornecedores já contratados/descartados
+        if (ex.kanban_status === "contratado" || ex.kanban_status === "descartado") continue;
+        const { error: upErr } = await (supabase.from("couple_suppliers") as any)
+          .update({
+            category_id: row.category_id,
+            estimated_value: row.estimated_value,
+            simulation_id: row.simulation_id,
+            notes: row.notes,
+          })
+          .eq("id", ex.id);
+        if (upErr) console.warn("update couple_supplier", upErr);
+      } else {
+        novos.push(row);
+      }
+    }
+    if (novos.length) {
+      const { error: insErr } = await (supabase.from("couple_suppliers") as any).insert(novos);
+      // 23505 = corrida de inserção concorrente — seguro ignorar
+      if (insErr && (insErr as any).code !== "23505") throw insErr;
+    }
   }
 
   return { couple_id: coupleId };
