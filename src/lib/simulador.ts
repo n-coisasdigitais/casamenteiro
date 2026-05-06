@@ -450,6 +450,16 @@ export async function criarPlano(
 
   const coupleId = couple.id as string;
 
+  // Marca esta simulação como o plano ativo (e desmarca as demais do casal)
+  if (_simulacaoId) {
+    await (supabase.from("home_simulacoes" as any) as any)
+      .update({ is_active_plan: false })
+      .eq("couple_id", coupleId);
+    await (supabase.from("home_simulacoes" as any) as any)
+      .update({ is_active_plan: true, couple_id: coupleId })
+      .eq("id", _simulacaoId);
+  }
+
   // Atualiza couples
   await (supabase.from("couples") as any)
     .update({
