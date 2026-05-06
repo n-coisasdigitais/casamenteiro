@@ -4,10 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
-  recalcularSimulacao, criarPlano, formatarReais,
+  recalcularSimulacao, recalcularCategoria, criarPlano, formatarReais,
   type Estilo, type SimuladorResultado as SimRes,
 } from "@/lib/simulador";
-import { Heart, ArrowLeft, AlertTriangle, Sparkles, Lightbulb, MessageCircle, Tag, ExternalLink, Loader2 } from "lucide-react";
+import { Heart, ArrowLeft, AlertTriangle, Sparkles, Lightbulb, MessageCircle, Tag, ExternalLink, Loader2, Check, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
