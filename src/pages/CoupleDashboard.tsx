@@ -444,23 +444,49 @@ export default function CoupleDashboard() {
           ) : (
             <div className="grid md:grid-cols-2 gap-3">
               {simulacoes.map((s) => (
-                <Card key={s.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}>
+                <Card key={s.id} className="hover:shadow-md transition-shadow relative">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-sm truncate">
+                      <div className="min-w-0 cursor-pointer flex-1" onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}>
+                        <p className="font-semibold text-sm truncate flex items-center gap-2">
+                          {s.is_active_plan && (
+                            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] h-5"><Star className="h-3 w-3 mr-0.5" /> Plano ativo</Badge>
+                          )}
                           {s.cidade || "Sua cidade"} · {s.num_convidados} convidados
                         </p>
                         <p className="text-xs text-muted-foreground">
                           R$ {Number(s.orcamento_total).toLocaleString("pt-BR")} · {s.estilo || "—"}
                         </p>
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          {new Date(s.criado_em).toLocaleDateString("pt-BR")}
+                          {s.data_evento && ` · evento em ${new Date(s.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}`}
+                        </p>
                       </div>
-                      <Eye className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                        {!s.is_active_plan && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!window.confirm("Excluir esta simulação? Esta ação não pode ser desfeita.")) return;
+                              const { error } = await (supabase.from("home_simulacoes" as any) as any).delete().eq("id", s.id);
+                              if (error) {
+                                toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+                                return;
+                              }
+                              setSimulacoes((prev) => prev.filter((x) => x.id !== s.id));
+                              toast({ title: "Simulação excluída" });
+                            }}
+                            title="Excluir simulação"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {new Date(s.criado_em).toLocaleDateString("pt-BR")}
-                      {s.data_evento && ` · evento em ${new Date(s.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}`}
-                    </p>
                   </CardContent>
                 </Card>
               ))}
