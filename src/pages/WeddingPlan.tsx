@@ -190,6 +190,7 @@ export default function WeddingPlan() {
               items={items}
               planoTotal={orcamentoTotal}
               onChange={() => load(coupleId)}
+              quotes={quotes}
               contextoMensagem={{
                 nomeCasal: coupleName,
                 data: couple?.wedding_date ? new Date(couple.wedding_date + "T00:00:00").toLocaleDateString("pt-BR") : "",
