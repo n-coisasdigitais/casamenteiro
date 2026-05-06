@@ -12,6 +12,7 @@ import {
   Heart, Search, Calendar, Users, DollarSign, Copy, Share2,
   MessageSquare, Eye, CheckSquare, Store, ArrowRight, Calculator, Image as ImageIcon, Trash2
 } from "lucide-react";
+import { Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
 import QuoteProposalPanel from "@/components/QuoteProposalPanel";
