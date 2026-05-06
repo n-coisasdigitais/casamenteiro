@@ -86,12 +86,12 @@ export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
               </Select>
             </div>
           </div>
-          <Button onClick={handleSubmit} className="w-full">Adicionar convidado</Button>
           <div>
             <Label htmlFor="max-comp">Pode levar quantos acompanhantes?</Label>
             <Input id="max-comp" type="number" min={0} max={5} value={maxCompanions} onChange={(e) => setMaxCompanions(Math.max(0, Math.min(5, parseInt(e.target.value) || 0)))} />
             <p className="text-xs text-muted-foreground mt-1">0 = só ele(a). Use para casais ou famílias.</p>
           </div>
+          <Button onClick={handleSubmit} className="w-full">Adicionar convidado</Button>
         </div>
       </DialogContent>
     </Dialog>
