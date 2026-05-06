@@ -1,139 +1,88 @@
-## Auditoria da v1 — o que falta e o que melhorar
+# Correções no fluxo de cadastro, simulador e plano
 
-Baseado em tudo que já foi construído (simulador, plano, kanban, orçamento, pagamentos, convidados, RSVP, fornecedores, admin), abaixo estão as lacunas e melhorias prioritárias para a v1 ficar redonda. Organizei em 4 níveis: **bloqueadores**, **importantes**, **polimento** e **opcionais para v1.1**.
+## Problemas identificados
 
----
+1. **Erro `Estilo inválido: Médio e elegante`** (itens 4 e 6): o `SimulatorCTA` salva `estilo` como rótulo bonito (`"Médio e elegante"`), mas `calcularSimulacao` espera o enum interno (`"elegante"`). Ao reabrir a página de resultado sem snapshot válido, ela tenta recalcular e estoura, deixando o loading infinito.
 
-### 🔴 BLOQUEADORES (impedem operação real)
+2. **Mensagens do login em inglês** (item 1): os erros de `supabase.auth` vêm em inglês (`Invalid login credentials`, etc.). Não há mapeamento para português.
 
-1. **E-mail transacional não está ativo**
-   - Hoje notificações só aparecem no sininho. Casal/fornecedor não recebe nada por e-mail.
-   - Mínimo da v1: novo orçamento (fornecedor), nova proposta (casal), RSVP confirmado (casal), conta criada/recuperação de senha.
-   - Requer configurar domínio de e-mail e o `auth-email-hook`.
+3. **E-mail de confirmação em inglês** (itens 2, 3, 5): hoje usamos o template padrão da Lovable (em inglês), e o link cai na raiz `/` sem feedback. Precisamos de templates em português + página de sucesso `/confirmado` com timer e redirecionamento inteligente.
 
-2. **Recuperação de senha**
-   - `Auth.tsx` tem login/cadastro mas não há fluxo "esqueci minha senha".
+4. **Onboarding redundante** (item 9): mesmo quem simulou (orçamento, convidados, cidade, estilo, data) responde tudo de novo. O onboarding deve pular o que já temos e ir direto pro orçamento preenchido / plano.
 
-3. **Segurança — alertas do linter pendentes**
-   - Existem 38 avisos ativos do linter Supabase (RLS sempre verdadeiro em algumas tabelas, buckets públicos com listagem aberta, funções SECURITY DEFINER expostas a anônimos).
-   - Para v1 pública precisa pelo menos varrer e fechar os WARN críticos.
+5. **Termos e Política** (item 7): os arquivos já estão como "Casamenteiro", mas o **e-mail padrão** ainda diz "Meu Grande Dia". Trocando os templates resolve.
 
-4. **Validação de telefone/WhatsApp no fornecedor**
-   - O botão de WhatsApp usa `replace(/\D/g,"")` direto, sem validar DDD. Se o fornecedor cadastrou só "99999-9999", o link quebra.
-   - Adicionar máscara de telefone no cadastro do fornecedor + validação mínima de 10 dígitos.
-
-5. **LGPD básica**
-   - Falta política de privacidade, termos de uso e checkbox de aceite no cadastro.
-   - Footer hoje só tem créditos do desenvolvedor.
+6. **Título do onboarding** (item 8): não define `document.title`; cabeçalho visual genérico.
 
 ---
 
-### 🟡 IMPORTANTES (qualidade de produto)
+## Mudanças propostas
 
-6. **Onboarding do fornecedor incompleto**
-   - Quando alguém se cadastra como fornecedor hoje, cai num painel quase vazio. Falta um wizard guiado: dados da empresa → categoria → fotos → preços → datas ociosas → enviar para aprovação.
-   - Sem isso, fornecedor cadastra e não preenche o perfil.
+### 1. Corrigir o estilo do simulador (resolve itens 4 e 6)
 
-7. **Painel do fornecedor — métricas e funil**
-   - Hoje o fornecedor vê pedidos de orçamento mas não tem visão geral: quantos leads recebeu no mês, taxa de resposta, taxa de conversão.
-   - Adicionar 4 cards de métrica + lista de leads recentes.
+- Em `src/components/home/SimulatorCTA.tsx`, mudar os IDs de `STYLES` para os enums internos:
+  - `"intimista"`, `"elegante"`, `"grandioso"` (em vez dos rótulos longos).
+- Garantir que `payload.estilo` salvo em `home_simulacoes.estilo` seja sempre um dos três enums.
+- Em `src/lib/simulador.ts` `calcularSimulacao`: tornar tolerante — se `estilo` vier desconhecido, faz fallback para `"elegante"` (em vez de `throw`), evitando travar a tela.
+- Migration leve: `UPDATE home_simulacoes SET estilo = CASE WHEN estilo ILIKE 'simples%' THEN 'intimista' WHEN estilo ILIKE 'grande%' THEN 'grandioso' WHEN estilo ILIKE 'médio%' THEN 'elegante' ELSE estilo END` para sanear linhas antigas.
 
-8. **Busca de fornecedores — filtros que ainda faltam**
-   - Filtro por **faixa de preço** (price_min/max já existem no banco).
-   - Filtro **"aceita data ociosa"** (campo existe).
-   - Ordenação: relevância / preço / avaliação / proximidade.
-   - Salvar busca / criar alerta (notifica quando entra fornecedor novo na categoria).
+### 2. Mensagens de login em português (item 1)
 
-9. **Kanban do plano — drag-and-drop mobile**
-   - DndKit funciona bem em desktop, mas em 390px o usuário não consegue arrastar entre colunas (precisa scroll horizontal).
-   - Adicionar opção alternativa: tap no card → menu "mover para…".
+- Em `src/pages/Auth.tsx`, criar um `traduzirErroAuth(error)` que mapeia mensagens conhecidas:
+  - `Invalid login credentials` → "E-mail ou senha incorretos."
+  - `Email not confirmed` → "Confirme seu e-mail antes de entrar."
+  - `User already registered` → "Este e-mail já está cadastrado."
+  - `Password should be at least 6 characters` → "A senha deve ter pelo menos 6 caracteres."
+  - genérico → mensagem amigável padrão.
+- Aplicar também em `EsqueciSenha.tsx` e `RedefinirSenha.tsx`.
 
-10. **Fluxo de "marcar como contratado" precisa de contrato/anexo**
-    - Hoje o casal só clica e pronto. Idealmente: anexar contrato (PDF), data de assinatura, condições de pagamento (sinal/parcelas).
-    - Já criar as parcelas em `budget_payments` automaticamente a partir da condição.
+### 3. E-mails de autenticação em português + página de confirmação (itens 2, 3, 5, 7)
 
-11. **Convidados — importação em massa**
-    - Hoje só tem cadastro um a um. Falta importar de planilha (CSV) ou colar lista.
-    - Para um casamento de 150 pessoas isso é essencial.
+- **Configurar templates de e-mail customizados** (Lovable Auth Email Templates) com:
+  - Marca **Casamenteiro** (logo, paleta terracota/sage, Inter).
+  - Conteúdo 100% em pt-BR.
+  - Assuntos: "Confirme seu e-mail no Casamenteiro", "Recupere sua senha", etc.
+  - Link de confirmação aponta para `https://<site>/confirmado` (em vez da raiz).
+- **Criar `src/pages/EmailConfirmado.tsx`** na rota `/confirmado`:
+  - Mostra "E-mail confirmado! 💍" com checkmark.
+  - Lê sessão do Supabase (o link de confirmação já loga o usuário).
+  - Mostra contador regressivo de 4 segundos.
+  - Redireciona conforme estado:
+    - se há `pending_simulacao` no localStorage → cria a simulação no banco e vai para `/simulador/resultado?id=...`;
+    - senão, se `couples.onboarding_completed = true` → `/dashboard`;
+    - senão → `/onboarding`.
+  - Botão "Continuar agora" para pular o timer.
+- Adicionar rota `/confirmado` em `App.tsx`.
 
-12. **Convite RSVP — compartilhamento**
-    - Falta botão "Compartilhar no WhatsApp" com mensagem pronta + link único do convidado.
-    - Falta página pública de visualização do convite (preview antes de enviar).
+### 4. Onboarding inteligente baseado em simulação (item 9)
 
-13. **Tarefas — prazos calculados a partir da data do casamento**
-    - As 79 tarefas seed têm `due_period` em texto ("10-12 meses"). Falta converter para data real e mostrar "vencendo em X dias" + alerta no dashboard.
+- Em `src/pages/CoupleOnboarding.tsx`:
+  - Definir `document.title = "Bem-vindos ao Casamenteiro"` e atualizar título visual: "Vamos terminar de configurar seu casamento".
+  - No `useEffect` inicial, buscar a simulação mais recente do usuário (`home_simulacoes` por `user_id` ou `couple_id`).
+  - Se houver simulação, pré-preencher e **pular** os passos que ela já responde (cidade/orçamento/convidados/estilo/data).
+  - O onboarding fica resumido a: papel (noivo/noiva), nome do parceiro, data prevista (se ainda não tiver), serviços desejados.
+  - Ao concluir, além de marcar `onboarding_completed`, **criar o plano** automaticamente a partir da simulação (reutilizar `criarPlano`) e redirecionar para `/meu-casamento/plano` (em vez de `/dashboard`).
+  - Se não houver simulação, mantém o fluxo atual (4 passos).
 
-14. **Orçamento — exportar PDF**
-    - Casal precisa apresentar o orçamento aos pais/padrinhos. Botão "Baixar resumo em PDF" no plano.
+### 5. Pequenos ajustes de UX
 
-15. **Sistema de avaliações — moderação**
-    - Hoje qualquer review aparece. Falta painel admin para esconder review ofensivo + reportar avaliação.
-
----
-
-### 🟢 POLIMENTO
-
-16. **Mobile (390px)** — vários ajustes pequenos baseados no viewport atual:
-    - Header/nav do dashboard ficam apertados; precisa drawer.
-    - PlanHeader com 4 métricas em grid 2x2 pode quebrar em telas muito pequenas.
-    - Cards de fornecedor no kanban precisam de altura mínima maior.
-
-17. **Estados vazios** — várias telas mostram só "Nenhum item" sem ilustração ou call-to-action. Especialmente: Favoritos, Convidados sem grupos, Pagamentos.
-
-18. **Loading states** — substituir "Carregando..." por skeletons nas páginas principais (Dashboard, Plano, Busca).
-
-19. **SEO básico** — `index.html` provavelmente tem title/description genéricos. Precisa OG image, meta para compartilhamento.
-
-20. **404 customizada** — verificar se `NotFound.tsx` tem ilustração e link de volta.
-
-21. **Acessibilidade** — botões só com ícone sem `aria-label`, contraste em alguns badges, foco visível.
-
-22. **Performance** — imagens de fornecedor sem lazy + sem srcset. Em busca com 50+ cards isso pesa.
+- Remover o `setTimeout(..., 0)` desnecessário e trocar `.single()` por `.maybeSingle()` em `AuthContext.fetchProfile` (regra do projeto).
+- No `SimulatorCTA`, exibir mensagem amigável caso o cálculo falhe (em vez de só toast técnico).
 
 ---
 
-### 🔵 OPCIONAIS (podem ficar para v1.1)
+## Arquivos afetados
 
-23. Sistema de favoritos com listas (ex: "Buffet", "Decoração") em vez de uma lista única.
-24. Dashboard do casal com countdown grande "faltam X dias".
-25. Chat em tempo real no quote (já tem postgres_changes disponível).
-26. Sistema de cashback / cupons.
-27. App mobile (PWA com manifest e service worker).
-28. Integração com Google Calendar para tarefas.
-29. Mural de fotos do casamento (pós-evento).
+- `src/components/home/SimulatorCTA.tsx` — IDs de estilo + erro amigável.
+- `src/lib/simulador.ts` — fallback de estilo.
+- `src/pages/Auth.tsx`, `EsqueciSenha.tsx`, `RedefinirSenha.tsx` — tradução de erros.
+- `src/pages/EmailConfirmado.tsx` — **novo**.
+- `src/App.tsx` — registrar rota `/confirmado`.
+- `src/pages/CoupleOnboarding.tsx` — pré-preencher por simulação, criar plano ao final, título.
+- `src/contexts/AuthContext.tsx` — `.maybeSingle()`.
+- `supabase/functions/auth-email-hook/*` + `_shared/email-templates/*` — templates pt-BR com marca Casamenteiro (via ferramenta de scaffold).
+- Nova migration para sanear `home_simulacoes.estilo`.
 
----
+## Fora do escopo
 
-### Como abordar
-
-Sugiro atacar nesta ordem:
-
-```text
-Sprint 1 (bloqueadores)
-  → e-mail transacional + recuperação de senha
-  → linter de segurança (fechar WARNs)
-  → LGPD (termos + privacidade + aceite)
-
-Sprint 2 (operação fornecedor)
-  → wizard de onboarding do fornecedor
-  → métricas no painel do fornecedor
-  → validação de telefone/WhatsApp
-
-Sprint 3 (operação casal)
-  → import CSV de convidados
-  → kanban mobile
-  → exportar PDF do orçamento
-  → compartilhar convite no WhatsApp
-  → tarefas com data real
-
-Sprint 4 (polimento)
-  → busca: filtros faltantes + ordenação
-  → estados vazios + skeletons
-  → SEO + a11y + performance
-```
-
----
-
-### Próximo passo
-
-Me diz qual desses blocos você quer atacar primeiro e eu já abro um plano detalhado de implementação. Minha recomendação é começar pelo **Sprint 1** (bloqueadores) porque sem e-mail e sem LGPD não dá para colocar em produção.
+- Acesso super admin: já configurado em entrega anterior. Se ainda não estiver vendo o painel, o problema é a role `admin` no banco para esse `user_id` — verificável depois do deploy desta correção (não envolve código novo).
