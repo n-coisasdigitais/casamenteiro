@@ -129,7 +129,11 @@ export default function PlanKanban({
       return;
     }
     if (newStatus === "descartado") {
-      const ok = window.confirm(`Descartar ${item.company_name}? Você poderá buscar substitutos depois.`);
+      const ok = window.confirm(
+        `Descartar ${item.company_name}?\n\n` +
+        `O fornecedor será avisado da desistência. ` +
+        `Você poderá buscar substitutos depois.`
+      );
       if (!ok) return;
       await updateStatus(item, newStatus);
       const goSearch = window.confirm("Quer buscar um substituto agora?");

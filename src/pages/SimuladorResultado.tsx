@@ -48,6 +48,10 @@ export default function SimuladorResultado() {
   // Fornecedores selecionados para o plano (por categoria)
   const [selecionados, setSelecionados] = useState<Record<string, Set<string>>>({});
 
+  // Fornecedores em andamento já existentes no plano atual do casal
+  const [emAndamento, setEmAndamento] = useState<{ id: string; company_name: string; kanban_status: string }[]>([]);
+  const [planoAtivoExiste, setPlanoAtivoExiste] = useState(false);
+
   useEffect(() => {
     document.title = "Seu plano — Casamenteiro";
     (async () => {
@@ -188,7 +192,28 @@ export default function SimuladorResultado() {
       navigate(`/cadastro?redirect=${encodeURIComponent(`/simulador/resultado?id=${id}&assumir=1`)}`);
       return;
     }
-    setOpenAssumir(true);
+    (async () => {
+      // Verifica fornecedores em andamento e se já existe plano ativo
+      const { data: c } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
+      if (c?.id) {
+        const [{ data: cs }, { data: ativos }] = await Promise.all([
+          (supabase.from("couple_suppliers") as any)
+            .select("id, kanban_status, suppliers(company_name)")
+            .eq("couple_id", c.id)
+            .in("kanban_status", ["em_orcamento", "negociando", "contratado"]),
+          (supabase.from("home_simulacoes" as any) as any)
+            .select("id")
+            .eq("couple_id", c.id)
+            .eq("is_active_plan", true)
+            .neq("id", id),
+        ]);
+        setEmAndamento(((cs as any) || []).map((r: any) => ({
+          id: r.id, kanban_status: r.kanban_status, company_name: r.suppliers?.company_name || "Fornecedor",
+        })));
+        setPlanoAtivoExiste(((ativos as any) || []).length > 0);
+      }
+      setOpenAssumir(true);
+    })();
   };
 
   const confirmarAssumir = async () => {
@@ -493,6 +518,31 @@ export default function SimuladorResultado() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            {planoAtivoExiste && (
+              <div className="rounded-lg p-3 text-xs border border-amber-300 bg-amber-50 text-amber-900">
+                <p className="font-semibold mb-1">Você já tem um plano ativo.</p>
+                <p>Ao confirmar, este passará a ser o plano ativo. O anterior continua salvo nas suas simulações.</p>
+              </div>
+            )}
+            {emAndamento.length > 0 && (
+              <div className="rounded-lg p-3 text-xs border border-amber-300 bg-amber-50 text-amber-900 space-y-2">
+                <p className="font-semibold">Atenção: você tem fornecedores em andamento</p>
+                <p>
+                  Os fornecedores abaixo estão em <strong>orçamento, negociação ou já contratados</strong>.
+                  Eles <strong>não serão removidos</strong> automaticamente. O novo plano será adicionado aos atuais.
+                </p>
+                <ul className="list-disc list-inside">
+                  {emAndamento.slice(0, 6).map((e) => (
+                    <li key={e.id}>{e.company_name} <span className="opacity-70">({e.kanban_status})</span></li>
+                  ))}
+                  {emAndamento.length > 6 && <li>... e mais {emAndamento.length - 6}</li>}
+                </ul>
+                <p>
+                  Para remover um fornecedor você precisa <strong>descartá-lo manualmente no Kanban</strong>.
+                  Não há exclusão direta — ao descartar, <strong>o fornecedor é avisado da desistência</strong>.
+                </p>
+              </div>
+            )}
             <div>
               <Label className="text-xs">Nome do plano</Label>
               <Input
