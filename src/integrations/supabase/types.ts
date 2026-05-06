@@ -1733,6 +1733,7 @@ export type Database = {
           group_id: string | null
           guest_type: string
           id: string
+          max_companions: number
           menu_preference: string | null
           name: string
           notes: string | null
@@ -1748,6 +1749,7 @@ export type Database = {
           group_id?: string | null
           guest_type?: string
           id?: string
+          max_companions?: number
           menu_preference?: string | null
           name: string
           notes?: string | null
@@ -1763,6 +1765,7 @@ export type Database = {
           group_id?: string | null
           guest_type?: string
           id?: string
+          max_companions?: number
           menu_preference?: string | null
           name?: string
           notes?: string | null

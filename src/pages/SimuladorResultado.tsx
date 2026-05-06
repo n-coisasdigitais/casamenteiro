@@ -364,9 +364,9 @@ export default function SimuladorResultado() {
                   {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-64 flex-shrink-0 rounded-xl" />)}
                 </div>
               ) : cat.fornecedores.length === 0 ? (
-                <div className="rounded-xl p-4 text-sm" style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-muted))" }}>
+                <div className="on-green rounded-xl p-4 text-sm" style={{ background: "hsl(var(--color-secondary))" }}>
                   Nenhum fornecedor encontrado nesta faixa em {sim.cidade || "sua cidade"}.{" "}
-                  <Link to={`/buscar?categoria=${cat.slug}`} className="underline font-medium" style={{ color: "hsl(var(--color-primary))" }}>
+                  <Link to={`/buscar?categoria=${cat.slug}`} className="underline font-medium">
                     Ver todos os fornecedores desta categoria →
                   </Link>
                 </div>

@@ -138,7 +138,11 @@ export default function WeddingGuests() {
     if (guest.email) insertData.email = guest.email;
     if (guest.phone) insertData.phone = guest.phone;
     if (guest.group_id && guest.group_id !== "none") insertData.group_id = guest.group_id;
-    const { data } = await supabase.from("wedding_guests").insert(insertData).select().single();
+    const { data, error } = await supabase.from("wedding_guests").insert(insertData).select().maybeSingle();
+    if (error) {
+      toast({ title: "Erro ao adicionar convidado", description: error.message, variant: "destructive" });
+      return;
+    }
     if (data) setGuests((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
   };
 

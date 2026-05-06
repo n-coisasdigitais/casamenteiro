@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
         </div>`;
 
       await supabase.rpc("enqueue_email", {
-        queue_name: "transactional_email",
+        queue_name: "transactional_emails",
         payload: { to: g.email, subject, html, from: "Casamenteiro <convites@avisos.www.casamenteiro.com.br>" },
       });
 

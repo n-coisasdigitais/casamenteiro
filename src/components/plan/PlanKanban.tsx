@@ -9,9 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ContractSupplierDialog, { ContractTarget } from "./ContractSupplierDialog";
+import NegotiateSupplierDialog, { NegotiateTarget } from "./NegotiateSupplierDialog";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -54,6 +57,8 @@ export default function PlanKanban({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [contractTarget, setContractTarget] = useState<ContractTarget | null>(null);
   const [contractOpen, setContractOpen] = useState(false);
+  const [negotiateTarget, setNegotiateTarget] = useState<NegotiateTarget | null>(null);
+  const [negotiateOpen, setNegotiateOpen] = useState(false);
 
   const grouped = useMemo(() => {
     const map: Record<KanbanStatus, PlanSupplier[]> = {
@@ -114,6 +119,15 @@ export default function PlanKanban({
       setContractOpen(true);
       return;
     }
+    if (newStatus === "negociando") {
+      setNegotiateTarget({
+        coupleSupplierId: item.id,
+        supplierName: item.company_name,
+        suggestedValue: item.valor_cotado || item.valor_plano || null,
+      });
+      setNegotiateOpen(true);
+      return;
+    }
     if (newStatus === "descartado") {
       const ok = window.confirm(`Descartar ${item.company_name}? Você poderá buscar substitutos depois.`);
       if (!ok) return;
@@ -123,6 +137,15 @@ export default function PlanKanban({
       return;
     }
     await updateStatus(item, newStatus);
+  };
+
+  const openNegotiateEdit = (item: PlanSupplier) => {
+    setNegotiateTarget({
+      coupleSupplierId: item.id,
+      supplierName: item.company_name,
+      suggestedValue: item.valor_cotado || item.valor_plano || null,
+    });
+    setNegotiateOpen(true);
   };
 
   if (isMobile) {
@@ -141,7 +164,7 @@ export default function PlanKanban({
                 <div className="space-y-2">
                   {colItems.map((item) => (
                     <div key={item.id} className="space-y-2">
-                      <KanbanCard item={item} />
+                      <KanbanCard item={item} onEditValue={item.kanban_status === "negociando" ? () => openNegotiateEdit(item) : undefined} />
                       <Select
                         value={item.kanban_status}
                         onValueChange={(v) => requestStatusChange(item, v as KanbanStatus)}
@@ -173,6 +196,12 @@ export default function PlanKanban({
           target={contractTarget}
           onConfirmed={() => { setContractTarget(null); onChange(); }}
         />
+        <NegotiateSupplierDialog
+          open={negotiateOpen}
+          onOpenChange={setNegotiateOpen}
+          target={negotiateTarget}
+          onConfirmed={() => { setNegotiateTarget(null); onChange(); }}
+        />
       </>
     );
   }
@@ -188,7 +217,7 @@ export default function PlanKanban({
         <div className="overflow-x-auto pb-2 -mx-4 px-4">
           <div className="grid grid-cols-5 gap-3 min-w-[900px]">
             {COLUMNS.map((col) => (
-              <Column key={col.key} col={col} items={grouped[col.key]} />
+              <Column key={col.key} col={col} items={grouped[col.key]} onEditValue={openNegotiateEdit} />
             ))}
           </div>
         </div>
@@ -203,11 +232,17 @@ export default function PlanKanban({
         target={contractTarget}
         onConfirmed={() => { setContractTarget(null); onChange(); }}
       />
+      <NegotiateSupplierDialog
+        open={negotiateOpen}
+        onOpenChange={setNegotiateOpen}
+        target={negotiateTarget}
+        onConfirmed={() => { setNegotiateTarget(null); onChange(); }}
+      />
     </>
   );
 }
 
-function Column({ col, items }: { col: { key: KanbanStatus; label: string; tone: string }; items: PlanSupplier[] }) {
+function Column({ col, items, onEditValue }: { col: { key: KanbanStatus; label: string; tone: string }; items: PlanSupplier[]; onEditValue: (item: PlanSupplier) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.key });
   return (
     <div
@@ -219,7 +254,9 @@ function Column({ col, items }: { col: { key: KanbanStatus; label: string; tone:
         <Badge variant="secondary" className="h-5">{items.length}</Badge>
       </div>
       <div className="space-y-2">
-        {items.map((item) => <DraggableCard key={item.id} item={item} />)}
+        {items.map((item) => (
+          <DraggableCard key={item.id} item={item} onEditValue={item.kanban_status === "negociando" ? () => onEditValue(item) : undefined} />
+        ))}
         {items.length === 0 && (
           <p className="text-xs text-muted-foreground text-center py-6">Arraste cards para cá</p>
         )}
@@ -228,21 +265,21 @@ function Column({ col, items }: { col: { key: KanbanStatus; label: string; tone:
   );
 }
 
-function DraggableCard({ item }: { item: PlanSupplier }) {
+function DraggableCard({ item, onEditValue }: { item: PlanSupplier; onEditValue?: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       className={cn("touch-none", isDragging && "opacity-30")}
     >
-      <KanbanCard item={item} />
+      <div {...listeners} {...attributes}>
+        <KanbanCard item={item} onEditValue={onEditValue} />
+      </div>
     </div>
   );
 }
 
-function KanbanCard({ item, dragging }: { item: PlanSupplier; dragging?: boolean }) {
+function KanbanCard({ item, dragging, onEditValue }: { item: PlanSupplier; dragging?: boolean; onEditValue?: () => void }) {
   return (
     <Card className={cn("p-3 space-y-1.5 cursor-grab active:cursor-grabbing", dragging && "shadow-xl rotate-1")}>
       {item.category_name && (
@@ -258,6 +295,18 @@ function KanbanCard({ item, dragging }: { item: PlanSupplier; dragging?: boolean
           <p className="text-emerald-600">Fechado: <span className="font-medium">{fmt(item.valor_contratado)}</span></p>
         )}
       </div>
+      {onEditValue && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs w-full justify-start"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onEditValue(); }}
+        >
+          <Pencil className="h-3 w-3 mr-1" /> {item.valor_cotado > 0 ? "Editar valor" : "Registrar valor"}
+        </Button>
+      )}
     </Card>
   );
 }
