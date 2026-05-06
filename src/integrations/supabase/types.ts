@@ -1927,6 +1927,7 @@ export type Database = {
           invite_id: string
           invite_message: string
           invite_photo_url: string
+          max_companions: number
           partner_name: string
           reception_address: string
           responded_at: string
