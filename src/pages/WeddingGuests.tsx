@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Users, Baby, Download, Printer, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon, MessageCircle } from "lucide-react";
+import { Users, Baby, Download, Printer, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon, MessageCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
@@ -30,9 +30,10 @@ type Guest = {
   menu_preference: string | null;
   table_number: number | null;
   group_id: string | null;
+  max_companions: number | null;
 };
 
-type InviteMap = Record<string, { token: string; sent_at: string | null; opened_at: string | null; responded_at: string | null }>;
+type InviteMap = Record<string, { token: string; sent_at: string | null; opened_at: string | null; responded_at: string | null; rsvp_companions?: number | null }>;
 
 type Group = { id: string; name: string };
 
@@ -46,6 +47,11 @@ export default function WeddingGuests() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [invites, setInvites] = useState<InviteMap>({});
+  const [filterRsvp, setFilterRsvp] = useState<string>("all");
+  const [filterGroup, setFilterGroup] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterInvite, setFilterInvite] = useState<string>("all");
+  const [sendingEmails, setSendingEmails] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -60,7 +66,7 @@ export default function WeddingGuests() {
     const [gRes, grRes, invRes] = await Promise.all([
       supabase.from("wedding_guests").select("*").eq("couple_id", cId).order("name"),
       supabase.from("guest_groups").select("*").eq("couple_id", cId).order("name"),
-      (supabase as any).from("guest_invites").select("guest_id, token, sent_at, opened_at, responded_at").eq("couple_id", cId),
+      (supabase as any).from("guest_invites").select("guest_id, token, sent_at, opened_at, responded_at, rsvp_companions").eq("couple_id", cId),
     ]);
     setGuests(gRes.data || []);
     setGroups(grRes.data || []);
@@ -126,9 +132,9 @@ export default function WeddingGuests() {
     toast({ title: `${groupGuests.length} convite(s) gerado(s)`, description: "Use o ícone de link em cada convidado para copiar." });
   };
 
-  const addGuest = async (guest: { name: string; email?: string; phone?: string; guest_type: string; group_id?: string }) => {
+  const addGuest = async (guest: { name: string; email?: string; phone?: string; guest_type: string; group_id?: string; max_companions?: number }) => {
     if (!coupleId) return;
-    const insertData: any = { couple_id: coupleId, name: guest.name, guest_type: guest.guest_type };
+    const insertData: any = { couple_id: coupleId, name: guest.name, guest_type: guest.guest_type, max_companions: guest.max_companions || 0 };
     if (guest.email) insertData.email = guest.email;
     if (guest.phone) insertData.phone = guest.phone;
     if (guest.group_id && guest.group_id !== "none") insertData.group_id = guest.group_id;
@@ -184,10 +190,26 @@ export default function WeddingGuests() {
   };
 
   const filtered = useMemo(() => {
-    if (!search) return guests;
-    const q = search.toLowerCase();
-    return guests.filter((g) => g.name.toLowerCase().includes(q) || g.email?.toLowerCase().includes(q));
-  }, [guests, search]);
+    let list = guests;
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((g) => g.name.toLowerCase().includes(q) || g.email?.toLowerCase().includes(q));
+    }
+    if (filterRsvp !== "all") list = list.filter((g) => g.rsvp_status === filterRsvp);
+    if (filterGroup !== "all") list = list.filter((g) => (filterGroup === "none" ? !g.group_id : g.group_id === filterGroup));
+    if (filterType !== "all") list = list.filter((g) => g.guest_type === filterType);
+    if (filterInvite !== "all") {
+      list = list.filter((g) => {
+        const inv = invites[g.id];
+        if (filterInvite === "none") return !inv;
+        if (filterInvite === "sent") return inv?.sent_at && !inv?.opened_at;
+        if (filterInvite === "opened") return inv?.opened_at && !inv?.responded_at;
+        if (filterInvite === "responded") return !!inv?.responded_at;
+        return true;
+      });
+    }
+    return list;
+  }, [guests, search, filterRsvp, filterGroup, filterType, filterInvite, invites]);
 
   // Group guests
   const grouped = useMemo(() => {
@@ -203,21 +225,43 @@ export default function WeddingGuests() {
   const adults = guests.filter((g) => g.guest_type === "adult").length;
   const children = guests.filter((g) => g.guest_type === "child").length;
   const babies = guests.filter((g) => g.guest_type === "baby").length;
-  const confirmed = guests.filter((g) => g.rsvp_status === "confirmed").length;
+  const confirmedGuests = guests.filter((g) => g.rsvp_status === "confirmed");
+  const confirmed = confirmedGuests.length;
+  const totalConfirmedPeople = confirmedGuests.reduce((s, g) => s + 1 + (invites[g.id]?.rsvp_companions || 0), 0);
   const pending = guests.filter((g) => g.rsvp_status === "pending").length;
   const declined = guests.filter((g) => g.rsvp_status === "declined").length;
 
   const handleExport = () => {
-    const csv = ["Nome,Email,Telefone,Tipo,RSVP,Mesa,Grupo"]
+    const csv = ["Nome,Email,Telefone,Tipo,RSVP,Acompanhantes,Mesa,Grupo"]
       .concat(guests.map((g) => {
         const groupName = groups.find((gr) => gr.id === g.group_id)?.name || "";
-        return `"${g.name}","${g.email || ""}","${g.phone || ""}","${g.guest_type}","${g.rsvp_status}","${g.table_number || ""}","${groupName}"`;
+        const acomp = `${invites[g.id]?.rsvp_companions ?? 0}/${g.max_companions ?? 0}`;
+        return `"${g.name}","${g.email || ""}","${g.phone || ""}","${g.guest_type}","${g.rsvp_status}","${acomp}","${g.table_number || ""}","${groupName}"`;
       }))
       .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = "convidados-casamento.csv"; a.click();
+  };
+
+  const sendInvitesEmailBulk = async () => {
+    if (selected.size === 0 || !coupleId) return;
+    const ids = Array.from(selected);
+    setSendingEmails(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-invite-emails", {
+        body: { couple_id: coupleId, guest_ids: ids },
+      });
+      if (error) throw error;
+      toast({ title: `Convites enviados`, description: `${ids.length} convite(s) entraram na fila de envio.` });
+      setSelected(new Set());
+      loadData(coupleId);
+    } catch (e: any) {
+      toast({ title: "Erro ao enviar emails", description: e.message, variant: "destructive" });
+    } finally {
+      setSendingEmails(false);
+    }
   };
 
   const rsvpVariant = (s: string): "default" | "secondary" | "destructive" | "outline" => {
