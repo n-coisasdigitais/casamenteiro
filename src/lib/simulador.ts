@@ -251,6 +251,7 @@ function gerarAlertas(plano: Record<string, CategoriaPlano>, semFornecedor: stri
 async function salvarSimulacao(input: {
   orcamento: number; convidados: number; cidade: string; estilo: Estilo; aceitaOciosas: boolean;
   resultado?: any;
+  categoriasSelecionadas?: string[] | null;
 }): Promise<string | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -268,6 +269,7 @@ async function salvarSimulacao(input: {
         cidade: input.cidade,
         estilo: input.estilo,
         resultado: input.resultado ?? null,
+        categorias_selecionadas: input.categoriasSelecionadas ?? null,
       })
       .select("id")
       .maybeSingle();
