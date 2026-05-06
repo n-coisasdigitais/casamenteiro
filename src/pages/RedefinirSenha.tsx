@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErroAuth } from "@/lib/authErrors";
 
 export default function RedefinirSenha() {
   const [password, setPassword] = useState("");
@@ -48,7 +49,7 @@ export default function RedefinirSenha() {
       await supabase.auth.signOut();
       navigate("/login", { replace: true });
     } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      toast({ title: "Não foi possível redefinir", description: traduzirErroAuth(err), variant: "destructive" });
     } finally {
       setLoading(false);
     }
