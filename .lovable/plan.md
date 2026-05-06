@@ -1,88 +1,66 @@
-# Correções no fluxo de cadastro, simulador e plano
 
-## Problemas identificados
+## Ajustes do plano, convites e orçamento
 
-1. **Erro `Estilo inválido: Médio e elegante`** (itens 4 e 6): o `SimulatorCTA` salva `estilo` como rótulo bonito (`"Médio e elegante"`), mas `calcularSimulacao` espera o enum interno (`"elegante"`). Ao reabrir a página de resultado sem snapshot válido, ela tenta recalcular e estoura, deixando o loading infinito.
+### 1. Erro "duplicate key … couple_suppliers" ao salvar plano
+- `src/lib/simulador.ts` (`criarPlano`): deduplicar `csRows` por `supplier_id` e usar `upsert({ onConflict: "couple_id,supplier_id" })` em vez de `delete + insert`. Tratar erro `23505` como sucesso (idempotente). Causa raiz: o mesmo fornecedor aparece em mais de uma categoria do plano e/ou cliques duplos no botão.
 
-2. **Mensagens do login em inglês** (item 1): os erros de `supabase.auth` vêm em inglês (`Invalid login credentials`, etc.). Não há mapeamento para português.
+### 2. Modal "Pedir orçamento" abrindo atrás do mapa
+- `src/index.css`: adicionar regras forçando `z-index` baixo nos panes do Leaflet (eles usam até 700, sobrepondo o `Dialog` do Radix que é `z-50`):
+  ```css
+  .leaflet-pane, .leaflet-top, .leaflet-bottom, .leaflet-control { z-index: 1 !important; }
+  ```
 
-3. **E-mail de confirmação em inglês** (itens 2, 3, 5): hoje usamos o template padrão da Lovable (em inglês), e o link cai na raiz `/` sem feedback. Precisamos de templates em português + página de sucesso `/confirmado` com timer e redirecionamento inteligente.
+### 3. Pré-preencher form de orçamento com dados do casal
+- `src/components/QuoteRequestForm.tsx`: ao abrir o Dialog, buscar `couples` e `profiles` do usuário e preencher `eventDate` (`wedding_date`), `guestCount` (`estimated_guests`) e `phone` (`contact_phone` ou do profile) quando estiverem vazios. Trocar `.single()` por `.maybeSingle()`.
 
-4. **Onboarding redundante** (item 9): mesmo quem simulou (orçamento, convidados, cidade, estilo, data) responde tudo de novo. O onboarding deve pular o que já temos e ir direto pro orçamento preenchido / plano.
+### 4. Header mostra "não logado" no Explorar e quote falha
+- `src/pages/Explore.tsx`: aguardar `loading` do `useAuth` antes de renderizar o header (evita flash sem user).
+- `QuoteRequestForm`: se não houver `couple` carregado, mostrar CTA "Entrar para pedir orçamento" em vez de submeter.
 
-5. **Termos e Política** (item 7): os arquivos já estão como "Casamenteiro", mas o **e-mail padrão** ainda diz "Meu Grande Dia". Trocando os templates resolve.
+### 5. Página de convite — calendário, RSVP e página de agradecimento
+- `src/pages/InviteRSVP.tsx`: trocar o link único `.ics` por dropdown "Adicionar ao calendário" com 3 opções:
+  - **Google Calendar**: URL `calendar.google.com/calendar/render?action=TEMPLATE&...`
+  - **Outlook**: URL `outlook.live.com/calendar/.../deeplink/compose?...`
+  - **Apple/iOS (.ics)**: blob download que abre no Calendar.
+- Após confirmar/recusar, navegar para nova página `src/pages/InviteObrigado.tsx` (rota `/convite/:token/obrigado`) com mensagem de agradecimento, resumo da resposta e botão "Editar minha resposta" (volta ao `/convite/:token`, que já carrega a resposta atual).
+- Disparar email de confirmação para o convidado via `email_queue` com link para editar o RSVP.
 
-6. **Título do onboarding** (item 8): não define `document.title`; cabeçalho visual genérico.
+### 6. Acompanhantes — limite por convidado, contagem no painel
+Migration nova:
+- `wedding_guests`: `ADD COLUMN max_companions int DEFAULT 0`.
+- Atualizar `respond_invite` para validar `_companions <= max_companions`.
+- Atualizar `get_invite_by_token` para retornar `max_companions` e `rsvp_companions`.
 
----
+Frontend:
+- `src/components/AddGuestDialog.tsx`: novo campo "Pode levar quantos acompanhantes" (0–5).
+- `src/pages/InviteRSVP.tsx`: limitar input de acompanhantes ao `max_companions`; ocultar quando 0.
+- `src/pages/WeddingGuests.tsx`: nova coluna "Acompanhantes" mostrando `rsvp_companions / max_companions`. Total confirmados = soma de `1 + rsvp_companions` para `rsvp_status = confirmed`.
 
-## Mudanças propostas
+### 7. Filtros e envio em massa por email no Meus Convidados
+- `src/pages/WeddingGuests.tsx`: adicionar barra de filtros (presença, grupo, tipo, status do convite — enviado/aberto/respondido).
+- Quando houver seleção, novo botão **"Enviar convite por email"** que chama edge function nova `send-invite-emails` (scaffold com `email_queue` usando o domínio `avisos.www.casamenteiro.com.br`). Template em pt-BR com link `/convite/{token}`.
 
-### 1. Corrigir o estilo do simulador (resolve itens 4 e 6)
+### 8. Orçamentos (quotes) também aparecem no Orçamento
+- `src/pages/WeddingPlan.tsx` / `src/components/plan/BudgetTab.tsx`: carregar `quotes` do casal e, para cada quote sem `couple_supplier` correspondente, exibir uma linha "virtual" no orçamento com status inicial "Em orçamento". Botão "Adicionar ao plano" promove o quote para `couple_suppliers`.
 
-- Em `src/components/home/SimulatorCTA.tsx`, mudar os IDs de `STYLES` para os enums internos:
-  - `"intimista"`, `"elegante"`, `"grandioso"` (em vez dos rótulos longos).
-- Garantir que `payload.estilo` salvo em `home_simulacoes.estilo` seja sempre um dos três enums.
-- Em `src/lib/simulador.ts` `calcularSimulacao`: tornar tolerante — se `estilo` vier desconhecido, faz fallback para `"elegante"` (em vez de `throw`), evitando travar a tela.
-- Migration leve: `UPDATE home_simulacoes SET estilo = CASE WHEN estilo ILIKE 'simples%' THEN 'intimista' WHEN estilo ILIKE 'grande%' THEN 'grandioso' WHEN estilo ILIKE 'médio%' THEN 'elegante' ELSE estilo END` para sanear linhas antigas.
+### 9. Plano respeita as categorias selecionadas no simulador
+- Migration: `home_simulacoes ADD COLUMN categorias_selecionadas text[]`.
+- `src/lib/simulador.ts` (`calcularSimulacao`): aceitar `categoriasSelecionadas?: string[]`. Quando informado, filtrar `budget_distribution_defaults` apenas para essas categorias e redistribuir percentuais proporcionalmente para somar 100%.
+- `src/pages/Simulador.tsx`: persistir a seleção do passo de categorias em `home_simulacoes.categorias_selecionadas` e passar adiante.
 
-### 2. Mensagens de login em português (item 1)
+### 10. Cor do texto em containers verdes (legibilidade)
+- `src/index.css`: dentro de containers verdes (cards/banners do plano e dos forms com `--color-primary` / `--color-accent`), forçar `color: white` para textos `muted-foreground`, labels e placeholders. Ajustar utilitário Tailwind via classe `.on-green` aplicada nesses blocos.
 
-- Em `src/pages/Auth.tsx`, criar um `traduzirErroAuth(error)` que mapeia mensagens conhecidas:
-  - `Invalid login credentials` → "E-mail ou senha incorretos."
-  - `Email not confirmed` → "Confirme seu e-mail antes de entrar."
-  - `User already registered` → "Este e-mail já está cadastrado."
-  - `Password should be at least 6 characters` → "A senha deve ter pelo menos 6 caracteres."
-  - genérico → mensagem amigável padrão.
-- Aplicar também em `EsqueciSenha.tsx` e `RedefinirSenha.tsx`.
+### 11. Ajustar orçamento sem regerar a simulação
+- `src/pages/Simulador.tsx`: ao re-simular vindo de uma simulação existente, fazer `UPDATE` do registro em `home_simulacoes` em vez de `INSERT` (corrige a duplicação que gerou 4 simulações).
+- `src/pages/SimuladorResultado.tsx`: novo botão "Ajustar orçamento" inline, que chama `recalcularSimulacao` e atualiza o registro atual; **não navega** para nova rota.
 
-### 3. E-mails de autenticação em português + página de confirmação (itens 2, 3, 5, 7)
+### 12. Ajuste de verba por categoria + seleção de fornecedores ao assumir
+- `src/lib/simulador.ts`: nova função `recalcularCategoria(resultado, catSlug, novaVerba)` que reprocessa apenas os fornecedores daquela categoria com a verba ajustada e atualiza o total/redistribui.
+- `src/pages/SimuladorResultado.tsx`: na seção de cada categoria com cobertura insuficiente, botão "Ajustar verba desta categoria" (input + slider) — processa só aquela seção, sem recarregar a página.
+- Em cada card de fornecedor sugerido, checkbox "Incluir no plano". `criarPlano` passa a aceitar `Set<supplierId>` opcional; quando vazio, mantém comportamento atual.
 
-- **Configurar templates de e-mail customizados** (Lovable Auth Email Templates) com:
-  - Marca **Casamenteiro** (logo, paleta terracota/sage, Inter).
-  - Conteúdo 100% em pt-BR.
-  - Assuntos: "Confirme seu e-mail no Casamenteiro", "Recupere sua senha", etc.
-  - Link de confirmação aponta para `https://<site>/confirmado` (em vez da raiz).
-- **Criar `src/pages/EmailConfirmado.tsx`** na rota `/confirmado`:
-  - Mostra "E-mail confirmado! 💍" com checkmark.
-  - Lê sessão do Supabase (o link de confirmação já loga o usuário).
-  - Mostra contador regressivo de 4 segundos.
-  - Redireciona conforme estado:
-    - se há `pending_simulacao` no localStorage → cria a simulação no banco e vai para `/simulador/resultado?id=...`;
-    - senão, se `couples.onboarding_completed = true` → `/dashboard`;
-    - senão → `/onboarding`.
-  - Botão "Continuar agora" para pular o timer.
-- Adicionar rota `/confirmado` em `App.tsx`.
+## Arquivos
+**Editar:** `src/lib/simulador.ts`, `src/index.css`, `src/components/QuoteRequestForm.tsx`, `src/pages/Explore.tsx`, `src/pages/InviteRSVP.tsx`, `src/pages/WeddingGuests.tsx`, `src/components/AddGuestDialog.tsx`, `src/components/plan/BudgetTab.tsx`, `src/pages/WeddingPlan.tsx`, `src/pages/SimuladorResultado.tsx`, `src/pages/Simulador.tsx`, `src/App.tsx`.
 
-### 4. Onboarding inteligente baseado em simulação (item 9)
-
-- Em `src/pages/CoupleOnboarding.tsx`:
-  - Definir `document.title = "Bem-vindos ao Casamenteiro"` e atualizar título visual: "Vamos terminar de configurar seu casamento".
-  - No `useEffect` inicial, buscar a simulação mais recente do usuário (`home_simulacoes` por `user_id` ou `couple_id`).
-  - Se houver simulação, pré-preencher e **pular** os passos que ela já responde (cidade/orçamento/convidados/estilo/data).
-  - O onboarding fica resumido a: papel (noivo/noiva), nome do parceiro, data prevista (se ainda não tiver), serviços desejados.
-  - Ao concluir, além de marcar `onboarding_completed`, **criar o plano** automaticamente a partir da simulação (reutilizar `criarPlano`) e redirecionar para `/meu-casamento/plano` (em vez de `/dashboard`).
-  - Se não houver simulação, mantém o fluxo atual (4 passos).
-
-### 5. Pequenos ajustes de UX
-
-- Remover o `setTimeout(..., 0)` desnecessário e trocar `.single()` por `.maybeSingle()` em `AuthContext.fetchProfile` (regra do projeto).
-- No `SimulatorCTA`, exibir mensagem amigável caso o cálculo falhe (em vez de só toast técnico).
-
----
-
-## Arquivos afetados
-
-- `src/components/home/SimulatorCTA.tsx` — IDs de estilo + erro amigável.
-- `src/lib/simulador.ts` — fallback de estilo.
-- `src/pages/Auth.tsx`, `EsqueciSenha.tsx`, `RedefinirSenha.tsx` — tradução de erros.
-- `src/pages/EmailConfirmado.tsx` — **novo**.
-- `src/App.tsx` — registrar rota `/confirmado`.
-- `src/pages/CoupleOnboarding.tsx` — pré-preencher por simulação, criar plano ao final, título.
-- `src/contexts/AuthContext.tsx` — `.maybeSingle()`.
-- `supabase/functions/auth-email-hook/*` + `_shared/email-templates/*` — templates pt-BR com marca Casamenteiro (via ferramenta de scaffold).
-- Nova migration para sanear `home_simulacoes.estilo`.
-
-## Fora do escopo
-
-- Acesso super admin: já configurado em entrega anterior. Se ainda não estiver vendo o painel, o problema é a role `admin` no banco para esse `user_id` — verificável depois do deploy desta correção (não envolve código novo).
+**Criar:** `src/pages/InviteObrigado.tsx`, `supabase/functions/send-invite-emails/index.ts` (+ `deno.json`), uma migration adicionando `max_companions`, `categorias_selecionadas` e atualizando `respond_invite` / `get_invite_by_token`.
