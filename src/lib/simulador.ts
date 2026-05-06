@@ -345,7 +345,7 @@ export async function calcularSimulacao(
     sobraOrcamento: sobra,
     convidados,
     cidade,
-    estilo,
+    estilo: estiloNorm,
     aceitaOciosas,
     categoriasComFornecedor: comFornecedor,
     totalCategorias,
@@ -354,7 +354,7 @@ export async function calcularSimulacao(
 
   // salva snapshot
   const simulacaoId = await salvarSimulacao({
-    orcamento, convidados, cidade, estilo, aceitaOciosas,
+    orcamento, convidados, cidade, estilo: estiloNorm, aceitaOciosas,
     resultado: { resumo, plano, alertas },
   });
 
