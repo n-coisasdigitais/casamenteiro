@@ -19,6 +19,7 @@ export default function WeddingPlan() {
   const [couple, setCouple] = useState<any>(null);
   const [items, setItems] = useState<PlanSupplier[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [quotes, setQuotes] = useState<any[]>([]);
   const [newProposals, setNewProposals] = useState<{ id: string; title: string; body: string | null; link: string | null }[]>([]);
 
   const load = useCallback(async (cId: string) => {
@@ -72,6 +73,13 @@ export default function WeddingPlan() {
     const { data: pays } = await supabase
       .from("budget_payments").select("*").eq("couple_id", cId);
     setPayments((pays || []).map((p: any) => ({ ...p, supplier_id: biMap.get(p.budget_item_id) || null })));
+
+    // 2b. Solicitações de orçamento (quotes) — para mostrar na aba Orçamento como status inicial
+    const { data: qs } = await supabase
+      .from("quotes")
+      .select("id, supplier_id, status, kanban_status, message, created_at, suppliers(company_name, category_id, categories(slug, name))")
+      .eq("couple_id", cId);
+    setQuotes((qs as any) || []);
 
     // 3. Notificações de propostas novas (não lidas)
     if (user) {
