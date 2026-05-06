@@ -9,6 +9,7 @@ import { Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
+import { traduzirErroAuth } from "@/lib/authErrors";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -118,13 +119,13 @@ export default function Auth() {
           password,
           options: {
             data: metadata,
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/confirmado`,
           },
         });
         if (error) throw error;
         toast({
           title: "Cadastro realizado!",
-          description: "Verifique seu e-mail para confirmar sua conta.",
+          description: "Enviamos um e-mail de confirmação. Abra a caixa de entrada para ativar sua conta.",
         });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -132,8 +133,8 @@ export default function Auth() {
       }
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message,
+        title: "Não foi possível continuar",
+        description: traduzirErroAuth(error),
         variant: "destructive",
       });
     } finally {
