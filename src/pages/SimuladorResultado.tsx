@@ -40,6 +40,14 @@ export default function SimuladorResultado() {
   const [dataPrevista, setDataPrevista] = useState("");
   const [criando, setCriando] = useState(false);
 
+  // Ajuste por categoria
+  const [editandoCat, setEditandoCat] = useState<string | null>(null);
+  const [novaVerbaCat, setNovaVerbaCat] = useState<string>("");
+  const [recalculandoCat, setRecalculandoCat] = useState<string | null>(null);
+
+  // Fornecedores selecionados para o plano (por categoria)
+  const [selecionados, setSelecionados] = useState<Record<string, Set<string>>>({});
+
   useEffect(() => {
     document.title = "Seu plano — Casamenteiro";
     (async () => {
