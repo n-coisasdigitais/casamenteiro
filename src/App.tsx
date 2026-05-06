@@ -42,6 +42,7 @@ import MeuPlano from "./pages/MeuPlano";
 import Favorites from "./pages/Favorites";
 import UserProfile from "./pages/UserProfile";
 import InviteRSVP from "./pages/InviteRSVP";
+import EmailConfirmado from "./pages/EmailConfirmado";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./components/admin/AdminLayout";
 
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/cadastro" element={<Auth />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+            <Route path="/confirmado" element={<EmailConfirmado />} />
             <Route path="/termos" element={<Termos />} />
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/onboarding" element={<CoupleOnboarding />} />
