@@ -434,6 +434,7 @@ export default function SimuladorResultado() {
                           href={f.linkWhatsApp}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
                           style={{ background: "hsl(var(--color-accent))", color: "hsl(var(--accent-foreground))" }}
                         >
@@ -442,6 +443,7 @@ export default function SimuladorResultado() {
                       ) : (
                         <Link
                           to={`/fornecedor/${f.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
                           style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}
                         >
@@ -449,7 +451,8 @@ export default function SimuladorResultado() {
                         </Link>
                       )}
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
