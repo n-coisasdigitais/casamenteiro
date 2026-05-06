@@ -19,9 +19,9 @@ const GUEST_OPTIONS = [
 ];
 
 const STYLES = [
-  { id: "Simples e emocionante", icon: Leaf, name: "Intimista", desc: "Simples, acolhedor e muito especial" },
-  { id: "Médio e elegante", icon: Sparkles, name: "Elegante", desc: "Equilibrado, bonito e bem organizado" },
-  { id: "Grande e memorável", icon: PartyPopper, name: "Grandioso", desc: "Festa completa, inesquecível e marcante" },
+  { id: "intimista", icon: Leaf, name: "Intimista", desc: "Simples, acolhedor e muito especial" },
+  { id: "elegante", icon: Sparkles, name: "Elegante", desc: "Equilibrado, bonito e bem organizado" },
+  { id: "grandioso", icon: PartyPopper, name: "Grandioso", desc: "Festa completa, inesquecível e marcante" },
 ];
 
 const PRAZO_OPTIONS = [
@@ -58,7 +58,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
       orcamento_total: orcamento,
       num_convidados: convidados ?? 100,
       cidade,
-      estilo: estilo ?? "Médio e elegante",
+      estilo: estilo ?? "elegante",
       data_evento: dataMode === "exata" && dataEvento ? dataEvento : null,
       prazo_meses: dataMode === "faixa" ? prazoMeses : null,
     };

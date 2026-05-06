@@ -286,8 +286,17 @@ export async function calcularSimulacao(
   estilo: Estilo,
   aceitaOciosas: boolean = false,
 ): Promise<SimuladorResultado> {
-  const dist = DISTRIBUICAO[estilo];
-  if (!dist) throw new Error(`Estilo inválido: ${estilo}`);
+  // Normaliza para os enums internos — aceita rótulos antigos/livres
+  const normalizar = (v: any): Estilo => {
+    const s = String(v || "").toLowerCase();
+    if (s.startsWith("simples") || s.startsWith("intim")) return "intimista";
+    if (s.startsWith("grande") || s.startsWith("grand")) return "grandioso";
+    if (s.startsWith("médio") || s.startsWith("medio") || s.startsWith("eleg")) return "elegante";
+    if (s === "intimista" || s === "elegante" || s === "grandioso") return s as Estilo;
+    return "elegante";
+  };
+  const estiloNorm: Estilo = normalizar(estilo);
+  const dist = DISTRIBUICAO[estiloNorm];
 
   // mapa slug → category_id
   const { data: cats } = await supabase.from("categories").select("id, slug");
@@ -336,7 +345,7 @@ export async function calcularSimulacao(
     sobraOrcamento: sobra,
     convidados,
     cidade,
-    estilo,
+    estilo: estiloNorm,
     aceitaOciosas,
     categoriasComFornecedor: comFornecedor,
     totalCategorias,
@@ -345,7 +354,7 @@ export async function calcularSimulacao(
 
   // salva snapshot
   const simulacaoId = await salvarSimulacao({
-    orcamento, convidados, cidade, estilo, aceitaOciosas,
+    orcamento, convidados, cidade, estilo: estiloNorm, aceitaOciosas,
     resultado: { resumo, plano, alertas },
   });
 

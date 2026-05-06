@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErroAuth } from "@/lib/authErrors";
 
 export default function EsqueciSenha() {
   const [email, setEmail] = useState("");
@@ -24,7 +25,7 @@ export default function EsqueciSenha() {
       if (error) throw error;
       setSent(true);
     } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      toast({ title: "Não foi possível enviar", description: traduzirErroAuth(err), variant: "destructive" });
     } finally {
       setLoading(false);
     }
