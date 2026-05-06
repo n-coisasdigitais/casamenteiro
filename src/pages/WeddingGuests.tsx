@@ -30,7 +30,7 @@ type Guest = {
   menu_preference: string | null;
   table_number: number | null;
   group_id: string | null;
-  max_companions: number | null;
+  max_companions?: number | null;
 };
 
 type InviteMap = Record<string, { token: string; sent_at: string | null; opened_at: string | null; responded_at: string | null; rsvp_companions?: number | null }>;
