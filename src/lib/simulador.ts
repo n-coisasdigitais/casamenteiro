@@ -376,6 +376,7 @@ export async function calcularSimulacao(
   const simulacaoId = await salvarSimulacao({
     orcamento, convidados, cidade, estilo: estiloNorm, aceitaOciosas,
     resultado: { resumo, plano, alertas },
+    categoriasSelecionadas: categoriasSelecionadas || null,
   });
 
   return { simulacaoId, resumo, plano, alertas };
