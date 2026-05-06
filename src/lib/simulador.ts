@@ -435,6 +435,7 @@ export async function criarPlano(
   resultado: SimuladorResultado,
   nomeDoPlano: string,
   dataEvento: string,
+  fornecedoresSelecionados?: Set<string> | null,
 ): Promise<{ couple_id: string }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário precisa estar logado para criar um plano.");
@@ -492,20 +493,24 @@ export async function criarPlano(
   // couple_suppliers — primeiro fornecedor sugerido por categoria, status nao_iniciado
   const csRowsMap = new Map<string, any>();
   for (const cat of Object.values(resultado.plano)) {
-    const f = cat.fornecedores[0];
-    if (!f) continue;
-    if (csRowsMap.has(f.id)) continue; // dedupe: mesmo fornecedor em + de uma categoria
-    const catId = catIdMap.get(cat.slug) || null;
-    csRowsMap.set(f.id, {
-      couple_id: coupleId,
-      supplier_id: f.id,
-      category_id: catId,
-      kanban_status: "nao_iniciado",
-      status: "saved",
-      estimated_value: f.preco_base || cat.verba,
-      simulation_id: _simulacaoId,
-      notes: "Adicionado pela simulação",
-    });
+    // Se houver subset, usa apenas os escolhidos; senão, usa o primeiro sugerido
+    const escolhidos = fornecedoresSelecionados && fornecedoresSelecionados.size > 0
+      ? cat.fornecedores.filter((f) => fornecedoresSelecionados.has(f.id))
+      : cat.fornecedores.slice(0, 1);
+    for (const f of escolhidos) {
+      if (csRowsMap.has(f.id)) continue;
+      const catId = catIdMap.get(cat.slug) || null;
+      csRowsMap.set(f.id, {
+        couple_id: coupleId,
+        supplier_id: f.id,
+        category_id: catId,
+        kanban_status: "nao_iniciado",
+        status: "saved",
+        estimated_value: f.preco_base || cat.verba,
+        simulation_id: _simulacaoId,
+        notes: "Adicionado pela simulação",
+      });
+    }
   }
   const csRows = Array.from(csRowsMap.values());
   if (csRows.length) {
