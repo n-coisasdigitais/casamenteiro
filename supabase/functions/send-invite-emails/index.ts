@@ -79,7 +79,18 @@ Deno.serve(async (req) => {
 
       await supabase.rpc("enqueue_email", {
         queue_name: "transactional_emails",
-        payload: { to: g.email, subject, html, from: "Casamenteiro <convites@avisos.www.casamenteiro.com.br>" },
+        payload: {
+          to: g.email,
+          subject,
+          html,
+          from: "Casamenteiro <convites@avisos.www.casamenteiro.com.br>",
+          sender_domain: "avisos.www.casamenteiro.com.br",
+          purpose: "transactional",
+          label: "guest-invite",
+          idempotency_key: `guest-invite-${g.id}-${token}`,
+          message_id: crypto.randomUUID(),
+          queued_at: new Date().toISOString(),
+        },
       });
 
       await supabase.from("guest_invites")
