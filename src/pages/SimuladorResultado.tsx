@@ -404,7 +404,7 @@ export default function SimuladorResultado() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <Link to={`/fornecedor/${f.id}`} className="block text-sm font-semibold truncate hover:underline" style={{ color: "hsl(var(--color-dark))" }}>
+                          <Link to={`/fornecedor/${f.id}`} onClick={(e) => e.stopPropagation()} className="block text-sm font-semibold truncate hover:underline" style={{ color: "hsl(var(--color-dark))" }}>
                             {f.nome}
                           </Link>
                           {f.cidade && (
