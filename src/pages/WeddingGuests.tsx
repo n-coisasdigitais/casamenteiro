@@ -327,6 +327,40 @@ export default function WeddingGuests() {
               Remover ({selected.size})
             </Button>
           )}
+          {selected.size > 0 && (
+            <Button size="sm" onClick={sendInvitesEmailBulk} disabled={sendingEmails}>
+              <Mail className="mr-2 h-4 w-4" />
+              {sendingEmails ? "Enviando..." : `Enviar convite por email (${selected.size})`}
+            </Button>
+          )}
+          <Select value={filterRsvp} onValueChange={setFilterRsvp}>
+            <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="Presença" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas presenças</SelectItem>
+              <SelectItem value="confirmed">Confirmados</SelectItem>
+              <SelectItem value="pending">Pendentes</SelectItem>
+              <SelectItem value="declined">Recusados</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterInvite} onValueChange={setFilterInvite}>
+            <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Convite" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos convites</SelectItem>
+              <SelectItem value="none">Sem convite</SelectItem>
+              <SelectItem value="sent">Enviado</SelectItem>
+              <SelectItem value="opened">Aberto</SelectItem>
+              <SelectItem value="responded">Respondido</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="h-9 w-[120px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos tipos</SelectItem>
+              <SelectItem value="adult">Adulto</SelectItem>
+              <SelectItem value="child">Criança</SelectItem>
+              <SelectItem value="baby">Bebê</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="flex-1" />
           <Input
             placeholder="Buscar convidado..."
