@@ -399,6 +399,34 @@ export async function recalcularSimulacao(
 }
 
 /**
+ * Recalcula APENAS uma categoria com nova verba — sem refazer a página inteira.
+ */
+export async function recalcularCategoria(
+  catKey: string,
+  novaVerba: number,
+  convidados: number,
+  cidade: string,
+  aceitaOciosas: boolean,
+): Promise<CategoriaPlano | null> {
+  const slug = CATEGORIA_SLUG[catKey];
+  if (!slug) return null;
+  const { data: cats } = await supabase.from("categories").select("id, slug");
+  const catIdMap = new Map<string, string>();
+  (cats || []).forEach((c: any) => catIdMap.set(c.slug, c.id));
+  const fornecedores = await buscarFornecedores(slug, novaVerba, convidados, cidade, aceitaOciosas, catIdMap);
+  return {
+    key: catKey,
+    label: CATEGORIAS_LABELS[catKey],
+    icon: CATEGORIAS_ICONS[catKey],
+    slug,
+    verba: novaVerba,
+    percentual: 0,
+    fornecedores,
+    encontrou: fornecedores.length > 0,
+  };
+}
+
+/**
  * Cria o plano real do casal a partir do resultado.
  * Atualiza couples + insere couple_suppliers + budget_items.
  */
