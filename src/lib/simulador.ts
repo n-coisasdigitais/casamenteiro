@@ -285,6 +285,7 @@ export async function calcularSimulacao(
   cidade: string,
   estilo: Estilo,
   aceitaOciosas: boolean = false,
+  categoriasSelecionadas?: string[] | null,
 ): Promise<SimuladorResultado> {
   // Normaliza para os enums internos — aceita rótulos antigos/livres
   const normalizar = (v: any): Estilo => {
@@ -296,7 +297,24 @@ export async function calcularSimulacao(
     return "elegante";
   };
   const estiloNorm: Estilo = normalizar(estilo);
-  const dist = DISTRIBUICAO[estiloNorm];
+  let dist: Record<string, number> = { ...DISTRIBUICAO[estiloNorm] };
+
+  // Filtra apenas as categorias escolhidas pelo cliente, redistribuindo o peso
+  if (categoriasSelecionadas && categoriasSelecionadas.length > 0) {
+    const filtrada: Record<string, number> = {};
+    let soma = 0;
+    for (const k of Object.keys(dist)) {
+      if (categoriasSelecionadas.includes(k)) {
+        filtrada[k] = dist[k];
+        soma += dist[k];
+      }
+    }
+    if (soma > 0 && Object.keys(filtrada).length > 0) {
+      // normaliza para somar 1
+      for (const k of Object.keys(filtrada)) filtrada[k] = filtrada[k] / soma;
+      dist = filtrada;
+    }
+  }
 
   // mapa slug → category_id
   const { data: cats } = await supabase.from("categories").select("id, slug");
@@ -371,8 +389,9 @@ export async function recalcularSimulacao(
   cidade: string,
   estilo: Estilo,
   aceitaOciosas: boolean,
+  categoriasSelecionadas?: string[] | null,
 ): Promise<Omit<SimuladorResultado, "simulacaoId">> {
-  const r = await calcularSimulacao(orcamento, convidados, cidade, estilo, aceitaOciosas);
+  const r = await calcularSimulacao(orcamento, convidados, cidade, estilo, aceitaOciosas, categoriasSelecionadas);
   return { resumo: r.resumo, plano: r.plano, alertas: r.alertas };
 }
 
