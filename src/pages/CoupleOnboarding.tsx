@@ -195,6 +195,9 @@ export default function CoupleOnboarding() {
     );
   }
 
+  // mantém o step dentro do range quando os passos mudam
+  const safeStep = Math.min(step, steps.length - 1);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-beige px-4 py-8">
       <Card className="w-full max-w-lg">
@@ -208,21 +211,21 @@ export default function CoupleOnboarding() {
               Já temos sua simulação. Só faltam alguns detalhes.
             </p>
           )}
-          <p className="text-sm text-muted-foreground">Passo {step + 1} de {steps.length}</p>
+          <p className="text-sm text-muted-foreground">Passo {safeStep + 1} de {steps.length}</p>
           <div className="flex gap-1 mt-3">
             {steps.map((_, i) => (
-              <div key={i} className={`h-1 flex-1 rounded-full ${i <= step ? "bg-primary" : "bg-border"}`} />
+              <div key={i} className={`h-1 flex-1 rounded-full ${i <= safeStep ? "bg-primary" : "bg-border"}`} />
             ))}
           </div>
         </CardHeader>
         <CardContent>
-          {steps[step]}
+          {steps[safeStep]}
           <div className="flex justify-between mt-8">
-            <Button variant="ghost" onClick={() => setStep(step - 1)} disabled={step === 0}>
+            <Button variant="ghost" onClick={() => setStep(safeStep - 1)} disabled={safeStep === 0}>
               Voltar
             </Button>
-            {step < steps.length - 1 ? (
-              <Button onClick={() => setStep(step + 1)}>Próximo</Button>
+            {safeStep < steps.length - 1 ? (
+              <Button onClick={() => setStep(safeStep + 1)}>Próximo</Button>
             ) : (
               <Button onClick={handleSubmit} disabled={loading}>
                 {loading ? "Salvando..." : "Finalizar"}
