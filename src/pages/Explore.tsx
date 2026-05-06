@@ -226,7 +226,9 @@ const Explore = () => {
           </nav>
 
           <div className="flex items-center gap-2">
-            {user ? (
+            {authLoading ? (
+              <div className="h-9 w-20" />
+            ) : user ? (
               <UserMenu />
             ) : (
               <>
