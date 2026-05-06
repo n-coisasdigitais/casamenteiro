@@ -228,6 +228,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
             {loading ? "Enviando..." : "Enviar pedido de orçamento"}
           </Button>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );
