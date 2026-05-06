@@ -162,7 +162,7 @@ function CarouselRow({
 }
 
 const Explore = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Supplier[]>([]);
   const [byCategory, setByCategory] = useState<Record<string, Supplier[]>>({});
