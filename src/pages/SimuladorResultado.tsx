@@ -198,7 +198,18 @@ export default function SimuladorResultado() {
     }
     setCriando(true);
     try {
-      await criarPlano(id, resultado, nomePlano.trim(), dataPrevista);
+      // Junta as seleções de cada categoria
+      const todos = new Set<string>();
+      for (const cat of Object.values(resultado.plano)) {
+        const escolhidos = selecionados[cat.key];
+        if (escolhidos && escolhidos.size > 0) {
+          escolhidos.forEach((s) => todos.add(s));
+        } else if (cat.fornecedores[0]) {
+          // padrão: primeiro fornecedor da categoria
+          todos.add(cat.fornecedores[0].id);
+        }
+      }
+      await criarPlano(id, resultado, nomePlano.trim(), dataPrevista, todos);
       toast({ title: "Plano criado!", description: "Tudo pronto para começar a planejar." });
       setOpenAssumir(false);
       navigate("/meu-casamento/plano");
