@@ -156,3 +156,7 @@
 .on-green ::placeholder {
   color: rgba(255, 255, 255, 0.85) !important;
 }
+.on-green a {
+  color: hsl(23 70% 88%) !important;
+  text-decoration: underline;
+}
