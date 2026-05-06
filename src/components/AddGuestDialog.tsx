@@ -8,7 +8,7 @@ import { Plus } from "lucide-react";
 
 type AddGuestDialogProps = {
   groups: { id: string; name: string }[];
-  onAdd: (guest: { name: string; email?: string; phone?: string; guest_type: string; group_id?: string }) => void;
+  onAdd: (guest: { name: string; email?: string; phone?: string; guest_type: string; group_id?: string; max_companions?: number }) => void;
 };
 
 export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
@@ -18,6 +18,7 @@ export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
   const [phone, setPhone] = useState("");
   const [guestType, setGuestType] = useState("adult");
   const [groupId, setGroupId] = useState<string>("");
+  const [maxCompanions, setMaxCompanions] = useState<number>(0);
 
   const handleSubmit = () => {
     if (!name.trim()) return;
@@ -27,8 +28,9 @@ export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
       phone: phone.trim() || undefined,
       guest_type: guestType,
       group_id: groupId || undefined,
+      max_companions: maxCompanions,
     });
-    setName(""); setEmail(""); setPhone(""); setGroupId("");
+    setName(""); setEmail(""); setPhone(""); setGroupId(""); setMaxCompanions(0);
     setOpen(false);
   };
 
@@ -83,6 +85,11 @@ export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div>
+            <Label htmlFor="max-comp">Pode levar quantos acompanhantes?</Label>
+            <Input id="max-comp" type="number" min={0} max={5} value={maxCompanions} onChange={(e) => setMaxCompanions(Math.max(0, Math.min(5, parseInt(e.target.value) || 0)))} />
+            <p className="text-xs text-muted-foreground mt-1">0 = só ele(a). Use para casais ou famílias.</p>
           </div>
           <Button onClick={handleSubmit} className="w-full">Adicionar convidado</Button>
         </div>

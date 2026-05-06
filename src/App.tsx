@@ -42,6 +42,7 @@ import MeuPlano from "./pages/MeuPlano";
 import Favorites from "./pages/Favorites";
 import UserProfile from "./pages/UserProfile";
 import InviteRSVP from "./pages/InviteRSVP";
+import InviteObrigado from "./pages/InviteObrigado";
 import EmailConfirmado from "./pages/EmailConfirmado";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./components/admin/AdminLayout";
@@ -78,6 +79,7 @@ const App = () => (
             <Route path="/favoritos" element={<Favorites />} />
             <Route path="/perfil" element={<UserProfile />} />
             <Route path="/convite/:token" element={<InviteRSVP />} />
+            <Route path="/convite/:token/obrigado" element={<InviteObrigado />} />
             <Route path="/admin" element={<AdminLayout><AdminPanel /></AdminLayout>} />
             <Route path="/admin/fornecedores" element={<AdminLayout><AdminSuppliers /></AdminLayout>} />
             <Route path="/admin/home-config" element={<AdminLayout><AdminHomeConfig /></AdminLayout>} />

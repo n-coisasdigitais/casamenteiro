@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Calendar, Users, Phone } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Link } from "react-router-dom";
 
 type Props = {
   supplierId: string;
@@ -27,6 +28,23 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
   const [phone, setPhone] = useState("");
   const [phoneVisible, setPhoneVisible] = useState(false);
   const [attachment, setAttachment] = useState<File | null>(null);
+
+  // Pré-preenche com dados do casal/profile ao abrir
+  useEffect(() => {
+    if (!open || !user) return;
+    (async () => {
+      const [{ data: couple }, { data: profile }] = await Promise.all([
+        supabase.from("couples").select("wedding_date, estimated_guests, contact_phone").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
+      ]);
+      if (couple?.wedding_date && !eventDate) setEventDate(couple.wedding_date);
+      if (couple?.estimated_guests && !guestCount) setGuestCount(String(couple.estimated_guests));
+      if (couple?.contact_phone && !phone) setPhone(couple.contact_phone);
+      // suprime no-op de profile (mantém para futuras extensões)
+      void profile;
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -67,7 +85,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
         phone_visible: phoneVisible,
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
@@ -122,6 +140,17 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
           <p className="text-sm text-muted-foreground">para {supplierName}</p>
         </DialogHeader>
 
+        {!user ? (
+          <div className="space-y-3 mt-2 text-center">
+            <p className="text-sm text-muted-foreground">
+              Crie sua conta gratuita para pedir orçamento sem complicação.
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button asChild variant="outline"><Link to="/login">Entrar</Link></Button>
+              <Button asChild><Link to="/cadastro">Criar conta</Link></Button>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-4 mt-2">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -199,6 +228,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
             {loading ? "Enviando..." : "Enviar pedido de orçamento"}
           </Button>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );

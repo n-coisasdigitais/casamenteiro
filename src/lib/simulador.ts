@@ -440,12 +440,13 @@ export async function criarPlano(
   }
 
   // couple_suppliers — primeiro fornecedor sugerido por categoria, status nao_iniciado
-  const csRows: any[] = [];
+  const csRowsMap = new Map<string, any>();
   for (const cat of Object.values(resultado.plano)) {
     const f = cat.fornecedores[0];
     if (!f) continue;
+    if (csRowsMap.has(f.id)) continue; // dedupe: mesmo fornecedor em + de uma categoria
     const catId = catIdMap.get(cat.slug) || null;
-    csRows.push({
+    csRowsMap.set(f.id, {
       couple_id: coupleId,
       supplier_id: f.id,
       category_id: catId,
@@ -456,15 +457,11 @@ export async function criarPlano(
       notes: "Adicionado pela simulação",
     });
   }
-  for (const r of csRows) {
-    await supabase.from("couple_suppliers")
-      .delete()
-      .eq("couple_id", r.couple_id)
-      .eq("supplier_id", r.supplier_id);
-  }
+  const csRows = Array.from(csRowsMap.values());
   if (csRows.length) {
-    const { error } = await supabase.from("couple_suppliers").insert(csRows);
-    if (error) throw error;
+    const { error } = await (supabase.from("couple_suppliers") as any)
+      .upsert(csRows, { onConflict: "couple_id,supplier_id", ignoreDuplicates: false });
+    if (error && (error as any).code !== "23505") throw error;
   }
 
   return { couple_id: coupleId };

@@ -162,7 +162,7 @@ function CarouselRow({
 }
 
 const Explore = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Supplier[]>([]);
   const [byCategory, setByCategory] = useState<Record<string, Supplier[]>>({});
@@ -226,7 +226,9 @@ const Explore = () => {
           </nav>
 
           <div className="flex items-center gap-2">
-            {user ? (
+            {authLoading ? (
+              <div className="h-9 w-20" />
+            ) : user ? (
               <UserMenu />
             ) : (
               <>
