@@ -716,6 +716,7 @@ export type Database = {
           data_evento: string | null
           estilo: string | null
           id: string
+          is_active_plan: boolean
           num_convidados: number
           orcamento_total: number
           prazo_meses: number | null
@@ -729,6 +730,7 @@ export type Database = {
           data_evento?: string | null
           estilo?: string | null
           id?: string
+          is_active_plan?: boolean
           num_convidados: number
           orcamento_total: number
           prazo_meses?: number | null
@@ -742,6 +744,7 @@ export type Database = {
           data_evento?: string | null
           estilo?: string | null
           id?: string
+          is_active_plan?: boolean
           num_convidados?: number
           orcamento_total?: number
           prazo_meses?: number | null
