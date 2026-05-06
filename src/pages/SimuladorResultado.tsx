@@ -4,10 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
-  recalcularSimulacao, criarPlano, formatarReais,
+  recalcularSimulacao, recalcularCategoria, criarPlano, formatarReais,
   type Estilo, type SimuladorResultado as SimRes,
 } from "@/lib/simulador";
-import { Heart, ArrowLeft, AlertTriangle, Sparkles, Lightbulb, MessageCircle, Tag, ExternalLink, Loader2 } from "lucide-react";
+import { Heart, ArrowLeft, AlertTriangle, Sparkles, Lightbulb, MessageCircle, Tag, ExternalLink, Loader2, Check, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,6 +39,14 @@ export default function SimuladorResultado() {
   const [nomePlano, setNomePlano] = useState("");
   const [dataPrevista, setDataPrevista] = useState("");
   const [criando, setCriando] = useState(false);
+
+  // Ajuste por categoria
+  const [editandoCat, setEditandoCat] = useState<string | null>(null);
+  const [novaVerbaCat, setNovaVerbaCat] = useState<string>("");
+  const [recalculandoCat, setRecalculandoCat] = useState<string | null>(null);
+
+  // Fornecedores selecionados para o plano (por categoria)
+  const [selecionados, setSelecionados] = useState<Record<string, Set<string>>>({});
 
   useEffect(() => {
     document.title = "Seu plano — Casamenteiro";
@@ -97,6 +105,7 @@ export default function SimuladorResultado() {
         sim.cidade || "",
         (sim.estilo as Estilo) || "elegante",
         novoOcioso,
+        sim.categorias_selecionadas || null,
       );
       setResultado({ simulacaoId: id, ...r });
       // persiste no banco
@@ -108,6 +117,69 @@ export default function SimuladorResultado() {
     } finally {
       setRecalculando(false);
     }
+  };
+
+  // Ajusta a verba de uma categoria e recalcula apenas ela.
+  // Atualiza também o orçamento total da simulação (sem criar uma nova).
+  const aplicarAjusteCategoria = async (catKey: string) => {
+    if (!sim || !resultado) return;
+    const novaVerba = Number(novaVerbaCat.replace(/\D/g, ""));
+    if (!novaVerba || novaVerba < 0) {
+      toast({ title: "Informe uma verba válida", variant: "destructive" });
+      return;
+    }
+    setRecalculandoCat(catKey);
+    try {
+      const novaCat = await recalcularCategoria(
+        catKey,
+        novaVerba,
+        Number(sim.num_convidados),
+        sim.cidade || "",
+        aceitaOciosas,
+      );
+      if (!novaCat) throw new Error("Categoria inválida");
+
+      const novoPlano = { ...resultado.plano, [catKey]: { ...novaCat, percentual: resultado.plano[catKey]?.percentual || 0 } };
+      const totalAlocado = Object.values(novoPlano).reduce((s, c) => s + (c?.verba || 0), 0);
+      const orcamentoTotal = Math.max(totalAlocado, resultado.resumo.orcamentoTotal);
+      const comFornecedor = Object.values(novoPlano).filter((c) => c.encontrou).length;
+      const totalCategorias = Object.keys(novoPlano).length;
+
+      const novoResumo = {
+        ...resultado.resumo,
+        orcamentoTotal,
+        totalAlocado,
+        sobraOrcamento: orcamentoTotal - totalAlocado,
+        categoriasComFornecedor: comFornecedor,
+        totalCategorias,
+        cobertura: Math.round((comFornecedor / totalCategorias) * 100),
+      };
+
+      const novo: SimRes = { ...resultado, plano: novoPlano, resumo: novoResumo };
+      setResultado(novo);
+      await (supabase.from("home_simulacoes" as any) as any)
+        .update({
+          resultado: { ...novo, simulacaoId: id },
+          orcamento_total: orcamentoTotal,
+        })
+        .eq("id", id);
+      setEditandoCat(null);
+      setNovaVerbaCat("");
+      toast({ title: "Categoria recalculada" });
+    } catch (e: any) {
+      toast({ title: "Erro ao recalcular categoria", description: e.message, variant: "destructive" });
+    } finally {
+      setRecalculandoCat(null);
+    }
+  };
+
+  const toggleFornecedor = (catKey: string, supplierId: string) => {
+    setSelecionados((prev) => {
+      const set = new Set(prev[catKey] || []);
+      if (set.has(supplierId)) set.delete(supplierId);
+      else set.add(supplierId);
+      return { ...prev, [catKey]: set };
+    });
   };
 
   const onAssumir = () => {
@@ -126,7 +198,18 @@ export default function SimuladorResultado() {
     }
     setCriando(true);
     try {
-      await criarPlano(id, resultado, nomePlano.trim(), dataPrevista);
+      // Junta as seleções de cada categoria
+      const todos = new Set<string>();
+      for (const cat of Object.values(resultado.plano)) {
+        const escolhidos = selecionados[cat.key];
+        if (escolhidos && escolhidos.size > 0) {
+          escolhidos.forEach((s) => todos.add(s));
+        } else if (cat.fornecedores[0]) {
+          // padrão: primeiro fornecedor da categoria
+          todos.add(cat.fornecedores[0].id);
+        }
+      }
+      await criarPlano(id, resultado, nomePlano.trim(), dataPrevista, todos);
       toast({ title: "Plano criado!", description: "Tudo pronto para começar a planejar." });
       setOpenAssumir(false);
       navigate("/meu-casamento/plano");
@@ -237,10 +320,43 @@ export default function SimuladorResultado() {
                 <h2 className="text-lg md:text-xl font-semibold" style={{ color: "hsl(var(--color-dark))" }}>
                   <span className="mr-2">{cat.icon}</span>{cat.label}
                 </h2>
-                <p className="text-sm" style={{ color: "hsl(var(--color-text-muted))" }}>
-                  <strong style={{ color: "hsl(var(--color-dark))" }}>{formatarReais(cat.verba)}</strong>{" "}
-                  ({Math.round(cat.percentual * 100)}%)
-                </p>
+                <div className="flex items-center gap-2">
+                  {editandoCat === cat.key ? (
+                    <>
+                      <Input
+                        type="number"
+                        autoFocus
+                        value={novaVerbaCat}
+                        onChange={(e) => setNovaVerbaCat(e.target.value)}
+                        placeholder="Nova verba (R$)"
+                        className="w-36 h-8 text-sm"
+                        disabled={recalculandoCat === cat.key}
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => aplicarAjusteCategoria(cat.key)}
+                        disabled={recalculandoCat === cat.key}
+                      >
+                        {recalculandoCat === cat.key
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <Check className="w-3.5 h-3.5" />}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setEditandoCat(null); setNovaVerbaCat(""); }} disabled={recalculandoCat === cat.key}>
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm" style={{ color: "hsl(var(--color-text-muted))" }}>
+                        <strong style={{ color: "hsl(var(--color-dark))" }}>{formatarReais(cat.verba)}</strong>
+                      </p>
+                      <Button size="sm" variant="ghost" onClick={() => { setEditandoCat(cat.key); setNovaVerbaCat(String(cat.verba)); }}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
 
               {recalculando ? (
@@ -256,12 +372,26 @@ export default function SimuladorResultado() {
                 </div>
               ) : (
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
-                  {cat.fornecedores.map((f) => (
+                  {cat.fornecedores.map((f) => {
+                    const catSel = selecionados[cat.key];
+                    const isSel = catSel
+                      ? catSel.has(f.id)
+                      : cat.fornecedores[0]?.id === f.id; // padrão: 1º vem marcado
+                    return (
                     <article
                       key={f.id}
-                      className="flex-shrink-0 w-72 rounded-xl p-4 snap-start"
-                      style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--color-border))" }}
+                      onClick={() => toggleFornecedor(cat.key, f.id)}
+                      className="flex-shrink-0 w-72 rounded-xl p-4 snap-start cursor-pointer transition relative"
+                      style={{
+                        background: "hsl(var(--card))",
+                        border: `2px solid ${isSel ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
+                      }}
                     >
+                      {isSel && (
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--color-primary))" }}>
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
                       <div className="flex items-start gap-3 mb-3">
                         {f.foto_perfil_url ? (
                           <img src={f.foto_perfil_url} alt={f.nome} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
@@ -274,7 +404,7 @@ export default function SimuladorResultado() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <Link to={`/fornecedor/${f.id}`} className="block text-sm font-semibold truncate hover:underline" style={{ color: "hsl(var(--color-dark))" }}>
+                          <Link to={`/fornecedor/${f.id}`} onClick={(e) => e.stopPropagation()} className="block text-sm font-semibold truncate hover:underline" style={{ color: "hsl(var(--color-dark))" }}>
                             {f.nome}
                           </Link>
                           {f.cidade && (
@@ -304,6 +434,7 @@ export default function SimuladorResultado() {
                           href={f.linkWhatsApp}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
                           style={{ background: "hsl(var(--color-accent))", color: "hsl(var(--accent-foreground))" }}
                         >
@@ -312,6 +443,7 @@ export default function SimuladorResultado() {
                       ) : (
                         <Link
                           to={`/fornecedor/${f.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
                           style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}
                         >
@@ -319,7 +451,8 @@ export default function SimuladorResultado() {
                         </Link>
                       )}
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>

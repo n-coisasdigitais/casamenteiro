@@ -251,6 +251,7 @@ function gerarAlertas(plano: Record<string, CategoriaPlano>, semFornecedor: stri
 async function salvarSimulacao(input: {
   orcamento: number; convidados: number; cidade: string; estilo: Estilo; aceitaOciosas: boolean;
   resultado?: any;
+  categoriasSelecionadas?: string[] | null;
 }): Promise<string | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -268,6 +269,7 @@ async function salvarSimulacao(input: {
         cidade: input.cidade,
         estilo: input.estilo,
         resultado: input.resultado ?? null,
+        categorias_selecionadas: input.categoriasSelecionadas ?? null,
       })
       .select("id")
       .maybeSingle();
@@ -285,6 +287,7 @@ export async function calcularSimulacao(
   cidade: string,
   estilo: Estilo,
   aceitaOciosas: boolean = false,
+  categoriasSelecionadas?: string[] | null,
 ): Promise<SimuladorResultado> {
   // Normaliza para os enums internos — aceita rótulos antigos/livres
   const normalizar = (v: any): Estilo => {
@@ -296,7 +299,24 @@ export async function calcularSimulacao(
     return "elegante";
   };
   const estiloNorm: Estilo = normalizar(estilo);
-  const dist = DISTRIBUICAO[estiloNorm];
+  let dist: Record<string, number> = { ...DISTRIBUICAO[estiloNorm] };
+
+  // Filtra apenas as categorias escolhidas pelo cliente, redistribuindo o peso
+  if (categoriasSelecionadas && categoriasSelecionadas.length > 0) {
+    const filtrada: Record<string, number> = {};
+    let soma = 0;
+    for (const k of Object.keys(dist)) {
+      if (categoriasSelecionadas.includes(k)) {
+        filtrada[k] = dist[k];
+        soma += dist[k];
+      }
+    }
+    if (soma > 0 && Object.keys(filtrada).length > 0) {
+      // normaliza para somar 1
+      for (const k of Object.keys(filtrada)) filtrada[k] = filtrada[k] / soma;
+      dist = filtrada;
+    }
+  }
 
   // mapa slug → category_id
   const { data: cats } = await supabase.from("categories").select("id, slug");
@@ -356,6 +376,7 @@ export async function calcularSimulacao(
   const simulacaoId = await salvarSimulacao({
     orcamento, convidados, cidade, estilo: estiloNorm, aceitaOciosas,
     resultado: { resumo, plano, alertas },
+    categoriasSelecionadas: categoriasSelecionadas || null,
   });
 
   return { simulacaoId, resumo, plano, alertas };
@@ -371,9 +392,38 @@ export async function recalcularSimulacao(
   cidade: string,
   estilo: Estilo,
   aceitaOciosas: boolean,
+  categoriasSelecionadas?: string[] | null,
 ): Promise<Omit<SimuladorResultado, "simulacaoId">> {
-  const r = await calcularSimulacao(orcamento, convidados, cidade, estilo, aceitaOciosas);
+  const r = await calcularSimulacao(orcamento, convidados, cidade, estilo, aceitaOciosas, categoriasSelecionadas);
   return { resumo: r.resumo, plano: r.plano, alertas: r.alertas };
+}
+
+/**
+ * Recalcula APENAS uma categoria com nova verba — sem refazer a página inteira.
+ */
+export async function recalcularCategoria(
+  catKey: string,
+  novaVerba: number,
+  convidados: number,
+  cidade: string,
+  aceitaOciosas: boolean,
+): Promise<CategoriaPlano | null> {
+  const slug = CATEGORIA_SLUG[catKey];
+  if (!slug) return null;
+  const { data: cats } = await supabase.from("categories").select("id, slug");
+  const catIdMap = new Map<string, string>();
+  (cats || []).forEach((c: any) => catIdMap.set(c.slug, c.id));
+  const fornecedores = await buscarFornecedores(slug, novaVerba, convidados, cidade, aceitaOciosas, catIdMap);
+  return {
+    key: catKey,
+    label: CATEGORIAS_LABELS[catKey],
+    icon: CATEGORIAS_ICONS[catKey],
+    slug,
+    verba: novaVerba,
+    percentual: 0,
+    fornecedores,
+    encontrou: fornecedores.length > 0,
+  };
 }
 
 /**
@@ -385,6 +435,7 @@ export async function criarPlano(
   resultado: SimuladorResultado,
   nomeDoPlano: string,
   dataEvento: string,
+  fornecedoresSelecionados?: Set<string> | null,
 ): Promise<{ couple_id: string }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário precisa estar logado para criar um plano.");
@@ -442,20 +493,24 @@ export async function criarPlano(
   // couple_suppliers — primeiro fornecedor sugerido por categoria, status nao_iniciado
   const csRowsMap = new Map<string, any>();
   for (const cat of Object.values(resultado.plano)) {
-    const f = cat.fornecedores[0];
-    if (!f) continue;
-    if (csRowsMap.has(f.id)) continue; // dedupe: mesmo fornecedor em + de uma categoria
-    const catId = catIdMap.get(cat.slug) || null;
-    csRowsMap.set(f.id, {
-      couple_id: coupleId,
-      supplier_id: f.id,
-      category_id: catId,
-      kanban_status: "nao_iniciado",
-      status: "saved",
-      estimated_value: f.preco_base || cat.verba,
-      simulation_id: _simulacaoId,
-      notes: "Adicionado pela simulação",
-    });
+    // Se houver subset, usa apenas os escolhidos; senão, usa o primeiro sugerido
+    const escolhidos = fornecedoresSelecionados && fornecedoresSelecionados.size > 0
+      ? cat.fornecedores.filter((f) => fornecedoresSelecionados.has(f.id))
+      : cat.fornecedores.slice(0, 1);
+    for (const f of escolhidos) {
+      if (csRowsMap.has(f.id)) continue;
+      const catId = catIdMap.get(cat.slug) || null;
+      csRowsMap.set(f.id, {
+        couple_id: coupleId,
+        supplier_id: f.id,
+        category_id: catId,
+        kanban_status: "nao_iniciado",
+        status: "saved",
+        estimated_value: f.preco_base || cat.verba,
+        simulation_id: _simulacaoId,
+        notes: "Adicionado pela simulação",
+      });
+    }
   }
   const csRows = Array.from(csRowsMap.values());
   if (csRows.length) {
