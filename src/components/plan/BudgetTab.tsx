@@ -14,13 +14,14 @@ import { buildWhatsAppLink } from "@/lib/phone";
 const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
 
 export default function BudgetTab({
-  coupleId, items, planoTotal, onChange, contextoMensagem,
+  coupleId, items, planoTotal, onChange, contextoMensagem, quotes,
 }: {
   coupleId: string;
   items: PlanSupplier[];
   planoTotal: number;
   onChange: () => void;
   contextoMensagem: { nomeCasal: string; data: string; cidade: string; convidados: number };
+  quotes?: any[];
 }) {
   const { toast } = useToast();
   const [whatsapps, setWhatsapps] = useState<Record<string, string>>({});
@@ -111,6 +112,34 @@ export default function BudgetTab({
 
   return (
     <div className="space-y-6">
+      {/* Orçamentos solicitados (status inicial) */}
+      {quotes && quotes.length > 0 && (
+        <Card className="p-5">
+          <h3 className="font-semibold mb-3">Orçamentos solicitados</h3>
+          <p className="text-sm text-muted-foreground mb-3">
+            Pedidos enviados aos fornecedores. Quando uma proposta for aceita, o item entra no plano automaticamente.
+          </p>
+          <div className="space-y-1.5">
+            {quotes.map((q: any) => {
+              const noPlano = items.some((i) => i.supplier_id === q.supplier_id);
+              return (
+                <div key={q.id} className="flex items-center gap-3 py-2 border-b border-border/60 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{q.suppliers?.company_name || "Fornecedor"}</p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {q.suppliers?.categories?.name || "—"} · {new Date(q.created_at).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                  <Badge variant={noPlano ? "default" : "secondary"} className="text-[10px]">
+                    {noPlano ? "no plano" : "em orçamento"}
+                  </Badge>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-5">
           <h3 className="font-semibold mb-4">Plano vs realidade por categoria</h3>
