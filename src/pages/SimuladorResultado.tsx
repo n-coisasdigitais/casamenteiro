@@ -320,10 +320,43 @@ export default function SimuladorResultado() {
                 <h2 className="text-lg md:text-xl font-semibold" style={{ color: "hsl(var(--color-dark))" }}>
                   <span className="mr-2">{cat.icon}</span>{cat.label}
                 </h2>
-                <p className="text-sm" style={{ color: "hsl(var(--color-text-muted))" }}>
-                  <strong style={{ color: "hsl(var(--color-dark))" }}>{formatarReais(cat.verba)}</strong>{" "}
-                  ({Math.round(cat.percentual * 100)}%)
-                </p>
+                <div className="flex items-center gap-2">
+                  {editandoCat === cat.key ? (
+                    <>
+                      <Input
+                        type="number"
+                        autoFocus
+                        value={novaVerbaCat}
+                        onChange={(e) => setNovaVerbaCat(e.target.value)}
+                        placeholder="Nova verba (R$)"
+                        className="w-36 h-8 text-sm"
+                        disabled={recalculandoCat === cat.key}
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => aplicarAjusteCategoria(cat.key)}
+                        disabled={recalculandoCat === cat.key}
+                      >
+                        {recalculandoCat === cat.key
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <Check className="w-3.5 h-3.5" />}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setEditandoCat(null); setNovaVerbaCat(""); }} disabled={recalculandoCat === cat.key}>
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm" style={{ color: "hsl(var(--color-text-muted))" }}>
+                        <strong style={{ color: "hsl(var(--color-dark))" }}>{formatarReais(cat.verba)}</strong>
+                      </p>
+                      <Button size="sm" variant="ghost" onClick={() => { setEditandoCat(cat.key); setNovaVerbaCat(String(cat.verba)); }}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
 
               {recalculando ? (
