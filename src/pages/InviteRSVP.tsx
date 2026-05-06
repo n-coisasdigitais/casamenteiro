@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Heart, MapPin, Calendar, Phone, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type InviteData = {
   invite_id: string;
   guest_name: string;
   rsvp_response: string | null;
   rsvp_companions: number | null;
+  max_companions: number | null;
   rsvp_note: string | null;
   responded_at: string | null;
   partner_name: string | null;
@@ -28,24 +30,78 @@ type InviteData = {
   dress_code: string | null;
 };
 
-function buildIcsUrl(data: InviteData): string {
-  if (!data.wedding_date) return "#";
-  const date = data.wedding_date.replace(/-/g, "");
+function buildEventInfo(data: InviteData) {
+  const title = `Casamento de ${data.user_full_name || ""} & ${data.partner_name || ""}`;
+  const location = data.ceremony_address || data.reception_address || "";
+  const description = data.invite_message || "";
+  const dateOnly = (data.wedding_date || "").replace(/-/g, "");
+  // Hora opcional (ceremony_time tipo "19:00")
+  let startISO = dateOnly;
+  let endISO = dateOnly;
+  if (data.ceremony_time && /^\d{2}:\d{2}/.test(data.ceremony_time)) {
+    const [hh, mm] = data.ceremony_time.split(":");
+    startISO = `${dateOnly}T${hh}${mm}00`;
+    // +4h
+    const endDate = new Date(`${data.wedding_date}T${hh}:${mm}:00`);
+    endDate.setHours(endDate.getHours() + 4);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    endISO = `${endDate.getFullYear()}${pad(endDate.getMonth() + 1)}${pad(endDate.getDate())}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}00`;
+  }
+  return { title, location, description, startISO, endISO };
+}
+
+function googleCalendarUrl(data: InviteData) {
+  const { title, location, description, startISO, endISO } = buildEventInfo(data);
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${startISO}/${endISO}`,
+    location,
+    details: description,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function outlookCalendarUrl(data: InviteData) {
+  const { title, location, description, startISO } = buildEventInfo(data);
+  const start = startISO.length > 8
+    ? `${startISO.slice(0, 4)}-${startISO.slice(4, 6)}-${startISO.slice(6, 8)}T${startISO.slice(9, 11)}:${startISO.slice(11, 13)}:00`
+    : `${startISO.slice(0, 4)}-${startISO.slice(4, 6)}-${startISO.slice(6, 8)}`;
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: title,
+    startdt: start,
+    location,
+    body: description,
+  });
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+function downloadIcs(data: InviteData) {
+  const { title, location, description, startISO, endISO } = buildEventInfo(data);
   const ics = [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT",
-    `SUMMARY:Casamento de ${data.user_full_name || ""} & ${data.partner_name || ""}`,
-    `DTSTART;VALUE=DATE:${date}`,
-    `DTEND;VALUE=DATE:${date}`,
-    `LOCATION:${data.ceremony_address || data.reception_address || ""}`,
-    `DESCRIPTION:${data.invite_message || ""}`,
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Casamenteiro//PT-BR",
+    "BEGIN:VEVENT",
+    `UID:${data.invite_id}@casamenteiro`,
+    `SUMMARY:${title}`,
+    startISO.length > 8 ? `DTSTART:${startISO}` : `DTSTART;VALUE=DATE:${startISO}`,
+    startISO.length > 8 ? `DTEND:${endISO}` : `DTEND;VALUE=DATE:${endISO}`,
+    `LOCATION:${location}`,
+    `DESCRIPTION:${description.replace(/\n/g, "\\n")}`,
     "END:VEVENT", "END:VCALENDAR",
-  ].join("\n");
-  return "data:text/calendar;charset=utf8," + encodeURIComponent(ics);
+  ].join("\r\n");
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "casamento.ics"; a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function InviteRSVP() {
   const { token } = useParams();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [data, setData] = useState<InviteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [companions, setCompanions] = useState(0);
@@ -75,11 +131,11 @@ export default function InviteRSVP() {
     });
     setSubmitting(false);
     if (error || !ok) {
-      toast({ title: "Erro ao registrar resposta", variant: "destructive" });
+      toast({ title: "Erro ao registrar resposta", description: error?.message, variant: "destructive" });
       return;
     }
     setDone(response);
-    toast({ title: response === "confirmed" ? "Presença confirmada! 💖" : "Resposta registrada" });
+    navigate(`/convite/${token}/obrigado?r=${response}`);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Carregando convite...</div>;
@@ -146,9 +202,20 @@ export default function InviteRSVP() {
               <a href={`tel:${data.contact_phone}`} className="text-sm">{data.contact_phone}</a>
             </div>
           )}
-          <Button asChild variant="outline" className="w-full">
-            <a href={buildIcsUrl(data)} download="casamento.ics"><Calendar className="h-4 w-4 mr-2" />Adicionar ao calendário</a>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full"><Calendar className="h-4 w-4 mr-2" />Adicionar ao calendário</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuItem asChild>
+                <a href={googleCalendarUrl(data)} target="_blank" rel="noopener">Google Agenda</a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={outlookCalendarUrl(data)} target="_blank" rel="noopener">Outlook</a>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadIcs(data)}>Apple / iOS (.ics)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </Card>
 
         <Card className="p-6">
@@ -164,10 +231,12 @@ export default function InviteRSVP() {
             </div>
           )}
           <div className="space-y-3">
-            <div>
-              <Label htmlFor="comp">Acompanhantes</Label>
-              <Input id="comp" type="number" min={0} value={companions} onChange={(e) => setCompanions(parseInt(e.target.value) || 0)} />
-            </div>
+            {(data.max_companions ?? 0) > 0 && (
+              <div>
+                <Label htmlFor="comp">Acompanhantes (máx. {data.max_companions})</Label>
+                <Input id="comp" type="number" min={0} max={data.max_companions ?? 0} value={companions} onChange={(e) => setCompanions(Math.min(parseInt(e.target.value) || 0, data.max_companions ?? 0))} />
+              </div>
+            )}
             <div>
               <Label htmlFor="note">Observações (restrição alimentar, etc.)</Label>
               <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
