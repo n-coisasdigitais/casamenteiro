@@ -138,3 +138,21 @@
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 }
+
+/* Leaflet: garantir que panes/controls fiquem abaixo de modais/dropdowns Radix (z-50) */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom,
+.leaflet-control { z-index: 1 !important; }
+.leaflet-container { z-index: 0; }
+
+/* Containers com fundo verde: forçar texto branco para contraste */
+.on-green,
+.on-green * {
+  color: #ffffff !important;
+}
+.on-green .text-muted-foreground,
+.on-green label,
+.on-green ::placeholder {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
