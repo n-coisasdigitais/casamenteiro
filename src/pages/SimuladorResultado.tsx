@@ -372,12 +372,26 @@ export default function SimuladorResultado() {
                 </div>
               ) : (
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
-                  {cat.fornecedores.map((f) => (
+                  {cat.fornecedores.map((f) => {
+                    const catSel = selecionados[cat.key];
+                    const isSel = catSel
+                      ? catSel.has(f.id)
+                      : cat.fornecedores[0]?.id === f.id; // padrão: 1º vem marcado
+                    return (
                     <article
                       key={f.id}
-                      className="flex-shrink-0 w-72 rounded-xl p-4 snap-start"
-                      style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--color-border))" }}
+                      onClick={() => toggleFornecedor(cat.key, f.id)}
+                      className="flex-shrink-0 w-72 rounded-xl p-4 snap-start cursor-pointer transition relative"
+                      style={{
+                        background: "hsl(var(--card))",
+                        border: `2px solid ${isSel ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
+                      }}
                     >
+                      {isSel && (
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--color-primary))" }}>
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
                       <div className="flex items-start gap-3 mb-3">
                         {f.foto_perfil_url ? (
                           <img src={f.foto_perfil_url} alt={f.nome} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
