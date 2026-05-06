@@ -105,6 +105,7 @@ export default function SimuladorResultado() {
         sim.cidade || "",
         (sim.estilo as Estilo) || "elegante",
         novoOcioso,
+        sim.categorias_selecionadas || null,
       );
       setResultado({ simulacaoId: id, ...r });
       // persiste no banco
@@ -116,6 +117,69 @@ export default function SimuladorResultado() {
     } finally {
       setRecalculando(false);
     }
+  };
+
+  // Ajusta a verba de uma categoria e recalcula apenas ela.
+  // Atualiza também o orçamento total da simulação (sem criar uma nova).
+  const aplicarAjusteCategoria = async (catKey: string) => {
+    if (!sim || !resultado) return;
+    const novaVerba = Number(novaVerbaCat.replace(/\D/g, ""));
+    if (!novaVerba || novaVerba < 0) {
+      toast({ title: "Informe uma verba válida", variant: "destructive" });
+      return;
+    }
+    setRecalculandoCat(catKey);
+    try {
+      const novaCat = await recalcularCategoria(
+        catKey,
+        novaVerba,
+        Number(sim.num_convidados),
+        sim.cidade || "",
+        aceitaOciosas,
+      );
+      if (!novaCat) throw new Error("Categoria inválida");
+
+      const novoPlano = { ...resultado.plano, [catKey]: { ...novaCat, percentual: resultado.plano[catKey]?.percentual || 0 } };
+      const totalAlocado = Object.values(novoPlano).reduce((s, c) => s + (c?.verba || 0), 0);
+      const orcamentoTotal = Math.max(totalAlocado, resultado.resumo.orcamentoTotal);
+      const comFornecedor = Object.values(novoPlano).filter((c) => c.encontrou).length;
+      const totalCategorias = Object.keys(novoPlano).length;
+
+      const novoResumo = {
+        ...resultado.resumo,
+        orcamentoTotal,
+        totalAlocado,
+        sobraOrcamento: orcamentoTotal - totalAlocado,
+        categoriasComFornecedor: comFornecedor,
+        totalCategorias,
+        cobertura: Math.round((comFornecedor / totalCategorias) * 100),
+      };
+
+      const novo: SimRes = { ...resultado, plano: novoPlano, resumo: novoResumo };
+      setResultado(novo);
+      await (supabase.from("home_simulacoes" as any) as any)
+        .update({
+          resultado: { ...novo, simulacaoId: id },
+          orcamento_total: orcamentoTotal,
+        })
+        .eq("id", id);
+      setEditandoCat(null);
+      setNovaVerbaCat("");
+      toast({ title: "Categoria recalculada" });
+    } catch (e: any) {
+      toast({ title: "Erro ao recalcular categoria", description: e.message, variant: "destructive" });
+    } finally {
+      setRecalculandoCat(null);
+    }
+  };
+
+  const toggleFornecedor = (catKey: string, supplierId: string) => {
+    setSelecionados((prev) => {
+      const set = new Set(prev[catKey] || []);
+      if (set.has(supplierId)) set.delete(supplierId);
+      else set.add(supplierId);
+      return { ...prev, [catKey]: set };
+    });
   };
 
   const onAssumir = () => {
