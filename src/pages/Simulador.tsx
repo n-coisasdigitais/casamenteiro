@@ -5,6 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { calcularSimulacao, type Estilo } from "@/lib/simulador";
 import { Loader2, Heart, ArrowLeft } from "lucide-react";
+import CityAutocomplete from "@/components/CityAutocomplete";
+import { supabase } from "@/integrations/supabase/client";
 
 const GUEST_OPTIONS = [
   { letter: "A", label: "Até 50 pessoas — íntimo e especial", value: 50 },
@@ -28,6 +30,8 @@ export default function Simulador() {
   const [orcamento, setOrcamento] = useState(20000);
   const [convidados, setConvidados] = useState<number | null>(null);
   const [cidade, setCidade] = useState("");
+  const [cidadeSemFornecedor, setCidadeSemFornecedor] = useState(false);
+  const [estadoCidade, setEstadoCidade] = useState<string | null>(null);
   const [estilo, setEstilo] = useState<Estilo | null>(null);
 
   useEffect(() => {
@@ -45,6 +49,14 @@ export default function Simulador() {
     setStep(5);
     try {
       const r = await calcularSimulacao(orcamento, convidados, cidade.trim(), estilo, false);
+      // Se a cidade não tem fornecedor, registrar interesse
+      if (cidadeSemFornecedor && r.simulacaoId) {
+        await supabase.from("cidades_interesse").insert({
+          cidade: cidade.trim(),
+          estado: estadoCidade,
+          simulacao_id: r.simulacaoId,
+        });
+      }
       if (!user) {
         if (r.simulacaoId) {
           sessionStorage.setItem(
@@ -228,21 +240,15 @@ export default function Simulador() {
               {step === 3 && (
                 <div>
                   <StepHeader num="Pergunta 3 de 4" title="Em qual cidade será o casamento?" hint="Vamos encontrar os melhores fornecedores da sua região." />
-                  <input
-                    autoFocus
+                  <CityAutocomplete
                     value={cidade}
-                    onChange={(e) => setCidade(e.target.value)}
-                    placeholder="Ex: Belo Horizonte"
-                    className="w-full bg-transparent border-0 outline-none"
-                    style={{
-                      fontSize: 28,
-                      fontWeight: 600,
-                      color: "hsl(var(--color-dark))",
-                      borderBottom: "2px solid hsl(var(--color-border))",
-                      padding: "8px 0 12px",
+                    autoFocus
+                    variant="large"
+                    onChange={(c, est, sem) => {
+                      setCidade(c);
+                      setEstadoCidade(est ?? null);
+                      setCidadeSemFornecedor(!!sem);
                     }}
-                    onFocus={(e) => (e.currentTarget.style.borderBottomColor = "hsl(var(--color-primary))")}
-                    onBlur={(e) => (e.currentTarget.style.borderBottomColor = "hsl(var(--color-border))")}
                   />
                   <Nav onBack={() => setStep(2)} onNext={() => setStep(4)} disabled={cidade.trim().length < 2} hint="pressione Enter ↵" />
                 </div>
