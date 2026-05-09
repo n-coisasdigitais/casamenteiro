@@ -77,7 +77,7 @@ const App = () => (
             <Route path="/convidados" element={<WeddingGuests />} />
             <Route path="/orcamento" element={<WeddingPlan />} />
             <Route path="/meu-casamento/plano" element={<WeddingPlan />} />
-            <Route path="/buscar" element={<SupplierSearch />} />
+            <Route path="/buscar" element={<Explore />} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
             <Route path="/fornecedor" element={<SupplierLanding />} />
