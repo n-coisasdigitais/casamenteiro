@@ -14,6 +14,8 @@ import DashboardNav from "@/components/DashboardNav";
 import AvatarUpload from "@/components/AvatarUpload";
 import { Textarea } from "@/components/ui/textarea";
 import CouplePhotoUpload from "@/components/CouplePhotoUpload";
+import CepInput from "@/components/CepInput";
+import AlbumUpload from "@/components/AlbumUpload";
 
 export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -39,6 +41,18 @@ export default function UserProfile() {
   const [receptionAddress, setReceptionAddress] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [dressCode, setDressCode] = useState("");
+
+  // Convite — novos campos (Fase 2)
+  const [ceremonyCep, setCeremonyCep] = useState("");
+  const [ceremonyLat, setCeremonyLat] = useState<number | null>(null);
+  const [ceremonyLng, setCeremonyLng] = useState<number | null>(null);
+  const [ceremonyLocalNome, setCeremonyLocalNome] = useState("");
+  const [receptionCep, setReceptionCep] = useState("");
+  const [receptionLat, setReceptionLat] = useState<number | null>(null);
+  const [receptionLng, setReceptionLng] = useState<number | null>(null);
+  const [receptionLocalNome, setReceptionLocalNome] = useState("");
+  const [inviteVideoUrl, setInviteVideoUrl] = useState("");
+  const [inviteAlbum, setInviteAlbum] = useState<string[]>([]);
 
   // Header pessoal + meta de orçamento
   const [headerPhotoUrl, setHeaderPhotoUrl] = useState("");
@@ -81,6 +95,16 @@ export default function UserProfile() {
         setHeaderQuote((data as any).header_quote || "");
         setTargetBudget((data as any).target_budget?.toString() || "");
         setBudgetMode((data as any).budget_mode || "fixed");
+        setCeremonyCep((data as any).ceremony_cep || "");
+        setCeremonyLat((data as any).ceremony_lat ?? null);
+        setCeremonyLng((data as any).ceremony_lng ?? null);
+        setCeremonyLocalNome((data as any).ceremony_local_nome || "");
+        setReceptionCep((data as any).reception_cep || "");
+        setReceptionLat((data as any).reception_lat ?? null);
+        setReceptionLng((data as any).reception_lng ?? null);
+        setReceptionLocalNome((data as any).reception_local_nome || "");
+        setInviteVideoUrl((data as any).invite_video_url || "");
+        setInviteAlbum(Array.isArray((data as any).invite_album) ? (data as any).invite_album : []);
       }
     });
   }, [user, profile, authLoading, navigate]);
@@ -114,6 +138,16 @@ export default function UserProfile() {
             header_quote: headerQuote || null,
             target_budget: targetBudget ? parseFloat(targetBudget) : null,
             budget_mode: budgetMode,
+            ceremony_cep: ceremonyCep || null,
+            ceremony_lat: ceremonyLat,
+            ceremony_lng: ceremonyLng,
+            ceremony_local_nome: ceremonyLocalNome || null,
+            reception_cep: receptionCep || null,
+            reception_lat: receptionLat,
+            reception_lng: receptionLng,
+            reception_local_nome: receptionLocalNome || null,
+            invite_video_url: inviteVideoUrl || null,
+            invite_album: inviteAlbum,
           })
           .eq("id", coupleId)
       : Promise.resolve({ error: null });
@@ -312,15 +346,65 @@ export default function UserProfile() {
             </div>
             <div>
               <Label htmlFor="ceremonyAddress">Endereço da cerimônia</Label>
-              <Input id="ceremonyAddress" value={ceremonyAddress} onChange={(e) => setCeremonyAddress(e.target.value)} />
+              <Input
+                id="ceremonyLocalNome"
+                placeholder="Nome do local (Ex.: Igreja N. S. de Lourdes)"
+                value={ceremonyLocalNome}
+                onChange={(e) => setCeremonyLocalNome(e.target.value)}
+              />
+              <div className="mt-3">
+                <CepInput
+                  cep={ceremonyCep}
+                  endereco={ceremonyAddress}
+                  label="Cerimônia"
+                  onChange={({ cep, endereco, lat, lng }) => {
+                    setCeremonyCep(cep);
+                    setCeremonyAddress(endereco);
+                    if (lat !== undefined) setCeremonyLat(lat);
+                    if (lng !== undefined) setCeremonyLng(lng);
+                  }}
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="receptionAddress">Endereço da recepção</Label>
-              <Input id="receptionAddress" value={receptionAddress} onChange={(e) => setReceptionAddress(e.target.value)} />
+              <Input
+                id="receptionLocalNome"
+                placeholder="Nome do local (Ex.: Espaço Villa)"
+                value={receptionLocalNome}
+                onChange={(e) => setReceptionLocalNome(e.target.value)}
+              />
+              <div className="mt-3">
+                <CepInput
+                  cep={receptionCep}
+                  endereco={receptionAddress}
+                  label="Recepção"
+                  onChange={({ cep, endereco, lat, lng }) => {
+                    setReceptionCep(cep);
+                    setReceptionAddress(endereco);
+                    if (lat !== undefined) setReceptionLat(lat);
+                    if (lng !== undefined) setReceptionLng(lng);
+                  }}
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="contactPhone">Telefone de contato</Label>
               <Input id="contactPhone" placeholder="(11) 99999-9999" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="inviteVideoUrl">Vídeo do convite (YouTube)</Label>
+              <Input
+                id="inviteVideoUrl"
+                placeholder="https://youtu.be/... ou https://www.youtube.com/watch?v=..."
+                value={inviteVideoUrl}
+                onChange={(e) => setInviteVideoUrl(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Cole o link do YouTube. Aparecerá como vídeo no convite.</p>
+            </div>
+            <div>
+              <Label>Álbum de fotos (até 10)</Label>
+              <AlbumUpload album={inviteAlbum} onChange={setInviteAlbum} max={10} />
             </div>
             <Button onClick={handleSaveProfile} disabled={saving} variant="outline" className="w-full">
               <Save className="mr-2 h-4 w-4" />
