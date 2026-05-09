@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
   Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
-  Calculator, Receipt, ChevronLeft,
+  Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal,
 } from "lucide-react";
 
 const groups = [
@@ -52,6 +52,8 @@ const groups = [
       { title: "Home", url: "/admin/home-config", icon: HomeIcon },
       { title: "Tarefas padrão", url: "/admin/tarefas-padrao", icon: ListChecks },
       { title: "Edição em massa", url: "/admin/fornecedores", icon: Building2 },
+      { title: "Aprovar fornecedores", url: "/admin/aprovacao", icon: ClipboardCheck },
+      { title: "Campos por categoria", url: "/admin/campos", icon: SlidersHorizontal },
     ],
   },
   {

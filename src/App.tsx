@@ -24,6 +24,8 @@ import SupplierLanding from "./pages/SupplierLanding";
 import SupplierOnboarding from "./pages/SupplierOnboarding";
 import AdminPanel from "./pages/AdminPanel";
 import AdminSuppliers from "./pages/AdminSuppliers";
+import AdminCampos from "./pages/AdminCampos";
+import AdminFornecedorAprovacao from "./pages/AdminFornecedorAprovacao";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
 import AdminTransacoes from "./pages/AdminTransacoes";
@@ -87,6 +89,8 @@ const App = () => (
             <Route path="/convite/:token/obrigado" element={<InviteObrigado />} />
             <Route path="/admin" element={<AdminLayout><AdminPanel /></AdminLayout>} />
             <Route path="/admin/fornecedores" element={<AdminLayout><AdminSuppliers /></AdminLayout>} />
+            <Route path="/admin/aprovacao" element={<AdminLayout><AdminFornecedorAprovacao /></AdminLayout>} />
+            <Route path="/admin/campos" element={<AdminLayout><AdminCampos /></AdminLayout>} />
             <Route path="/admin/home-config" element={<AdminLayout><AdminHomeConfig /></AdminLayout>} />
             <Route path="/admin/simulacoes" element={<AdminLayout><AdminSimulacoes /></AdminLayout>} />
             <Route path="/admin/transacoes" element={<AdminLayout><AdminTransacoes /></AdminLayout>} />
