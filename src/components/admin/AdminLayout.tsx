@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
   Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
-  Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal,
+  Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal, MapPin, Zap,
 } from "lucide-react";
 
 const groups = [
@@ -35,6 +35,7 @@ const groups = [
     label: "Comunicação",
     items: [
       { title: "Enviar broadcast", url: "/admin/comunicacao", icon: Send },
+      { title: "Gatilhos automáticos", url: "/admin/gatilhos", icon: Zap },
       { title: "Histórico", url: "/admin/comunicacao/historico", icon: History },
     ],
   },
@@ -54,6 +55,7 @@ const groups = [
       { title: "Edição em massa", url: "/admin/fornecedores", icon: Building2 },
       { title: "Aprovar fornecedores", url: "/admin/aprovacao", icon: ClipboardCheck },
       { title: "Campos por categoria", url: "/admin/campos", icon: SlidersHorizontal },
+      { title: "Cidades", url: "/admin/cidades", icon: MapPin },
     ],
   },
   {
