@@ -80,7 +80,7 @@ export default function CoupleDashboard() {
       supabase.from("budget_items").select("estimated_cost, final_cost").eq("couple_id", coupleId),
       supabase.from("couple_suppliers").select("id", { count: "exact", head: true }).eq("couple_id", coupleId).eq("status", "contracted"),
       supabase.from("wedding_tasks").select("id, title, category, is_completed").eq("couple_id", coupleId).eq("is_completed", false).order("sort_order", { ascending: true }).limit(3),
-      (supabase.from("home_simulacoes" as any) as any).select("*").or(`couple_id.eq.${coupleId},user_id.eq.${user?.id}`).order("criado_em", { ascending: false }).limit(5),
+      (supabase.from("home_simulacoes" as any) as any).select("*").or(`couple_id.eq.${coupleId},user_id.eq.${user?.id}`).order("criado_em", { ascending: false }),
     ]);
 
     setFavCount(favRes.count || 0);
