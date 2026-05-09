@@ -464,27 +464,28 @@ export default function CoupleDashboard() {
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <Eye className="h-4 w-4 text-muted-foreground" />
-                        {!s.is_active_plan && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (!window.confirm("Excluir esta simulação? Esta ação não pode ser desfeita.")) return;
-                              const { error } = await (supabase.from("home_simulacoes" as any) as any).delete().eq("id", s.id);
-                              if (error) {
-                                toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-                                return;
-                              }
-                              setSimulacoes((prev) => prev.filter((x) => x.id !== s.id));
-                              toast({ title: "Simulação excluída" });
-                            }}
-                            title="Excluir simulação"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const msg = s.is_active_plan
+                              ? "Esta é a simulação que virou seu PLANO ATIVO. Ao excluir, apenas a simulação será removida — seus fornecedores em orçamento, negociação ou contratados continuam no Kanban e devem ser descartados manualmente lá. Continuar?"
+                              : "Excluir esta simulação? Esta ação não pode ser desfeita.";
+                            if (!window.confirm(msg)) return;
+                            const { error } = await (supabase.from("home_simulacoes" as any) as any).delete().eq("id", s.id);
+                            if (error) {
+                              toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+                              return;
+                            }
+                            setSimulacoes((prev) => prev.filter((x) => x.id !== s.id));
+                            toast({ title: "Simulação excluída" });
+                          }}
+                          title="Excluir simulação"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
