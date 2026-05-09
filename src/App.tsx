@@ -34,6 +34,7 @@ import AdminCoupleCRM from "./pages/AdminCoupleCRM";
 import AdminSupplierCRM from "./pages/AdminSupplierCRM";
 import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminBroadcastHistory from "./pages/AdminBroadcastHistory";
+import AdminBroadcastTriggers from "./pages/AdminBroadcastTriggers";
 import AdminUsers from "./pages/AdminUsers";
 import AdminReviews from "./pages/AdminReviews";
 import AdminAuditLog from "./pages/AdminAuditLog";
@@ -101,6 +102,7 @@ const App = () => (
             <Route path="/admin/fornecedores-crm" element={<AdminLayout><AdminSupplierCRM /></AdminLayout>} />
             <Route path="/admin/fornecedor/:id" element={<AdminLayout><AdminSupplierCRM /></AdminLayout>} />
             <Route path="/admin/comunicacao" element={<AdminLayout><AdminBroadcast /></AdminLayout>} />
+            <Route path="/admin/gatilhos" element={<AdminLayout><AdminBroadcastTriggers /></AdminLayout>} />
             <Route path="/admin/comunicacao/historico" element={<AdminLayout><AdminBroadcastHistory /></AdminLayout>} />
             <Route path="/admin/usuarios" element={<AdminLayout><AdminUsers /></AdminLayout>} />
             <Route path="/admin/avaliacoes" element={<AdminLayout><AdminReviews /></AdminLayout>} />
