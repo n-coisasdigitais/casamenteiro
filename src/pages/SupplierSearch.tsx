@@ -606,8 +606,12 @@ export default function SupplierSearch() {
                 {suppliers.map((sup) => {
                   const photo = sup.supplier_photos?.[0]?.photo_url;
                   return (
-                    <Link key={sup.id} to={`/fornecedor/${sup.id}`} className="group">
-                      <div className="rounded-lg overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
+                    <div key={sup.id} className="relative">
+                      <label className="absolute top-2 left-2 z-10 bg-background/95 rounded-md p-1 cursor-pointer shadow-sm" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={selectedIds.has(sup.id)} onCheckedChange={() => toggleSelect(sup.id)} />
+                      </label>
+                      <Link to={`/fornecedor/${sup.id}`} className="group block">
+                      <div className={`rounded-lg overflow-hidden border bg-card hover:shadow-lg transition-all ${selectedIds.has(sup.id) ? "border-primary ring-1 ring-primary" : "border-border"}`}>
                         <div className="relative h-32 sm:h-48 bg-muted">
                           {photo ? (
                             <img src={photo} alt={sup.company_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
@@ -632,7 +636,8 @@ export default function SupplierSearch() {
                           )}
                         </div>
                       </div>
-                    </Link>
+                      </Link>
+                    </div>
                   );
                 })}
               </div>
@@ -640,6 +645,30 @@ export default function SupplierSearch() {
           </div>
         </div>
       </div>
+
+      {/* Sticky bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md shadow-lg">
+          <div className="container py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-sm font-medium">
+              {selectedIds.size} fornecedor(es) selecionado(s)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Limpar</Button>
+              <Button size="sm" variant="outline" onClick={() => setBulkDialog("whatsapp")}>WhatsApp (um a um)</Button>
+              <Button size="sm" onClick={() => setBulkDialog("platform")}>Enviar pela plataforma</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <BulkContactDialog
+        open={bulkDialog !== null}
+        onOpenChange={(o) => { if (!o) setBulkDialog(null); }}
+        suppliers={selectedSuppliers}
+        mode={bulkDialog || "platform"}
+        onDone={() => setSelectedIds(new Set())}
+      />
     </div>
   );
 }
