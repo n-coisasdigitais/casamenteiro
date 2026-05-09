@@ -2227,16 +2227,24 @@ export type Database = {
         Args: { _token: string }
         Returns: {
           ceremony_address: string
+          ceremony_lat: number
+          ceremony_lng: number
+          ceremony_local_nome: string
           ceremony_time: string
           contact_phone: string
           dress_code: string
           guest_name: string
+          invite_album: Json
           invite_id: string
           invite_message: string
           invite_photo_url: string
+          invite_video_url: string
           max_companions: number
           partner_name: string
           reception_address: string
+          reception_lat: number
+          reception_lng: number
+          reception_local_nome: string
           responded_at: string
           rsvp_companions: number
           rsvp_note: string
