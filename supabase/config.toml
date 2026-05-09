@@ -7,3 +7,7 @@ project_id = "fglpzxtrvipizoymwteg"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
+  [functions.oauth-calendar-callback]
+    verify_jwt = false
+  [functions.calendar-sync-cron]
+    verify_jwt = false

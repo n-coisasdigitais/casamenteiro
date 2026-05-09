@@ -1457,22 +1457,28 @@ export type Database = {
         Row: {
           blocked_date: string
           created_at: string
+          external_event_id: string | null
           id: string
           reason: string | null
+          source: string
           supplier_id: string
         }
         Insert: {
           blocked_date: string
           created_at?: string
+          external_event_id?: string | null
           id?: string
           reason?: string | null
+          source?: string
           supplier_id: string
         }
         Update: {
           blocked_date?: string
           created_at?: string
+          external_event_id?: string | null
           id?: string
           reason?: string | null
+          source?: string
           supplier_id?: string
         }
         Relationships: [
@@ -1484,6 +1490,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_calendar_connections: {
+        Row: {
+          access_token: string
+          account_email: string | null
+          calendar_id: string | null
+          created_at: string
+          id: string
+          last_synced_at: string | null
+          provider: string
+          refresh_token: string | null
+          supplier_id: string
+          sync_enabled: boolean
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          account_email?: string | null
+          calendar_id?: string | null
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          provider: string
+          refresh_token?: string | null
+          supplier_id: string
+          sync_enabled?: boolean
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          account_email?: string | null
+          calendar_id?: string | null
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          provider?: string
+          refresh_token?: string | null
+          supplier_id?: string
+          sync_enabled?: boolean
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       supplier_details_beleza: {
         Row: {
