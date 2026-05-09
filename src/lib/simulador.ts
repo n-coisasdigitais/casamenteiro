@@ -200,21 +200,47 @@ async function buscarFornecedores(
   const catId = catIdMap.get(slug);
   if (!catId) return [];
 
-  let query = supabase
+  // Busca todos os fornecedores aprovados da categoria; filtramos depois
+  // (cidade exata, cidades_atendidas ou raio).
+  const { data, error } = await supabase
     .from("suppliers")
-    .select("id, company_name, city, state, whatsapp, phone, profile_photo_url, price_min, price_max, featured, rating, accepts_idle_dates, idle_discount_pct, status, category_id, guest_min, guest_max")
+    .select(
+      "id, company_name, city, state, whatsapp, phone, profile_photo_url, price_min, price_max, featured, rating, accepts_idle_dates, idle_discount_pct, status, category_id, guest_min, guest_max, cidades_atendidas, raio_atendimento_km, lat, lng",
+    )
     .eq("status", "approved")
     .eq("category_id", catId)
-    .limit(30);
+    .limit(100);
 
-  if (cidade && cidade.trim().length >= 2) {
-    query = query.ilike("city", `%${cidade.trim()}%`);
-  }
-
-  const { data, error } = await query;
   if (error || !data) return [];
 
+  const cidadeBusca = (cidade || "").trim().toLowerCase();
+  let buscaCoord: { lat: number; lng: number; estado: string } | null = null;
+  if (cidadeBusca) {
+    const cache = await getCoordCache();
+    buscaCoord = cache.get(cidadeBusca) || null;
+  }
+
+  const matchCidade = (s: any): boolean => {
+    if (!cidadeBusca) return true;
+    // 1) cidade exata
+    if ((s.city || "").toLowerCase().includes(cidadeBusca)) return true;
+    // 2) cidades_atendidas (jsonb array de strings)
+    const atendidas: string[] = Array.isArray(s.cidades_atendidas) ? s.cidades_atendidas : [];
+    if (atendidas.some((c) => (c || "").toLowerCase().includes(cidadeBusca))) return true;
+    // 3) raio via Haversine
+    if (buscaCoord && s.lat && s.lng && s.raio_atendimento_km > 0) {
+      const d = haversineKm(buscaCoord.lat, buscaCoord.lng, Number(s.lat), Number(s.lng));
+      if (d <= s.raio_atendimento_km) return true;
+    }
+    // 4) fallback: mesmo estado se fornecedor declara raio
+    if (buscaCoord && s.state === buscaCoord.estado && s.raio_atendimento_km > 0) {
+      return true;
+    }
+    return false;
+  };
+
   const filtrados = data.filter((s: any) => {
+    if (!matchCidade(s)) return false;
     if (s.guest_min && convidados < s.guest_min) return false;
     if (s.guest_max && convidados > s.guest_max) return false;
     const fator = aceitaOciosas && s.accepts_idle_dates && (s.idle_discount_pct || 0) > 0
