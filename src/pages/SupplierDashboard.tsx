@@ -35,6 +35,7 @@ export default function SupplierDashboard() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [threadOpen, setThreadOpen] = useState(false);
+  const [rejectMotivo, setRejectMotivo] = useState<string | null>(null);
 
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
@@ -68,6 +69,14 @@ export default function SupplierDashboard() {
       setEmail(data.email || "");
       const { data: photoData } = await supabase.from("supplier_photos").select("*").eq("supplier_id", data.id).order("display_order");
       setPhotos(photoData || []);
+      if (data.status === "rejected") {
+        const { data: ap } = await supabase.from("fornecedor_aprovacoes")
+          .select("motivo,created_at").eq("supplier_id", data.id).eq("acao", "rejected")
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
+        setRejectMotivo(ap?.motivo || null);
+      } else {
+        setRejectMotivo(null);
+      }
     }
   };
 
@@ -199,6 +208,30 @@ export default function SupplierDashboard() {
           <Card className="mb-6 border-primary/30 bg-primary/5">
             <CardContent className="p-4 text-sm text-muted-foreground">
               <p><strong>Seu perfil está em análise.</strong> Complete todas as informações e adicione fotos ao seu portfólio para agilizar a aprovação.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {supplier.status === "approved" && (
+          <Card className="mb-6 border-green-500/40 bg-green-500/5">
+            <CardContent className="p-4 text-sm">
+              <p><strong className="text-green-700">Perfil aprovado!</strong> Você já está visível para os casais na vitrine.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {supplier.status === "rejected" && (
+          <Card className="mb-6 border-destructive/40 bg-destructive/5">
+            <CardContent className="p-4 text-sm space-y-2">
+              <p><strong className="text-destructive">Seu perfil precisa de ajustes.</strong></p>
+              {rejectMotivo && <p className="text-muted-foreground">Motivo: {rejectMotivo}</p>}
+              <p className="text-muted-foreground">Atualize as informações abaixo e reenvie para nova análise.</p>
+              <Button size="sm" onClick={async () => {
+                await supabase.from("suppliers").update({ status: "pending" }).eq("id", supplier.id);
+                await supabase.from("fornecedor_aprovacoes").insert({ supplier_id: supplier.id, acao: "resubmitted" });
+                toast({ title: "Reenviado para análise" });
+                loadSupplier();
+              }}>Reenviar para análise</Button>
             </CardContent>
           </Card>
         )}
