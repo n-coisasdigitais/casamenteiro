@@ -18,6 +18,8 @@ import QuoteRequestForm from "@/components/QuoteRequestForm";
 import SupplierMap from "@/components/SupplierMap";
 import { buildWhatsAppLink } from "@/lib/phone";
 import SEO from "@/components/SEO";
+import UserMenu from "@/components/UserMenu";
+import NotificationsBell from "@/components/NotificationsBell";
 
 type Review = {
   id: string;
@@ -192,17 +194,25 @@ export default function SupplierProfile() {
             <span className="text-lg font-bold hidden sm:inline">Casamenteiro</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm ml-6">
-            <Link to="/buscar?cat=espacos-buffet" className="text-muted-foreground hover:text-foreground transition-colors">Espaços</Link>
-            <Link to="/buscar?cat=fotografia" className="text-muted-foreground hover:text-foreground transition-colors">Fotografia</Link>
-            <Link to="/buscar" className="text-muted-foreground hover:text-foreground transition-colors">Fornecedores</Link>
+            <Link to="/explorar" className="text-muted-foreground hover:text-foreground transition-colors">Fornecedores</Link>
+            {user && <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">Meu Casamento</Link>}
           </nav>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">Entrar</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link to="/cadastro">Cadastrar</Link>
-            </Button>
+            {user ? (
+              <>
+                <NotificationsBell />
+                <UserMenu />
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">Entrar</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/cadastro">Cadastrar</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
