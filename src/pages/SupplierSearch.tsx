@@ -384,9 +384,17 @@ export default function SupplierSearch() {
           <div className="flex-1 min-w-0">
             {/* Results header */}
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <p className="text-xs sm:text-sm font-medium tracking-wider text-muted-foreground uppercase">
-                {suppliers.length} resultados
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-xs sm:text-sm font-medium tracking-wider text-muted-foreground uppercase">
+                  {suppliers.length} resultados
+                </p>
+                {suppliers.length > 0 && (
+                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
+                    <span className="text-muted-foreground">Selecionar todos</span>
+                  </label>
+                )}
+              </div>
               <div className="flex items-center border border-border rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode("list")}
