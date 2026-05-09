@@ -52,6 +52,8 @@ export default function WeddingGuests() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterInvite, setFilterInvite] = useState<string>("all");
   const [sendingEmails, setSendingEmails] = useState(false);
+  const [groupBy, setGroupBy] = useState<"group" | "table">("group");
+  const [bulkTable, setBulkTable] = useState<string>("");
 
   useEffect(() => {
     if (!user) return;
@@ -177,6 +179,21 @@ export default function WeddingGuests() {
     toast({ title: `${ids.length} convidado(s) removido(s)` });
   };
 
+  const setTableForSelected = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const num = bulkTable.trim() === "" ? null : parseInt(bulkTable);
+    if (bulkTable.trim() !== "" && (Number.isNaN(num as number) || (num as number) < 0)) {
+      toast({ title: "Mesa inválida", variant: "destructive" });
+      return;
+    }
+    setGuests((prev) => prev.map((g) => selected.has(g.id) ? { ...g, table_number: num } : g));
+    await supabase.from("wedding_guests").update({ table_number: num }).in("id", ids);
+    toast({ title: `Mesa ${num ?? "removida"} aplicada a ${ids.length} convidado(s)` });
+    setSelected(new Set());
+    setBulkTable("");
+  };
+
   const toggleAll = () => {
     if (selected.size === filtered.length) {
       setSelected(new Set());
@@ -225,6 +242,26 @@ export default function WeddingGuests() {
     }
     return map;
   }, [filtered, groups]);
+
+  // Group guests by table
+  const groupedByTable = useMemo(() => {
+    const map: Record<string, Guest[]> = {};
+    for (const g of filtered) {
+      const key = g.table_number != null ? `Mesa ${g.table_number}` : "Sem mesa";
+      if (!map[key]) map[key] = [];
+      map[key].push(g);
+    }
+    // sort keys: tables numerically, "Sem mesa" last
+    const ordered: Record<string, Guest[]> = {};
+    Object.keys(map)
+      .sort((a, b) => {
+        if (a === "Sem mesa") return 1;
+        if (b === "Sem mesa") return -1;
+        return parseInt(a.replace("Mesa ", "")) - parseInt(b.replace("Mesa ", ""));
+      })
+      .forEach((k) => { ordered[k] = map[k]; });
+    return ordered;
+  }, [filtered]);
 
   const adults = guests.filter((g) => g.guest_type === "adult").length;
   const children = guests.filter((g) => g.guest_type === "child").length;
@@ -332,11 +369,33 @@ export default function WeddingGuests() {
             </Button>
           )}
           {selected.size > 0 && (
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                value={bulkTable}
+                onChange={(e) => setBulkTable(e.target.value)}
+                placeholder="Mesa #"
+                className="h-9 w-24"
+              />
+              <Button size="sm" variant="outline" onClick={setTableForSelected}>
+                <Edit className="mr-2 h-4 w-4" />
+                Aplicar mesa ({selected.size})
+              </Button>
+            </div>
+          )}
+          {selected.size > 0 && (
             <Button size="sm" onClick={sendInvitesEmailBulk} disabled={sendingEmails}>
               <Mail className="mr-2 h-4 w-4" />
               {sendingEmails ? "Enviando..." : `Enviar convite por email (${selected.size})`}
             </Button>
           )}
+          <Select value={groupBy} onValueChange={(v: any) => setGroupBy(v)}>
+            <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="Agrupar por" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="group">Por grupo</SelectItem>
+              <SelectItem value="table">Por mesa</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={filterRsvp} onValueChange={setFilterRsvp}>
             <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="Presença" /></SelectTrigger>
             <SelectContent>
@@ -401,7 +460,7 @@ export default function WeddingGuests() {
                   </tr>
                 </thead>
                 <tbody>
-                  {groups.map((group) => {
+                  {groupBy === "group" && groups.map((group) => {
                     const groupGuests = grouped[group.id] || [];
                     if (groupGuests.length === 0) return null;
                     return (
@@ -423,7 +482,7 @@ export default function WeddingGuests() {
                       />
                     );
                   })}
-                  {(grouped.ungrouped || []).length > 0 && (
+                  {groupBy === "group" && (grouped.ungrouped || []).length > 0 && (
                     <GuestGroupSection
                       groupName={groups.length > 0 ? "Sem grupo" : undefined}
                       guests={grouped.ungrouped}
@@ -439,6 +498,23 @@ export default function WeddingGuests() {
                       onSendWhatsApp={sendInviteWhatsApp}
                     />
                   )}
+                  {groupBy === "table" && Object.entries(groupedByTable).map(([tableName, tg]) => (
+                    <GuestGroupSection
+                      key={tableName}
+                      groupName={`${tableName} (${tg.length})`}
+                      guests={tg}
+                      selected={selected}
+                      onToggleSelect={toggleSelect}
+                      onUpdateRsvp={updateRsvp}
+                      onUpdateTable={updateTable}
+                      onDelete={deleteGuest}
+                      rsvpVariant={rsvpVariant}
+                      rsvpLabel={rsvpLabel}
+                      invites={invites}
+                      onSendInvite={sendInvite}
+                      onSendWhatsApp={sendInviteWhatsApp}
+                    />
+                  ))}
                 </tbody>
               </table>
               {filtered.length === 0 && (
