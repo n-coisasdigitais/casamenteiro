@@ -53,7 +53,17 @@ export default function Auth() {
       } catch (_) { /* noop */ }
 
       if (profile.account_type !== "couple") {
-        navigate("/fornecedor/painel", { replace: true });
+        // se onboarding pendente, manda completar; senão, painel
+        const { data: sup } = await supabase
+          .from("suppliers")
+          .select("onboarding_completed")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (sup && !sup.onboarding_completed) {
+          navigate("/fornecedor/cadastro", { replace: true });
+        } else {
+          navigate("/fornecedor/painel", { replace: true });
+        }
         return;
       }
 
