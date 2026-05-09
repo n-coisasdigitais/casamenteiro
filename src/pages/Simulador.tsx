@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { calcularSimulacao, type Estilo } from "@/lib/simulador";
-import { Loader2 } from "lucide-react";
+import { Loader2, Heart, ArrowLeft } from "lucide-react";
 
 const GUEST_OPTIONS = [
   { letter: "A", label: "Até 50 pessoas — íntimo e especial", value: 50 },
@@ -90,6 +90,37 @@ export default function Simulador() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "hsl(var(--color-bg))" }}>
+      {/* Top nav: voltar para home + login */}
+      <header
+        className="flex items-center justify-between px-4 md:px-6 py-3 border-b"
+        style={{ borderColor: "hsl(var(--color-border))", background: "hsl(var(--color-bg))" }}
+      >
+        <Link to="/" className="flex items-center gap-2 text-sm font-medium hover:opacity-80" style={{ color: "hsl(var(--color-dark))" }}>
+          <ArrowLeft className="h-4 w-4" />
+          <Heart className="h-4 w-4" style={{ color: "hsl(var(--color-primary))" }} fill="currentColor" />
+          <span className="hidden sm:inline">Voltar para o início</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          {user ? (
+            <Link
+              to="/dashboard"
+              className="text-xs md:text-sm px-4 py-2 rounded-full font-semibold hover:opacity-90"
+              style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-dark))" }}
+            >
+              Meu painel
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="text-xs md:text-sm px-4 py-2 rounded-full font-semibold hover:opacity-90"
+              style={{ background: "hsl(var(--color-dark))", color: "hsl(var(--color-bg))" }}
+            >
+              Entrar
+            </Link>
+          )}
+        </div>
+      </header>
+
       {/* Progress bar */}
       <div className="h-[3px] w-full" style={{ background: "hsl(var(--color-border))" }}>
         <div

@@ -323,14 +323,14 @@ export default function SimuladorResultado() {
 
         {/* Toggle datas ociosas */}
         <div
-          className="sticky top-[57px] z-20 mb-6 rounded-xl p-3 flex items-center justify-between gap-3"
-          style={{ background: "hsl(var(--color-secondary))", border: "1px solid hsl(var(--color-border))" }}
+          className="on-green sticky top-[57px] z-20 mb-6 rounded-xl p-3 flex items-center justify-between gap-3"
+          style={{ background: "hsl(var(--color-accent))", border: "1px solid hsl(var(--color-accent))" }}
         >
           <div>
-            <Label htmlFor="ociosas" className="text-sm font-semibold" style={{ color: "hsl(var(--color-dark))" }}>
+            <Label htmlFor="ociosas" className="text-sm font-semibold" style={{ color: "#ffffff" }}>
               Mostrar fornecedores com desconto em dias úteis
             </Label>
-            <p className="text-xs" style={{ color: "hsl(var(--color-text-muted))" }}>
+            <p className="text-xs" style={{ color: "#ffffff" }}>
               Pode reduzir bastante o custo total do casamento.
             </p>
           </div>
