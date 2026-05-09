@@ -25,6 +25,7 @@ import AdminPanel from "./pages/AdminPanel";
 import AdminSuppliers from "./pages/AdminSuppliers";
 import AdminCampos from "./pages/AdminCampos";
 import AdminFornecedorAprovacao from "./pages/AdminFornecedorAprovacao";
+import AdminCidades from "./pages/AdminCidades";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
 import AdminTransacoes from "./pages/AdminTransacoes";
@@ -89,6 +90,7 @@ const App = () => (
             <Route path="/admin" element={<AdminLayout><AdminPanel /></AdminLayout>} />
             <Route path="/admin/fornecedores" element={<AdminLayout><AdminSuppliers /></AdminLayout>} />
             <Route path="/admin/aprovacao" element={<AdminLayout><AdminFornecedorAprovacao /></AdminLayout>} />
+            <Route path="/admin/cidades" element={<AdminLayout><AdminCidades /></AdminLayout>} />
             <Route path="/admin/campos" element={<AdminLayout><AdminCampos /></AdminLayout>} />
             <Route path="/admin/home-config" element={<AdminLayout><AdminHomeConfig /></AdminLayout>} />
             <Route path="/admin/simulacoes" element={<AdminLayout><AdminSimulacoes /></AdminLayout>} />
