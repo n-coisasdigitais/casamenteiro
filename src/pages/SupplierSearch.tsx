@@ -476,7 +476,10 @@ export default function SupplierSearch() {
                   const photos = sup.supplier_photos || [];
                   const currentPhoto = photoIndex[sup.id] || 0;
                   return (
-                    <div key={sup.id} className="flex flex-col sm:flex-row border border-border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-shadow">
+                    <div key={sup.id} className={`relative flex flex-col sm:flex-row border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-shadow ${selectedIds.has(sup.id) ? "border-primary ring-1 ring-primary" : "border-border"}`}>
+                      <label className="absolute top-2 left-2 z-10 bg-background/95 rounded-md p-1 cursor-pointer shadow-sm">
+                        <Checkbox checked={selectedIds.has(sup.id)} onCheckedChange={() => toggleSelect(sup.id)} />
+                      </label>
                       {/* Photo carousel */}
                       <div className="relative w-full sm:w-[280px] h-48 sm:h-[220px] shrink-0 bg-muted group">
                         {photos.length > 0 ? (
