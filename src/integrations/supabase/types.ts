@@ -357,6 +357,57 @@ export type Database = {
           },
         ]
       }
+      convite_lembretes: {
+        Row: {
+          canal: string
+          couple_id: string
+          created_at: string
+          detalhes: Json | null
+          enviado_em: string
+          id: string
+          invite_id: string
+          status: string
+          tipo: string
+        }
+        Insert: {
+          canal?: string
+          couple_id: string
+          created_at?: string
+          detalhes?: Json | null
+          enviado_em?: string
+          id?: string
+          invite_id: string
+          status?: string
+          tipo: string
+        }
+        Update: {
+          canal?: string
+          couple_id?: string
+          created_at?: string
+          detalhes?: Json | null
+          enviado_em?: string
+          id?: string
+          invite_id?: string
+          status?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convite_lembretes_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convite_lembretes_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "guest_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couple_favorites: {
         Row: {
           couple_id: string
@@ -505,6 +556,10 @@ export type Database = {
         Row: {
           budget_mode: string
           ceremony_address: string | null
+          ceremony_cep: string | null
+          ceremony_lat: number | null
+          ceremony_lng: number | null
+          ceremony_local_nome: string | null
           ceremony_time: string | null
           contact_phone: string | null
           couple_role: Database["public"]["Enums"]["couple_role"] | null
@@ -515,13 +570,19 @@ export type Database = {
           header_photo_url: string | null
           header_quote: string | null
           id: string
+          invite_album: Json
           invite_code: string | null
           invite_message: string | null
           invite_photo_url: string | null
+          invite_video_url: string | null
           needed_services: string[] | null
           onboarding_completed: boolean
           partner_name: string | null
           reception_address: string | null
+          reception_cep: string | null
+          reception_lat: number | null
+          reception_lng: number | null
+          reception_local_nome: string | null
           target_budget: number | null
           updated_at: string
           user_id: string
@@ -532,6 +593,10 @@ export type Database = {
         Insert: {
           budget_mode?: string
           ceremony_address?: string | null
+          ceremony_cep?: string | null
+          ceremony_lat?: number | null
+          ceremony_lng?: number | null
+          ceremony_local_nome?: string | null
           ceremony_time?: string | null
           contact_phone?: string | null
           couple_role?: Database["public"]["Enums"]["couple_role"] | null
@@ -542,13 +607,19 @@ export type Database = {
           header_photo_url?: string | null
           header_quote?: string | null
           id?: string
+          invite_album?: Json
           invite_code?: string | null
           invite_message?: string | null
           invite_photo_url?: string | null
+          invite_video_url?: string | null
           needed_services?: string[] | null
           onboarding_completed?: boolean
           partner_name?: string | null
           reception_address?: string | null
+          reception_cep?: string | null
+          reception_lat?: number | null
+          reception_lng?: number | null
+          reception_local_nome?: string | null
           target_budget?: number | null
           updated_at?: string
           user_id: string
@@ -559,6 +630,10 @@ export type Database = {
         Update: {
           budget_mode?: string
           ceremony_address?: string | null
+          ceremony_cep?: string | null
+          ceremony_lat?: number | null
+          ceremony_lng?: number | null
+          ceremony_local_nome?: string | null
           ceremony_time?: string | null
           contact_phone?: string | null
           couple_role?: Database["public"]["Enums"]["couple_role"] | null
@@ -569,13 +644,19 @@ export type Database = {
           header_photo_url?: string | null
           header_quote?: string | null
           id?: string
+          invite_album?: Json
           invite_code?: string | null
           invite_message?: string | null
           invite_photo_url?: string | null
+          invite_video_url?: string | null
           needed_services?: string[] | null
           onboarding_completed?: boolean
           partner_name?: string | null
           reception_address?: string | null
+          reception_cep?: string | null
+          reception_lat?: number | null
+          reception_lng?: number | null
+          reception_local_nome?: string | null
           target_budget?: number | null
           updated_at?: string
           user_id?: string
@@ -2146,16 +2227,24 @@ export type Database = {
         Args: { _token: string }
         Returns: {
           ceremony_address: string
+          ceremony_lat: number
+          ceremony_lng: number
+          ceremony_local_nome: string
           ceremony_time: string
           contact_phone: string
           dress_code: string
           guest_name: string
+          invite_album: Json
           invite_id: string
           invite_message: string
           invite_photo_url: string
+          invite_video_url: string
           max_companions: number
           partner_name: string
           reception_address: string
+          reception_lat: number
+          reception_lng: number
+          reception_local_nome: string
           responded_at: string
           rsvp_companions: number
           rsvp_note: string

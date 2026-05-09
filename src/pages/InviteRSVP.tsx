@@ -28,6 +28,14 @@ type InviteData = {
   invite_photo_url: string | null;
   contact_phone: string | null;
   dress_code: string | null;
+  ceremony_lat: number | null;
+  ceremony_lng: number | null;
+  ceremony_local_nome: string | null;
+  reception_lat: number | null;
+  reception_lng: number | null;
+  reception_local_nome: string | null;
+  invite_video_url: string | null;
+  invite_album: string[] | null;
 };
 
 function buildEventInfo(data: InviteData) {
@@ -150,7 +158,24 @@ export default function InviteRSVP() {
   const dateLabel = data.wedding_date
     ? new Date(data.wedding_date + "T00:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
     : "";
-  const mapsUrl = data.ceremony_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.ceremony_address)}` : null;
+  const ceremonyMapUrl = data.ceremony_lat && data.ceremony_lng
+    ? `https://www.google.com/maps/search/?api=1&query=${data.ceremony_lat},${data.ceremony_lng}`
+    : data.ceremony_address
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.ceremony_address)}`
+      : null;
+  const receptionMapUrl = data.reception_lat && data.reception_lng
+    ? `https://www.google.com/maps/search/?api=1&query=${data.reception_lat},${data.reception_lng}`
+    : data.reception_address
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.reception_address)}`
+      : null;
+
+  // Extrai ID do YouTube (suporta youtu.be/, watch?v=, embed/)
+  const youtubeId = (() => {
+    if (!data.invite_video_url) return null;
+    const m = data.invite_video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/);
+    return m?.[1] || null;
+  })();
+  const album = Array.isArray(data.invite_album) ? data.invite_album : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/20 to-background py-8 px-4">
@@ -173,23 +198,53 @@ export default function InviteRSVP() {
           )}
         </Card>
 
+        {youtubeId && (
+          <Card className="overflow-hidden mb-6">
+            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${youtubeId}`}
+                title="Vídeo do convite"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
+            </div>
+          </Card>
+        )}
+
+        {album.length > 0 && (
+          <Card className="p-4 mb-6">
+            <p className="text-sm text-muted-foreground text-center mb-3">Nossa galeria</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {album.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noopener" className="block aspect-square rounded-md overflow-hidden bg-muted">
+                  <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover hover:scale-105 transition" loading="lazy" />
+                </a>
+              ))}
+            </div>
+          </Card>
+        )}
+
         <Card className="p-6 mb-6 space-y-4">
-          {data.ceremony_address && (
+          {(data.ceremony_address || data.ceremony_local_nome) && (
             <div className="flex gap-3">
               <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-medium">Cerimônia</p>
+                {data.ceremony_local_nome && <p className="text-sm font-medium">{data.ceremony_local_nome}</p>}
                 <p className="text-sm text-muted-foreground">{data.ceremony_address}</p>
-                {mapsUrl && <a href={mapsUrl} target="_blank" rel="noopener" className="text-sm text-primary underline">Ver no mapa</a>}
+                {ceremonyMapUrl && <a href={ceremonyMapUrl} target="_blank" rel="noopener" className="text-sm text-primary underline">Ver no mapa</a>}
               </div>
             </div>
           )}
-          {data.reception_address && (
+          {(data.reception_address || data.reception_local_nome) && (
             <div className="flex gap-3">
               <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-medium">Recepção</p>
+                {data.reception_local_nome && <p className="text-sm font-medium">{data.reception_local_nome}</p>}
                 <p className="text-sm text-muted-foreground">{data.reception_address}</p>
+                {receptionMapUrl && <a href={receptionMapUrl} target="_blank" rel="noopener" className="text-sm text-primary underline">Ver no mapa</a>}
               </div>
             </div>
           )}
