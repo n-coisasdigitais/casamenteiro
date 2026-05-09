@@ -162,7 +162,7 @@ function CarouselRow({
 }
 
 const Explore = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Supplier[]>([]);
   const [byCategory, setByCategory] = useState<Record<string, Supplier[]>>({});
@@ -229,7 +229,12 @@ const Explore = () => {
             {authLoading ? (
               <div className="h-9 w-20" />
             ) : user ? (
-              <UserMenu />
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground hidden sm:inline">
+                  Olá, {profile?.full_name?.split(" ")[0] || "Casal"}
+                </span>
+                <UserMenu />
+              </div>
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
