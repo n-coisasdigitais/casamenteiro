@@ -11,6 +11,7 @@ import {
   ChevronLeft, ChevronRight, Map, Filter, X
 } from "lucide-react";
 import SupplierSearchMap from "@/components/SupplierSearchMap";
+import BulkContactDialog, { type BulkSupplier } from "@/components/BulkContactDialog";
 
 type Category = { id: string; name: string; slug: string };
 
@@ -31,6 +32,8 @@ type Supplier = {
   category_id: string | null;
   categories: { name: string } | null;
   supplier_photos: { photo_url: string }[];
+  whatsapp?: string | null;
+  phone?: string | null;
 };
 
 const subCategories: Record<string, string[]> = {
@@ -68,6 +71,24 @@ export default function SupplierSearch() {
   const [filtersOpen, setFiltersOpen] = useState({ category: true, highlights: true, price: false });
   const [photoIndex, setPhotoIndex] = useState<Record<string, number>>({});
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDialog, setBulkDialog] = useState<null | "platform" | "whatsapp">(null);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+  const allSelected = suppliers.length > 0 && selectedIds.size === suppliers.length;
+  const toggleAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(suppliers.map((s) => s.id)));
+  };
+  const selectedSuppliers: BulkSupplier[] = suppliers
+    .filter((s) => selectedIds.has(s.id))
+    .map((s) => ({ id: s.id, company_name: s.company_name, whatsapp: s.whatsapp, phone: s.phone, categories: s.categories }));
 
   useEffect(() => {
     supabase.from("categories").select("*").order("name").then(({ data }) => {
