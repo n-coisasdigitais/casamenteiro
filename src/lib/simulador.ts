@@ -8,6 +8,36 @@ import { buildWhatsAppLink } from "@/lib/phone";
 
 export type Estilo = "intimista" | "elegante" | "grandioso";
 
+// ── Cache de coordenadas para Haversine ──
+let _coordCache: Map<string, { lat: number; lng: number; estado: string }> | null = null;
+async function getCoordCache() {
+  if (_coordCache) return _coordCache;
+  const { data } = await supabase
+    .from("cidades_coordenadas")
+    .select("cidade, estado, lat, lng");
+  _coordCache = new Map();
+  for (const r of data || []) {
+    _coordCache.set((r as any).cidade.toLowerCase(), {
+      lat: Number((r as any).lat),
+      lng: Number((r as any).lng),
+      estado: (r as any).estado,
+    });
+  }
+  return _coordCache;
+}
+
+// Distância em km entre dois pontos lat/lng (Haversine)
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 // Categorias internas do simulador → slugs reais do banco `categories`
 // Algumas categorias são compartilhadas (ex: espaco/buffet → espacos-buffet)
 const CATEGORIA_SLUG: Record<string, string> = {
