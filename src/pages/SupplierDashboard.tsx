@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays, BarChart3 } from "lucide-react";
+import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays, BarChart3, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteThread from "@/components/QuoteThread";
 import QuoteProposalPanel from "@/components/QuoteProposalPanel";
@@ -20,6 +20,7 @@ import PromoDatesManager from "@/components/PromoDatesManager";
 import NotificationsBell from "@/components/NotificationsBell";
 import SupplierMetrics from "@/components/supplier/SupplierMetrics";
 import SupplierOnboardingWizard from "@/components/supplier/SupplierOnboardingWizard";
+import SupplierAreaEditor from "@/components/supplier/SupplierAreaEditor";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 
 type Category = { id: string; name: string };
@@ -255,6 +256,10 @@ export default function SupplierDashboard() {
             <TabsTrigger value="availability" className="flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4" />
               Disponibilidade
+            </TabsTrigger>
+            <TabsTrigger value="area" className="flex items-center gap-1.5">
+              <MapPin className="h-4 w-4" />
+              Atendimento
             </TabsTrigger>
             <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
             <TabsTrigger value="photos">Fotos</TabsTrigger>
