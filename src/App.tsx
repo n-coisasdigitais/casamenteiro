@@ -20,6 +20,8 @@ import WeddingPlan from "./pages/WeddingPlan";
 import SupplierSearch from "./pages/SupplierSearch";
 import SupplierProfile from "./pages/SupplierProfile";
 import SupplierDashboard from "./pages/SupplierDashboard";
+import SupplierLanding from "./pages/SupplierLanding";
+import SupplierSignupComingSoon from "./pages/SupplierSignupComingSoon";
 import AdminPanel from "./pages/AdminPanel";
 import AdminSuppliers from "./pages/AdminSuppliers";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
@@ -76,6 +78,9 @@ const App = () => (
             <Route path="/buscar" element={<SupplierSearch />} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
+            <Route path="/fornecedor" element={<SupplierLanding />} />
+            <Route path="/fornecedor/login" element={<Auth />} />
+            <Route path="/fornecedor/cadastro" element={<SupplierSignupComingSoon />} />
             <Route path="/favoritos" element={<Favorites />} />
             <Route path="/perfil" element={<UserProfile />} />
             <Route path="/convite/:token" element={<InviteRSVP />} />
