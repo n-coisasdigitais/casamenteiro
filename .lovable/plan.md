@@ -1,53 +1,57 @@
-# Ajustes — rodada de correções
 
-## 1. Orçamentos enviados não aparecem no Kanban do plano
+# Parte 1 — Landing do fornecedor + entrada na home
 
-**Causa:** quando o cliente pede orçamento (`quotes`), apenas a tabela `quotes` é populada. O Kanban (`PlanKanban`) lê `couple_suppliers` — então o card nunca aparece. Hoje só vemos a lista textual na aba "Orçamento" e em "Meu casamento".
+Esta é a primeira parte do plano de cadastro de fornecedores. Foco somente em **vitrine e entrada**: ainda não vamos mexer no banco, no onboarding, no painel ou no admin. O objetivo é deixar a porta de entrada pronta para o fornecedor.
 
-**Correção:**
-- Em `QuoteRequestForm.tsx` (e qualquer outro ponto de criação de quote): após inserir em `quotes`, fazer `upsert` em `couple_suppliers` com `kanban_status = 'em_orcamento'`, `category_id` do fornecedor e `estimated_value` baseado na faixa do plano (se houver) — reaproveitando o padrão idempotente já implementado em `simulador.ts`.
-- Trigger alternativa (mais robusta): criar trigger `AFTER INSERT ON quotes` que insere/atualiza `couple_suppliers` com `kanban_status='em_orcamento'`. Vamos pelo caminho do trigger para garantir consistência mesmo se o quote for criado por outra via.
-- Em `WeddingPlan.tsx`, recarregar `items` após esse fluxo (já recarrega no `load`).
+## O que será entregue
 
-## 2. Edge function `send-invite-emails` falhando
+1. **Botão "Sou fornecedor →" na navbar da home**, ao lado do "Entrar".
+2. **Nova página `/fornecedor`** — landing longa de venda para o fornecedor.
+3. **Nova rota `/fornecedor/login`** — reaproveita a tela de login existente (`Auth.tsx`) preparada para o contexto de fornecedor (título e CTA voltados a quem é fornecedor; redireciona logado para `/fornecedor/painel`).
+4. **Botões da landing** apontam para `/fornecedor/cadastro` (rota ainda não criada — ficará como placeholder "Em breve" até a Parte 3) e para `/fornecedor/login`.
 
-**Causa:** chama `enqueue_email` com `queue_name: "transactional_email"` (singular). A fila correta é `"transactional_emails"` (plural) — o `process-email-queue` só processa `auth_emails` e `transactional_emails`.
+## Estrutura da landing `/fornecedor`
 
-**Correção:** ajustar `queue_name` para `"transactional_emails"` em `supabase/functions/send-invite-emails/index.ts` e redeployar.
+Página longa, fundo `#FAF7F2`, mesma identidade visual já usada no projeto (Inter, paleta terracota + sage, botões pill, cards radius 14px).
 
-## 3. Cadastro de convidados parou de salvar
+```text
+┌──────────────────────────────────────────────────┐
+│ Navbar: Logo Casamenteiro    [Já tenho cadastro] │
+├──────────────────────────────────────────────────┤
+│  HERO (85vh, fundo escuro #2C2420 com overlay)   │
+│  "Leve seu negócio para quem quer casar."        │
+│  Subtexto + 2 CTAs (Cadastrar / Já tenho cadast.)│
+├──────────────────────────────────────────────────┤
+│  COMO FUNCIONA — 3 passos em cards horizontais   │
+├──────────────────────────────────────────────────┤
+│  BENEFÍCIOS — grid 2x2 de 4 cards                │
+├──────────────────────────────────────────────────┤
+│  DEPOIMENTO — fundo #F0E8DF, citação + autor     │
+├──────────────────────────────────────────────────┤
+│  CTA FINAL — "Pronto para aparecer?" + botão     │
+├──────────────────────────────────────────────────┤
+│  Rodapé simples — logo + © + Privacidade         │
+└──────────────────────────────────────────────────┘
+```
 
-**Causa:** `AddGuestDialog` envia `max_companions`, mas a coluna **não existe** em `wedding_guests` (verifiquei o schema). O `insert(...).select().single()` lança erro silencioso e o convidado não é salvo. Isso quebrou após a rodada anterior.
+Responsivo mobile-first; no mobile os grids viram coluna única.
 
-**Correção:**
-- Migration: `ALTER TABLE wedding_guests ADD COLUMN IF NOT EXISTS max_companions integer NOT NULL DEFAULT 0;`
-- Trocar `.single()` por `.maybeSingle()` no `addGuest` para evitar crash futuro (regra do projeto).
-- Mostrar `toast` de erro caso o insert falhe (hoje falha em silêncio).
+## Detalhes técnicos
 
-## 4. Fonte branca / texto ilegível (item 11)
+- **Novo arquivo**: `src/pages/SupplierLanding.tsx` com as 6 seções acima.
+- **Edição**: `src/components/home/HomeNavbar.tsx` — adicionar link discreto "Sou fornecedor →" antes do bloco Entrar/Simular (oculto em telas muito pequenas via `hidden sm:inline`).
+- **Edição**: `src/App.tsx` — registrar:
+  - `/fornecedor` → `SupplierLanding`
+  - `/fornecedor/login` → `Auth` (mesmo componente atual; ele detecta a rota via `useLocation` e ajusta título/CTA + define `redirectTo = /fornecedor/painel`)
+- **Pequena edição** em `src/pages/Auth.tsx` para ler `pathname.startsWith("/fornecedor")` e personalizar copy + redirect.
+- **CTA "Quero me cadastrar"** aponta para `/fornecedor/cadastro`. Como essa rota ainda não existe (Parte 3), criamos um placeholder mínimo na rota `*` ou adicionamos uma rota temporária `/fornecedor/cadastro` que renderiza um componente "Em breve, abrindo cadastro" com link para login. **Decisão padrão**: criar `SupplierSignupComingSoon` simples para evitar 404, e substituí-lo na Parte 3.
+- SEO: `<SEO>` com title "Casamenteiro — Para fornecedores" e meta description focada em leads qualificados.
 
-**Causa:** o card "Nenhum fornecedor encontrado nesta faixa…" em `SimuladorResultado.tsx` (linha ~367) usa `background: hsl(var(--color-secondary))` (sage verde) com `color: hsl(var(--color-text-muted))` (cinza escuro). O utilitário `.on-green` que criamos antes só atua via classe — esse bloco usa `style` inline e não recebeu a classe.
+## Fora do escopo desta parte
 
-**Correção:** trocar para classe `on-green` (e remover o `style.color`) — ou aplicar diretamente `color: white` no bloco e `color: hsl(var(--color-primary))` claro no link. Preferência: aplicar `className="on-green"` e remover cores inline conflitantes; ajustar `.on-green a` no `index.css` para manter o link visível em laranja claro.
+- Onboarding step-by-step (Parte 3)
+- Tabelas `campos_categoria`, `fornecedor_campos`, `fornecedor_aprovacoes` e seed (Parte 2)
+- Refazer `/fornecedor/painel` e `/admin/fornecedores` (Parte 4/5)
+- Configurador `/admin/campos` (Parte 4)
 
-## 5. Mover card para "Negociando" não permite editar valores
-
-**Causa:** `PlanKanban.updateStatus` só faz `update({ kanban_status })`. Não há UI para registrar a contraproposta. "Contratado" abre `ContractSupplierDialog`, mas "Negociando" não tem dialog equivalente.
-
-**Correção:**
-- Criar `NegotiateSupplierDialog` (similar ao Contract): pede `valor_cotado` (proposed_value) e opcionalmente uma nota. Salva em `couple_suppliers` (`proposed_value`, `kanban_status='negociando'`).
-- Em `PlanKanban.requestStatusChange`: quando `newStatus === 'negociando'`, abrir o novo dialog em vez de só atualizar status.
-- Permitir reabrir o dialog clicando no card já em "negociando" (botão "Editar valor" no `KanbanCard`), para o caso de a negociação não ter vindo da plataforma.
-- Após salvar, `onChange()` recarrega e o card mostra "Cotado: R$ X" (já existe esse render).
-
-## Arquivos afetados
-
-- `supabase/migrations/<nova>.sql` — coluna `max_companions` + trigger `quotes → couple_suppliers`.
-- `supabase/functions/send-invite-emails/index.ts` — fix `queue_name`.
-- `src/pages/WeddingGuests.tsx` — `.maybeSingle()` + toast de erro.
-- `src/pages/SimuladorResultado.tsx` — classe `on-green` no card vazio.
-- `src/index.css` — regra `.on-green a` (link visível).
-- `src/components/plan/PlanKanban.tsx` — abrir dialog em "negociando"; botão editar valor.
-- `src/components/plan/NegotiateSupplierDialog.tsx` — novo arquivo.
-
-Deploy automático da edge function `send-invite-emails` após a edição.
+Após aprovado, sigo direto para implementação desta Parte 1.
