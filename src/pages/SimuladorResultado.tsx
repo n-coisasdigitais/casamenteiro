@@ -52,6 +52,22 @@ export default function SimuladorResultado() {
   const [emAndamento, setEmAndamento] = useState<{ id: string; company_name: string; kanban_status: string }[]>([]);
   const [planoAtivoExiste, setPlanoAtivoExiste] = useState(false);
 
+  // Aviso quando a cidade não tem fornecedores cadastrados
+  const [cidadeSemFornecedor, setCidadeSemFornecedor] = useState(false);
+
+  // Verifica se a cidade tem fornecedores aprovados
+  useEffect(() => {
+    if (!sim?.cidade) return;
+    (async () => {
+      const { count } = await supabase
+        .from("suppliers")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "approved")
+        .ilike("city", `%${sim.cidade}%`);
+      setCidadeSemFornecedor((count || 0) === 0);
+    })();
+  }, [sim?.cidade]);
+
   useEffect(() => {
     document.title = "Seu plano — Casamenteiro";
     (async () => {
@@ -307,6 +323,29 @@ export default function SimuladorResultado() {
         </div>
 
         {/* Alertas */}
+        {cidadeSemFornecedor && sim?.cidade && (
+          <div
+            className="mb-6 rounded-xl p-4 flex items-start gap-3"
+            style={{
+              background: "hsl(38 92% 95%)",
+              border: "1px solid hsl(38 92% 80%)",
+              color: "hsl(30 40% 25%)",
+            }}
+          >
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm mb-1">
+                Ainda não temos fornecedores diretos em {sim.cidade}
+              </p>
+              <p className="text-xs leading-relaxed">
+                Nossa equipe foi notificada e está buscando parceiros na sua região.
+                Enquanto isso, mostramos abaixo opções de fornecedores que atendem
+                cidades próximas ou da mesma região.
+              </p>
+            </div>
+          </div>
+        )}
+
         {resultado.alertas.length > 0 && (
           <div className="space-y-3 mb-6">
             {resultado.alertas.map((a, i) => (
