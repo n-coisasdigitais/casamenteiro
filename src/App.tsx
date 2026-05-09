@@ -17,7 +17,6 @@ import WeddingTasks from "./pages/WeddingTasks";
 import MySuppliers from "./pages/MySuppliers";
 import WeddingGuests from "./pages/WeddingGuests";
 import WeddingPlan from "./pages/WeddingPlan";
-import SupplierSearch from "./pages/SupplierSearch";
 import SupplierProfile from "./pages/SupplierProfile";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import SupplierLanding from "./pages/SupplierLanding";
