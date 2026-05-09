@@ -301,6 +301,62 @@ export type Database = {
         }
         Relationships: []
       }
+      cidades_coordenadas: {
+        Row: {
+          cidade: string
+          estado: string
+          lat: number
+          lng: number
+        }
+        Insert: {
+          cidade: string
+          estado: string
+          lat: number
+          lng: number
+        }
+        Update: {
+          cidade?: string
+          estado?: string
+          lat?: number
+          lng?: number
+        }
+        Relationships: []
+      }
+      cidades_interesse: {
+        Row: {
+          atendida: boolean
+          cidade: string
+          criado_em: string
+          estado: string | null
+          id: string
+          simulacao_id: string | null
+        }
+        Insert: {
+          atendida?: boolean
+          cidade: string
+          criado_em?: string
+          estado?: string | null
+          id?: string
+          simulacao_id?: string | null
+        }
+        Update: {
+          atendida?: boolean
+          cidade?: string
+          criado_em?: string
+          estado?: string | null
+          id?: string
+          simulacao_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cidades_interesse_simulacao_id_fkey"
+            columns: ["simulacao_id"]
+            isOneToOne: false
+            referencedRelation: "home_simulacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couple_favorites: {
         Row: {
           couple_id: string
@@ -1702,6 +1758,7 @@ export type Database = {
           accepts_idle_dates: boolean
           aparece_na_home: boolean
           category_id: string | null
+          cidades_atendidas: Json
           city: string | null
           company_name: string
           cover_photo_url: string | null
@@ -1715,6 +1772,8 @@ export type Database = {
           idle_discount_pct: number | null
           instagram: string | null
           is_demo: boolean
+          lat: number | null
+          lng: number | null
           onboarding_completed: boolean
           onboarding_step: number
           phone: string | null
@@ -1722,6 +1781,7 @@ export type Database = {
           price_min: number | null
           profile_photo_url: string | null
           promo_percentage: number | null
+          raio_atendimento_km: number
           rating: number | null
           review_count: number | null
           state: string | null
@@ -1735,6 +1795,7 @@ export type Database = {
           accepts_idle_dates?: boolean
           aparece_na_home?: boolean
           category_id?: string | null
+          cidades_atendidas?: Json
           city?: string | null
           company_name: string
           cover_photo_url?: string | null
@@ -1748,6 +1809,8 @@ export type Database = {
           idle_discount_pct?: number | null
           instagram?: string | null
           is_demo?: boolean
+          lat?: number | null
+          lng?: number | null
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
@@ -1755,6 +1818,7 @@ export type Database = {
           price_min?: number | null
           profile_photo_url?: string | null
           promo_percentage?: number | null
+          raio_atendimento_km?: number
           rating?: number | null
           review_count?: number | null
           state?: string | null
@@ -1768,6 +1832,7 @@ export type Database = {
           accepts_idle_dates?: boolean
           aparece_na_home?: boolean
           category_id?: string | null
+          cidades_atendidas?: Json
           city?: string | null
           company_name?: string
           cover_photo_url?: string | null
@@ -1781,6 +1846,8 @@ export type Database = {
           idle_discount_pct?: number | null
           instagram?: string | null
           is_demo?: boolean
+          lat?: number | null
+          lng?: number | null
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
@@ -1788,6 +1855,7 @@ export type Database = {
           price_min?: number | null
           profile_photo_url?: string | null
           promo_percentage?: number | null
+          raio_atendimento_km?: number
           rating?: number | null
           review_count?: number | null
           state?: string | null
@@ -2057,6 +2125,13 @@ export type Database = {
       admin_toggle_admin_role: {
         Args: { _make_admin: boolean; _user_id: string }
         Returns: undefined
+      }
+      cidades_disponiveis: {
+        Args: { _prefix: string }
+        Returns: {
+          cidade: string
+          estado: string
+        }[]
       }
       delete_email: {
         Args: { message_id: number; queue_name: string }
