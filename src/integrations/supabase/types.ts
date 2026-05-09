@@ -218,6 +218,65 @@ export type Database = {
           },
         ]
       }
+      campos_categoria: {
+        Row: {
+          ajuda: string | null
+          ativo: boolean
+          category_id: string
+          chave: string
+          created_at: string
+          grupo: string | null
+          id: string
+          label: string
+          mostrar_no_perfil: boolean
+          obrigatorio: boolean
+          opcoes: Json | null
+          ordem: number
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ajuda?: string | null
+          ativo?: boolean
+          category_id: string
+          chave: string
+          created_at?: string
+          grupo?: string | null
+          id?: string
+          label: string
+          mostrar_no_perfil?: boolean
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ajuda?: string | null
+          ativo?: boolean
+          category_id?: string
+          chave?: string
+          created_at?: string
+          grupo?: string | null
+          id?: string
+          label?: string
+          mostrar_no_perfil?: boolean
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campos_categoria_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -598,6 +657,83 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: []
+      }
+      fornecedor_aprovacoes: {
+        Row: {
+          acao: string
+          admin_id: string | null
+          created_at: string
+          id: string
+          motivo: string | null
+          supplier_id: string
+        }
+        Insert: {
+          acao: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          supplier_id: string
+        }
+        Update: {
+          acao?: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedor_aprovacoes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fornecedor_campos: {
+        Row: {
+          campo_id: string
+          created_at: string
+          id: string
+          supplier_id: string
+          updated_at: string
+          valor: Json | null
+        }
+        Insert: {
+          campo_id: string
+          created_at?: string
+          id?: string
+          supplier_id: string
+          updated_at?: string
+          valor?: Json | null
+        }
+        Update: {
+          campo_id?: string
+          created_at?: string
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+          valor?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedor_campos_campo_id_fkey"
+            columns: ["campo_id"]
+            isOneToOne: false
+            referencedRelation: "campos_categoria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fornecedor_campos_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       frases_home: {
         Row: {
@@ -1564,9 +1700,11 @@ export type Database = {
       suppliers: {
         Row: {
           accepts_idle_dates: boolean
+          aparece_na_home: boolean
           category_id: string | null
           city: string | null
           company_name: string
+          cover_photo_url: string | null
           created_at: string
           description: string | null
           email: string | null
@@ -1578,6 +1716,7 @@ export type Database = {
           instagram: string | null
           is_demo: boolean
           onboarding_completed: boolean
+          onboarding_step: number
           phone: string | null
           price_max: number | null
           price_min: number | null
@@ -1594,9 +1733,11 @@ export type Database = {
         }
         Insert: {
           accepts_idle_dates?: boolean
+          aparece_na_home?: boolean
           category_id?: string | null
           city?: string | null
           company_name: string
+          cover_photo_url?: string | null
           created_at?: string
           description?: string | null
           email?: string | null
@@ -1608,6 +1749,7 @@ export type Database = {
           instagram?: string | null
           is_demo?: boolean
           onboarding_completed?: boolean
+          onboarding_step?: number
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
@@ -1624,9 +1766,11 @@ export type Database = {
         }
         Update: {
           accepts_idle_dates?: boolean
+          aparece_na_home?: boolean
           category_id?: string | null
           city?: string | null
           company_name?: string
+          cover_photo_url?: string | null
           created_at?: string
           description?: string | null
           email?: string | null
@@ -1638,6 +1782,7 @@ export type Database = {
           instagram?: string | null
           is_demo?: boolean
           onboarding_completed?: boolean
+          onboarding_step?: number
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
