@@ -9,6 +9,9 @@ import PlanHeader, { PlanHeaderData } from "@/components/plan/PlanHeader";
 import PlanKanban, { PlanSupplier, KanbanStatus } from "@/components/plan/PlanKanban";
 import BudgetTab from "@/components/plan/BudgetTab";
 import PaymentsTab, { PaymentRow } from "@/components/plan/PaymentsTab";
+import AddExternalSupplierDialog from "@/components/plan/AddExternalSupplierDialog";
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
 
 export default function WeddingPlan() {
   const { user } = useAuth();
@@ -21,15 +24,16 @@ export default function WeddingPlan() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [newProposals, setNewProposals] = useState<{ id: string; title: string; body: string | null; link: string | null }[]>([]);
+  const [externalDialogOpen, setExternalDialogOpen] = useState(false);
 
   const load = useCallback(async (cId: string) => {
     // 1. Couple suppliers + categoria
     const { data: cs } = await supabase
       .from("couple_suppliers")
-      .select("id, supplier_id, category_id, kanban_status, status, estimated_value, proposed_value, contract_value, final_value")
+      .select("id, supplier_id, category_id, kanban_status, status, estimated_value, proposed_value, contract_value, final_value, is_external, external_supplier_name, external_supplier_phone")
       .eq("couple_id", cId);
     const rows = cs || [];
-    const supplierIds = Array.from(new Set(rows.map((r: any) => r.supplier_id)));
+    const supplierIds = Array.from(new Set(rows.map((r: any) => r.supplier_id).filter(Boolean)));
     const categoryIds = Array.from(new Set(rows.map((r: any) => r.category_id).filter(Boolean)));
 
     const [{ data: sups }, { data: cats }] = await Promise.all([
@@ -44,7 +48,7 @@ export default function WeddingPlan() {
     const catMap = new Map((cats || []).map((c: any) => [c.id, c]));
 
     const planItems: PlanSupplier[] = rows.map((r: any) => {
-      const sup = supMap.get(r.supplier_id);
+      const sup = r.supplier_id ? supMap.get(r.supplier_id) : null;
       const cat = catMap.get(r.category_id || sup?.category_id);
       const valor_contratado = Number(r.contract_value || r.final_value || 0);
       const valor_cotado = Number(r.proposed_value || 0);
@@ -52,16 +56,19 @@ export default function WeddingPlan() {
       // se status legado é 'contracted' mas kanban ainda nao_iniciado, normaliza
       let ks: KanbanStatus = (r.kanban_status as KanbanStatus) || "nao_iniciado";
       if (r.status === "contracted" && ks === "nao_iniciado") ks = "contratado";
+      if (r.is_external) ks = (r.kanban_status as KanbanStatus) || "fora_da_plataforma";
       return {
         id: r.id,
         supplier_id: r.supplier_id,
-        company_name: sup?.company_name || "Fornecedor",
+        company_name: sup?.company_name || r.external_supplier_name || "Fornecedor",
         category_slug: cat?.slug || null,
         category_name: cat?.name || null,
         valor_plano,
         valor_cotado,
         valor_contratado,
         kanban_status: ks,
+        is_external: !!r.is_external,
+        external_phone: r.external_supplier_phone || null,
       };
     });
     setItems(planItems);
@@ -175,6 +182,11 @@ export default function WeddingPlan() {
           </TabsList>
 
           <TabsContent value="kanban" className="mt-6">
+            <div className="flex justify-end mb-3">
+              <Button variant="outline" size="sm" onClick={() => setExternalDialogOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />Adicionar fornecedor externo
+              </Button>
+            </div>
             {items.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 Nenhum fornecedor no plano ainda. Faça uma simulação ou adicione fornecedores aos seus favoritos.
@@ -182,6 +194,12 @@ export default function WeddingPlan() {
             ) : (
               <PlanKanban coupleId={coupleId} items={items} onChange={() => load(coupleId)} />
             )}
+            <AddExternalSupplierDialog
+              open={externalDialogOpen}
+              onOpenChange={setExternalDialogOpen}
+              coupleId={coupleId}
+              onAdded={() => load(coupleId)}
+            />
           </TabsContent>
 
           <TabsContent value="orcamento" className="mt-6">
