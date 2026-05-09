@@ -53,6 +53,13 @@ export default function AdminFornecedorAprovacao() {
     await supabase.from("fornecedor_aprovacoes").insert({
       supplier_id: selected.id, admin_id: user?.id, acao: status, motivo: motivoTxt || null,
     });
+    await supabase.from("admin_audit_log").insert({
+      admin_id: user?.id,
+      action: status === "approved" ? "supplier_approved" : "supplier_rejected",
+      target_table: "suppliers",
+      target_id: selected.id,
+      details: { company_name: selected.company_name, motivo: motivoTxt || null },
+    });
     await supabase.from("notifications").insert({
       user_id: selected.user_id,
       type: status === "approved" ? "supplier_approved" : "supplier_rejected",

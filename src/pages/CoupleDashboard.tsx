@@ -476,12 +476,13 @@ export default function CoupleDashboard() {
                               if (!window.confirm("Tornar esta simulação o seu plano ativo? A anterior deixará de ser marcada como ativa, mas seus fornecedores em andamento permanecem no Kanban e devem ser descartados manualmente, se desejar.")) return;
                               await (supabase.from("home_simulacoes" as any) as any)
                                 .update({ is_active_plan: false })
-                                .eq("couple_id", couple.id);
-                              const { error } = await (supabase.from("home_simulacoes" as any) as any)
-                                .update({ is_active_plan: true })
-                                .eq("id", s.id);
-                              if (error) {
-                                toast({ title: "Erro", description: error.message, variant: "destructive" });
+                                .or(`couple_id.eq.${couple.id},user_id.eq.${user?.id}`);
+                              const { data: upd, error } = await (supabase.from("home_simulacoes" as any) as any)
+                                .update({ is_active_plan: true, couple_id: couple.id })
+                                .eq("id", s.id)
+                                .select();
+                              if (error || !upd || upd.length === 0) {
+                                toast({ title: "Erro", description: error?.message || "Não foi possível atualizar (verifique permissões).", variant: "destructive" });
                                 return;
                               }
                               setSimulacoes((prev) => prev.map((x) => ({ ...x, is_active_plan: x.id === s.id })));

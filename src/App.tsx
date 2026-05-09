@@ -17,7 +17,6 @@ import WeddingTasks from "./pages/WeddingTasks";
 import MySuppliers from "./pages/MySuppliers";
 import WeddingGuests from "./pages/WeddingGuests";
 import WeddingPlan from "./pages/WeddingPlan";
-import SupplierSearch from "./pages/SupplierSearch";
 import SupplierProfile from "./pages/SupplierProfile";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import SupplierLanding from "./pages/SupplierLanding";
@@ -77,7 +76,7 @@ const App = () => (
             <Route path="/convidados" element={<WeddingGuests />} />
             <Route path="/orcamento" element={<WeddingPlan />} />
             <Route path="/meu-casamento/plano" element={<WeddingPlan />} />
-            <Route path="/buscar" element={<SupplierSearch />} />
+            <Route path="/buscar" element={<Explore />} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
             <Route path="/fornecedor" element={<SupplierLanding />} />
