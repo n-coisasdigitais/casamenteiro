@@ -346,6 +346,11 @@ export default function SupplierDashboard() {
             <PromoDatesManager supplierId={supplier.id} />
           </TabsContent>
 
+          {/* AREA TAB */}
+          <TabsContent value="area">
+            <SupplierAreaEditor supplierId={supplier.id} />
+          </TabsContent>
+
           {/* PROFILE TAB */}
           <TabsContent value="profile">
             <Card>
