@@ -482,7 +482,7 @@ export default function CoupleDashboard() {
                                 .eq("id", s.id)
                                 .select();
                               if (error || !upd || upd.length === 0) {
-                                toast({ title: "Erro", description: error.message, variant: "destructive" });
+                                toast({ title: "Erro", description: error?.message || "Não foi possível atualizar (verifique permissões).", variant: "destructive" });
                                 return;
                               }
                               setSimulacoes((prev) => prev.map((x) => ({ ...x, is_active_plan: x.id === s.id })));
