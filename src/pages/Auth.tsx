@@ -13,8 +13,13 @@ import { traduzirErroAuth } from "@/lib/authErrors";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  const isLogin = !searchParams.get("tipo") && window.location.pathname === "/login";
-  const defaultType = searchParams.get("tipo") === "supplier" ? "supplier" : "couple";
+  const path = typeof window !== "undefined" ? window.location.pathname : "";
+  const isSupplierContext = path.startsWith("/fornecedor");
+  const isLogin =
+    !searchParams.get("tipo") &&
+    (path === "/login" || path === "/fornecedor/login");
+  const defaultType =
+    searchParams.get("tipo") === "supplier" || isSupplierContext ? "supplier" : "couple";
 
   const [mode, setMode] = useState<"login" | "signup">(isLogin ? "login" : "signup");
   const [accountType, setAccountType] = useState(defaultType);
