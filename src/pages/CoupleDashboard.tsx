@@ -464,6 +464,33 @@ export default function CoupleDashboard() {
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <Eye className="h-4 w-4 text-muted-foreground" />
+                        {!s.is_active_plan && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-emerald-700 hover:text-emerald-800"
+                            title="Tornar este o plano ativo"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!couple?.id) return;
+                              if (!window.confirm("Tornar esta simulação o seu plano ativo? A anterior deixará de ser marcada como ativa, mas seus fornecedores em andamento permanecem no Kanban e devem ser descartados manualmente, se desejar.")) return;
+                              await (supabase.from("home_simulacoes" as any) as any)
+                                .update({ is_active_plan: false })
+                                .eq("couple_id", couple.id);
+                              const { error } = await (supabase.from("home_simulacoes" as any) as any)
+                                .update({ is_active_plan: true })
+                                .eq("id", s.id);
+                              if (error) {
+                                toast({ title: "Erro", description: error.message, variant: "destructive" });
+                                return;
+                              }
+                              setSimulacoes((prev) => prev.map((x) => ({ ...x, is_active_plan: x.id === s.id })));
+                              toast({ title: "Plano ativo atualizado" });
+                            }}
+                          >
+                            <Star className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"

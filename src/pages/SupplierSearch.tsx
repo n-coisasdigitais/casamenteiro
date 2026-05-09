@@ -11,6 +11,7 @@ import {
   ChevronLeft, ChevronRight, Map, Filter, X
 } from "lucide-react";
 import SupplierSearchMap from "@/components/SupplierSearchMap";
+import BulkContactDialog, { type BulkSupplier } from "@/components/BulkContactDialog";
 
 type Category = { id: string; name: string; slug: string };
 
@@ -31,6 +32,8 @@ type Supplier = {
   category_id: string | null;
   categories: { name: string } | null;
   supplier_photos: { photo_url: string }[];
+  whatsapp?: string | null;
+  phone?: string | null;
 };
 
 const subCategories: Record<string, string[]> = {
@@ -68,6 +71,24 @@ export default function SupplierSearch() {
   const [filtersOpen, setFiltersOpen] = useState({ category: true, highlights: true, price: false });
   const [photoIndex, setPhotoIndex] = useState<Record<string, number>>({});
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDialog, setBulkDialog] = useState<null | "platform" | "whatsapp">(null);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+  const allSelected = suppliers.length > 0 && selectedIds.size === suppliers.length;
+  const toggleAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(suppliers.map((s) => s.id)));
+  };
+  const selectedSuppliers: BulkSupplier[] = suppliers
+    .filter((s) => selectedIds.has(s.id))
+    .map((s) => ({ id: s.id, company_name: s.company_name, whatsapp: s.whatsapp, phone: s.phone, categories: s.categories }));
 
   useEffect(() => {
     supabase.from("categories").select("*").order("name").then(({ data }) => {
@@ -363,9 +384,17 @@ export default function SupplierSearch() {
           <div className="flex-1 min-w-0">
             {/* Results header */}
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <p className="text-xs sm:text-sm font-medium tracking-wider text-muted-foreground uppercase">
-                {suppliers.length} resultados
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-xs sm:text-sm font-medium tracking-wider text-muted-foreground uppercase">
+                  {suppliers.length} resultados
+                </p>
+                {suppliers.length > 0 && (
+                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
+                    <span className="text-muted-foreground">Selecionar todos</span>
+                  </label>
+                )}
+              </div>
               <div className="flex items-center border border-border rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode("list")}
@@ -447,7 +476,10 @@ export default function SupplierSearch() {
                   const photos = sup.supplier_photos || [];
                   const currentPhoto = photoIndex[sup.id] || 0;
                   return (
-                    <div key={sup.id} className="flex flex-col sm:flex-row border border-border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-shadow">
+                    <div key={sup.id} className={`relative flex flex-col sm:flex-row border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-shadow ${selectedIds.has(sup.id) ? "border-primary ring-1 ring-primary" : "border-border"}`}>
+                      <label className="absolute top-2 left-2 z-10 bg-background/95 rounded-md p-1 cursor-pointer shadow-sm">
+                        <Checkbox checked={selectedIds.has(sup.id)} onCheckedChange={() => toggleSelect(sup.id)} />
+                      </label>
                       {/* Photo carousel */}
                       <div className="relative w-full sm:w-[280px] h-48 sm:h-[220px] shrink-0 bg-muted group">
                         {photos.length > 0 ? (
@@ -574,8 +606,12 @@ export default function SupplierSearch() {
                 {suppliers.map((sup) => {
                   const photo = sup.supplier_photos?.[0]?.photo_url;
                   return (
-                    <Link key={sup.id} to={`/fornecedor/${sup.id}`} className="group">
-                      <div className="rounded-lg overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
+                    <div key={sup.id} className="relative">
+                      <label className="absolute top-2 left-2 z-10 bg-background/95 rounded-md p-1 cursor-pointer shadow-sm" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={selectedIds.has(sup.id)} onCheckedChange={() => toggleSelect(sup.id)} />
+                      </label>
+                      <Link to={`/fornecedor/${sup.id}`} className="group block">
+                      <div className={`rounded-lg overflow-hidden border bg-card hover:shadow-lg transition-all ${selectedIds.has(sup.id) ? "border-primary ring-1 ring-primary" : "border-border"}`}>
                         <div className="relative h-32 sm:h-48 bg-muted">
                           {photo ? (
                             <img src={photo} alt={sup.company_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
@@ -600,7 +636,8 @@ export default function SupplierSearch() {
                           )}
                         </div>
                       </div>
-                    </Link>
+                      </Link>
+                    </div>
                   );
                 })}
               </div>
@@ -608,6 +645,30 @@ export default function SupplierSearch() {
           </div>
         </div>
       </div>
+
+      {/* Sticky bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md shadow-lg">
+          <div className="container py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-sm font-medium">
+              {selectedIds.size} fornecedor(es) selecionado(s)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Limpar</Button>
+              <Button size="sm" variant="outline" onClick={() => setBulkDialog("whatsapp")}>WhatsApp (um a um)</Button>
+              <Button size="sm" onClick={() => setBulkDialog("platform")}>Enviar pela plataforma</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <BulkContactDialog
+        open={bulkDialog !== null}
+        onOpenChange={(o) => { if (!o) setBulkDialog(null); }}
+        suppliers={selectedSuppliers}
+        mode={bulkDialog || "platform"}
+        onDone={() => setSelectedIds(new Set())}
+      />
     </div>
   );
 }
