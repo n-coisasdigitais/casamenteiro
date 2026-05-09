@@ -17,6 +17,7 @@ import QuoteThread from "@/components/QuoteThread";
 import QuoteProposalPanel from "@/components/QuoteProposalPanel";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 import PromoDatesManager from "@/components/PromoDatesManager";
+import CalendarConnections from "@/components/CalendarConnections";
 import NotificationsBell from "@/components/NotificationsBell";
 import SupplierMetrics from "@/components/supplier/SupplierMetrics";
 import SupplierOnboardingWizard from "@/components/supplier/SupplierOnboardingWizard";
@@ -343,6 +344,7 @@ export default function SupplierDashboard() {
           {/* AVAILABILITY TAB */}
           <TabsContent value="availability" className="space-y-4">
             <AvailabilityCalendar supplierId={supplier.id} />
+            <CalendarConnections supplierId={supplier.id} />
             <PromoDatesManager supplierId={supplier.id} />
           </TabsContent>
 
