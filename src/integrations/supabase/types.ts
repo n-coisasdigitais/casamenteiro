@@ -44,6 +44,89 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_gatilho_execucoes: {
+        Row: {
+          contexto: Json | null
+          enviado_em: string
+          gatilho_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          contexto?: Json | null
+          enviado_em?: string
+          gatilho_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          contexto?: Json | null
+          enviado_em?: string
+          gatilho_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_gatilho_execucoes_gatilho_id_fkey"
+            columns: ["gatilho_id"]
+            isOneToOne: false
+            referencedRelation: "broadcast_gatilhos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcast_gatilhos: {
+        Row: {
+          ativo: boolean
+          canais: string[]
+          corpo: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          dias: number
+          id: string
+          link: string | null
+          nome: string
+          publico_alvo: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          canais?: string[]
+          corpo: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          dias?: number
+          id?: string
+          link?: string | null
+          nome: string
+          publico_alvo: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          canais?: string[]
+          corpo?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          dias?: number
+          id?: string
+          link?: string | null
+          nome?: string
+          publico_alvo?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       broadcast_history: {
         Row: {
           admin_id: string
@@ -481,15 +564,19 @@ export type Database = {
           couple_id: string
           created_at: string
           estimated_value: number | null
+          external_supplier_category: string | null
+          external_supplier_name: string | null
+          external_supplier_phone: string | null
           final_value: number | null
           id: string
+          is_external: boolean
           kanban_order: number
           kanban_status: string
           notes: string | null
           proposed_value: number | null
           simulation_id: string | null
           status: string
-          supplier_id: string
+          supplier_id: string | null
           updated_at: string
         }
         Insert: {
@@ -499,15 +586,19 @@ export type Database = {
           couple_id: string
           created_at?: string
           estimated_value?: number | null
+          external_supplier_category?: string | null
+          external_supplier_name?: string | null
+          external_supplier_phone?: string | null
           final_value?: number | null
           id?: string
+          is_external?: boolean
           kanban_order?: number
           kanban_status?: string
           notes?: string | null
           proposed_value?: number | null
           simulation_id?: string | null
           status?: string
-          supplier_id: string
+          supplier_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -517,15 +608,19 @@ export type Database = {
           couple_id?: string
           created_at?: string
           estimated_value?: number | null
+          external_supplier_category?: string | null
+          external_supplier_name?: string | null
+          external_supplier_phone?: string | null
           final_value?: number | null
           id?: string
+          is_external?: boolean
           kanban_order?: number
           kanban_status?: string
           notes?: string | null
           proposed_value?: number | null
           simulation_id?: string | null
           status?: string
-          supplier_id?: string
+          supplier_id?: string | null
           updated_at?: string
         }
         Relationships: [
