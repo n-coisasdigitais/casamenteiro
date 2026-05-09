@@ -50,8 +50,8 @@ export default function BulkContactDialog({ open, onOpenChange, suppliers, mode,
 
   const renderMsg = (s: BulkSupplier) =>
     template
-      .replaceAll("{{nome}}", s.company_name)
-      .replaceAll("{{categoria}}", s.categories?.name?.toLowerCase() || "o seu serviço");
+      .split("{{nome}}").join(s.company_name)
+      .split("{{categoria}}").join(s.categories?.name?.toLowerCase() || "o seu serviço");
 
   const sendPlatform = async () => {
     if (!user) return;
