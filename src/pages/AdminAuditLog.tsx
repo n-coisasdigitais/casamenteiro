@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, ArrowLeft } from "lucide-react";
 
 export default function AdminAuditLog() {
   const { user, loading: authLoading } = useAuth();
@@ -23,18 +21,14 @@ export default function AdminAuditLog() {
     });
   }, [user, authLoading, navigate]);
 
-  if (!checked) return <div className="min-h-screen flex items-center justify-center">Verificando...</div>;
+  if (!checked) return <div className="p-8 text-center">Verificando...</div>;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b sticky top-0 z-40">
-        <div className="container flex items-center gap-3 h-16">
-          <Button variant="ghost" size="icon" asChild><Link to="/admin"><ArrowLeft className="h-4 w-4" /></Link></Button>
-          <Heart className="h-5 w-5 text-primary fill-primary" />
-          <span className="font-bold">Logs de auditoria</span>
-        </div>
-      </header>
-      <main className="container py-6">
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Logs de auditoria</h1>
+        <span className="text-xs text-muted-foreground">{rows.length} registro(s)</span>
+      </div>
         <div className="border rounded-lg overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted">
@@ -62,7 +56,6 @@ export default function AdminAuditLog() {
             </tbody>
           </table>
         </div>
-      </main>
     </div>
   );
 }
