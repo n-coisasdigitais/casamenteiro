@@ -11,7 +11,7 @@ import DashboardNav from "@/components/DashboardNav";
 
 type Category = { id: string; name: string; slug: string; icon: string | null };
 type CoupleSupplier = { id: string; supplier_id: string; category_id: string | null; status: string; supplier?: { id: string; company_name: string; profile_photo_url: string | null; category_id: string | null } };
-type Favorite = { id: string; supplier_id: string };
+type Favorite = { id: string; supplier_id: string; category_id?: string | null };
 
 export default function MySuppliers() {
   const { user } = useAuth();
@@ -39,19 +39,26 @@ export default function MySuppliers() {
     ]);
     setCategories(catRes.data || []);
     const list = csRes.data || [];
-    const ids = Array.from(new Set(list.map((s: any) => s.supplier_id)));
+    const favList = (favRes.data || []) as Favorite[];
+    const ids = Array.from(new Set([
+      ...list.map((s: any) => s.supplier_id),
+      ...favList.map((f) => f.supplier_id),
+    ]));
     let supMap = new Map<string, any>();
     if (ids.length) {
       const { data: sups } = await supabase.from("suppliers").select("id, company_name, profile_photo_url, category_id").in("id", ids);
       supMap = new Map((sups || []).map((s: any) => [s.id, s]));
     }
     setCoupleSuppliers(list.map((s: any) => ({ ...s, supplier: supMap.get(s.supplier_id), category_id: s.category_id || supMap.get(s.supplier_id)?.category_id || null })));
-    setFavorites(favRes.data || []);
+    setFavorites(favList.map((f) => ({ ...f, category_id: supMap.get(f.supplier_id)?.category_id || null })));
   };
 
   const contracted = coupleSuppliers.filter((s) => s.status === "contracted");
-  const saved = coupleSuppliers.filter((s) => s.status === "saved");
   const totalCategories = categories.length;
+  const favoritedCategoryIds = new Set(
+    favorites.map((f) => f.category_id).filter(Boolean) as string[]
+  );
+  const savedCategoriesCount = favoritedCategoryIds.size;
 
   const getCategoryStatus = (catId: string) => {
     const cs = coupleSuppliers.find((s) => s.category_id === catId && s.status === "contracted");
@@ -62,7 +69,7 @@ export default function MySuppliers() {
     if (filter === "all") return true;
     const status = getCategoryStatus(cat.id);
     if (filter === "contracted") return status === "contracted";
-    if (filter === "saved") return status === "saved" || status === "contracted";
+    if (filter === "saved") return favoritedCategoryIds.has(cat.id);
     return true;
   });
 
@@ -107,7 +114,7 @@ export default function MySuppliers() {
             onClick={() => setFilter("saved")}
           >
             <Heart className="mr-2 h-4 w-4" />
-            Guardados ({favorites.length})
+            Guardados ({savedCategoriesCount})
           </Button>
           <Button
             variant={filter === "contracted" ? "default" : "outline"}
