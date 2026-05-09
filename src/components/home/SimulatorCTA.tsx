@@ -162,7 +162,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
                       Vamos planejar o casamento dos seus sonhos?
                     </h2>
                     <p className="text-sm md:text-base mb-10 max-w-md" style={{ color: "hsl(var(--color-text-muted))", lineHeight: 1.7 }}>
-                      4 perguntas rápidas. A gente monta um plano completo com fornecedores dentro do seu orçamento.
+                      5 perguntas rápidas. A gente monta um plano completo com fornecedores dentro do seu orçamento.
                     </p>
                     <button
                       onClick={() => goTo(1)}

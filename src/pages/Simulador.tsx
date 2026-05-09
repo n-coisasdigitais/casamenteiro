@@ -156,7 +156,7 @@ export default function Simulador() {
                     Vamos planejar o casamento dos seus sonhos?
                   </h1>
                   <p className="text-base md:text-lg mb-10 max-w-lg mx-auto" style={{ color: "hsl(var(--color-text-muted))" }}>
-                    4 perguntas rápidas. A gente monta um plano completo com fornecedores dentro do seu orçamento.
+                    5 perguntas rápidas. A gente monta um plano completo com fornecedores dentro do seu orçamento.
                   </p>
                   <button
                     onClick={() => setStep(1)}
