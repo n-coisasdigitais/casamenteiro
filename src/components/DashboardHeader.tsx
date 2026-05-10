@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function DashboardHeader() {
   const { profile } = useAuth();
+  const isSupplier = profile?.account_type === "supplier";
 
   return (
     <header className="bg-card border-b border-border sticky top-0 z-40">
@@ -16,7 +17,7 @@ export default function DashboardHeader() {
         </Link>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground hidden sm:inline">
-            Olá, {profile?.full_name || "Casal"}
+            Olá, {profile?.full_name || (isSupplier ? "Fornecedor" : "Casal")}
           </span>
           <NotificationsBell />
           <UserMenu />

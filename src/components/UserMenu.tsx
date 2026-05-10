@@ -8,17 +8,38 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Heart, Search, Settings, LogOut, CheckSquare, Users, DollarSign, Store } from "lucide-react";
+import {
+  Heart, Search, Settings, LogOut, CheckSquare, Users, DollarSign, Store,
+  LayoutDashboard, MessageSquareQuote, CalendarDays, ShieldCheck, UserCircle,
+} from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
 export default function UserMenu() {
-  const { profile, signOut } = useAuth();
+  const { profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
+
+  const isSupplier = profile?.account_type === "supplier";
+
+  const items = isSupplier
+    ? [
+        { to: "/fornecedor/painel", icon: LayoutDashboard, label: "Painel do Fornecedor" },
+        { to: "/fornecedor/painel?tab=quotes", icon: MessageSquareQuote, label: "Orçamentos recebidos" },
+        { to: "/fornecedor/painel?tab=availability", icon: CalendarDays, label: "Disponibilidade" },
+        { to: "/fornecedor/painel?tab=profile", icon: UserCircle, label: "Perfil público" },
+      ]
+    : [
+        { to: "/dashboard", icon: Heart, label: "Meu Casamento" },
+        { to: "/tarefas", icon: CheckSquare, label: "Agenda de Tarefas" },
+        { to: "/meus-fornecedores", icon: Store, label: "Meus Fornecedores" },
+        { to: "/convidados", icon: Users, label: "Convidados" },
+        { to: "/orcamento", icon: DollarSign, label: "Orçamento" },
+        { to: "/buscar", icon: Search, label: "Buscar Fornecedores" },
+      ];
 
   return (
     <DropdownMenu>
@@ -35,42 +56,25 @@ export default function UserMenu() {
           </Link>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/dashboard" className="cursor-pointer">
-            <Heart className="mr-2 h-4 w-4" />
-            Meu Casamento
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/tarefas" className="cursor-pointer">
-            <CheckSquare className="mr-2 h-4 w-4" />
-            Agenda de Tarefas
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/meus-fornecedores" className="cursor-pointer">
-            <Store className="mr-2 h-4 w-4" />
-            Meus Fornecedores
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/convidados" className="cursor-pointer">
-            <Users className="mr-2 h-4 w-4" />
-            Convidados
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/orcamento" className="cursor-pointer">
-            <DollarSign className="mr-2 h-4 w-4" />
-            Orçamento
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/buscar" className="cursor-pointer">
-            <Search className="mr-2 h-4 w-4" />
-            Buscar Fornecedores
-          </Link>
-        </DropdownMenuItem>
+        {items.map((it) => (
+          <DropdownMenuItem asChild key={it.to}>
+            <Link to={it.to} className="cursor-pointer">
+              <it.icon className="mr-2 h-4 w-4" />
+              {it.label}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+        {isAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/admin" className="cursor-pointer">
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Painel Admin
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/perfil" className="cursor-pointer">
