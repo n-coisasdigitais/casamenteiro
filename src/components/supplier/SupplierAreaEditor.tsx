@@ -108,10 +108,22 @@ export default function SupplierAreaEditor({ supplierId, inline = false, onSaved
 
         <CityAutocomplete
           value={novaCidade}
-          onChange={(c, _est, sem) => {
-            setNovaCidade(c);
-            // Quando vem de uma sugestão (não "sem fornecedor"), adiciona automaticamente
-            if (!sem && c && c !== novaCidade) adicionarCidade(c);
+          onChange={(c) => setNovaCidade(c)}
+          onSelect={async (c, estado, sem) => {
+            adicionarCidade(c);
+            if (sem && c) {
+              // registra cidade ainda não cadastrada para revisão do admin
+              await supabase.from("cidades_pendentes").insert({
+                cidade: c,
+                estado: estado || null,
+                origem: "supplier",
+                supplier_id: supplierId,
+              });
+              toast({
+                title: "Cidade adicionada",
+                description: "Vamos revisar e incluir essa cidade na nossa base.",
+              });
+            }
           }}
           placeholder="Digite uma cidade e selecione..."
         />
@@ -147,7 +159,15 @@ export default function SupplierAreaEditor({ supplierId, inline = false, onSaved
             variant="outline"
             size="sm"
             className="mt-2"
-            onClick={() => adicionarCidade(novaCidade)}
+            onClick={async () => {
+              const nome = novaCidade.trim();
+              adicionarCidade(nome);
+              await supabase.from("cidades_pendentes").insert({
+                cidade: nome,
+                origem: "supplier",
+                supplier_id: supplierId,
+              });
+            }}
           >
             Adicionar "{novaCidade.trim()}"
           </Button>

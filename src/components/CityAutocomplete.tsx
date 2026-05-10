@@ -7,6 +7,8 @@ type Sugestao = { cidade: string; estado: string | null };
 interface Props {
   value: string;
   onChange: (cidade: string, estado?: string | null, semFornecedor?: boolean) => void;
+  /** Disparado APENAS quando o usuário seleciona uma sugestão ou confirma "continuar mesmo assim". */
+  onSelect?: (cidade: string, estado?: string | null, semFornecedor?: boolean) => void;
   placeholder?: string;
   autoFocus?: boolean;
   /** Estilo grande (página do simulador) ou compacto (forms). */
@@ -21,6 +23,7 @@ interface Props {
 export default function CityAutocomplete({
   value,
   onChange,
+  onSelect,
   placeholder = "Ex: Belo Horizonte",
   autoFocus,
   variant = "compact",
@@ -67,11 +70,13 @@ export default function CityAutocomplete({
     setQuery(s.cidade);
     setOpen(false);
     onChange(s.cidade, s.estado, false);
+    onSelect?.(s.cidade, s.estado, false);
   };
 
   const continuarMesmoAssim = () => {
     setOpen(false);
     onChange(query.trim(), null, true);
+    onSelect?.(query.trim(), null, true);
   };
 
   const inputBase =
