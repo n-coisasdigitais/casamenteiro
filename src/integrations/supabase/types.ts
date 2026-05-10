@@ -440,6 +440,50 @@ export type Database = {
           },
         ]
       }
+      cidades_pendentes: {
+        Row: {
+          cidade: string
+          created_at: string
+          estado: string | null
+          id: string
+          notas: string | null
+          origem: string
+          resolvida: boolean
+          supplier_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cidade: string
+          created_at?: string
+          estado?: string | null
+          id?: string
+          notas?: string | null
+          origem?: string
+          resolvida?: boolean
+          supplier_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cidade?: string
+          created_at?: string
+          estado?: string | null
+          id?: string
+          notas?: string | null
+          origem?: string
+          resolvida?: boolean
+          supplier_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cidades_pendentes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       convite_lembretes: {
         Row: {
           canal: string
