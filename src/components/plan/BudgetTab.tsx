@@ -15,6 +15,7 @@ const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigi
 
 export default function BudgetTab({
   coupleId, items, planoTotal, onChange, contextoMensagem, quotes,
+  quoteIdsWithNewProposal, onOpenQuote,
 }: {
   coupleId: string;
   items: PlanSupplier[];
@@ -22,6 +23,8 @@ export default function BudgetTab({
   onChange: () => void;
   contextoMensagem: { nomeCasal: string; data: string; cidade: string; convidados: number };
   quotes?: any[];
+  quoteIdsWithNewProposal?: Set<string>;
+  onOpenQuote?: (quoteId: string) => void;
 }) {
   const { toast } = useToast();
   const [whatsapps, setWhatsapps] = useState<Record<string, string>>({});
@@ -117,23 +120,32 @@ export default function BudgetTab({
         <Card className="p-5">
           <h3 className="font-semibold mb-3">Orçamentos solicitados</h3>
           <p className="text-sm text-muted-foreground mb-3">
-            Pedidos enviados aos fornecedores. Quando uma proposta for aceita, o item entra no plano automaticamente.
+            Pedidos enviados aos fornecedores. Clique para ver as propostas e negociar.
           </p>
           <div className="space-y-1.5">
             {quotes.map((q: any) => {
               const noPlano = items.some((i) => i.supplier_id === q.supplier_id);
+              const novo = quoteIdsWithNewProposal?.has(q.id);
               return (
-                <div key={q.id} className="flex items-center gap-3 py-2 border-b border-border/60 last:border-0">
+                <button
+                  key={q.id}
+                  type="button"
+                  onClick={() => onOpenQuote?.(q.id)}
+                  className="w-full text-left flex items-center gap-3 py-2 border-b border-border/60 last:border-0 hover:bg-muted/40 rounded px-2 -mx-2 transition-colors"
+                >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{q.suppliers?.company_name || "Fornecedor"}</p>
                     <p className="text-xs text-muted-foreground capitalize">
                       {q.suppliers?.categories?.name || "—"} · {new Date(q.created_at).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
+                  {novo && (
+                    <Badge className="text-[10px] bg-amber-500 hover:bg-amber-500 text-white">Nova proposta</Badge>
+                  )}
                   <Badge variant={noPlano ? "default" : "secondary"} className="text-[10px]">
                     {noPlano ? "no plano" : "em orçamento"}
                   </Badge>
-                </div>
+                </button>
               );
             })}
           </div>

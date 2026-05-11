@@ -47,11 +47,13 @@ const COLUMNS: { key: KanbanStatus; label: string; tone: string }[] = [
 const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
 
 export default function PlanKanban({
-  coupleId, items, onChange,
+  coupleId, items, onChange, supplierIdsWithNewProposal, onOpenQuoteForSupplier,
 }: {
   coupleId: string;
   items: PlanSupplier[];
   onChange: () => void;
+  supplierIdsWithNewProposal?: Set<string>;
+  onOpenQuoteForSupplier?: (supplierId: string) => void;
 }) {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -172,6 +174,16 @@ export default function PlanKanban({
                   {colItems.map((item) => (
                     <div key={item.id} className="space-y-2">
                       <KanbanCard item={item} onEditValue={item.kanban_status === "negociando" ? () => openNegotiateEdit(item) : undefined} />
+                      {item.supplier_id && supplierIdsWithNewProposal?.has(item.supplier_id) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full h-7 text-xs border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                          onClick={() => onOpenQuoteForSupplier?.(item.supplier_id!)}
+                        >
+                          Nova proposta · ver
+                        </Button>
+                      )}
                       <Select
                         value={item.kanban_status}
                         onValueChange={(v) => requestStatusChange(item, v as KanbanStatus)}
@@ -224,7 +236,14 @@ export default function PlanKanban({
         <div className="overflow-x-auto pb-2 -mx-4 px-4">
           <div className="grid grid-cols-6 gap-3 min-w-[1100px]">
             {COLUMNS.map((col) => (
-              <Column key={col.key} col={col} items={grouped[col.key]} onEditValue={openNegotiateEdit} />
+              <Column
+                key={col.key}
+                col={col}
+                items={grouped[col.key]}
+                onEditValue={openNegotiateEdit}
+                supplierIdsWithNewProposal={supplierIdsWithNewProposal}
+                onOpenQuoteForSupplier={onOpenQuoteForSupplier}
+              />
             ))}
           </div>
         </div>
@@ -249,7 +268,13 @@ export default function PlanKanban({
   );
 }
 
-function Column({ col, items, onEditValue }: { col: { key: KanbanStatus; label: string; tone: string }; items: PlanSupplier[]; onEditValue: (item: PlanSupplier) => void }) {
+function Column({ col, items, onEditValue, supplierIdsWithNewProposal, onOpenQuoteForSupplier }: {
+  col: { key: KanbanStatus; label: string; tone: string };
+  items: PlanSupplier[];
+  onEditValue: (item: PlanSupplier) => void;
+  supplierIdsWithNewProposal?: Set<string>;
+  onOpenQuoteForSupplier?: (supplierId: string) => void;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: col.key });
   return (
     <div
@@ -262,7 +287,19 @@ function Column({ col, items, onEditValue }: { col: { key: KanbanStatus; label: 
       </div>
       <div className="space-y-2">
         {items.map((item) => (
-          <DraggableCard key={item.id} item={item} onEditValue={item.kanban_status === "negociando" ? () => onEditValue(item) : undefined} />
+          <div key={item.id} className="space-y-1.5">
+            <DraggableCard item={item} onEditValue={item.kanban_status === "negociando" ? () => onEditValue(item) : undefined} />
+            {item.supplier_id && supplierIdsWithNewProposal?.has(item.supplier_id) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-7 text-xs border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                onClick={() => onOpenQuoteForSupplier?.(item.supplier_id!)}
+              >
+                Nova proposta · ver
+              </Button>
+            )}
+          </div>
         ))}
         {items.length === 0 && (
           <p className="text-xs text-muted-foreground text-center py-6">Arraste cards para cá</p>

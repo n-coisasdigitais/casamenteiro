@@ -21,7 +21,15 @@ export type PlanHeaderData = {
 
 const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
 
-export default function PlanHeader({ data, onRequestQuotes }: { data: PlanHeaderData; onRequestQuotes?: () => void }) {
+export default function PlanHeader({
+  data,
+  onRequestQuotes,
+  onOpenProposals,
+}: {
+  data: PlanHeaderData;
+  onRequestQuotes?: () => void;
+  onOpenProposals?: () => void;
+}) {
   const { coupleName, weddingDate, city, guests, style, orcamentoTotal, cotado, contratado, aPagar, proxVencimento, hasUrgent, newProposals } = data;
 
   return (
@@ -43,9 +51,15 @@ export default function PlanHeader({ data, onRequestQuotes }: { data: PlanHeader
                   <li key={n.id} className="truncate">• {n.title}{n.body ? ` — ${n.body}` : ""}</li>
                 ))}
               </ul>
-              <Button asChild size="sm" variant="outline" className="mt-2 h-7 text-xs border-amber-400 bg-white">
-                <Link to="/meus-fornecedores">Ver propostas</Link>
-              </Button>
+              {onOpenProposals ? (
+                <Button size="sm" variant="outline" className="mt-2 h-7 text-xs border-amber-400 bg-white" onClick={onOpenProposals}>
+                  Ver propostas
+                </Button>
+              ) : (
+                <Button asChild size="sm" variant="outline" className="mt-2 h-7 text-xs border-amber-400 bg-white">
+                  <Link to="/orcamento">Ver propostas</Link>
+                </Button>
+              )}
             </div>
           </div>
         </Card>
