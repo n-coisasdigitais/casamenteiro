@@ -2397,6 +2397,15 @@ export type Database = {
         Args: { _make_admin: boolean; _user_id: string }
         Returns: undefined
       }
+      buscar_cidades_brasil: {
+        Args: { _prefix: string }
+        Returns: {
+          cidade: string
+          estado: string
+          lat: number
+          lng: number
+        }[]
+      }
       cidades_disponiveis: {
         Args: { _prefix: string }
         Returns: {

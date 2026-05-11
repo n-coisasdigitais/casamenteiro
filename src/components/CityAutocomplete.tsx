@@ -3,6 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Loader2 } from "lucide-react";
 
 type Sugestao = { cidade: string; estado: string | null };
+type FonteCidades = "fornecedores" | "brasil";
+
+type MunicipioIbge = {
+  nome: string;
+  microrregiao?: {
+    mesorregiao?: {
+      UF?: { sigla?: string };
+    };
+  };
+};
+
+let municipiosCache: Sugestao[] | null = null;
 
 interface Props {
   value: string;
@@ -13,6 +25,9 @@ interface Props {
   autoFocus?: boolean;
   /** Estilo grande (página do simulador) ou compacto (forms). */
   variant?: "large" | "compact";
+  /** "fornecedores" usa cidades já atendidas; "brasil" usa a base oficial do IBGE. */
+  fonte?: FonteCidades;
+  mostrarContinuarMesmoAssim?: boolean;
   className?: string;
 }
 
@@ -27,6 +42,8 @@ export default function CityAutocomplete({
   placeholder = "Ex: Belo Horizonte",
   autoFocus,
   variant = "compact",
+  fonte = "fornecedores",
+  mostrarContinuarMesmoAssim = true,
   className = "",
 }: Props) {
   const [query, setQuery] = useState(value);
@@ -46,7 +63,43 @@ export default function CityAutocomplete({
     }
     const t = setTimeout(async () => {
       setLoading(true);
-      const { data, error } = await supabase.rpc("cidades_disponiveis", { _prefix: query.trim() });
+      const termo = query.trim();
+      if (fonte === "brasil") {
+        try {
+          if (!municipiosCache) {
+            const res = await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome");
+            const data = (await res.json()) as MunicipioIbge[];
+            municipiosCache = data.map((m) => ({
+              cidade: m.nome,
+              estado: m.microrregiao?.mesorregiao?.UF?.sigla || null,
+            }));
+          }
+          const termoNormalizado = termo.toLocaleLowerCase("pt-BR");
+          setSugestoes(
+            municipiosCache
+              .filter((m) => m.cidade.toLocaleLowerCase("pt-BR").includes(termoNormalizado))
+              .sort((a, b) => {
+                const aStart = a.cidade.toLocaleLowerCase("pt-BR").startsWith(termoNormalizado) ? 0 : 1;
+                const bStart = b.cidade.toLocaleLowerCase("pt-BR").startsWith(termoNormalizado) ? 0 : 1;
+                return aStart - bStart || a.cidade.localeCompare(b.cidade, "pt-BR");
+              })
+              .slice(0, 20),
+          );
+          setLoading(false);
+          return;
+        } catch {
+          const { data } = await supabase
+            .from("cidades_coordenadas")
+            .select("cidade, estado")
+            .ilike("cidade", `%${termo}%`)
+            .limit(20);
+          setSugestoes((data || []) as Sugestao[]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const { data, error } = await supabase.rpc("cidades_disponiveis", { _prefix: termo });
       setLoading(false);
       if (error) {
         setSugestoes([]);
@@ -55,7 +108,7 @@ export default function CityAutocomplete({
       }
     }, 250);
     return () => clearTimeout(t);
-  }, [query, touched]);
+  }, [fonte, query, touched]);
 
   // Fecha ao clicar fora
   useEffect(() => {
@@ -99,7 +152,7 @@ export default function CityAutocomplete({
           color: "hsl(var(--color-text-body))",
         };
 
-  const semResultado = touched && query.trim().length >= 2 && !loading && sugestoes.length === 0;
+  const semResultado = mostrarContinuarMesmoAssim && touched && query.trim().length >= 2 && !loading && sugestoes.length === 0;
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
