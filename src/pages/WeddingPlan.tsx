@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,10 +12,14 @@ import PaymentsTab, { PaymentRow } from "@/components/plan/PaymentsTab";
 import AddExternalSupplierDialog from "@/components/plan/AddExternalSupplierDialog";
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import QuoteThread from "@/components/QuoteThread";
+import QuoteProposalPanel from "@/components/QuoteProposalPanel";
 
 export default function WeddingPlan() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [coupleId, setCoupleId] = useState<string>("");
   const [coupleName, setCoupleName] = useState<string>("");
@@ -25,6 +29,7 @@ export default function WeddingPlan() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [newProposals, setNewProposals] = useState<{ id: string; title: string; body: string | null; link: string | null }[]>([]);
   const [externalDialogOpen, setExternalDialogOpen] = useState(false);
+  const [openQuoteId, setOpenQuoteId] = useState<string | null>(null);
 
   const load = useCallback(async (cId: string) => {
     // 1. Couple suppliers + categoria
@@ -117,6 +122,57 @@ export default function WeddingPlan() {
     })();
   }, [user, navigate, load]);
 
+  // Auto-abre conversa pelo ?quote=...
+  useEffect(() => {
+    const q = searchParams.get("quote");
+    if (q && !openQuoteId) setOpenQuoteId(q);
+  }, [searchParams, openQuoteId]);
+
+  // Conjunto de quote IDs com proposta nova (não lida)
+  const quoteIdsWithNewProposal = new Set<string>(
+    newProposals
+      .map((n) => {
+        if (!n.link) return null;
+        const m = n.link.match(/[?&]quote=([0-9a-f-]+)/i);
+        return m ? m[1] : null;
+      })
+      .filter((x): x is string => !!x)
+  );
+
+  const supplierIdsWithNewProposal = new Set<string>(
+    quotes.filter((q: any) => quoteIdsWithNewProposal.has(q.id)).map((q: any) => q.supplier_id).filter(Boolean)
+  );
+
+  const openQuoteDialog = async (qid: string) => {
+    setOpenQuoteId(qid);
+    // marca notificações dessa quote como lidas
+    if (user) {
+      const ids = newProposals
+        .filter((n) => n.link && n.link.includes(`quote=${qid}`))
+        .map((n) => n.id);
+      if (ids.length) {
+        await supabase.from("notifications").update({ read: true }).in("id", ids);
+        setNewProposals((prev) => prev.filter((n) => !ids.includes(n.id)));
+      }
+    }
+  };
+
+  const closeQuoteDialog = () => {
+    setOpenQuoteId(null);
+    if (searchParams.get("quote")) {
+      searchParams.delete("quote");
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
+
+  const openFirstNewProposal = () => {
+    const first = Array.from(quoteIdsWithNewProposal)[0];
+    if (first) openQuoteDialog(first);
+  };
+
+  const openQuote = quotes.find((q: any) => q.id === openQuoteId);
+  const openSupplierId = openQuote?.supplier_id || null;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -172,7 +228,7 @@ export default function WeddingPlan() {
       <DashboardHeader />
       <DashboardNav />
       <div className="container px-4 py-6 space-y-6">
-        <PlanHeader data={headerData} />
+        <PlanHeader data={headerData} onOpenProposals={openFirstNewProposal} />
 
         <Tabs defaultValue="kanban" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-3">
@@ -192,7 +248,16 @@ export default function WeddingPlan() {
                 Nenhum fornecedor no plano ainda. Faça uma simulação ou adicione fornecedores aos seus favoritos.
               </div>
             ) : (
-              <PlanKanban coupleId={coupleId} items={items} onChange={() => load(coupleId)} />
+              <PlanKanban
+                coupleId={coupleId}
+                items={items}
+                onChange={() => load(coupleId)}
+                supplierIdsWithNewProposal={supplierIdsWithNewProposal}
+                onOpenQuoteForSupplier={(sid) => {
+                  const q = quotes.find((x: any) => x.supplier_id === sid);
+                  if (q) openQuoteDialog(q.id);
+                }}
+              />
             )}
             <AddExternalSupplierDialog
               open={externalDialogOpen}
@@ -209,6 +274,8 @@ export default function WeddingPlan() {
               planoTotal={orcamentoTotal}
               onChange={() => load(coupleId)}
               quotes={quotes}
+              quoteIdsWithNewProposal={quoteIdsWithNewProposal}
+              onOpenQuote={openQuoteDialog}
               contextoMensagem={{
                 nomeCasal: coupleName,
                 data: couple?.wedding_date ? new Date(couple.wedding_date + "T00:00:00").toLocaleDateString("pt-BR") : "",
@@ -222,6 +289,29 @@ export default function WeddingPlan() {
             <PaymentsTab payments={payments} items={items} onChange={() => load(coupleId)} />
           </TabsContent>
         </Tabs>
+
+        <Dialog open={!!openQuoteId} onOpenChange={(v) => { if (!v) closeQuoteDialog(); }}>
+          <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col p-0 gap-0">
+            <DialogHeader className="p-4 pb-2 border-b border-border">
+              <DialogTitle className="text-base">
+                Conversa e propostas{openQuote?.suppliers?.company_name ? ` · ${openQuote.suppliers.company_name}` : ""}
+              </DialogTitle>
+            </DialogHeader>
+            {openQuoteId && user && (
+              <QuoteThread quoteId={openQuoteId} currentUserId={user.id} />
+            )}
+            {openQuoteId && user && coupleId && (
+              <QuoteProposalPanel
+                quoteId={openQuoteId}
+                currentUserId={user.id}
+                isSupplier={false}
+                coupleId={coupleId}
+                supplierId={openSupplierId}
+                onContracted={() => { load(coupleId); closeQuoteDialog(); }}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
