@@ -1,0 +1,1 @@
+ALTER TABLE public.couples ADD COLUMN IF NOT EXISTS party_duration_hours numeric;

@@ -717,6 +717,7 @@ export type Database = {
           needed_services: string[] | null
           onboarding_completed: boolean
           partner_name: string | null
+          party_duration_hours: number | null
           reception_address: string | null
           reception_cep: string | null
           reception_lat: number | null
@@ -754,6 +755,7 @@ export type Database = {
           needed_services?: string[] | null
           onboarding_completed?: boolean
           partner_name?: string | null
+          party_duration_hours?: number | null
           reception_address?: string | null
           reception_cep?: string | null
           reception_lat?: number | null
@@ -791,6 +793,7 @@ export type Database = {
           needed_services?: string[] | null
           onboarding_completed?: boolean
           partner_name?: string | null
+          party_duration_hours?: number | null
           reception_address?: string | null
           reception_cep?: string | null
           reception_lat?: number | null
