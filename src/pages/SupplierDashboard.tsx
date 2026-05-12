@@ -488,7 +488,14 @@ export default function SupplierDashboard() {
         </Tabs>
 
         {/* Quote Thread Dialog */}
-        <Dialog open={threadOpen} onOpenChange={setThreadOpen}>
+        <Dialog open={threadOpen} onOpenChange={(v) => {
+          setThreadOpen(v);
+          if (!v && searchParams.get("quote")) {
+            const next = new URLSearchParams(searchParams);
+            next.delete("quote");
+            setSearchParams(next, { replace: true });
+          }
+        }}>
           <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
             <DialogHeader className="p-4 pb-2 border-b border-border">
               <DialogTitle className="text-base">Orçamento</DialogTitle>
