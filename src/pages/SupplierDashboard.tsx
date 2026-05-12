@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ type Category = { id: string; name: string };
 export default function SupplierDashboard() {
   const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [supplier, setSupplier] = useState<any>(null);
   const [photos, setPhotos] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -38,6 +39,8 @@ export default function SupplierDashboard() {
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [threadOpen, setThreadOpen] = useState(false);
   const [rejectMotivo, setRejectMotivo] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("metrics");
+  const [bannerDismissed, setBannerDismissed] = useState<string | null>(null);
 
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
@@ -56,6 +59,48 @@ export default function SupplierDashboard() {
   useEffect(() => {
     if (supplier) loadQuotes();
   }, [supplier]);
+
+  // Define aba inicial conforme onboarding e respeita ?tab= da URL
+  useEffect(() => {
+    if (!supplier) return;
+    const tab = searchParams.get("tab");
+    if (tab) setActiveTab(tab);
+    else setActiveTab(supplier.onboarding_completed ? "metrics" : "quotes");
+  }, [supplier, searchParams]);
+
+  // Abre automaticamente um quote vindo de notificação (?quote=)
+  useEffect(() => {
+    const qid = searchParams.get("quote");
+    if (!qid || quotes.length === 0) return;
+    const q = quotes.find((x) => x.id === qid);
+    if (q && (!selectedQuote || selectedQuote.id !== qid)) {
+      openThread(q);
+      // marca notificações relacionadas como lidas
+      if (user) {
+        supabase
+          .from("notifications")
+          .update({ read: true })
+          .eq("user_id", user.id)
+          .like("link", `%quote=${qid}%`)
+          .then(() => {});
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotes, searchParams]);
+
+  // Carrega estado de dispensar banner
+  useEffect(() => {
+    if (!supplier) return;
+    const key = `supplier-banner-dismissed:${supplier.id}:${supplier.status}`;
+    setBannerDismissed(localStorage.getItem(key));
+  }, [supplier]);
+
+  const dismissBanner = () => {
+    if (!supplier) return;
+    const key = `supplier-banner-dismissed:${supplier.id}:${supplier.status}`;
+    localStorage.setItem(key, "1");
+    setBannerDismissed("1");
+  };
 
   const loadSupplier = async () => {
     if (!user) return;
@@ -206,18 +251,24 @@ export default function SupplierDashboard() {
           )}
         </div>
 
-        {supplier.status === "pending" && (
+        {supplier.status === "pending" && !bannerDismissed && (
           <Card className="mb-6 border-primary/30 bg-primary/5">
-            <CardContent className="p-4 text-sm text-muted-foreground">
-              <p><strong>Seu perfil está em análise.</strong> Complete todas as informações e adicione fotos ao seu portfólio para agilizar a aprovação.</p>
+            <CardContent className="p-4 text-sm text-muted-foreground flex items-start gap-2">
+              <p className="flex-1"><strong>Seu perfil está em análise.</strong> Complete todas as informações e adicione fotos ao seu portfólio para agilizar a aprovação.</p>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={dismissBanner} aria-label="Dispensar">
+                <X className="h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
         )}
 
-        {supplier.status === "approved" && (
+        {supplier.status === "approved" && !bannerDismissed && (
           <Card className="mb-6 border-green-500/40 bg-green-500/5">
-            <CardContent className="p-4 text-sm">
-              <p><strong className="text-green-700">Perfil aprovado!</strong> Você já está visível para os casais na vitrine.</p>
+            <CardContent className="p-4 text-sm flex items-start gap-2">
+              <p className="flex-1"><strong className="text-green-700">Perfil aprovado!</strong> Você já está visível para os casais na vitrine.</p>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={dismissBanner} aria-label="Dispensar">
+                <X className="h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -244,7 +295,17 @@ export default function SupplierDashboard() {
           </div>
         )}
 
-        <Tabs defaultValue={supplier.onboarding_completed ? "metrics" : "quotes"} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v);
+            const next = new URLSearchParams(searchParams);
+            next.set("tab", v);
+            next.delete("quote");
+            setSearchParams(next, { replace: true });
+          }}
+          className="space-y-6"
+        >
           <TabsList className="flex-wrap">
             <TabsTrigger value="metrics" className="flex items-center gap-1.5">
               <BarChart3 className="h-4 w-4" />
