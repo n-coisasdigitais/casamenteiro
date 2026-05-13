@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Lock } from "lucide-react";
+import { Save, Lock, Copy, Link2, UserMinus, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
@@ -32,6 +32,13 @@ export default function UserProfile() {
   const [estimatedBudget, setEstimatedBudget] = useState("");
   const [coupleId, setCoupleId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Vínculo de parceiro
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [linkedPartners, setLinkedPartners] = useState<{ id: string; user_id: string; name: string; email?: string | null }[]>([]);
+  const [partnerCodeInput, setPartnerCodeInput] = useState("");
+  const [linking, setLinking] = useState(false);
 
   // Campos do convite
   const [inviteMessage, setInviteMessage] = useState("");
@@ -79,6 +86,8 @@ export default function UserProfile() {
     supabase.from("couples").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (data) {
         setCoupleId(data.id);
+        setInviteCode((data as any).invite_code || null);
+        setIsOwner(true);
         setPartnerName(data.partner_name || "");
         setCoupleRole(data.couple_role || "");
         setWeddingDate(data.wedding_date || "");
@@ -105,9 +114,75 @@ export default function UserProfile() {
         setReceptionLocalNome((data as any).reception_local_nome || "");
         setInviteVideoUrl((data as any).invite_video_url || "");
         setInviteAlbum(Array.isArray((data as any).invite_album) ? (data as any).invite_album : []);
+        loadLinks(data.id);
+      } else {
+        // Não é dono — pode estar vinculado como parceiro
+        setIsOwner(false);
+        supabase.from("couple_links").select("couple_id").eq("linked_user_id", user.id).maybeSingle().then(({ data: lk }) => {
+          if (lk?.couple_id) {
+            setCoupleId(lk.couple_id);
+            supabase.from("couples").select("invite_code").eq("id", lk.couple_id).maybeSingle().then(({ data: c }) => {
+              if (c) setInviteCode((c as any).invite_code || null);
+            });
+            loadLinks(lk.couple_id);
+          }
+        });
       }
     });
   }, [user, profile, authLoading, navigate]);
+
+  const loadLinks = async (cId: string) => {
+    const { data: links } = await supabase
+      .from("couple_links")
+      .select("id, linked_user_id")
+      .eq("couple_id", cId);
+    if (!links || links.length === 0) { setLinkedPartners([]); return; }
+    const userIds = links.map((l: any) => l.linked_user_id);
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", userIds);
+    setLinkedPartners(
+      links.map((l: any) => ({
+        id: l.id,
+        user_id: l.linked_user_id,
+        name: profs?.find((p: any) => p.user_id === l.linked_user_id)?.full_name || "Parceiro(a)",
+      }))
+    );
+  };
+
+  const copyInvite = () => {
+    if (!inviteCode) return;
+    navigator.clipboard.writeText(inviteCode);
+    toast({ title: "Código copiado!", description: "Envie para seu(sua) parceiro(a) colar na tela de perfil dele(a)." });
+  };
+
+  const handleLinkPartner = async () => {
+    const code = partnerCodeInput.trim();
+    if (!code) return;
+    setLinking(true);
+    const { data, error } = await (supabase.rpc as any)("link_partner_by_invite_code", { _code: code });
+    setLinking(false);
+    if (error) {
+      toast({ title: "Não foi possível vincular", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Vinculado com sucesso!", description: "Vocês agora compartilham o mesmo casamento." });
+    setPartnerCodeInput("");
+    // Recarrega para refletir o novo couple_id
+    setTimeout(() => window.location.reload(), 600);
+  };
+
+  const handleUnlink = async (linkId: string) => {
+    if (!confirm("Tem certeza que quer desvincular essa pessoa do casamento? Ela perderá o acesso.")) return;
+    const { error } = await supabase.from("couple_links").delete().eq("id", linkId);
+    if (error) {
+      toast({ title: "Erro ao desvincular", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Vínculo removido" });
+    if (coupleId) loadLinks(coupleId);
+  };
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -297,6 +372,75 @@ export default function UserProfile() {
           <Save className="mr-2 h-4 w-4" />
           {saving ? "Salvando..." : "Salvar alterações"}
         </Button>
+
+        {/* Vínculo de parceiro */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Vínculo do casal
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Compartilhe o mesmo casamento com seu(sua) parceiro(a). Cada um mantém seu login, mas tarefas, convidados, orçamento e fornecedores ficam compartilhados.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {isOwner && inviteCode && (
+              <div>
+                <Label>Seu código de convite</Label>
+                <div className="flex gap-2">
+                  <Input value={inviteCode} readOnly className="font-mono uppercase tracking-wider" />
+                  <Button onClick={copyInvite} variant="outline" type="button">
+                    <Copy className="h-4 w-4 mr-1.5" /> Copiar
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Envie esse código para seu(sua) parceiro(a). No perfil dele(a), basta colar aqui embaixo para se vincular.
+                </p>
+              </div>
+            )}
+
+            {!linkedPartners.some((p) => p.user_id === user?.id) && (
+              <div>
+                <Label htmlFor="partnerCode">Vincular usando o código do(a) parceiro(a)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="partnerCode"
+                    value={partnerCodeInput}
+                    onChange={(e) => setPartnerCodeInput(e.target.value)}
+                    placeholder="Cole o código aqui"
+                    className="font-mono uppercase"
+                  />
+                  <Button onClick={handleLinkPartner} disabled={linking || !partnerCodeInput.trim()} type="button">
+                    <UserPlus className="h-4 w-4 mr-1.5" />
+                    {linking ? "Vinculando..." : "Vincular"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sua conta será unida ao casamento da pessoa que gerou o código. Suas simulações antigas continuam no histórico, sem virar um casamento separado.
+                </p>
+              </div>
+            )}
+
+            {linkedPartners.length > 0 && (
+              <div>
+                <Label>Pessoas com acesso ao casamento</Label>
+                <ul className="mt-2 space-y-2">
+                  {linkedPartners.map((p) => (
+                    <li key={p.id} className="flex items-center justify-between rounded-md border border-border p-2">
+                      <span className="text-sm">{p.name}{p.user_id === user?.id ? " (você)" : ""}</span>
+                      {(isOwner || p.user_id === user?.id) && (
+                        <Button variant="ghost" size="sm" onClick={() => handleUnlink(p.id)}>
+                          <UserMinus className="h-4 w-4 mr-1" /> Desvincular
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Personalização do painel */}
         <Card className="mb-6">
