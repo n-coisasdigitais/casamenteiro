@@ -1,18 +1,12 @@
 import { Link } from "react-router-dom";
-import { Heart, Target, ClipboardCheck, MessageCircle, Sparkles, Calendar, ShieldCheck, BarChart3 } from "lucide-react";
+import { Heart, Target, ClipboardCheck, MessageCircle } from "lucide-react";
 import SEO from "@/components/SEO";
+import WhyTimeline from "@/components/supplier/WhyTimeline";
 
 const STEPS = [
   { icon: Target, title: "Você se cadastra", text: "Preenche as informações do seu serviço em poucos minutos." },
   { icon: ClipboardCheck, title: "A gente aprova", text: "Nossa equipe revisa e publica seu perfil na plataforma." },
   { icon: MessageCircle, title: "Os casais te encontram", text: "Receba contatos de casais com orçamento definido e data marcada." },
-];
-
-const BENEFITS = [
-  { icon: Sparkles, title: "Leads qualificados", text: "Casais que já simularam o orçamento e estão prontos para contratar." },
-  { icon: Calendar, title: "Datas ociosas = mais receita", text: "Preencha sua agenda em dias úteis com descontos que você define." },
-  { icon: ShieldCheck, title: "Zero risco para começar", text: "Seu cadastro é gratuito. Você só investe quando ver resultado." },
-  { icon: BarChart3, title: "Visibilidade real", text: "Apareça para casais da sua cidade, na sua categoria, no seu preço." },
 ];
 
 export default function SupplierLanding() {
@@ -105,29 +99,8 @@ export default function SupplierLanding() {
           </div>
         </section>
 
-        {/* BENEFÍCIOS */}
-        <section className="py-20 px-4" style={{ background: "rgba(196,133,106,0.04)" }}>
-          <div className="container max-w-4xl">
-            <h2 className="font-serif text-3xl md:text-4xl text-center mb-14">Por que estar no Casamenteiro?</h2>
-            <div className="grid md:grid-cols-2 gap-5">
-              {BENEFITS.map((b, i) => (
-                <div
-                  key={i}
-                  className="p-7 flex gap-4"
-                  style={{ background: "white", borderRadius: 14, border: "1px solid rgba(44,36,32,0.06)" }}
-                >
-                  <div className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full" style={{ background: "#F0E8DF", color: "#87A878" }}>
-                    <b.icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-serif text-lg mb-1.5">{b.title}</h3>
-                    <p className="text-sm opacity-70 leading-relaxed">{b.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* BENEFÍCIOS — timeline animada */}
+        <WhyTimeline />
 
         {/* DEPOIMENTO */}
         <section className="py-24 px-4" style={{ background: "#F0E8DF" }}>
