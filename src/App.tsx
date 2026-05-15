@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
@@ -24,6 +24,8 @@ import SupplierOnboarding from "./pages/SupplierOnboarding";
 import AdminPanel from "./pages/AdminPanel";
 import AdminSuppliers from "./pages/AdminSuppliers";
 import AdminCampos from "./pages/AdminCampos";
+import AdminCategorias from "./pages/AdminCategorias";
+import AdminCategoriaCampos from "./pages/AdminCategoriaCampos";
 import AdminFornecedorAprovacao from "./pages/AdminFornecedorAprovacao";
 import AdminCidades from "./pages/AdminCidades";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
@@ -92,7 +94,10 @@ const App = () => (
             <Route path="/admin/fornecedores" element={<AdminLayout><AdminSuppliers /></AdminLayout>} />
             <Route path="/admin/aprovacao" element={<AdminLayout><AdminFornecedorAprovacao /></AdminLayout>} />
             <Route path="/admin/cidades" element={<AdminLayout><AdminCidades /></AdminLayout>} />
-            <Route path="/admin/campos" element={<AdminLayout><AdminCampos /></AdminLayout>} />
+            <Route path="/admin/campos" element={<Navigate to="/admin/categorias" replace />} />
+            <Route path="/admin/campos-legado" element={<AdminLayout><AdminCampos /></AdminLayout>} />
+            <Route path="/admin/categorias" element={<AdminLayout><AdminCategorias /></AdminLayout>} />
+            <Route path="/admin/categorias/:id/campos" element={<AdminLayout><AdminCategoriaCampos /></AdminLayout>} />
             <Route path="/admin/home-config" element={<AdminLayout><AdminHomeConfig /></AdminLayout>} />
             <Route path="/admin/simulacoes" element={<AdminLayout><AdminSimulacoes /></AdminLayout>} />
             <Route path="/admin/transacoes" element={<AdminLayout><AdminTransacoes /></AdminLayout>} />

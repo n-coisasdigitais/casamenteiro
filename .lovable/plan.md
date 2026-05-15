@@ -1,80 +1,106 @@
 ## Objetivo
 
-Reconstruir `src/pages/SupplierLanding.tsx` (`/fornecedor`) com a estrutura nova do briefing, **mantendo `WhyTimeline` intacto** entre "Como funciona" e "Depoimentos".
+Substituir a página atual `/admin/campos` por uma gestão completa de **Categorias + Campos dinâmicos**, com campos base pré-carregados e campos personalizados reordenáveis.
 
-## Estrutura final da página
+## Mudanças no banco (migração)
 
-```
-VendorNavbar (fixo)
-VendorHero (vídeo + CTA)
-HowItWorksSection (spotlight 3 passos com auto-advance)
-WhyTimeline           ← já existe, só importar
-TestimonialsSection (wall of love + carrossel)
-VendorCTASection (form de email)
-Rodapé existente
-```
+### Tabela `categories` — adicionar colunas
+- `description text`
+- `active boolean not null default true`
+- `updated_at timestamptz not null default now()` + trigger `update_updated_at_column`
+- RLS: adicionar policy de admin (INSERT/UPDATE/DELETE) usando `has_role(auth.uid(),'admin')`. Manter SELECT público.
 
-## Arquivos novos
+### Tabela `campos_categoria` — adicionar colunas
+- `is_base boolean not null default false` — campos base não podem ser deletados
+- `placeholder text`
+- (manter `chave/label/tipo/opcoes/obrigatorio/ordem/ativo` já existentes; mapear no frontend para `key/label/type/options/required/order/enabled`)
+- Adicionar tipo `'checkbox'` ao CHECK constraint (manter `texto/numero/booleano/select/lista/faixa/textarea`). Frontend usa: `text→texto`, `number→numero`, `select→select`, `checkbox→lista`.
 
-Todos em `src/components/supplier/landing/`:
+### Função `seed_base_category_fields(_category_id uuid)`
+SECURITY DEFINER. Insere os 10 campos base com `is_base=true`, `ativo=true`, `ordem` 0..9 e `obrigatorio` conforme tabela do briefing. ON CONFLICT (category_id, chave) DO NOTHING.
 
-1. **`VendorNavbar.tsx`** — fixed, backdrop-blur escuro, logo + botão "Anuncie grátis →" (cor primária). Listener de scroll: a partir de 80px adiciona `border-b border-white/10`.
+### Trigger `after insert on categories`
+Chama `seed_base_category_fields(NEW.id)` automaticamente.
 
-2. **`VendorHero.tsx`** — `<section>` 100vh com `<video autoPlay muted loop playsInline>` (prop `videoSrc?`, fallback gradient escuro). Overlays: gradient linear escuro + radial sutil terracotta na base. Conteúdo centralizado com framer-motion (fade+translateY, stagger 0.2s):
-   - pill "Para fornecedores"
-   - H1 "Leve seu negócio para quem quer **casar**." (palavra "casar" em `italic` com tom terracotta claro)
-   - parágrafo branco/65%
-   - botões: `Quero me cadastrar →` (primário pill com shadow) → `/fornecedor/cadastro`; `Como funciona` (outline branco) faz scroll suave para `#como-funciona`
-   - link "Já tenho cadastro" → `/fornecedor/login`
-   - scroll indicator absoluto com bounce infinito
+### Backfill
+Rodar `seed_base_category_fields` para as 12 categorias existentes (idempotente via ON CONFLICT).
 
-3. **`HowItWorksSection.tsx`** — id `como-funciona`, fundo `bg-secondary`. Grid 2 colunas desktop / coluna única mobile, max-w 960px.
-   - Header centralizado (tag + H2 + subtítulo).
-   - Esquerda: lista de 3 passos com estado ativo (bg branco, shadow, dot primário, descrição expandindo via framer `AnimatePresence` com `height: auto`) e inativo (muted, dot cinza).
-   - Direita: card sticky `top-24`, `aspect-[4/3]`, conteúdo (emoji + texto) trocando com fade+scale via `AnimatePresence mode="wait"`. Barra de progresso na base anima 0→100% em 4s (key reseta a cada troca).
-   - Auto-advance: `setInterval` 4000ms; clique reseta o timer (state `tick`).
+## Frontend
 
-4. **`TestimonialsSection.tsx`** — fundo `bg-background`. Header com H2 "Wall of love 💛" (love em `italic text-primary`), linha de rating.
-   - Carrossel 1-slide via `translateX` (`transition cubic-bezier(0.4,0,0.2,1)` 500ms). Card branco com aspas decorativas grandes em primary/15.
-   - Avatar nav (emoji circles, `-ml-2.5` overlap, ativo `scale-115` + ring primário).
-   - Botões ← → outline circulares.
-   - Auto-advance 5s, pausa em hover.
-   - Aceita prop `testimonials?: Testimonial[]` (4 exemplos hardcoded como fallback).
+Mapeamento chave entre briefing ↔ banco:
+`key=chave`, `type=tipo` (com tradução), `options=opcoes`, `required=obrigatorio`, `enabled=ativo`, `order=ordem`, `is_base=is_base`.
 
-5. **`VendorCTASection.tsx`** — fundo escuro (mesmo tom do hero, ex.: `#2C2420`). Form inline (input pill translúcido + botão primário). Submit (e Enter) → `navigate('/fornecedor/cadastro?email=' + encodeURIComponent(email))` via `react-router-dom`. Linha de garantias abaixo (`✓ Gratuito · ✓ 24h · ✓ Sem surpresas`).
+### Rotas (em `src/App.tsx`, dentro do AdminLayout)
+- `/admin/categorias` — lista
+- `/admin/categorias/nova` — criar (modal sobre a lista)
+- `/admin/categorias/:id` — editar metadados (modal)
+- `/admin/categorias/:id/campos` — gestão de campos
 
-6. **`useScrollReveal` inline (helper)** — não criar arquivo separado; cada seção usa `useInView` do framer-motion direto, `once: true`, margin `-15%`.
+Manter `/admin/campos` como redirect para `/admin/categorias` por compatibilidade. Atualizar o item do menu em `AdminLayout.tsx` para "Categorias".
 
-## Edição em `src/pages/SupplierLanding.tsx`
+### Página 1 — `src/pages/AdminCategorias.tsx`
+Tabela com colunas Ícone, Nome, Slug, Campos ativos (count), Status (toggle inline), Ações (Editar / Campos / Desativar). Botão "+ Nova categoria" abre dialog. Linha clicável → navega para `/admin/categorias/:id/campos`. Ordenado por `name`.
 
-- Remover hero, "Como funciona", depoimento e CTA atuais.
-- Manter `<WhyTimeline />` no slot correto.
-- Manter `<SEO>` e o rodapé atual.
-- Substituir o navbar pelo `VendorNavbar`.
-- Composição final:
-  ```tsx
-  <SEO ... />
-  <VendorNavbar />
-  <main>
-    <VendorHero />
-    <HowItWorksSection />
-    <WhyTimeline />
-    <TestimonialsSection />
-    <VendorCTASection />
-  </main>
-  <footer>...</footer>
-  ```
+Dialog Nova/Editar (componente `CategoryFormDialog`):
+- Nome (text) → gera slug em tempo real (slugify: lowercase, sem acento, espaços→hífen)
+- Ícone (text input simples + grid de emojis sugeridos)
+- Descrição (textarea)
+- Ativo (Switch)
 
-## Detalhes técnicos
+Ao salvar criação, o trigger no banco já popula os campos base. Toast e refetch.
 
-- **Tipografia**: o projeto só tem `Inter` (mapeado em `font-sans`/`font-serif`/`font-display`). Usar `font-serif` para H1/H2/H3 e classes utilitárias para corpo, igual ao restante da SupplierLanding atual e ao `WhyTimeline` recém-criado.
-- **Cores**: usar tokens (`bg-primary`, `text-primary`, `text-primary-foreground`, `bg-background`, `bg-secondary`, `text-muted-foreground`, `border-border`). Para o dark do hero/CTA, usar `bg-[hsl(var(--color-dark))]` (token já existe em `index.css`) em vez de hex.
-- **Animações**: `framer-motion` (já instalado). Bounce do scroll indicator via Tailwind `animate-bounce` ou keyframe inline.
-- **Acessibilidade**: `aria-hidden` no scroll indicator; `aria-label` nos botões ← →; vídeo `muted playsInline`; alt nos avatares quando `avatarUrl`.
-- **Sem novas dependências, sem novas fontes, sem mexer no `WhyTimeline`.**
+### Página 2 — `src/pages/AdminCategoriaCampos.tsx`
+Header com nome da categoria, ícone, botão "← Voltar".
 
-## Fora do escopo
+**Bloco A — Campos base** (filtra `is_base=true`, ordenado por `ordem`):
+- Cards não reordenáveis, sem botão deletar
+- Mostra label, key (mono cinza), badge tipo, badge "obrigatório" se aplicável
+- Switch para `ativo`. Quando off: opacidade 50% + badge "desativado"
+- Permite editar `obrigatorio` e `placeholder` via drawer (não permite trocar tipo nem deletar)
 
-- Páginas `/fornecedor/cadastro` e `/fornecedor/login` (já existem).
-- Captura real de email no backend — apenas redireciona com query string.
-- Substituir vídeo/imagens reais — placeholders ficam para troca posterior via prop.
+**Bloco B — Campos personalizados** (filtra `is_base=false`):
+- Botão "+ Adicionar campo" → drawer
+- Lista com drag & drop usando `@dnd-kit/core` + `@dnd-kit/sortable` (já comum em projetos shadcn — adicionar como dep)
+- Cada card: handle ⠿, label + key, badge tipo, "Opções: N" se select/lista, switch enable, botão editar, botão deletar (com confirmação inline AlertDialog)
+- Reordenar: ao soltar, atualiza `ordem` de todos os afetados em batch (loop de updates ou RPC)
+
+**Drawer "Adicionar/Editar campo"** (`FieldEditorDrawer` usando `Sheet`):
+- Label (input)
+- Key (auto snake_case do label, editável; valida unicidade na categoria via query)
+- Tipo: RadioGroup visual com 4 opções (Texto/Número/Seleção única/Múltipla escolha)
+- Opções: aparece só para Seleção/Múltipla. Input + botão "Adicionar opção" + lista de chips com ×. Ao trocar tipo para Texto/Número com opções já preenchidas → AlertDialog de confirmação que vai limpar
+- Placeholder (input)
+- Obrigatório (Switch)
+- Ativo (Switch, default on)
+- Validações: label obrigatório, key única, tipos select/lista exigem ≥2 opções
+- Botões: Cancelar | Salvar campo
+
+### Comportamento de save
+Auto-save otimista por ação (toggle, reorder, criar/editar/deletar campo) com toast "Salvo". Sem botão de salvar global — alinhado com o padrão do `AdminCampos` atual.
+
+### Empty state
+Bloco B sem campos: card pontilhado "Nenhum campo personalizado ainda. Adicione o primeiro." com botão.
+
+### Permissões
+Já protegidas pelo `AdminLayout` existente + RLS no banco.
+
+## Fora de escopo (confirmado pelo briefing)
+Upload/galeria, campos condicionais, i18n, versionamento.
+
+## Arquivos
+
+**Criados:**
+- `supabase/migrations/<timestamp>_admin_categorias.sql`
+- `src/pages/AdminCategorias.tsx`
+- `src/pages/AdminCategoriaCampos.tsx`
+- `src/components/admin/categorias/CategoryFormDialog.tsx`
+- `src/components/admin/categorias/FieldCard.tsx`
+- `src/components/admin/categorias/FieldEditorDrawer.tsx`
+- `src/components/admin/categorias/SortableFieldCard.tsx`
+- `src/lib/slugify.ts`
+
+**Editados:**
+- `src/App.tsx` — novas rotas + redirect de `/admin/campos`
+- `src/components/admin/AdminLayout.tsx` — item de menu "Categorias" → `/admin/categorias`
+
+**Dependência adicionada:** `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`

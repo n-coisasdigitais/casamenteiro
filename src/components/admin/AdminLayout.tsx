@@ -54,7 +54,7 @@ const groups = [
       { title: "Tarefas padrão", url: "/admin/tarefas-padrao", icon: ListChecks },
       { title: "Edição em massa", url: "/admin/fornecedores", icon: Building2 },
       { title: "Aprovar fornecedores", url: "/admin/aprovacao", icon: ClipboardCheck },
-      { title: "Campos por categoria", url: "/admin/campos", icon: SlidersHorizontal },
+      { title: "Categorias", url: "/admin/categorias", icon: SlidersHorizontal },
       { title: "Cidades", url: "/admin/cidades", icon: MapPin },
     ],
   },
