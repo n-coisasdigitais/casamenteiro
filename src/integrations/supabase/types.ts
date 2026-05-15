@@ -310,11 +310,13 @@ export type Database = {
           created_at: string
           grupo: string | null
           id: string
+          is_base: boolean
           label: string
           mostrar_no_perfil: boolean
           obrigatorio: boolean
           opcoes: Json | null
           ordem: number
+          placeholder: string | null
           tipo: string
           updated_at: string
         }
@@ -326,11 +328,13 @@ export type Database = {
           created_at?: string
           grupo?: string | null
           id?: string
+          is_base?: boolean
           label: string
           mostrar_no_perfil?: boolean
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem?: number
+          placeholder?: string | null
           tipo: string
           updated_at?: string
         }
@@ -342,11 +346,13 @@ export type Database = {
           created_at?: string
           grupo?: string | null
           id?: string
+          is_base?: boolean
           label?: string
           mostrar_no_perfil?: boolean
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem?: number
+          placeholder?: string | null
           tipo?: string
           updated_at?: string
         }
@@ -362,25 +368,34 @@ export type Database = {
       }
       categories: {
         Row: {
+          active: boolean
           created_at: string
+          description: string | null
           icon: string | null
           id: string
           name: string
           slug: string
+          updated_at: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
+          description?: string | null
           icon?: string | null
           id?: string
           name: string
           slug: string
+          updated_at?: string
         }
         Update: {
+          active?: boolean
           created_at?: string
+          description?: string | null
           icon?: string | null
           id?: string
           name?: string
           slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2492,6 +2507,10 @@ export type Database = {
           _token: string
         }
         Returns: boolean
+      }
+      seed_base_category_fields: {
+        Args: { _category_id: string }
+        Returns: undefined
       }
       seed_default_tasks: {
         Args: { _couple_id: string; _wedding_date?: string }
