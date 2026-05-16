@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import SEO from "@/components/SEO";
 import VendorNavbar from "@/components/supplier/landing/VendorNavbar";
 import VendorHero from "@/components/supplier/landing/VendorHero";
@@ -7,8 +9,25 @@ import HowItWorksSection from "@/components/supplier/landing/HowItWorksSection";
 import WhyTimeline from "@/components/supplier/WhyTimeline";
 import TestimonialsSection from "@/components/supplier/landing/TestimonialsSection";
 import VendorCTASection from "@/components/supplier/landing/VendorCTASection";
+import { DEFAULT_LANDING, SupplierLandingConfig } from "@/lib/supplierLandingConfig";
 
 export default function SupplierLanding() {
+  const [cfg, setCfg] = useState<SupplierLandingConfig>(DEFAULT_LANDING);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase
+        .from("fornecedor_landing_config" as any)
+        .select("config")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle() as any);
+      if (data?.config) {
+        setCfg({ ...DEFAULT_LANDING, ...(data.config as any) });
+      }
+    })();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
@@ -16,14 +35,13 @@ export default function SupplierLanding() {
         description="Conecte seu serviço a casais com orçamento definido e data marcada. Cadastro gratuito, leads qualificados e visibilidade real."
       />
 
-      <VendorNavbar />
-
+      <VendorNavbar cfg={cfg.navbar} />
       <main>
-        <VendorHero />
-        <HowItWorksSection />
-        <WhyTimeline />
-        <TestimonialsSection />
-        <VendorCTASection />
+        <VendorHero cfg={cfg.hero} />
+        <HowItWorksSection cfg={cfg.how} />
+        <WhyTimeline cfg={cfg.why} />
+        <TestimonialsSection cfg={cfg.testimonials} />
+        <VendorCTASection cfg={cfg.cta} />
       </main>
 
       <footer className="py-8 px-4 border-t border-border">

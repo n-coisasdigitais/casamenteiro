@@ -1,11 +1,8 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { DEFAULT_LANDING, HeroCfg } from "@/lib/supplierLandingConfig";
 
-interface VendorHeroProps {
-  videoSrc?: string;
-}
-
-export default function VendorHero({ videoSrc }: VendorHeroProps) {
+export default function VendorHero({ cfg = DEFAULT_LANDING.hero }: { cfg?: HeroCfg }) {
   const item = (delay: number) => ({
     initial: { opacity: 0, y: 28 },
     animate: { opacity: 1, y: 0 },
@@ -19,9 +16,9 @@ export default function VendorHero({ videoSrc }: VendorHeroProps) {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden bg-[hsl(var(--color-dark))]">
-      {videoSrc ? (
+      {cfg.video_src ? (
         <video
-          src={videoSrc}
+          src={cfg.video_src}
           autoPlay
           muted
           loop
@@ -32,8 +29,7 @@ export default function VendorHero({ videoSrc }: VendorHeroProps) {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1920&q=80')",
+            backgroundImage: `url('${cfg.fallback_image || ""}')`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             opacity: 0.35,
@@ -58,7 +54,7 @@ export default function VendorHero({ videoSrc }: VendorHeroProps) {
       <div className="relative z-10 max-w-3xl mx-auto text-center text-white">
         <motion.div {...item(0.1)}>
           <span className="inline-block rounded-full px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] border border-white/25 text-white/70">
-            Para fornecedores
+            {cfg.eyebrow}
           </span>
         </motion.div>
 
@@ -67,9 +63,9 @@ export default function VendorHero({ videoSrc }: VendorHeroProps) {
           className="font-serif mt-6 mb-6 text-white"
           style={{ fontSize: "clamp(2.5rem, 6vw, 4.25rem)", lineHeight: 1.05, letterSpacing: "-0.02em" }}
         >
-          Leve seu negócio para quem quer{" "}
+          {cfg.title_pre}{" "}
           <em className="italic font-normal" style={{ color: "hsl(23 70% 80%)" }}>
-            casar.
+            {cfg.title_em}
           </em>
         </motion.h1>
 
@@ -77,30 +73,27 @@ export default function VendorHero({ videoSrc }: VendorHeroProps) {
           {...item(0.4)}
           className="text-base md:text-lg text-white/65 max-w-[520px] mx-auto leading-relaxed mb-10"
         >
-          Conecte seu serviço a casais que já simularam o orçamento e estão prontos para contratar.
+          {cfg.subtitle}
         </motion.p>
 
         <motion.div {...item(0.55)} className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            to="/fornecedor/cadastro"
+            to={cfg.cta_primary_href}
             className="rounded-full px-8 py-3.5 text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition shadow-xl shadow-primary/35"
           >
-            Quero me cadastrar →
+            {cfg.cta_primary_label}
           </Link>
           <a
             href="#como-funciona"
             onClick={scrollToHow}
             className="rounded-full px-8 py-3.5 text-sm font-semibold border border-white/35 text-white hover:border-white/80 hover:bg-white/5 transition"
           >
-            Como funciona
+            {cfg.cta_secondary_label}
           </a>
         </motion.div>
 
         <motion.div {...item(0.7)} className="mt-6">
-          <Link
-            to="/fornecedor/login"
-            className="text-sm text-white/40 hover:text-white/80 transition"
-          >
+          <Link to="/fornecedor/login" className="text-sm text-white/40 hover:text-white/80 transition">
             Já tenho cadastro
           </Link>
         </motion.div>
@@ -111,10 +104,7 @@ export default function VendorHero({ videoSrc }: VendorHeroProps) {
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce"
       >
         <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">role para ver</span>
-        <span
-          className="block w-px h-10"
-          style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.6), transparent)" }}
-        />
+        <span className="block w-px h-10" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.6), transparent)" }} />
       </div>
     </section>
   );
