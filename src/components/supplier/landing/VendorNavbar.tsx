@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
+import { DEFAULT_LANDING, NavbarCfg } from "@/lib/supplierLandingConfig";
 
-export default function VendorNavbar() {
+export default function VendorNavbar({ cfg = DEFAULT_LANDING.navbar }: { cfg?: NavbarCfg }) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
@@ -24,10 +25,10 @@ export default function VendorNavbar() {
           <span className="font-serif text-lg">Casamenteiro</span>
         </Link>
         <Link
-          to="/fornecedor/cadastro"
+          to={cfg.cta_href}
           className="rounded-full px-5 py-2 text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition shadow-lg shadow-primary/30"
         >
-          Anuncie grátis →
+          {cfg.cta_label}
         </Link>
       </div>
     </header>
