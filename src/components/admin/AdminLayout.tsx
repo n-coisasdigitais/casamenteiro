@@ -51,6 +51,7 @@ const groups = [
     label: "Conteúdo",
     items: [
       { title: "Home", url: "/admin/home-config", icon: HomeIcon },
+      { title: "Landing Fornecedor", url: "/admin/fornecedor-landing", icon: Building2 },
       { title: "Tarefas padrão", url: "/admin/tarefas-padrao", icon: ListChecks },
       { title: "Edição em massa", url: "/admin/fornecedores", icon: Building2 },
       { title: "Aprovar fornecedores", url: "/admin/aprovacao", icon: ClipboardCheck },
