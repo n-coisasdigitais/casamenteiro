@@ -22,6 +22,8 @@ import NotificationsBell from "@/components/NotificationsBell";
 import SupplierMetrics from "@/components/supplier/SupplierMetrics";
 import SupplierOnboardingWizard from "@/components/supplier/SupplierOnboardingWizard";
 import SupplierAreaEditor from "@/components/supplier/SupplierAreaEditor";
+import SupplierQuotesKanban from "@/components/supplier/SupplierQuotesKanban";
+import UserMenu from "@/components/UserMenu";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 
 type Category = { id: string; name: string };
@@ -231,11 +233,8 @@ export default function SupplierDashboard() {
             <span className="text-lg font-bold">Casamenteiro</span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden sm:inline">{profile?.full_name}</span>
             <NotificationsBell />
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <UserMenu />
           </div>
         </div>
       </header>
@@ -342,63 +341,7 @@ export default function SupplierDashboard() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3">
-                {quotes.map((q) => {
-                  const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-                    pending: { label: "Novo", variant: "default" },
-                    viewed: { label: "Visualizado", variant: "secondary" },
-                    answered: { label: "Respondido", variant: "outline" },
-                    accepted: { label: "Aceito", variant: "default" },
-                    rejected: { label: "Recusado", variant: "destructive" },
-                    cancelled: { label: "Cancelado", variant: "secondary" },
-                  };
-                  const st = statusMap[q.status] || statusMap.pending;
-                  return (
-                    <Card key={q.id} className={`cursor-pointer hover:shadow-md transition-shadow ${q.status === "pending" ? "border-primary/50" : ""}`} onClick={() => openThread(q)}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(q.created_at).toLocaleDateString("pt-BR")}
-                              </span>
-                            </div>
-                            <p className="text-sm line-clamp-2">{q.message}</p>
-                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                              {q.event_date && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {new Date(q.event_date).toLocaleDateString("pt-BR")}
-                                </span>
-                              )}
-                              {q.guest_count && (
-                                <span className="flex items-center gap-1">
-                                  <UsersIcon className="h-3 w-3" />
-                                  {q.guest_count} convidados
-                                </span>
-                              )}
-                              {q.phone && q.phone_visible && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {q.phone}
-                                </span>
-                              )}
-                              {q.phone && !q.phone_visible && (
-                                <span className="flex items-center gap-1 italic">
-                                  <Phone className="h-3 w-3" />
-                                  Telefone oculto
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <Eye className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+              <SupplierQuotesKanban quotes={quotes} onOpen={openThread} onChange={loadQuotes} />
             )}
           </TabsContent>
 
