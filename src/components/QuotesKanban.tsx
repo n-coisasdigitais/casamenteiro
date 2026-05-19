@@ -14,6 +14,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import ConfirmFinishTaskDialog from "@/components/ConfirmFinishTaskDialog";
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 
 type KanbanStatus = "enviado" | "respondido" | "negociando" | "fechado" | "recusado";
 
@@ -154,6 +163,18 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
     await supabase.from("quotes").update({ kanban_status: status }).eq("id", id);
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+  const onDragEnd = (e: DragEndEvent) => {
+    const id = String(e.active.id);
+    const target = e.over?.id ? String(e.over.id) : null;
+    if (!target) return;
+    const current = quotes.find((q) => q.id === id);
+    if (!current || current.kanban_status === target) return;
+    moveQuote(id, target as KanbanStatus);
+  };
+
   if (loading) return <p className="text-sm text-muted-foreground">Carregando orçamentos...</p>;
 
   return (
@@ -176,19 +197,21 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
           </div>
         </Card>
       ) : (
+      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <div className="overflow-x-auto pb-2">
       <div className="grid grid-cols-5 gap-3 min-w-[900px]">
         {COLUMNS.map(col => {
           const items = quotes.filter(q => q.kanban_status === col.key);
           return (
-            <div key={col.key} className={`rounded-lg ${col.color} p-3`}>
+            <DroppableColumn key={col.key} id={col.key} className={`rounded-lg ${col.color} p-3`}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold">{col.label}</h3>
                 <Badge variant="secondary" className="h-5">{items.length}</Badge>
               </div>
               <div className="space-y-2">
                 {items.map(q => (
-                  <Card key={q.id} className="p-3 space-y-2">
+                  <DraggableCard key={q.id} id={q.id}>
+                  <Card className="p-3 space-y-2">
                     <div className="flex items-start gap-2">
                       {q.supplier?.profile_photo_url && (
                         <img src={q.supplier.profile_photo_url} alt="" className="h-8 w-8 rounded object-cover" />
@@ -205,7 +228,7 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
                         Proposta: <span className="font-semibold">R$ {q.last_amount.toLocaleString("pt-BR")}</span>
                       </p>
                     )}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                       <Select value={q.kanban_status} onValueChange={(v) => moveQuote(q.id, v as KanbanStatus)}>
                         <SelectTrigger className="h-7 text-xs flex-1">
                           <SelectValue />
@@ -222,13 +245,15 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
                       </Button>
                     </div>
                   </Card>
+                  </DraggableCard>
                 ))}
               </div>
-            </div>
+            </DroppableColumn>
           );
         })}
       </div>
       </div>
+      </DndContext>
       )}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -271,6 +296,37 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
         categoryName={confirmCategory}
         trigger={confirmTrigger}
       />
+    </div>
+  );
+}
+
+function DroppableColumn({
+  id,
+  className,
+  children,
+}: {
+  id: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={`${className || ""} ${isOver ? "ring-2 ring-primary" : ""}`}>
+      {children}
+    </div>
+  );
+}
+
+function DraggableCard({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+  const style: React.CSSProperties = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: "grab",
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
     </div>
   );
 }
