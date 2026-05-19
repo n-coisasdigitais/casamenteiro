@@ -20,6 +20,7 @@ import { buildWhatsAppLink } from "@/lib/phone";
 import SEO from "@/components/SEO";
 import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
+import DynamicFieldsView from "@/components/dynamic-fields/DynamicFieldsView";
 
 type Review = {
   id: string;
@@ -185,6 +186,28 @@ export default function SupplierProfile() {
           (supplier.description || `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`).slice(0, 155)
         }
         ogImage={supplier.profile_photo_url || undefined}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          name: supplier.company_name,
+          image: supplier.profile_photo_url || undefined,
+          description: supplier.description || undefined,
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: supplier.city || undefined,
+            addressRegion: supplier.state || undefined,
+            addressCountry: "BR",
+          },
+          telephone: supplier.whatsapp || supplier.phone || undefined,
+          aggregateRating:
+            supplier.rating && supplier.review_count
+              ? {
+                  "@type": "AggregateRating",
+                  ratingValue: supplier.rating,
+                  reviewCount: supplier.review_count,
+                }
+              : undefined,
+        }}
       />
       {/* Header */}
       <header className="bg-background border-b border-border sticky top-0 z-50">
