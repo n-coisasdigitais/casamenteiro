@@ -1279,6 +1279,7 @@ export type Database = {
       quote_messages: {
         Row: {
           attachment_url: string | null
+          attachment_urls: string[]
           created_at: string
           id: string
           is_template: boolean
@@ -1288,6 +1289,7 @@ export type Database = {
         }
         Insert: {
           attachment_url?: string | null
+          attachment_urls?: string[]
           created_at?: string
           id?: string
           is_template?: boolean
@@ -1297,6 +1299,7 @@ export type Database = {
         }
         Update: {
           attachment_url?: string | null
+          attachment_urls?: string[]
           created_at?: string
           id?: string
           is_template?: boolean
@@ -1317,6 +1320,7 @@ export type Database = {
       quote_proposals: {
         Row: {
           amount: number | null
+          attachment_urls: string[]
           created_at: string
           description: string | null
           id: string
@@ -1328,6 +1332,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          attachment_urls?: string[]
           created_at?: string
           description?: string | null
           id?: string
@@ -1339,6 +1344,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          attachment_urls?: string[]
           created_at?: string
           description?: string | null
           id?: string

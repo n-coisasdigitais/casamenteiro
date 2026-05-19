@@ -56,6 +56,26 @@ export default function Home() {
       <SEO
         title="Casamenteiro — Planeje seu casamento dos sonhos"
         description="Simulador de orçamento, fornecedores avaliados, checklist e RSVP. Tudo em um só lugar para o seu grande dia."
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Casamenteiro",
+            url: "https://casamenteiro.com.br",
+            logo: "https://casamenteiro.com.br/favicon.ico",
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "Casamenteiro",
+            url: "https://casamenteiro.com.br",
+            potentialAction: {
+              "@type": "SearchAction",
+              target: "https://casamenteiro.com.br/buscar?q={search_term_string}",
+              "query-input": "required name=search_term_string",
+            },
+          },
+        ]}
       />
       <HomeNavbar onSimularClick={scrollToCTA} />
 

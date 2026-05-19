@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Send, Calendar, Users, Phone } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+import { AttachmentPicker } from "@/components/QuoteAttachments";
 
 type Props = {
   supplierId: string;
@@ -27,7 +28,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
   const [message, setMessage] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneVisible, setPhoneVisible] = useState(false);
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
 
   // Pré-preenche com dados do casal/profile ao abrir
   useEffect(() => {
@@ -93,23 +94,27 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
       return;
     }
 
-    // Upload attachment if any
-    if (attachment && quote) {
-      const filePath = `${quote.id}/${Date.now()}-${attachment.name}`;
-      const { error: uploadErr } = await supabase.storage
-        .from("quote-attachments")
-        .upload(filePath, attachment);
-
-      if (!uploadErr) {
+    // Upload attachments if any
+    if (attachments.length > 0 && quote) {
+      const uploaded: string[] = [];
+      for (const file of attachments) {
+        const filePath = `${quote.id}/${Date.now()}-${file.name}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("quote-attachments")
+          .upload(filePath, file);
+        if (uploadErr) continue;
         const { data: { publicUrl } } = supabase.storage
           .from("quote-attachments")
           .getPublicUrl(filePath);
-
-        await supabase.from("quote_messages").insert({
+        uploaded.push(publicUrl);
+      }
+      if (uploaded.length > 0) {
+        await (supabase.from("quote_messages") as any).insert({
           quote_id: quote.id,
           sender_id: user.id,
           message: message.trim(),
-          attachment_url: publicUrl,
+          attachment_url: uploaded[0],
+          attachment_urls: uploaded,
         });
       }
     }
@@ -121,7 +126,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
     setGuestCount("");
     setPhone("");
     setPhoneVisible(false);
-    setAttachment(null);
+    setAttachments([]);
     setLoading(false);
   };
 
@@ -212,15 +217,8 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
           </div>
 
           <div>
-            <Label className="text-xs mb-1.5 block">Anexar arquivo (opcional)</Label>
-            <Input
-              type="file"
-              onChange={(e) => setAttachment(e.target.files?.[0] || null)}
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-            />
-            {attachment && (
-              <p className="text-xs text-muted-foreground mt-1">{attachment.name}</p>
-            )}
+            <Label className="text-xs mb-1.5 block">Anexos (opcional)</Label>
+            <AttachmentPicker files={attachments} onChange={setAttachments} />
           </div>
 
           <Button onClick={handleSubmit} disabled={loading || !message.trim()} className="w-full h-11">
