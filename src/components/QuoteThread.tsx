@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Paperclip, FileText } from "lucide-react";
+import { Send } from "lucide-react";
+import { AttachmentPicker, AttachmentList } from "@/components/QuoteAttachments";
 
 type Message = {
   id: string;
   sender_id: string;
   message: string;
   attachment_url: string | null;
+  attachment_urls: string[] | null;
   is_template: boolean;
   created_at: string;
 };
@@ -25,7 +25,7 @@ export default function QuoteThread({ quoteId, currentUserId }: Props) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -42,36 +42,38 @@ export default function QuoteThread({ quoteId, currentUserId }: Props) {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && attachments.length === 0) return;
     setSending(true);
 
-    let attachmentUrl: string | null = null;
-
-    if (attachment) {
-      const filePath = `${quoteId}/${Date.now()}-${attachment.name}`;
+    const uploadedUrls: string[] = [];
+    for (const file of attachments) {
+      const filePath = `${quoteId}/${Date.now()}-${file.name}`;
       const { error: uploadErr } = await supabase.storage
         .from("quote-attachments")
-        .upload(filePath, attachment);
-      if (!uploadErr) {
-        const { data: { publicUrl } } = supabase.storage
-          .from("quote-attachments")
-          .getPublicUrl(filePath);
-        attachmentUrl = publicUrl;
+        .upload(filePath, file);
+      if (uploadErr) {
+        toast({ title: `Falha ao enviar ${file.name}`, description: uploadErr.message, variant: "destructive" });
+        continue;
       }
+      const { data: { publicUrl } } = supabase.storage
+        .from("quote-attachments")
+        .getPublicUrl(filePath);
+      uploadedUrls.push(publicUrl);
     }
 
-    const { error } = await supabase.from("quote_messages").insert({
+    const { error } = await (supabase.from("quote_messages") as any).insert({
       quote_id: quoteId,
       sender_id: currentUserId,
-      message: newMessage.trim(),
-      attachment_url: attachmentUrl,
+      message: newMessage.trim() || (uploadedUrls.length ? "[anexo]" : ""),
+      attachment_url: uploadedUrls[0] || null,
+      attachment_urls: uploadedUrls,
     });
 
     if (error) {
       toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
     } else {
       setNewMessage("");
-      setAttachment(null);
+      setAttachments([]);
       loadMessages();
     }
     setSending(false);
@@ -96,20 +98,17 @@ export default function QuoteThread({ quoteId, currentUserId }: Props) {
         )}
         {messages.map((msg) => {
           const isMe = msg.sender_id === currentUserId;
+          const urls =
+            msg.attachment_urls && msg.attachment_urls.length > 0
+              ? msg.attachment_urls
+              : msg.attachment_url
+              ? [msg.attachment_url]
+              : [];
           return (
             <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-[80%] rounded-lg p-3 text-sm ${isMe ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
                 <p className="whitespace-pre-line">{msg.message}</p>
-                {msg.attachment_url && (
-                  <a
-                    href={msg.attachment_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex items-center gap-1 mt-2 text-xs underline ${isMe ? "text-primary-foreground/80" : "text-primary"}`}
-                  >
-                    <FileText className="h-3 w-3" /> Anexo
-                  </a>
-                )}
+                <AttachmentList urls={urls} variant={isMe ? "dark" : "light"} />
                 <p className={`text-[10px] mt-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                   {new Date(msg.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                 </p>
@@ -141,35 +140,24 @@ export default function QuoteThread({ quoteId, currentUserId }: Props) {
 
       {/* Input */}
       <div className="border-t border-border p-3">
-        <div className="flex gap-2">
-          <div className="flex-1 space-y-2">
-            <Textarea
-              placeholder="Escreva sua mensagem..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              rows={2}
-              className="resize-none text-sm"
-              maxLength={2000}
-            />
-            {attachment && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Paperclip className="h-3 w-3" /> {attachment.name}
-                <button onClick={() => setAttachment(null)} className="text-destructive ml-1">✕</button>
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="cursor-pointer p-2 rounded-md hover:bg-accent transition-colors">
-              <Paperclip className="h-4 w-4 text-muted-foreground" />
-              <input
-                type="file"
-                className="hidden"
-                onChange={(e) => setAttachment(e.target.files?.[0] || null)}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              />
-            </label>
-            <Button size="icon" onClick={sendMessage} disabled={sending || !newMessage.trim()}>
-              <Send className="h-4 w-4" />
+        <div className="space-y-2">
+          <Textarea
+            placeholder="Escreva sua mensagem..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            rows={2}
+            className="resize-none text-sm"
+            maxLength={2000}
+          />
+          <div className="flex items-center justify-between gap-2">
+            <AttachmentPicker files={attachments} onChange={setAttachments} />
+            <Button
+              size="sm"
+              onClick={sendMessage}
+              disabled={sending || (!newMessage.trim() && attachments.length === 0)}
+            >
+              <Send className="h-4 w-4 mr-1" />
+              {sending ? "Enviando..." : "Enviar"}
             </Button>
           </div>
         </div>
