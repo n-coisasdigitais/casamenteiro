@@ -6,6 +6,7 @@ import HomeNavbar from "@/components/home/HomeNavbar";
 import ScrollStory from "@/components/home/ScrollStory";
 import SimulatorCTA from "@/components/home/SimulatorCTA";
 import SEO from "@/components/SEO";
+import { absoluteUrl, SITE_URL } from "@/lib/seo";
 
 const FALLBACK_BLOCOS = [
   { foto_url: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1600&q=80", frase: "Casar é o melhor dia da vida. Organizar é a parte que ninguém te conta.", subtexto: "A gente existe pra simplificar. Role pra entender.", supplier_id: null, supplier_name: null, supplier_category: null },
@@ -56,22 +57,23 @@ export default function Home() {
       <SEO
         title="Casamenteiro — Planeje seu casamento dos sonhos"
         description="Simulador de orçamento, fornecedores avaliados, checklist e RSVP. Tudo em um só lugar para o seu grande dia."
+        canonical={absoluteUrl("/")}
         jsonLd={[
           {
             "@context": "https://schema.org",
             "@type": "Organization",
             name: "Casamenteiro",
-            url: "https://casamenteiro.com.br",
-            logo: "https://casamenteiro.com.br/favicon.ico",
+            url: SITE_URL,
+            logo: `${SITE_URL}/favicon.ico`,
           },
           {
             "@context": "https://schema.org",
             "@type": "WebSite",
             name: "Casamenteiro",
-            url: "https://casamenteiro.com.br",
+            url: SITE_URL,
             potentialAction: {
               "@type": "SearchAction",
-              target: "https://casamenteiro.com.br/buscar?q={search_term_string}",
+              target: `${SITE_URL}/buscar?q={search_term_string}`,
               "query-input": "required name=search_term_string",
             },
           },

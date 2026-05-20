@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import SEO from "@/components/SEO";
 
 const estiloLabel: Record<Estilo, string> = {
   intimista: "intimista",
@@ -283,6 +284,7 @@ export default function SimuladorResultado() {
 
   return (
     <div className="min-h-screen pb-32" style={{ background: "hsl(var(--color-bg))" }}>
+      <SEO title="Resultado do simulador — Casamenteiro" noIndex />
       {/* Navbar simples */}
       <header className="border-b sticky top-0 z-30 backdrop-blur bg-background/90" style={{ borderColor: "hsl(var(--color-border))" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">

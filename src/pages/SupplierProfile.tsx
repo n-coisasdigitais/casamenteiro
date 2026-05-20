@@ -18,6 +18,7 @@ import QuoteRequestForm from "@/components/QuoteRequestForm";
 import SupplierMap from "@/components/SupplierMap";
 import { buildWhatsAppLink } from "@/lib/phone";
 import SEO from "@/components/SEO";
+import { absoluteUrl, breadcrumbJsonLd, priceRangeLabel, truncate } from "@/lib/seo";
 import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
 import DynamicFieldsView from "@/components/dynamic-fields/DynamicFieldsView";
@@ -178,36 +179,56 @@ export default function SupplierProfile() {
   const categoryName = (supplier.categories as any)?.name || "Fornecedor";
   const ratingLabel = supplier.rating >= 4.8 ? "Fantástico" : supplier.rating >= 4.5 ? "Excelente" : supplier.rating >= 4.0 ? "Muito bom" : "Bom";
 
+  const seoImages = [
+    supplier.profile_photo_url,
+    ...photos.slice(0, 4).map((p: any) => p.photo_url),
+  ].filter(Boolean);
+  const localBusinessJsonLd: Record<string, any> = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": absoluteUrl(`/fornecedor/${id}`),
+    name: supplier.company_name,
+    url: absoluteUrl(`/fornecedor/${id}`),
+    image: seoImages.length ? seoImages : undefined,
+    description: supplier.description || undefined,
+    priceRange: priceRangeLabel(supplier.price_min, supplier.price_max),
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: supplier.city || undefined,
+      addressRegion: supplier.state || undefined,
+      addressCountry: "BR",
+    },
+    telephone: supplier.whatsapp || supplier.phone || undefined,
+    geo:
+      supplier.lat && supplier.lng
+        ? { "@type": "GeoCoordinates", latitude: supplier.lat, longitude: supplier.lng }
+        : undefined,
+    aggregateRating:
+      supplier.rating && supplier.review_count
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: supplier.rating,
+            reviewCount: supplier.review_count,
+          }
+        : undefined,
+  };
+  const breadcrumb = breadcrumbJsonLd([
+    { name: "Início", path: "/" },
+    { name: categoryName, path: "/explorar" },
+    { name: supplier.company_name, path: `/fornecedor/${id}` },
+  ]);
+
   return (
     <div className="min-h-screen bg-background">
       <SEO
         title={`${supplier.company_name} — Casamenteiro`}
-        description={
-          (supplier.description || `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`).slice(0, 155)
-        }
+        description={truncate(
+          supplier.description ||
+            `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`
+        )}
+        canonical={absoluteUrl(`/fornecedor/${id}`)}
         ogImage={supplier.profile_photo_url || undefined}
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "LocalBusiness",
-          name: supplier.company_name,
-          image: supplier.profile_photo_url || undefined,
-          description: supplier.description || undefined,
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: supplier.city || undefined,
-            addressRegion: supplier.state || undefined,
-            addressCountry: "BR",
-          },
-          telephone: supplier.whatsapp || supplier.phone || undefined,
-          aggregateRating:
-            supplier.rating && supplier.review_count
-              ? {
-                  "@type": "AggregateRating",
-                  ratingValue: supplier.rating,
-                  reviewCount: supplier.review_count,
-                }
-              : undefined,
-        }}
+        jsonLd={[localBusinessJsonLd, breadcrumb]}
       />
       {/* Header */}
       <header className="bg-background border-b border-border sticky top-0 z-50">

@@ -12,3 +12,18 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /tarefas
+Disallow: /orcamento
+Disallow: /convidados
+Disallow: /meus-fornecedores
+Disallow: /favoritos
+Disallow: /perfil
+Disallow: /meu-plano
+Disallow: /meu-casamento
+Disallow: /fornecedor/painel
+Disallow: /convite/
+Disallow: /simulador/resultado
+
+Sitemap: https://www.casamenteiro.com.br/sitemap.xml

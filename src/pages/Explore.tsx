@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UserMenu from "@/components/UserMenu";
 import SEO from "@/components/SEO";
+import { absoluteUrl, itemListJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import {
   Heart, Search, Building, Camera, Music, Utensils,
   Flower2, Mail, Shirt, Sparkles, Cake, ClipboardList, Car, Video,
@@ -163,6 +164,10 @@ function CarouselRow({
 
 const Explore = () => {
   const { user, profile, loading: authLoading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const catParam = searchParams.get("cat") || "";
+  const locParam = searchParams.get("loc") || searchParams.get("cidade") || "";
+  const qParam = searchParams.get("q") || "";
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Supplier[]>([]);
   const [byCategory, setByCategory] = useState<Record<string, Supplier[]>>({});
@@ -201,11 +206,45 @@ const Explore = () => {
     })();
   }, []);
 
+  const catNice = (() => {
+    if (!catParam) return "";
+    const c = categories.find((x) => x.slug === catParam);
+    return c?.name || catParam.replace(/-/g, " ");
+  })();
+  const seoTitle = (() => {
+    const parts: string[] = [];
+    parts.push(catNice ? `${catNice}` : "Fornecedores de casamento");
+    if (locParam) parts.push(`em ${locParam}`);
+    return `${parts.join(" ")} — Casamenteiro`;
+  })();
+  const seoDescription = `Encontre ${catNice || "fornecedores de casamento"} avaliados${
+    locParam ? ` em ${locParam}` : ""
+  } no Casamenteiro. Compare orçamentos, fotos e avaliações reais.`;
+  const canonicalPath = (() => {
+    const params = new URLSearchParams();
+    if (catParam) params.set("cat", catParam);
+    if (locParam) params.set("loc", locParam);
+    const qs = params.toString();
+    return qs ? `/buscar?${qs}` : "/explorar";
+  })();
+  const seoJsonLd = [
+    breadcrumbJsonLd([
+      { name: "Início", path: "/" },
+      { name: "Fornecedores", path: "/explorar" },
+      ...(catNice ? [{ name: catNice, path: `/buscar?cat=${catParam}` }] : []),
+    ]),
+    ...(featured.length
+      ? [itemListJsonLd(featured.slice(0, 10).map((s) => ({ name: s.company_name, path: `/fornecedor/${s.id}` })))]
+      : []),
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Fornecedores de casamento — Casamenteiro"
-        description="Descubra espaços, buffets, fotógrafos, decoração e mais. Fornecedores avaliados para o seu casamento."
+        title={seoTitle}
+        description={seoDescription}
+        canonical={absoluteUrl(canonicalPath)}
+        jsonLd={seoJsonLd}
       />
       {/* Header — Airbnb-style */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">

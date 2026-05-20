@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 /**
  * Página de pouso após o usuário clicar no link de confirmação de e-mail.
@@ -94,6 +95,7 @@ export default function EmailConfirmado() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-beige px-4">
+      <SEO title="E-mail confirmado — Casamenteiro" noIndex />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link to="/" className="flex items-center justify-center gap-2 mb-4">

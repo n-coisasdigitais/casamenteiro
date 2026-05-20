@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { traduzirErroAuth } from "@/lib/authErrors";
+import SEO from "@/components/SEO";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -159,6 +160,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-beige px-4">
+      <SEO title="Entrar — Casamenteiro" noIndex />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link to="/" className="flex items-center justify-center gap-2 mb-4">

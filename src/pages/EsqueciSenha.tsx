@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { traduzirErroAuth } from "@/lib/authErrors";
+import SEO from "@/components/SEO";
 
 export default function EsqueciSenha() {
   const [email, setEmail] = useState("");
@@ -33,6 +34,7 @@ export default function EsqueciSenha() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-beige px-4">
+      <SEO title="Recuperar senha — Casamenteiro" noIndex />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link to="/" className="flex items-center justify-center gap-2 mb-4">
