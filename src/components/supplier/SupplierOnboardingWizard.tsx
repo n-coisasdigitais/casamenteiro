@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Check, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
+import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
 
 type Category = { id: string; name: string };
 
@@ -18,6 +19,7 @@ const STEPS = [
   "Categoria e localização",
   "Fotos do portfólio",
   "Faixa de preço",
+  "Detalhes da categoria",
   "Pronto!",
 ];
 
@@ -255,6 +257,16 @@ export default function SupplierOnboardingWizard({
         )}
 
         {step === 4 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Detalhes da categoria</h3>
+            <p className="text-sm text-muted-foreground">
+              Esses campos são específicos da sua categoria e ajudam os casais a encontrar você na busca. Você pode atualizar depois no seu perfil.
+            </p>
+            <DynamicFieldsForm supplierId={supplier.id} categoryId={categoryId || null} />
+          </div>
+        )}
+
+        {step === 5 && (
           <div className="text-center py-6 space-y-3">
             <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-primary/10 text-primary">
               <Check className="h-7 w-7" />
