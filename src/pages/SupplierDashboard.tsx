@@ -23,6 +23,7 @@ import SupplierMetrics from "@/components/supplier/SupplierMetrics";
 import SupplierOnboardingWizard from "@/components/supplier/SupplierOnboardingWizard";
 import SupplierAreaEditor from "@/components/supplier/SupplierAreaEditor";
 import SupplierQuotesKanban from "@/components/supplier/SupplierQuotesKanban";
+import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
 import UserMenu from "@/components/UserMenu";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 
@@ -392,6 +393,15 @@ export default function SupplierDashboard() {
                 <Button onClick={handleSave} disabled={loading} className="w-full">
                   {loading ? "Salvando..." : "Salvar alterações"}
                 </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="text-lg">Detalhes da categoria</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DynamicFieldsForm supplierId={supplier.id} categoryId={categoryId || null} />
               </CardContent>
             </Card>
           </TabsContent>
