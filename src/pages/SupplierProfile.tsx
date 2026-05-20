@@ -440,6 +440,16 @@ export default function SupplierProfile() {
                   </div>
                 </div>
 
+                {supplier.category_id && (
+                  <div className="mb-8">
+                    <h2 className="font-bold text-lg mb-4">Detalhes da categoria</h2>
+                    <DynamicFieldsView
+                      supplierId={supplier.id}
+                      categoryId={supplier.category_id}
+                    />
+                  </div>
+                )}
+
                 <div>
                   <h2 className="font-bold text-lg mb-4">Informação</h2>
                   {supplier.description ? (
