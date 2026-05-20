@@ -159,6 +159,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-beige px-4">
+      <SEO title="Entrar — Casamenteiro" noIndex />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link to="/" className="flex items-center justify-center gap-2 mb-4">
