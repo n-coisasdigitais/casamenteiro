@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { traduzirErroAuth } from "@/lib/authErrors";
+import SEO from "@/components/SEO";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
