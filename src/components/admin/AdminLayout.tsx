@@ -8,6 +8,7 @@ import {
   SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/SEO";
 import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
   Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
@@ -152,6 +153,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
+      <SEO title="Admin — Casamenteiro" noIndex />
       <div className="min-h-screen flex w-full bg-background overflow-x-hidden">
         <AdminSidebar />
         <div className="flex-1 flex flex-col min-w-0 w-full">

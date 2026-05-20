@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import SEO from "@/components/SEO";
+import { absoluteUrl, SITE_URL } from "@/lib/seo";
 import VendorNavbar from "@/components/supplier/landing/VendorNavbar";
 import VendorHero from "@/components/supplier/landing/VendorHero";
 import HowItWorksSection from "@/components/supplier/landing/HowItWorksSection";
@@ -33,6 +34,16 @@ export default function SupplierLanding() {
       <SEO
         title="Casamenteiro — Para fornecedores de casamento"
         description="Conecte seu serviço a casais com orçamento definido e data marcada. Cadastro gratuito, leads qualificados e visibilidade real."
+        canonical={absoluteUrl("/fornecedor")}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Service",
+          serviceType: "Plataforma para fornecedores de casamento",
+          provider: { "@type": "Organization", name: "Casamenteiro", url: SITE_URL },
+          areaServed: "BR",
+          description:
+            "Cadastro gratuito de fornecedores: receba pedidos de orçamento de casais com data marcada e orçamento definido.",
+        }}
       />
 
       <VendorNavbar cfg={cfg.navbar} />
