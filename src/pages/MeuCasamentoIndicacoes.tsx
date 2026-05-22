@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Copy, Share2, Users, MousePointerClick, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import Navbar from "@/components/Navbar";
+import DashboardHeader from "@/components/DashboardHeader";
+import DashboardNav from "@/components/DashboardNav";
 import SEO from "@/components/SEO";
 import { buildReferralUrl, getOrCreateReferralForCouple } from "@/lib/referral";
 
@@ -65,7 +66,8 @@ export default function MeuCasamentoIndicacoes() {
   return (
     <>
       <SEO title="Minhas indicações — Casamenteiro" noIndex />
-      <Navbar />
+      <DashboardHeader />
+      <DashboardNav />
       <main className="container mx-auto py-8 px-4 max-w-3xl">
         <h1 className="text-3xl font-serif mb-2">Indique o Casamenteiro</h1>
         <p className="text-muted-foreground mb-6">
