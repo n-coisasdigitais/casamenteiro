@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import HomeNavbar from "@/components/home/HomeNavbar";
 import ScrollStory from "@/components/home/ScrollStory";
 import SimulatorCTA from "@/components/home/SimulatorCTA";
+import PlatformFeatures from "@/components/shared/PlatformFeatures";
 import SEO from "@/components/SEO";
 import { absoluteUrl, SITE_URL } from "@/lib/seo";
 
@@ -83,6 +84,7 @@ export default function Home() {
 
       <main>
         <ScrollStory blocos={blocos as any} onCTA={scrollToCTA} />
+        <PlatformFeatures variant="couple" />
         <SimulatorCTA ref={ctaRef} />
       </main>
 
