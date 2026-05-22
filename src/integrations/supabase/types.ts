@@ -615,6 +615,162 @@ export type Database = {
           },
         ]
       }
+      couple_photos: {
+        Row: {
+          app_referencia: string | null
+          couple_id: string
+          created_at: string
+          destaque: boolean
+          id: string
+          legenda: string | null
+          ordem: number
+          origem: string
+          url: string
+        }
+        Insert: {
+          app_referencia?: string | null
+          couple_id: string
+          created_at?: string
+          destaque?: boolean
+          id?: string
+          legenda?: string | null
+          ordem?: number
+          origem?: string
+          url: string
+        }
+        Update: {
+          app_referencia?: string | null
+          couple_id?: string
+          created_at?: string
+          destaque?: boolean
+          id?: string
+          legenda?: string | null
+          ordem?: number
+          origem?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_photos_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      couple_profile_comments: {
+        Row: {
+          aprovado: boolean
+          autor_id: string
+          created_at: string
+          id: string
+          perfil_id: string
+          texto: string
+        }
+        Insert: {
+          aprovado?: boolean
+          autor_id: string
+          created_at?: string
+          id?: string
+          perfil_id: string
+          texto: string
+        }
+        Update: {
+          aprovado?: boolean
+          autor_id?: string
+          created_at?: string
+          id?: string
+          perfil_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_profile_comments_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "couple_public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      couple_public_profiles: {
+        Row: {
+          bio: string | null
+          couple_id: string
+          created_at: string
+          estilo: string | null
+          exibir_avaliacoes: boolean
+          exibir_casamento_mesmo_dia: boolean
+          exibir_data: boolean
+          exibir_fornecedores: boolean
+          exibir_fotos: boolean
+          exibir_orcamento: boolean
+          exibir_videos: boolean
+          foto_capa_url: string | null
+          foto_perfil_url: string | null
+          id: string
+          mensagens_casais: boolean
+          mensagens_fornecedores: boolean
+          nome_casal: string
+          publico: boolean
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          bio?: string | null
+          couple_id: string
+          created_at?: string
+          estilo?: string | null
+          exibir_avaliacoes?: boolean
+          exibir_casamento_mesmo_dia?: boolean
+          exibir_data?: boolean
+          exibir_fornecedores?: boolean
+          exibir_fotos?: boolean
+          exibir_orcamento?: boolean
+          exibir_videos?: boolean
+          foto_capa_url?: string | null
+          foto_perfil_url?: string | null
+          id?: string
+          mensagens_casais?: boolean
+          mensagens_fornecedores?: boolean
+          nome_casal: string
+          publico?: boolean
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          couple_id?: string
+          created_at?: string
+          estilo?: string | null
+          exibir_avaliacoes?: boolean
+          exibir_casamento_mesmo_dia?: boolean
+          exibir_data?: boolean
+          exibir_fornecedores?: boolean
+          exibir_fotos?: boolean
+          exibir_orcamento?: boolean
+          exibir_videos?: boolean
+          foto_capa_url?: string | null
+          foto_perfil_url?: string | null
+          id?: string
+          mensagens_casais?: boolean
+          mensagens_fornecedores?: boolean
+          nome_casal?: string
+          publico?: boolean
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_public_profiles_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: true
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couple_suppliers: {
         Row: {
           category_id: string | null
@@ -702,6 +858,44 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      couple_videos: {
+        Row: {
+          couple_id: string
+          created_at: string
+          id: string
+          thumbnail_url: string | null
+          tipo: string
+          titulo: string | null
+          url: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          id?: string
+          thumbnail_url?: string | null
+          tipo?: string
+          titulo?: string | null
+          url: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          id?: string
+          thumbnail_url?: string | null
+          tipo?: string
+          titulo?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_videos_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
             referencedColumns: ["id"]
           },
         ]
@@ -1454,39 +1648,61 @@ export type Database = {
       }
       reviews: {
         Row: {
+          alvo_couple_id: string | null
+          alvo_tipo: string
+          aprovado: boolean
+          autor_tipo: string
           comment: string | null
-          couple_id: string
+          couple_id: string | null
           created_at: string
           id: string
+          publico: boolean
           rating: number
-          supplier_id: string
+          supplier_id: string | null
           title: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          alvo_couple_id?: string | null
+          alvo_tipo?: string
+          aprovado?: boolean
+          autor_tipo?: string
           comment?: string | null
-          couple_id: string
+          couple_id?: string | null
           created_at?: string
           id?: string
+          publico?: boolean
           rating: number
-          supplier_id: string
+          supplier_id?: string | null
           title?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          alvo_couple_id?: string | null
+          alvo_tipo?: string
+          aprovado?: boolean
+          autor_tipo?: string
           comment?: string | null
-          couple_id?: string
+          couple_id?: string | null
           created_at?: string
           id?: string
+          publico?: boolean
           rating?: number
-          supplier_id?: string
+          supplier_id?: string | null
           title?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reviews_alvo_couple_id_fkey"
+            columns: ["alvo_couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reviews_couple_id_fkey"
             columns: ["couple_id"]
@@ -2498,6 +2714,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      generate_couple_profile_slug: {
+        Args: { _nome: string; _wedding_date: string }
+        Returns: string
       }
       get_couple_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_invite_by_token: {
