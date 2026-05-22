@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { attributeReferralConversion, getStoredReferralCode } from "@/lib/referral";
 
 type Profile = {
   id: string;
@@ -50,6 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       _role: "admin",
     });
     setIsAdmin(!!adminCheck);
+    // Atribui indicação se houver código salvo
+    if (getStoredReferralCode() && data?.account_type) {
+      const tipo = data.account_type === "supplier" ? "supplier" : "couple";
+      attributeReferralConversion(userId, tipo).catch(() => {});
+    }
   };
 
   useEffect(() => {
