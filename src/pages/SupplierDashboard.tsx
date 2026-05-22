@@ -23,6 +23,7 @@ import SupplierMetrics from "@/components/supplier/SupplierMetrics";
 import SupplierOnboardingWizard from "@/components/supplier/SupplierOnboardingWizard";
 import SupplierAreaEditor from "@/components/supplier/SupplierAreaEditor";
 import SupplierQuotesKanban from "@/components/supplier/SupplierQuotesKanban";
+import SupplierReviewCouples from "@/components/supplier/SupplierReviewCouples";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
 import UserMenu from "@/components/UserMenu";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
@@ -325,6 +326,7 @@ export default function SupplierDashboard() {
             </TabsTrigger>
             <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
             <TabsTrigger value="photos">Fotos</TabsTrigger>
+            <TabsTrigger value="reviews">Avaliações</TabsTrigger>
           </TabsList>
 
           {/* METRICS TAB */}
@@ -356,6 +358,11 @@ export default function SupplierDashboard() {
           {/* AREA TAB */}
           <TabsContent value="area">
             <SupplierAreaEditor supplierId={supplier.id} />
+          </TabsContent>
+
+          {/* REVIEWS TAB */}
+          <TabsContent value="reviews">
+            <SupplierReviewCouples supplierId={supplier.id} />
           </TabsContent>
 
           {/* PROFILE TAB */}

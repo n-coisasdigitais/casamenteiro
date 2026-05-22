@@ -56,6 +56,9 @@ import EmailConfirmado from "./pages/EmailConfirmado";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./components/admin/AdminLayout";
 import CategoriaPublica from "./pages/CategoriaPublica";
+import CasaisFeed from "./pages/CasaisFeed";
+import CasalPerfilPublico from "./pages/CasalPerfilPublico";
+import MeuCasamentoPerfil from "./pages/MeuCasamentoPerfil";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +88,9 @@ const App = () => (
             <Route path="/meu-casamento/plano" element={<WeddingPlan />} />
             <Route path="/buscar" element={<Explore />} />
             <Route path="/categoria/:slug" element={<CategoriaPublica />} />
+            <Route path="/casais" element={<CasaisFeed />} />
+            <Route path="/casais/:slug" element={<CasalPerfilPublico />} />
+            <Route path="/meu-casamento/perfil" element={<MeuCasamentoPerfil />} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
             <Route path="/fornecedor" element={<SupplierLanding />} />
