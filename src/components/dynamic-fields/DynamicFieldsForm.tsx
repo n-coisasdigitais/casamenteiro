@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import DynamicFieldInput, { Campo } from "./DynamicFieldInput";
 
 type Props = {
@@ -126,10 +127,21 @@ export default function DynamicFieldsForm({ supplierId, categoryId }: Props) {
     <div className="space-y-5">
       {campos.map((c) => (
         <div key={c.id}>
-          <Label className="mb-1.5 block">
-            {c.label}
-            {c.obrigatorio && <span className="text-destructive ml-1">*</span>}
-          </Label>
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <Label>
+              {c.label}
+              {c.obrigatorio && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            {(c as any).mostrar_no_perfil === false ? (
+              <Badge variant="secondary" className="text-[10px] gap-1 px-1.5 py-0">
+                <EyeOff className="h-3 w-3" /> Interno
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] gap-1 px-1.5 py-0">
+                <Eye className="h-3 w-3" /> Visível no perfil
+              </Badge>
+            )}
+          </div>
           {c.ajuda && (
             <p className="text-xs text-muted-foreground mb-2">{c.ajuda}</p>
           )}

@@ -30,6 +30,7 @@ import AdminFornecedorAprovacao from "./pages/AdminFornecedorAprovacao";
 import AdminCidades from "./pages/AdminCidades";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminFornecedorLanding from "./pages/AdminFornecedorLanding";
+import AdminLandingEmails from "./pages/AdminLandingEmails";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
 import AdminTransacoes from "./pages/AdminTransacoes";
 import AdminMetrics from "./pages/AdminMetrics";
@@ -103,6 +104,7 @@ const App = () => (
             <Route path="/admin/categorias/:id/campos" element={<AdminLayout><AdminCategoriaCampos /></AdminLayout>} />
             <Route path="/admin/home-config" element={<AdminLayout><AdminHomeConfig /></AdminLayout>} />
             <Route path="/admin/fornecedor-landing" element={<AdminLayout><AdminFornecedorLanding /></AdminLayout>} />
+            <Route path="/admin/fornecedor-emails" element={<AdminLayout><AdminLandingEmails /></AdminLayout>} />
             <Route path="/admin/simulacoes" element={<AdminLayout><AdminSimulacoes /></AdminLayout>} />
             <Route path="/admin/transacoes" element={<AdminLayout><AdminTransacoes /></AdminLayout>} />
             <Route path="/admin/metricas" element={<AdminLayout><AdminMetrics /></AdminLayout>} />
