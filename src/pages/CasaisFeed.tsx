@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import HomeNavbar from "@/components/home/HomeNavbar";
+import { useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
 import { Heart, MapPin, Calendar } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -26,6 +27,7 @@ type Row = {
 };
 
 export default function CasaisFeed() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -81,7 +83,7 @@ export default function CasaisFeed() {
         description="Conheça casais que estão organizando seus casamentos. Veja fotos, fornecedores contratados e avaliações reais."
         canonical="/casais"
       />
-      <HomeNavbar />
+      <HomeNavbar onSimularClick={() => navigate("/simulador")} />
       <div className="container py-10 px-4">
         <header className="mb-8 text-center max-w-2xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-serif mb-2">Casais reais</h1>
