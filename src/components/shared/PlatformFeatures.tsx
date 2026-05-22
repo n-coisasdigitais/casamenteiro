@@ -68,12 +68,9 @@ export default function PlatformFeatures({ variant }: { variant: Variant }) {
               className="rounded-2xl p-5 border transition-shadow hover:shadow-md"
               style={{ background: cardBg, borderColor: border }}
             >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
-                style={{ background: primary, opacity: 1 }}
-              >
-                <span className="absolute" />
-                <f.icon className="w-5 h-5" style={{ color: primary }} />
+              <div className="relative w-10 h-10 rounded-full flex items-center justify-center mb-4 overflow-hidden">
+                <span className="absolute inset-0" style={{ background: primary, opacity: 0.12 }} />
+                <f.icon className="w-5 h-5 relative" style={{ color: primary }} />
               </div>
               <h3 className="font-serif text-lg mb-1.5" style={{ color: ink }}>{f.title}</h3>
               <p className="text-sm leading-relaxed" style={{ color: muted }}>{f.desc}</p>
