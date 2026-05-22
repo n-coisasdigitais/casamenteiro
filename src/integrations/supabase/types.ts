@@ -1050,6 +1050,39 @@ export type Database = {
         }
         Relationships: []
       }
+      fornecedor_landing_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          notes: string | null
+          origem: string
+          status: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          notes?: string | null
+          origem?: string
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          notes?: string | null
+          origem?: string
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       frases_home: {
         Row: {
           ativo: boolean
