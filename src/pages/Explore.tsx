@@ -345,7 +345,7 @@ const Explore = () => {
                 return (
                   <Link
                     key={cat.id}
-                    to={`/buscar?cat=${cat.slug}`}
+                    to={`/categoria/${cat.slug}`}
                     className="flex flex-col items-center gap-1 min-w-[64px] text-muted-foreground hover:text-foreground transition group"
                   >
                     <Icon className="h-5 w-5 group-hover:text-primary transition-colors" />
@@ -372,7 +372,7 @@ const Explore = () => {
             title={c.name}
             subtitle={`Os mais procurados em ${c.name.toLowerCase()}`}
             items={byCategory[c.slug]}
-            href={`/buscar?cat=${c.slug}`}
+            href={`/categoria/${c.slug}`}
           />
         ))}
       </main>
