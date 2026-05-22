@@ -12,7 +12,7 @@ import SEO from "@/components/SEO";
 import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
   Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
-  Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal, MapPin, Zap,
+  Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal, MapPin, Zap, Mail,
 } from "lucide-react";
 
 const groups = [
@@ -53,6 +53,7 @@ const groups = [
     items: [
       { title: "Home", url: "/admin/home-config", icon: HomeIcon },
       { title: "Landing Fornecedor", url: "/admin/fornecedor-landing", icon: Building2 },
+      { title: "E-mails do CTA", url: "/admin/fornecedor-emails", icon: Mail },
       { title: "Tarefas padrão", url: "/admin/tarefas-padrao", icon: ListChecks },
       { title: "Edição em massa", url: "/admin/fornecedores", icon: Building2 },
       { title: "Aprovar fornecedores", url: "/admin/aprovacao", icon: ClipboardCheck },
