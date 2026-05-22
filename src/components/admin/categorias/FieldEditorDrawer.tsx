@@ -27,6 +27,7 @@ export type Campo = {
   ordem: number;
   is_base?: boolean;
   placeholder?: string | null;
+  mostrar_no_perfil?: boolean;
 };
 
 const TIPO_OPTIONS: { value: Campo["tipo"]; label: string }[] = [
@@ -49,7 +50,7 @@ export default function FieldEditorDrawer({
   const { toast } = useToast();
   const [data, setData] = useState<Campo>({
     category_id: categoryId, chave: "", label: "", tipo: "texto",
-    opcoes: null, obrigatorio: false, ativo: true, ordem: 0, is_base: false, placeholder: "",
+    opcoes: null, obrigatorio: false, ativo: true, ordem: 0, is_base: false, placeholder: "", mostrar_no_perfil: true,
   });
   const [keyTouched, setKeyTouched] = useState(false);
   const [optionInput, setOptionInput] = useState("");
@@ -58,12 +59,17 @@ export default function FieldEditorDrawer({
 
   useEffect(() => {
     if (campo) {
-      setData({ ...campo, opcoes: campo.opcoes || [], placeholder: campo.placeholder || "" });
+      setData({
+        ...campo,
+        opcoes: campo.opcoes || [],
+        placeholder: campo.placeholder || "",
+        mostrar_no_perfil: campo.mostrar_no_perfil !== false,
+      });
       setKeyTouched(true);
     } else {
       setData({
         category_id: categoryId, chave: "", label: "", tipo: "texto",
-        opcoes: [], obrigatorio: false, ativo: true, ordem: 0, is_base: false, placeholder: "",
+        opcoes: [], obrigatorio: false, ativo: true, ordem: 0, is_base: false, placeholder: "", mostrar_no_perfil: true,
       });
       setKeyTouched(false);
     }
@@ -108,12 +114,23 @@ export default function FieldEditorDrawer({
     return existingKeys.filter((x) => x !== campo?.chave).includes(k);
   };
 
+  const optionsHaveDuplicates = () => {
+    const arr = (data.opcoes || []).map((o) => o.trim().toLowerCase());
+    return arr.length !== new Set(arr).size;
+  };
+
   const save = async () => {
     if (!data.label.trim()) return toast({ title: "Label obrigatório", variant: "destructive" });
     if (!data.chave.trim()) return toast({ title: "Key obrigatória", variant: "destructive" });
     if (keyDuplicate()) return toast({ title: "Essa key já existe nesta categoria", variant: "destructive" });
     if (isOptionType(data.tipo) && (data.opcoes?.length ?? 0) < 2) {
       return toast({ title: "Adicione pelo menos 2 opções", variant: "destructive" });
+    }
+    if (isOptionType(data.tipo) && optionsHaveDuplicates()) {
+      return toast({ title: "Existem opções duplicadas", variant: "destructive" });
+    }
+    if (isOptionType(data.tipo) && (data.opcoes || []).some((o) => !o.trim())) {
+      return toast({ title: "Remova opções vazias", variant: "destructive" });
     }
 
     setSaving(true);
@@ -125,11 +142,17 @@ export default function FieldEditorDrawer({
       opcoes: isOptionType(data.tipo) ? data.opcoes : null,
       obrigatorio: data.obrigatorio,
       ativo: data.ativo,
+      mostrar_no_perfil: data.mostrar_no_perfil !== false,
       placeholder: data.placeholder || null,
     };
     if (campo?.is_base) {
-      // Em campos base só atualizamos obrigatorio/ativo/placeholder
-      const baseOnly = { obrigatorio: data.obrigatorio, ativo: data.ativo, placeholder: data.placeholder || null };
+      // Em campos base só atualizamos obrigatorio/ativo/placeholder/mostrar_no_perfil
+      const baseOnly = {
+        obrigatorio: data.obrigatorio,
+        ativo: data.ativo,
+        placeholder: data.placeholder || null,
+        mostrar_no_perfil: data.mostrar_no_perfil !== false,
+      };
       const { error } = await supabase.from("campos_categoria").update(baseOnly).eq("id", campo.id!);
       setSaving(false);
       if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -214,6 +237,16 @@ export default function FieldEditorDrawer({
             <div className="flex items-center justify-between">
               <Label>Obrigatório</Label>
               <Switch checked={data.obrigatorio} onCheckedChange={(v) => setData({ ...data, obrigatorio: v })} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Mostrar no perfil público</Label>
+                <p className="text-xs text-muted-foreground">Quando desligado, fica apenas interno.</p>
+              </div>
+              <Switch
+                checked={data.mostrar_no_perfil !== false}
+                onCheckedChange={(v) => setData({ ...data, mostrar_no_perfil: v })}
+              />
             </div>
             <div className="flex items-center justify-between">
               <Label>Ativo</Label>
