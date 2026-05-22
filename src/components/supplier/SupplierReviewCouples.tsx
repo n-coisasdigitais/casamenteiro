@@ -25,19 +25,41 @@ export default function SupplierReviewCouples({ supplierId }: { supplierId: stri
     const today = new Date().toISOString().slice(0, 10);
     const { data } = await supabase
       .from("couple_suppliers")
-      .select("couple_id,couples(id,partner_name,wedding_date,wedding_city,profiles(full_name)),couple_public_profiles:couple_id(slug,nome_casal,foto_perfil_url)")
+      .select("couple_id,couples(id,partner_name,wedding_date,wedding_city,profiles(full_name))")
       .eq("supplier_id", supplierId)
       .eq("kanban_status", "contratado");
     const past = (data || []).filter((x: any) => x.couples?.wedding_date && x.couples.wedding_date < today);
     const { data: jaAvaliadas } = await supabase
       .from("reviews").select("alvo_couple_id").eq("supplier_id", supplierId).eq("autor_tipo", "supplier");
     const set = new Set((jaAvaliadas || []).map((r: any) => r.alvo_couple_id));
-    setCasais(past.filter((x: any) => !set.has(x.couple_id)));
+    const pendentes = past.filter((x: any) => !set.has(x.couple_id));
+    // Buscar perfis públicos quando existirem
+    if (pendentes.length > 0) {
+      const { data: perfis } = await supabase
+        .from("couple_public_profiles")
+        .select("couple_id,nome_casal,foto_perfil_url,slug")
+        .in("couple_id", pendentes.map((x: any) => x.couple_id));
+      const perfilMap = new Map((perfis || []).map((p: any) => [p.couple_id, p]));
+      pendentes.forEach((x: any) => { x.perfil = perfilMap.get(x.couple_id); });
+    }
+    setCasais(pendentes);
     const { data: minhas } = await supabase
-      .from("reviews").select("*,couple_public_profiles:alvo_couple_id(slug,nome_casal)")
+      .from("reviews").select("*")
       .eq("supplier_id", supplierId).eq("autor_tipo", "supplier")
       .order("created_at", { ascending: false });
-    setEnviadas(minhas || []);
+    const list = minhas || [];
+    if (list.length > 0) {
+      const ids = list.map((r: any) => r.alvo_couple_id).filter(Boolean);
+      if (ids.length > 0) {
+        const { data: perfis } = await supabase
+          .from("couple_public_profiles")
+          .select("couple_id,nome_casal,slug")
+          .in("couple_id", ids);
+        const perfilMap = new Map((perfis || []).map((p: any) => [p.couple_id, p]));
+        list.forEach((r: any) => { r.perfil = perfilMap.get(r.alvo_couple_id); });
+      }
+    }
+    setEnviadas(list);
   };
 
   useEffect(() => { carregar(); }, [supplierId]);
@@ -75,7 +97,7 @@ export default function SupplierReviewCouples({ supplierId }: { supplierId: stri
                     <Heart className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium">{c.couple_public_profiles?.nome_casal || `${c.couples?.profiles?.full_name || ""} & ${c.couples?.partner_name || ""}`.trim() || "Casal"}</p>
+                    <p className="font-medium">{c.perfil?.nome_casal || `${c.couples?.profiles?.full_name || ""} & ${c.couples?.partner_name || ""}`.trim() || "Casal"}</p>
                     <p className="text-xs text-muted-foreground">{c.couples?.wedding_city} · {c.couples?.wedding_date}</p>
                   </div>
                 </div>
@@ -95,9 +117,9 @@ export default function SupplierReviewCouples({ supplierId }: { supplierId: stri
             {enviadas.map((a: any) => (
               <div key={a.id} className="p-3 border border-border rounded-lg">
                 <div className="flex items-center justify-between mb-1">
-                  {a.couple_public_profiles?.slug ? (
-                    <Link to={`/casais/${a.couple_public_profiles.slug}`} className="font-medium text-primary hover:underline">
-                      {a.couple_public_profiles.nome_casal}
+                  {a.perfil?.slug ? (
+                    <Link to={`/casais/${a.perfil.slug}`} className="font-medium text-primary hover:underline">
+                      {a.perfil.nome_casal}
                     </Link>
                   ) : (
                     <span className="font-medium">Casal</span>
