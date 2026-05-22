@@ -70,8 +70,9 @@ export default function PlatformFeatures({ variant }: { variant: Variant }) {
             >
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
-                style={{ background: `${primary.replace("hsl(", "hsl(").slice(0, -1)} / 0.12)` }}
+                style={{ background: primary, opacity: 1 }}
               >
+                <span className="absolute" />
                 <f.icon className="w-5 h-5" style={{ color: primary }} />
               </div>
               <h3 className="font-serif text-lg mb-1.5" style={{ color: ink }}>{f.title}</h3>
