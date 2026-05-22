@@ -615,6 +615,51 @@ export type Database = {
           },
         ]
       }
+      couple_messages: {
+        Row: {
+          created_at: string
+          destinatario_couple_id: string
+          id: string
+          lida: boolean
+          lida_em: string | null
+          remetente_couple_id: string
+          texto: string
+        }
+        Insert: {
+          created_at?: string
+          destinatario_couple_id: string
+          id?: string
+          lida?: boolean
+          lida_em?: string | null
+          remetente_couple_id: string
+          texto: string
+        }
+        Update: {
+          created_at?: string
+          destinatario_couple_id?: string
+          id?: string
+          lida?: boolean
+          lida_em?: string | null
+          remetente_couple_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_messages_destinatario_couple_id_fkey"
+            columns: ["destinatario_couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "couple_messages_remetente_couple_id_fkey"
+            columns: ["remetente_couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couple_photos: {
         Row: {
           app_referencia: string | null
@@ -1642,6 +1687,82 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_conversions: {
+        Row: {
+          created_at: string
+          id: string
+          referral_id: string
+          referred_user_id: string
+          status: string
+          tipo_conta: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_id: string
+          referred_user_id: string
+          status?: string
+          tipo_conta: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_id?: string
+          referred_user_id?: string
+          status?: string
+          tipo_conta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_conversions_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          ativo: boolean
+          cliques: number
+          codigo: string
+          conversoes: number
+          couple_id: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cliques?: number
+          codigo: string
+          conversoes?: number
+          couple_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cliques?: number
+          codigo?: string
+          conversoes?: number
+          couple_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: true
+            referencedRelation: "couples"
             referencedColumns: ["id"]
           },
         ]
@@ -2719,6 +2840,7 @@ export type Database = {
         Args: { _nome: string; _wedding_date: string }
         Returns: string
       }
+      generate_referral_code: { Args: never; Returns: string }
       get_couple_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_invite_by_token: {
         Args: { _token: string }

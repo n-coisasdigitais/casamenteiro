@@ -12,7 +12,7 @@ import SEO from "@/components/SEO";
 import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
   Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
-  Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal, MapPin, Zap, Mail,
+  Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal, MapPin, Zap, Mail, Share2,
 } from "lucide-react";
 
 const groups = [
@@ -30,6 +30,7 @@ const groups = [
       { title: "CRM Casais", url: "/admin/casais", icon: Heart },
       { title: "CRM Fornecedores", url: "/admin/fornecedores-crm", icon: Building2 },
       { title: "Avaliações", url: "/admin/avaliacoes", icon: Star },
+      { title: "Indicações", url: "/admin/indicacoes", icon: Share2 },
     ],
   },
   {
