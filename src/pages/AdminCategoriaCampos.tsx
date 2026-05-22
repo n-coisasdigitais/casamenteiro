@@ -77,6 +77,7 @@ export default function AdminCategoriaCampos() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Campo | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Campo | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<Campo | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
@@ -96,10 +97,25 @@ export default function AdminCategoriaCampos() {
   const custom = campos.filter((c) => !c.is_base).sort((a, b) => a.ordem - b.ordem);
 
   const toggleAtivo = async (c: Campo, v: boolean) => {
+    if (!v) {
+      // Pedir confirmação antes de desativar (campo base ou personalizado)
+      setConfirmDeactivate(c);
+      return;
+    }
     setCampos((prev) => prev.map((x) => x.id === c.id ? { ...x, ativo: v } : x));
     const { error } = await supabase.from("campos_categoria").update({ ativo: v }).eq("id", c.id!);
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); load(); return; }
     toast({ title: "Salvo" });
+  };
+
+  const confirmToggleOff = async () => {
+    if (!confirmDeactivate) return;
+    const c = confirmDeactivate;
+    setCampos((prev) => prev.map((x) => x.id === c.id ? { ...x, ativo: false } : x));
+    const { error } = await supabase.from("campos_categoria").update({ ativo: false }).eq("id", c.id!);
+    setConfirmDeactivate(null);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); load(); return; }
+    toast({ title: "Campo desativado", description: `"${c.label}" não aparece mais no formulário.` });
   };
 
   const handleDelete = async () => {
@@ -215,6 +231,23 @@ export default function AdminCategoriaCampos() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmDeactivate} onOpenChange={(v) => !v && setConfirmDeactivate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desativar este campo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDeactivate?.is_base
+                ? `"${confirmDeactivate?.label}" é um campo base. Ao desativar, ele deixará de aparecer no formulário dos fornecedores desta categoria. Você pode reativar a qualquer momento.`
+                : `"${confirmDeactivate?.label}" deixará de aparecer para os fornecedores desta categoria. Respostas já preenchidas continuam salvas.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmToggleOff}>Desativar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
