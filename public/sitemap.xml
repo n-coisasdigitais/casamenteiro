@@ -36,64 +36,64 @@
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=bolos-doces</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/bolos-doces</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=cerimonialista</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/cerimonialista</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=convites</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/convites</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=decoracao</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/decoracao</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=espacos-buffet</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/espacos-buffet</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=fotografia</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/fotografia</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=beleza-maquiagem</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/beleza-maquiagem</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=musica-dj</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/musica-dj</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=traje-noivo</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/traje-noivo</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=transporte</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/transporte</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=vestido-noiva</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/vestido-noiva</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/buscar?cat=video</loc>
+    <loc>https://www.casamenteiro.com.br/categoria/video</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/28252fc2-b14a-404c-8720-d198ee8c0b45</loc>
