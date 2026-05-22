@@ -10,6 +10,7 @@ import HowItWorksSection from "@/components/supplier/landing/HowItWorksSection";
 import WhyTimeline from "@/components/supplier/WhyTimeline";
 import TestimonialsSection from "@/components/supplier/landing/TestimonialsSection";
 import VendorCTASection from "@/components/supplier/landing/VendorCTASection";
+import PlatformFeatures from "@/components/shared/PlatformFeatures";
 import { DEFAULT_LANDING, SupplierLandingConfig } from "@/lib/supplierLandingConfig";
 
 export default function SupplierLanding() {
@@ -51,6 +52,7 @@ export default function SupplierLanding() {
         <VendorHero cfg={cfg.hero} />
         <HowItWorksSection cfg={cfg.how} />
         <WhyTimeline cfg={cfg.why} />
+        <PlatformFeatures variant="supplier" />
         <TestimonialsSection cfg={cfg.testimonials} />
         <VendorCTASection cfg={cfg.cta} />
       </main>
