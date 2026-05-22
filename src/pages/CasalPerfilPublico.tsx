@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, MapPin, Calendar, Star } from "lucide-react";
+import { Heart, MapPin, Calendar, Star, MessageCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { youtubeEmbedUrl, youtubeThumbnail } from "@/lib/coupleProfile";
@@ -164,6 +164,32 @@ export default function CasalPerfilPublico() {
                 </div>
               )}
               {perfil.bio && <p className="mt-4 text-foreground/80 leading-relaxed">{perfil.bio}</p>}
+              {perfil.mensagens_casais && (
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!user) { navigate("/login"); return; }
+                      const { data: myCouple } = await supabase
+                        .from("couples").select("id").eq("user_id", user.id).maybeSingle();
+                      if (!myCouple) { toast.error("Apenas casais podem enviar mensagens."); return; }
+                      if (myCouple.id === perfil.couple_id) return;
+                      const texto = prompt("Sua mensagem para " + perfil.nome_casal + ":");
+                      if (!texto?.trim()) return;
+                      const { error } = await supabase.from("couple_messages").insert({
+                        remetente_couple_id: myCouple.id,
+                        destinatario_couple_id: perfil.couple_id,
+                        texto: texto.trim(),
+                      });
+                      if (error) toast.error("Não foi possível enviar");
+                      else toast.success("Mensagem enviada!");
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />Enviar mensagem
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
