@@ -59,6 +59,10 @@ import CategoriaPublica from "./pages/CategoriaPublica";
 import CasaisFeed from "./pages/CasaisFeed";
 import CasalPerfilPublico from "./pages/CasalPerfilPublico";
 import MeuCasamentoPerfil from "./pages/MeuCasamentoPerfil";
+import MeuCasamentoIndicacoes from "./pages/MeuCasamentoIndicacoes";
+import MensagensCasais from "./pages/MensagensCasais";
+import CapturarIndicacao from "./pages/CapturarIndicacao";
+import AdminIndicacoes from "./pages/AdminIndicacoes";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +95,9 @@ const App = () => (
             <Route path="/casais" element={<CasaisFeed />} />
             <Route path="/casais/:slug" element={<CasalPerfilPublico />} />
             <Route path="/meu-casamento/perfil" element={<MeuCasamentoPerfil />} />
+            <Route path="/meu-casamento/indicacoes" element={<MeuCasamentoIndicacoes />} />
+            <Route path="/mensagens" element={<MensagensCasais />} />
+            <Route path="/i/:codigo" element={<CapturarIndicacao />} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
             <Route path="/fornecedor" element={<SupplierLanding />} />
@@ -127,6 +134,7 @@ const App = () => (
             <Route path="/admin/tarefas-padrao" element={<AdminLayout><AdminDefaultTasks /></AdminLayout>} />
             <Route path="/admin/configuracoes" element={<AdminLayout><AdminSettings /></AdminLayout>} />
             <Route path="/admin/financeiro" element={<AdminLayout><AdminFinance /></AdminLayout>} />
+            <Route path="/admin/indicacoes" element={<AdminLayout><AdminIndicacoes /></AdminLayout>} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />
