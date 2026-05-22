@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Heart, CheckSquare, Store, Users, DollarSign, User, Globe } from "lucide-react";
+import { Heart, CheckSquare, Store, Users, DollarSign, User, Globe, MessageSquare, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -9,6 +9,8 @@ const navItems = [
   { label: "Fornecedores", path: "/meus-fornecedores", icon: Store },
   { label: "Convidados", path: "/convidados", icon: Users },
   { label: "Perfil público", path: "/meu-casamento/perfil", icon: Globe },
+  { label: "Mensagens", path: "/mensagens", icon: MessageSquare },
+  { label: "Indicações", path: "/meu-casamento/indicacoes", icon: Share2 },
   { label: "Perfil", path: "/perfil", icon: User },
 ];
 
