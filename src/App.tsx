@@ -54,6 +54,7 @@ import InviteObrigado from "./pages/InviteObrigado";
 import EmailConfirmado from "./pages/EmailConfirmado";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./components/admin/AdminLayout";
+import CategoriaPublica from "./pages/CategoriaPublica";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ const App = () => (
             <Route path="/orcamento" element={<WeddingPlan />} />
             <Route path="/meu-casamento/plano" element={<WeddingPlan />} />
             <Route path="/buscar" element={<Explore />} />
+            <Route path="/categoria/:slug" element={<CategoriaPublica />} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
             <Route path="/fornecedor" element={<SupplierLanding />} />

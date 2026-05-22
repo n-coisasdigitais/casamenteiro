@@ -35,7 +35,10 @@ async function loadDynamic(): Promise<SitemapEntry[]> {
 
   const { data: cats } = await sb.from("categories").select("slug").order("name");
   (cats || []).forEach((c: any) => {
-    if (c.slug) out.push({ path: `/buscar?cat=${encodeURIComponent(c.slug)}`, changefreq: "weekly", priority: "0.7" });
+    if (c.slug) {
+      // página dedicada por categoria (URL canônica indexável)
+      out.push({ path: `/categoria/${encodeURIComponent(c.slug)}`, changefreq: "weekly", priority: "0.8" });
+    }
   });
 
   const { data: sups } = await sb
