@@ -1,0 +1,1 @@
+UPDATE public.suppliers SET status='approved' WHERE id='c9698967-4e68-488f-a6f4-cf58b16bcff2';
