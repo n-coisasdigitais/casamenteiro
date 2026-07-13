@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import HomeNavbar from "@/components/home/HomeNavbar";
+import HomeHero from "@/components/home/HomeHero";
 import ScrollStory from "@/components/home/ScrollStory";
 import SimulatorCTA from "@/components/home/SimulatorCTA";
 import PlatformFeatures from "@/components/shared/PlatformFeatures";
@@ -13,12 +14,13 @@ const FALLBACK_BLOCOS = [
   { foto_url: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1600&q=80", frase: "Casar é o melhor dia da vida. Organizar é a parte que ninguém te conta.", subtexto: "A gente existe pra simplificar. Role pra entender.", supplier_id: null, supplier_name: null, supplier_category: null },
   { foto_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=1600&q=80", frase: "Cada detalhe importa. Cada escolha conta.", subtexto: "Da decoração ao buffet, a gente te ajuda a montar tudo.", supplier_id: null, supplier_name: "Ateliê Florescer", supplier_category: "Decoração" },
   { foto_url: "https://images.unsplash.com/photo-1529636798458-92182e662485?w=1600&q=80", frase: "Seu orçamento, seu jeito, seu dia.", subtexto: "Comece pelo quanto você tem. A gente faz o resto encaixar.", supplier_id: null, supplier_name: "Buffet Casa Plena", supplier_category: "Buffet" },
-  { foto_url: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1600&q=80", frase: "Datas que ninguém disputou. Preços que fazem sentido.", subtexto: "Casamentos em dias úteis com até 35% de economia real.", supplier_id: null, supplier_name: "Espaço Vila Real", supplier_category: "Espaço" },
+  { foto_url: "https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=1600&q=80&auto=format&fit=crop", frase: "Datas que ninguém disputou. Preços que fazem sentido.", subtexto: "Casamentos em dias úteis com até 35% de economia real.", supplier_id: null, supplier_name: "Espaço Vila Real", supplier_category: "Espaço" },
   { foto_url: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=1600&q=80", frase: "Você não precisa resolver tudo sozinho.", subtexto: "Fotógrafo, buffet, espaço, banda. Tudo num lugar só.", supplier_id: null, supplier_name: "Estúdio Lume", supplier_category: "Fotografia" },
 ];
 
 export default function Home() {
   const [blocos, setBlocos] = useState(FALLBACK_BLOCOS);
+  const [heroImage, setHeroImage] = useState<string | null>(null);
   const ctaRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -29,7 +31,12 @@ export default function Home() {
         .eq("ativo", true)
         .order("ordem") as any);
       if (!data || !data.length) return;
-      const ids = (data as any[]).map(d => d.supplier_id).filter(Boolean);
+      // Bloco com ordem = 0 (primeiro da lista) é reservado para o herói da primeira dobra
+      const [first, ...rest] = data as any[];
+      if (first?.foto_url) setHeroImage(first.foto_url);
+      const storyData = rest;
+      if (!storyData.length) return;
+      const ids = storyData.map(d => d.supplier_id).filter(Boolean);
       let supMap: Record<string, { name: string; category: string | null }> = {};
       if (ids.length) {
         const { data: sups } = await supabase
@@ -40,7 +47,7 @@ export default function Home() {
           supMap[s.id] = { name: s.company_name, category: s.categories?.name ?? null };
         });
       }
-      setBlocos((data as any[]).map(d => ({
+      setBlocos(storyData.map(d => ({
         foto_url: d.foto_url,
         frase: d.frase,
         subtexto: d.subtexto,
@@ -57,7 +64,7 @@ export default function Home() {
     <div className="bg-cream text-ink min-h-screen scroll-smooth">
       <SEO
         title="Casamenteiro — Planeje seu casamento dos sonhos"
-        description="Simulador de orçamento, fornecedores avaliados, checklist e RSVP. Tudo em um só lugar para o seu grande dia."
+        description="Simule o custo do seu casamento e economize casando em datas com desconto. Fornecedores avaliados em BH e região."
         canonical={absoluteUrl("/")}
         jsonLd={[
           {
@@ -83,6 +90,7 @@ export default function Home() {
       <HomeNavbar onSimularClick={scrollToCTA} />
 
       <main>
+        <HomeHero heroImage={heroImage} />
         <ScrollStory blocos={blocos as any} onCTA={scrollToCTA} />
         <PlatformFeatures variant="couple" />
         <SimulatorCTA ref={ctaRef} />
