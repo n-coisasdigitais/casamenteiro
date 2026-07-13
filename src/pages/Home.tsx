@@ -27,14 +27,16 @@ export default function Home() {
     (async () => {
       const { data } = await (supabase
         .from("secoes_home" as any)
-        .select("foto_url,frase,subtexto,supplier_id")
+        .select("foto_url,frase,subtexto,supplier_id,ordem")
         .eq("ativo", true)
         .order("ordem") as any);
       if (!data || !data.length) return;
-      // Bloco com ordem = 0 (primeiro da lista) é reservado para o herói da primeira dobra
-      const [first, ...rest] = data as any[];
-      if (first?.foto_url) setHeroImage(first.foto_url);
-      const storyData = rest;
+      // Bloco com ordem === 0 é reservado para a imagem da primeira dobra (herói).
+      // Blocos com ordem >= 1 alimentam o storytelling.
+      const rows = data as any[];
+      const heroRow = rows.find((r) => r.ordem === 0);
+      if (heroRow?.foto_url) setHeroImage(heroRow.foto_url);
+      const storyData = rows.filter((r) => r.ordem !== 0);
       if (!storyData.length) return;
       const ids = storyData.map(d => d.supplier_id).filter(Boolean);
       let supMap: Record<string, { name: string; category: string | null }> = {};
