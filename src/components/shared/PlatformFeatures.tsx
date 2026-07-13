@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import {
   Calculator, Search, Calendar, MessageCircle, Star, Users, Heart, Sparkles,
-  TrendingUp, ShieldCheck, Inbox, MapPin,
+  TrendingUp, ShieldCheck, Inbox, MapPin, Tag,
 } from "lucide-react";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 type Variant = "couple" | "supplier";
 
@@ -11,9 +12,10 @@ const COUPLE_FEATURES = [
   { icon: Search, title: "Busca estilo Airbnb", desc: "Mapa + lista com filtros por cidade, categoria, preço e avaliação." },
   { icon: Calendar, title: "Planejamento completo", desc: "79 tarefas, lista de convidados com RSVP, orçamento com gráficos e PDF." },
   { icon: MessageCircle, title: "Orçamentos com chat", desc: "Negocie diretamente com fornecedores, com propostas e anexos." },
+  { icon: Tag, title: "Datas com desconto", desc: "Economize casando em datas ociosas.", flag: null as null | string },
   { icon: Star, title: "Avaliações reais", desc: "Notas de outros casais e respostas dos fornecedores." },
-  { icon: Users, title: "Perfil social do casal", desc: "Compartilhe sua história, fotos e conecte com casamentos no mesmo dia." },
-  { icon: Heart, title: "Indicações que rendem", desc: "Seu link único leva benefícios para você e seus amigos." },
+  { icon: Users, title: "Perfil social do casal", desc: "Compartilhe sua história, fotos e conecte com casamentos no mesmo dia.", flag: "perfil_social_casal" as const },
+  { icon: Heart, title: "Indicações que rendem", desc: "Seu link único leva benefícios para você e seus amigos.", flag: "indicacoes" as const },
   { icon: Sparkles, title: "Tudo em um lugar só", desc: "Da inspiração ao grande dia, sem planilhas espalhadas." },
 ];
 
@@ -28,7 +30,15 @@ const SUPPLIER_FEATURES = [
 
 export default function PlatformFeatures({ variant }: { variant: Variant }) {
   const isCouple = variant === "couple";
-  const items = isCouple ? COUPLE_FEATURES : SUPPLIER_FEATURES;
+  const perfilSocialOn = useFeatureFlag("perfil_social_casal", true);
+  const indicacoesOn = useFeatureFlag("indicacoes", true);
+  const flagMap: Record<string, boolean> = {
+    perfil_social_casal: perfilSocialOn,
+    indicacoes: indicacoesOn,
+  };
+  const items = isCouple
+    ? COUPLE_FEATURES.filter((f: any) => !f.flag || flagMap[f.flag])
+    : SUPPLIER_FEATURES;
   const eyebrow = isCouple ? "Recursos da plataforma" : "Tudo o que você ganha";
   const title = isCouple
     ? "Como o Casamenteiro funciona pra você"
