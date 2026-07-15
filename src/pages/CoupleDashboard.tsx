@@ -43,6 +43,7 @@ export default function CoupleDashboard() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [couple, setCouple] = useState<CoupleData | null>(null);
   const [favCount, setFavCount] = useState(0);
   const [quotes, setQuotes] = useState<any[]>([]);
@@ -563,26 +564,44 @@ export default function CoupleDashboard() {
           </div>
         )}
 
-        {/* Quote Thread Dialog */}
-        <Dialog open={threadOpen} onOpenChange={setThreadOpen}>
-          <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
-            <DialogHeader className="p-4 pb-2 border-b border-border">
-              <DialogTitle className="text-base">Conversa sobre orçamento</DialogTitle>
-            </DialogHeader>
-            {selectedQuote && user && (
-              <QuoteThread quoteId={selectedQuote.id} currentUserId={user.id} />
-            )}
-            {selectedQuote && user && couple && (
-              <QuoteProposalPanel
-                quoteId={selectedQuote.id}
-                currentUserId={user.id}
-                isSupplier={false}
-                coupleId={couple.id}
-                supplierId={selectedQuote.supplier_id}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Conversa de orçamento */}
+        {isMobile ? (
+          <Sheet open={threadOpen} onOpenChange={setThreadOpen}>
+            <SheetContent side="bottom" className="h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
+              <SheetHeader className="px-4 py-3 border-b border-border text-left">
+                <SheetTitle className="text-base">Conversa sobre orçamento</SheetTitle>
+              </SheetHeader>
+              {selectedQuote && user && couple && (
+                <QuoteConversation
+                  quoteId={selectedQuote.id}
+                  currentUserId={user.id}
+                  isSupplier={false}
+                  coupleId={couple.id}
+                  supplierId={selectedQuote.supplier_id}
+                  onContracted={() => setThreadOpen(false)}
+                />
+              )}
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Dialog open={threadOpen} onOpenChange={setThreadOpen}>
+            <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col p-0 gap-0">
+              <DialogHeader className="px-4 py-3 border-b border-border">
+                <DialogTitle className="text-base">Conversa sobre orçamento</DialogTitle>
+              </DialogHeader>
+              {selectedQuote && user && couple && (
+                <QuoteConversation
+                  quoteId={selectedQuote.id}
+                  currentUserId={user.id}
+                  isSupplier={false}
+                  coupleId={couple.id}
+                  supplierId={selectedQuote.supplier_id}
+                  onContracted={() => setThreadOpen(false)}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Invite code */}
         {couple.invite_code && (
