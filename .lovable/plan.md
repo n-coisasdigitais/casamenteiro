@@ -1,117 +1,65 @@
-# Conversa única de orçamento (estilo WhatsApp)
+# Correção de `match.ts` + unificação dos motores
 
-Unificar `QuoteThread` + `QuoteProposalPanel` num único componente com timeline mesclada, composer único e estado derivado. Trocar a UI em `CoupleDashboard` e `SupplierDashboard`. `WeddingPlan` fica fora do escopo (uso antigo permanece) — não é uma das duas telas citadas.
+## Parte 1 — Bugs em `src/lib/simulador/match.ts`
 
-Observação: o AI Elements gate não se aplica — este chat é humano↔humano (casal↔fornecedor), não um agente de IA.
-
-## Novo componente: `src/components/QuoteConversation.tsx`
-
-Props: `{ quoteId, currentUserId, isSupplier, coupleId, supplierId, onContracted? }`.
-
-### Carregamento
-- Fetch paralelo de `quote_messages` e `quote_proposals` por `quote_id`. Cada linha vira `Item = { kind: "text" | "value", id, senderId, createdAt, ...payload }`. Ordena por `createdAt`.
-- Recarrega após enviar mensagem, enviar valor ou aceitar.
-
-### Pill de estado (topo, derivado no cliente)
-Ordem de prioridade sobre os itens:
-1. `proposals.some(status === "accepted")` → **Fechado · R$ X** (usa a última aceita).
-2. `proposals.some(status === "pending")` → **Proposta na mesa · R$ X** (última pendente).
-3. Existe pelo menos uma mensagem/proposta minha E do outro lado → **Em conversa**.
-4. Caso contrário → **Aguardando resposta**.
-
-Não altera `quotes.status` nem `quotes.kanban_status` — os triggers existentes (`sync_quote_kanban_on_proposal`, `notify_on_proposal`, `notify_supplier_on_quote_accepted`) continuam responsáveis. O select manual do SupplierDashboard é removido.
-
-### Timeline
-Layout WhatsApp: bolhas alinhadas à direita para minhas mensagens (`bg-primary text-primary-foreground`), à esquerda para o outro lado (`bg-muted text-foreground`). Tipografia base `text-sm md:text-base`, padding generoso (`px-4 py-3`), timestamp `text-xs opacity-70`.
-
-- **Item text**: bolha padrão renderizando `message` (whitespace-pre-line) + `<AttachmentList>` reutilizando o componente existente.
-- **Item value**: bolha destacada com borda `border-2 border-primary` (ou anel âmbar para o outro lado se pendente), tipografia grande para o valor:
-  - Linha 1: `R$ 12.500` (`text-2xl font-semibold tabular-nums`)
-  - Linha 2: descrição opcional (só se enviada por baixo do valor no futuro — hoje sem input de descrição).
-  - Badge fino de status: `Pendente` / `Aceita` / `Recusada`.
-  - Se `sender_id !== currentUserId && status === "pending"`: botão `Aceitar este valor` (`size="lg"`, largura total da bolha, ícone `CheckCircle2`) que chama `aceitarValor(proposal)`.
-
-### Composer único (rodapé, sticky)
-Layout:
+### Bug 1: filtro de cidade anulado por `|| true`
+Linha 113 hoje:
+```ts
+.filter((s: any) => !cityNorm || (s.city || "").toLowerCase().includes(cityNorm) || true)
 ```
-[textarea multilinha, autosize, min 44px]
-[chip anexos] [chip "R$ 0,00" quando valor ativo]           [Anexar valor] [Enviar]
+O `|| true` faz o filtro sempre passar. Substituir pela mesma cascata usada em `simulador.ts` (`matchCidade`): cidade exata → `cidades_atendidas` (jsonb array) → raio Haversine → mesmo estado se o fornecedor declara raio.
+
+Mudanças em `match.ts`:
+- Adicionar helper de coordenadas cacheadas + `haversineKm` (copiar de `simulador.ts`).
+- Ampliar o `select` de `suppliers` para incluir `state, cidades_atendidas, raio_atendimento_km, lat, lng`.
+- Antes do loop de categorias, resolver `buscaCoord` da cidade digitada via cache de `cidades_coordenadas`.
+- Substituir o filtro atual por `matchCidade(s)` (mesma função de `simulador.ts`). Se `cityNorm` for vazio, aceita todos.
+- Manter o boost de score "cidade exata → +100".
+
+### Bug 2: `avgPrice(s) ?? slice` faz fornecedor sem preço "sempre caber"
+Linha 115 hoje:
+```ts
+let price = avgPrice(s) ?? slice;
 ```
+Fornecedor sem preço vira `slice` → `fits_budget_slice = true` (sempre). Isso infla resultados.
 
-- Botão **Anexar valor (R$)**: toggle. Quando ativo, abre um input numérico compacto acima do composer (label "Valor da proposta (R$)"). Se digitado e o usuário clicar "Enviar":
-  - `kind` inferido:
-    - Casal → `discount_request`
-    - Fornecedor + nenhuma `proposal` dele ainda → `proposal`
-    - Fornecedor + já existe `proposal` dele → `counter`
-  - Insert em `quote_proposals { quote_id, sender_id: currentUserId, kind, amount, description: message.trim() || null, status: "pending" }`.
-  - Se `newMessage.trim()` tiver texto sem valor, ainda insere em `quote_messages` separado? Não: se valor está ativo, o texto vira `description` da proposta (uma "mensagem com valor"). Se valor não está ativo, insere só em `quote_messages`.
-- Botão **Enviar** (sem valor): mesma lógica atual do `QuoteThread` (upload de anexos + insert em `quote_messages`).
-- Palavras "contraproposta"/"pedido de desconto" nunca aparecem — o `kind` continua sendo salvo no banco (triggers dependem dele), mas a UI só mostra "R$ X" com badge de status.
+Mudança: tratar preço desconhecido como desconhecido:
+- `const rawPrice = avgPrice(s);` (pode ser `null`).
+- `estimated_price = rawPrice != null ? Math.round(rawPrice * (1 - appliedDiscount / 100)) : 0;` (ou manter `null` no tipo — vou manter 0 para não quebrar o tipo `number`, mas adicionar campo interno `has_price`).
+- `fits_budget_slice = rawPrice != null && estimated <= slice * 1.15;` (sem preço → `false`).
+- No score, remover o bônus `+50` de `fits_budget_slice` quando `!has_price` (já é `false`), e adicionar uma pequena penalidade opcional para sem preço não subir demais. Manter simples: apenas `fits_budget_slice` deixa de ser `true`.
 
-Placeholder do textarea: `"Escreva uma mensagem..."`. Mantém templates do `QuoteThread` em `<details>` colapsado no rodapé para fornecedor.
+## Parte 2 — Unificação dos motores
 
-### `aceitarValor(p)` — fluxo único
-1. `UPDATE quote_proposals SET status='accepted' WHERE id=p.id` — dispara `sync_quote_kanban_on_proposal` + `notify_supplier_on_quote_accepted` automaticamente.
-2. Reaproveita a lógica de `marcarContratado` do `QuoteProposalPanel` (copiada para dentro do novo componente):
-   - Busca `suppliers` + `categories` do supplier.
-   - Upsert `couple_suppliers` com `status='contracted'`, `final_value=amount`, `contract_value=amount`, `contracted_at=now`, `category_id`.
-   - Upsert `budget_items` com `estimated_cost=amount`, `final_cost=amount`, `status='contracted'`, `category=slug`, `description=company_name`.
-   - `UPDATE quotes SET status='accepted', kanban_status='fechado' WHERE id=quoteId`.
-3. `toast({ title: "Fechado!", description: "Atualizamos fornecedores e orçamento." })`.
-4. `ConfirmFinishTaskDialog` (já existente) com a categoria — mantém o comportamento atual de sugerir concluir tarefa.
-5. `onContracted?.()` → recarrega listas nas páginas pai.
+**Sim, dá para unificar.** Recomendo `calcularSimulacao` de `src/lib/simulador.ts` como fonte única, e apagar `src/lib/simulador/match.ts`.
 
-Bloqueia botão se `!coupleId || !supplierId`.
+Justificativa:
+- `SimuladorResultado.tsx` já consome exclusivamente a forma `{ resumo, plano }` de `simulador.ts` (linhas 145, 165, 178). Hoje, quando `SimulatorCTA` chama `computeSimulador` e grava em `sessionStorage.preview_simulacao`, o resultado tem `{ categories, total_budget, ... }` — sem `plano` nem `resumo` — e a verificação `!payload?.resultado?.plano` em `SimuladorResultado` **redireciona de volta para `/simulador`**. Ou seja, o preview do CTA já está quebrado hoje pela divergência dos motores. Unificar corrige isso.
+- `simulador.ts` cobre tudo que `match.ts` cobre e mais: cascata de cidade (Haversine + estado), filtro de guest_min/max, filtro efetivo por orçamento, `pricing_model = por_pessoa`, geração de alertas, persistência em `home_simulacoes`, `recalcularCategoria`.
+- O único recurso presente em `match.ts` e ausente em `simulador.ts` é o filtro por `data_evento` específica (`supplier_blocked_dates` daquela data + `supplier_promo_dates` daquela data). Isso hoje **não é usado por `SimuladorResultado.tsx`** (o recálculo lá só passa `aceitaOciosas` como toggle, nunca uma data). Portanto, apagar `match.ts` não regride nada visível na UI atual. Se no futuro quisermos honrar `data_evento`, migramos essa parte para dentro de `simulador.ts`.
 
-## Wrapper responsivo: full-height no mobile
+### O que muda no `SimulatorCTA.tsx`
+- Trocar `import { computeSimulador } from "@/lib/simulador/match";` por `import { calcularSimulacao, type Estilo } from "@/lib/simulador";`.
+- Substituir o bloco `submit()`:
+  - Normalizar `estilo` (o CTA já usa "intimista"/"elegante"/"grandioso", que casam com o `Estilo` do simulador — `calcularSimulacao` também aceita rótulos livres).
+  - Chamar `const r = await calcularSimulacao(orcamento, convidados ?? 100, cidade, estilo as Estilo, false)` — isso já grava a simulação em `home_simulacoes` internamente e devolve `simulacaoId`.
+  - Para usuário logado: `calcularSimulacao` já vincula `couple_id` via `auth.getUser()`; navegar para `/simulador/resultado?id=${r.simulacaoId}`.
+  - Para usuário anônimo: `calcularSimulacao` grava sem `couple_id`/`user_id` (o INSERT em `home_simulacoes` já suporta valores nulos e o `salvarSimulacao` só busca `couples` se houver `user`). Guardar `{ resultado: { resumo: r.resumo, plano: r.plano, alertas: r.alertas }, orcamento_total, num_convidados, cidade, estilo, data_evento }` em `sessionStorage.preview_simulacao` para o preview mode e navegar para `/simulador/resultado?preview=1`.
+  - Remover o `payload.data_evento`/`prazo_meses` que hoje é enviado ao insert manual — `calcularSimulacao` já faz o insert. Se quisermos manter `data_evento`/`prazo_meses` no lead do admin, precisaríamos passar isso adiante; por ora ficam **apenas no `sessionStorage` do preview** (já usados na UI). Alternativa: fazer um `UPDATE home_simulacoes SET ... WHERE id = simulacaoId` logo depois com esses dois campos, se importar para métricas.
 
-Em `CoupleDashboard.tsx` e `SupplierDashboard.tsx`, o container do Dialog vira responsivo. Padrão adotado:
+### O que muda no `SimuladorResultado.tsx`
+- Nenhuma mudança de shape. Passa a ler `resultado.plano`/`resultado.resumo` no preview também (que hoje falha).
 
-```tsx
-{isMobile ? (
-  <Sheet open={...} onOpenChange={...}>
-    <SheetContent side="bottom" className="h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
-      <SheetHeader className="px-4 py-3 border-b"><SheetTitle>...</SheetTitle></SheetHeader>
-      <QuoteConversation ... />
-    </SheetContent>
-  </Sheet>
-) : (
-  <Dialog ...>
-    <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col p-0 gap-0">
-      <DialogHeader className="px-4 py-3 border-b"><DialogTitle>...</DialogTitle></DialogHeader>
-      <QuoteConversation ... />
-    </DialogContent>
-  </Dialog>
-)}
-```
+### Arquivos
+- **Editar**: `src/lib/simulador/match.ts` (bugs 1 e 2) **OU**, se unificarmos na mesma passada, apagar. Recomendo:
+  1. Aplicar as correções em `match.ts` para não deixar código ruim vivo enquanto migro.
+  2. Migrar `SimulatorCTA.tsx` para `calcularSimulacao`.
+  3. `grep` confirmar que ninguém mais importa `@/lib/simulador/match` (SimulatorCTA é o único uso hoje) e **deletar** `src/lib/simulador/match.ts` + a pasta se ficar vazia.
 
-`useIsMobile()` já existe em `@/hooks/use-mobile`. `Sheet` já disponível em `@/components/ui/sheet`.
+### Impedimentos conhecidos
+- Nenhum bloqueante. Perda funcional zero em relação ao que a UI hoje usa. Trade-off: perdemos o suporte a `data_evento` específica no cálculo (blocked/promo do dia); recuperável depois migrando essa lógica para `simulador.ts`.
 
-O `QuoteConversation` ocupa `flex-1 min-h-0` e organiza internamente `[Pill status] [Timeline scroll] [Composer]`.
-
-## Mudanças nas páginas
-
-### `src/pages/SupplierDashboard.tsx`
-- Remover imports `QuoteThread`, `QuoteProposalPanel`, e o `Select`/`SelectContent`/`SelectItem`/`SelectTrigger`/`SelectValue` **se não usados em outro lugar** (o arquivo usa Select para categorias na linha 380, então mantém o import; só remover a instância do select de status).
-- Remover o bloco `<Select value={selectedQuote.status} ...>` (linhas 462-483).
-- Remover a função `updateQuoteStatus` **exceto** a chamada `updateQuoteStatus(quote.id, "viewed")` em `openThread` — trocar essa chamada por um update direto inline (`await supabase.from("quotes").update({ status: "viewed" }).eq("id", quote.id)`) para preservar o comportamento de auto-marcar visto ao abrir. A função pode ser apagada.
-- Trocar o par `<QuoteThread>` + `<QuoteProposalPanel>` por `<QuoteConversation quoteId=... currentUserId={user.id} isSupplier coupleId={selectedQuote.couple_id} supplierId={supplier.id} onContracted={() => { loadQuotes(); setThreadOpen(false); }} />`.
-- Envolver com o wrapper responsivo Dialog/Sheet.
-
-### `src/pages/CoupleDashboard.tsx`
-- Remover imports `QuoteThread`, `QuoteProposalPanel`.
-- Trocar o par por `<QuoteConversation quoteId=... currentUserId={user.id} isSupplier={false} coupleId={couple.id} supplierId={selectedQuote.supplier_id} onContracted={() => setThreadOpen(false)} />`.
-- Envolver com wrapper responsivo Dialog/Sheet.
-
-### `src/pages/WeddingPlan.tsx`
-- **Não alterar** — fora do escopo. Continua usando `QuoteThread` + `QuoteProposalPanel`.
-
-### `src/components/QuoteThread.tsx` e `QuoteProposalPanel.tsx`
-- **Manter** os arquivos (ainda usados por `WeddingPlan.tsx`).
-
-## Preservado
-- Todos os triggers do banco (`notify_supplier_on_quote`, `notify_on_proposal`, `notify_supplier_on_quote_accepted`, `sync_quote_kanban_on_proposal`, `sync_couple_supplier_on_proposal`).
-- Bucket `quote-attachments` e componentes `AttachmentPicker`/`AttachmentList`.
-- Templates de resposta para fornecedor (dentro de `<details>` no composer).
-- `ConfirmFinishTaskDialog` acionado após aceitar/contratar.
-- Todos os textos em pt-BR.
+## Resumo das mudanças de arquivos
+- `src/lib/simulador/match.ts`: corrigir bugs 1 e 2 **e depois deletar** após migrar o CTA.
+- `src/components/home/SimulatorCTA.tsx`: usar `calcularSimulacao`; ajustar preview e navegação.
+- `src/pages/SimuladorResultado.tsx`: **sem alterações**.

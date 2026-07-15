@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Leaf, Sparkles, PartyPopper, Calendar as CalIcon } fr
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { computeSimulador } from "@/lib/simulador/match";
+import { calcularSimulacao, type Estilo } from "@/lib/simulador";
 
 const CIDADES_MG = [
   "Belo Horizonte","Uberlândia","Contagem","Juiz de Fora","Betim","Montes Claros","Ribeirão das Neves","Uberaba","Governador Valadares","Ipatinga","Sete Lagoas","Divinópolis","Santa Luzia","Ibirité","Poços de Caldas","Patos de Minas","Pouso Alegre","Teófilo Otoni","Barbacena","Sabará","Varginha","Conselheiro Lafaiete","Vespasiano","Itabira","Araguari","Ubá","Passos","Coronel Fabriciano","Muriaé","Lavras"
@@ -54,43 +54,52 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
 
   const submit = async () => {
     setLoading(true);
-    const payload: any = {
-      orcamento_total: orcamento,
-      num_convidados: convidados ?? 100,
-      cidade,
-      estilo: estilo ?? "elegante",
-      data_evento: dataMode === "exata" && dataEvento ? dataEvento : null,
-      prazo_meses: dataMode === "faixa" ? prazoMeses : null,
-    };
+    const orcamento_total = orcamento;
+    const num_convidados = convidados ?? 100;
+    const estiloIn = (estilo ?? "elegante") as Estilo;
+    const data_evento = dataMode === "exata" && dataEvento ? dataEvento : null;
+    const prazo_meses = dataMode === "faixa" ? prazoMeses : null;
     try {
-      // Computa o resultado já no cliente, antes de salvar — assim guarda snapshot
-      const resultado = await computeSimulador({
-        orcamento_total: payload.orcamento_total,
-        num_convidados: payload.num_convidados,
-        cidade: payload.cidade,
-        estilo: payload.estilo,
-        data_evento: payload.data_evento,
-      });
-      payload.resultado = resultado;
+      // Motor único (mesmo usado no recálculo). Já persiste em home_simulacoes.
+      const r = await calcularSimulacao(
+        orcamento_total,
+        num_convidados,
+        cidade,
+        estiloIn,
+        false,
+      );
+      const resultado = { resumo: r.resumo, plano: r.plano, alertas: r.alertas };
+
+      // Persiste metadados extras (data_evento / prazo) se aplicável
+      if (r.simulacaoId && (data_evento || prazo_meses)) {
+        (supabase.from("home_simulacoes" as any) as any)
+          .update({ data_evento, prazo_meses })
+          .eq("id", r.simulacaoId)
+          .then(() => {}, () => {});
+      }
 
       if (!user) {
-        // Fire-and-forget: registra o lead pro admin ver (RLS permite insert anônimo).
-        (supabase.from("home_simulacoes" as any) as any)
-          .insert({ ...payload, user_id: null, couple_id: null })
-          .then(() => {}, () => {});
-        sessionStorage.setItem("preview_simulacao", JSON.stringify(payload));
+        sessionStorage.setItem(
+          "preview_simulacao",
+          JSON.stringify({
+            orcamento_total,
+            num_convidados,
+            cidade,
+            estilo: estiloIn,
+            data_evento,
+            prazo_meses,
+            resultado,
+          }),
+        );
         toast({ title: "Seu plano está pronto!", description: "Veja abaixo os detalhes do seu casamento." });
         navigate("/simulador/resultado?preview=1");
         return;
       }
-      // pega o couple do usuário (se for casal) para vincular a simulação
-      const { data: c } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
-      const { data, error } = await (supabase.from("home_simulacoes" as any) as any)
-        .insert({ ...payload, user_id: user.id, couple_id: c?.id || null })
-        .select("id")
-        .maybeSingle();
-      if (error) throw error;
-      navigate(`/simulador/resultado?id=${data?.id}`);
+      if (r.simulacaoId) {
+        navigate(`/simulador/resultado?id=${r.simulacaoId}`);
+      } else {
+        navigate("/simulador/resultado?preview=1");
+      }
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
