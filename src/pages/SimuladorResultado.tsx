@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ToastAction } from "@/components/ui/toast";
 import SEO from "@/components/SEO";
 
 const estiloLabel: Record<Estilo, string> = {
@@ -56,6 +57,68 @@ export default function SimuladorResultado() {
 
   // Aviso quando a cidade não tem fornecedores cadastrados
   const [cidadeSemFornecedor, setCidadeSemFornecedor] = useState(false);
+
+  // Pedidos de orçamento enviados nesta sessão (ou já existentes no banco)
+  const [pedidosEnviados, setPedidosEnviados] = useState<Set<string>>(new Set());
+  const [enviandoPedido, setEnviandoPedido] = useState<string | null>(null);
+
+  // Carrega quotes já existentes deste casal para os fornecedores da simulação
+  useEffect(() => {
+    if (preview || !user || !resultado) return;
+    (async () => {
+      const supplierIds = Object.values(resultado.plano).flatMap((c) => c.fornecedores.map((f) => f.id));
+      if (supplierIds.length === 0) return;
+      const { data: c } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
+      if (!c?.id) return;
+      const { data: qs } = await (supabase.from("quotes") as any)
+        .select("supplier_id")
+        .eq("couple_id", c.id)
+        .in("supplier_id", supplierIds);
+      if (qs && qs.length) {
+        setPedidosEnviados(new Set((qs as any[]).map((q) => q.supplier_id)));
+      }
+    })();
+  }, [preview, user, resultado]);
+
+  const pedirOrcamento = async (f: any) => {
+    if (!user) {
+      navigate("/cadastro?redirect=simulador");
+      return;
+    }
+    if (!resultado) return;
+    setEnviandoPedido(f.id);
+    try {
+      const { data: c, error: ce } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
+      if (ce || !c?.id) throw new Error("Não conseguimos localizar seu plano de casamento.");
+      const { error } = await (supabase.from("quotes") as any).insert({
+        couple_id: c.id,
+        supplier_id: f.id,
+        kanban_status: "enviado",
+        message: `Vim pelo simulador. Orçamento para ${resultado.resumo.convidados} convidados em ${resultado.resumo.cidade}.`,
+        guest_count: resultado.resumo.convidados,
+        event_date: sim?.data_evento ?? null,
+      });
+      if (error) throw error;
+      setPedidosEnviados((prev) => {
+        const s = new Set(prev);
+        s.add(f.id);
+        return s;
+      });
+      toast({
+        title: "Pedido enviado!",
+        description: "Acompanhe em Orçamentos.",
+        action: (
+          <ToastAction altText="Abrir orçamentos" onClick={() => navigate("/orcamento")}>
+            Abrir
+          </ToastAction>
+        ),
+      });
+    } catch (e: any) {
+      toast({ title: "Erro ao enviar pedido", description: e.message, variant: "destructive" });
+    } finally {
+      setEnviandoPedido(null);
+    }
+  };
 
   // Verifica se a cidade tem fornecedores aprovados
   useEffect(() => {
