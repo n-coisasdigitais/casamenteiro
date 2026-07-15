@@ -596,26 +596,42 @@ export default function SimuladorResultado() {
                         >
                           Pedir orçamento (criar conta)
                         </button>
-                      ) : f.linkWhatsApp ? (
-                        <a
-                          href={f.linkWhatsApp}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
-                          style={{ background: "hsl(var(--color-accent))", color: "hsl(var(--accent-foreground))" }}
-                        >
-                          <MessageCircle className="w-3.5 h-3.5 inline mr-1" /> Falar pelo WhatsApp
-                        </a>
+                      ) : pedidosEnviados.has(f.id) ? (
+                        <>
+                          <button
+                            disabled
+                            className="block text-center w-full rounded-full py-2 text-xs font-semibold cursor-default"
+                            style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}
+                          >
+                            <Check className="w-3.5 h-3.5 inline mr-1" /> Pedido enviado
+                          </button>
+                          {f.linkWhatsApp && (
+                            <a
+                              href={f.linkWhatsApp}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-2 block text-center text-[11px] hover:underline"
+                              style={{ color: "hsl(var(--color-text-muted))" }}
+                            >
+                              <MessageCircle className="w-3 h-3 inline mr-1" /> Falar pelo WhatsApp
+                            </a>
+                          )}
+                        </>
                       ) : (
-                        <Link
-                          to={`/fornecedor/${f.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
-                          style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); pedirOrcamento(f); }}
+                          disabled={enviandoPedido === f.id}
+                          className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90 disabled:opacity-70"
+                          style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
                         >
-                          <ExternalLink className="w-3.5 h-3.5 inline mr-1" /> Ver perfil
-                        </Link>
+                          {enviandoPedido === f.id ? (
+                            <><Loader2 className="w-3.5 h-3.5 inline mr-1 animate-spin" /> Enviando…</>
+                          ) : (
+                            "Pedir orçamento"
+                          )}
+                        </button>
                       )}
 
                       {bloqueado && (
