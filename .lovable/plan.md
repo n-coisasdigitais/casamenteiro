@@ -1,57 +1,117 @@
-# CTA "Pedir orçamento" nos cards do simulador
+# Conversa única de orçamento (estilo WhatsApp)
 
-Alterar apenas o CTA primário de cada card de fornecedor em `src/pages/SimuladorResultado.tsx`, no modo NÃO-preview. Modo preview e visual dos cards permanecem inalterados.
+Unificar `QuoteThread` + `QuoteProposalPanel` num único componente com timeline mesclada, composer único e estado derivado. Trocar a UI em `CoupleDashboard` e `SupplierDashboard`. `WeddingPlan` fica fora do escopo (uso antigo permanece) — não é uma das duas telas citadas.
 
-## Mudanças
+Observação: o AI Elements gate não se aplica — este chat é humano↔humano (casal↔fornecedor), não um agente de IA.
 
-### 1. Estado e helpers (no componente `SimuladorResultado`)
-- Novo estado `pedidosEnviados: Set<string>` — supplier_ids para os quais já existe pedido nesta sessão/plano.
-- Novo estado `enviandoPedido: string | null` — supplier_id em envio (loading no botão).
-- Ao carregar (fora do preview, com `user`): buscar `couples.id` do usuário e depois `quotes` já existentes deste casal para os supplier_ids da simulação, populando `pedidosEnviados`. Assim, se o casal já pediu antes, o WhatsApp aparece direto e o botão vira "Pedido enviado".
+## Novo componente: `src/components/QuoteConversation.tsx`
 
-### 2. Função `pedirOrcamento(f)` 
-- Se não há `user` → `navigate("/cadastro?redirect=simulador")`.
-- Busca `couples.id` (`user_id = user.id`, `.maybeSingle()`).
-- Insert em `quotes`:
-  ```
-  { couple_id, supplier_id: f.id,
-    kanban_status: 'enviado',
-    message: `Vim pelo simulador. Orçamento para ${resultado.resumo.convidados} convidados em ${resultado.resumo.cidade}.`,
-    guest_count: resultado.resumo.convidados,
-    event_date: sim.data_evento ?? null }
-  ```
-- On success: adicionar `f.id` a `pedidosEnviados`, `toast({ title: "Pedido enviado!", description: "Acompanhe em Orçamentos", action: <ToastAction onClick={()=>navigate('/orcamento')}>Abrir</ToastAction> })`.
-- On error: toast destructive. Trigger `notify_supplier_on_quote` já dispara a notificação, sem código extra.
+Props: `{ quoteId, currentUserId, isSupplier, coupleId, supplierId, onContracted? }`.
 
-### 3. CTA do card (linhas 528–556)
-Estrutura no modo NÃO-preview (o ramo `preview ?` fica igual):
+### Carregamento
+- Fetch paralelo de `quote_messages` e `quote_proposals` por `quote_id`. Cada linha vira `Item = { kind: "text" | "value", id, senderId, createdAt, ...payload }`. Ordena por `createdAt`.
+- Recarrega após enviar mensagem, enviar valor ou aceitar.
 
+### Pill de estado (topo, derivado no cliente)
+Ordem de prioridade sobre os itens:
+1. `proposals.some(status === "accepted")` → **Fechado · R$ X** (usa a última aceita).
+2. `proposals.some(status === "pending")` → **Proposta na mesa · R$ X** (última pendente).
+3. Existe pelo menos uma mensagem/proposta minha E do outro lado → **Em conversa**.
+4. Caso contrário → **Aguardando resposta**.
+
+Não altera `quotes.status` nem `quotes.kanban_status` — os triggers existentes (`sync_quote_kanban_on_proposal`, `notify_on_proposal`, `notify_supplier_on_quote_accepted`) continuam responsáveis. O select manual do SupplierDashboard é removido.
+
+### Timeline
+Layout WhatsApp: bolhas alinhadas à direita para minhas mensagens (`bg-primary text-primary-foreground`), à esquerda para o outro lado (`bg-muted text-foreground`). Tipografia base `text-sm md:text-base`, padding generoso (`px-4 py-3`), timestamp `text-xs opacity-70`.
+
+- **Item text**: bolha padrão renderizando `message` (whitespace-pre-line) + `<AttachmentList>` reutilizando o componente existente.
+- **Item value**: bolha destacada com borda `border-2 border-primary` (ou anel âmbar para o outro lado se pendente), tipografia grande para o valor:
+  - Linha 1: `R$ 12.500` (`text-2xl font-semibold tabular-nums`)
+  - Linha 2: descrição opcional (só se enviada por baixo do valor no futuro — hoje sem input de descrição).
+  - Badge fino de status: `Pendente` / `Aceita` / `Recusada`.
+  - Se `sender_id !== currentUserId && status === "pending"`: botão `Aceitar este valor` (`size="lg"`, largura total da bolha, ícone `CheckCircle2`) que chama `aceitarValor(proposal)`.
+
+### Composer único (rodapé, sticky)
+Layout:
 ```
-{jaEnviado ? (
-  <button disabled ...secondary style, "Pedido enviado ✓" />
+[textarea multilinha, autosize, min 44px]
+[chip anexos] [chip "R$ 0,00" quando valor ativo]           [Anexar valor] [Enviar]
+```
+
+- Botão **Anexar valor (R$)**: toggle. Quando ativo, abre um input numérico compacto acima do composer (label "Valor da proposta (R$)"). Se digitado e o usuário clicar "Enviar":
+  - `kind` inferido:
+    - Casal → `discount_request`
+    - Fornecedor + nenhuma `proposal` dele ainda → `proposal`
+    - Fornecedor + já existe `proposal` dele → `counter`
+  - Insert em `quote_proposals { quote_id, sender_id: currentUserId, kind, amount, description: message.trim() || null, status: "pending" }`.
+  - Se `newMessage.trim()` tiver texto sem valor, ainda insere em `quote_messages` separado? Não: se valor está ativo, o texto vira `description` da proposta (uma "mensagem com valor"). Se valor não está ativo, insere só em `quote_messages`.
+- Botão **Enviar** (sem valor): mesma lógica atual do `QuoteThread` (upload de anexos + insert em `quote_messages`).
+- Palavras "contraproposta"/"pedido de desconto" nunca aparecem — o `kind` continua sendo salvo no banco (triggers dependem dele), mas a UI só mostra "R$ X" com badge de status.
+
+Placeholder do textarea: `"Escreva uma mensagem..."`. Mantém templates do `QuoteThread` em `<details>` colapsado no rodapé para fornecedor.
+
+### `aceitarValor(p)` — fluxo único
+1. `UPDATE quote_proposals SET status='accepted' WHERE id=p.id` — dispara `sync_quote_kanban_on_proposal` + `notify_supplier_on_quote_accepted` automaticamente.
+2. Reaproveita a lógica de `marcarContratado` do `QuoteProposalPanel` (copiada para dentro do novo componente):
+   - Busca `suppliers` + `categories` do supplier.
+   - Upsert `couple_suppliers` com `status='contracted'`, `final_value=amount`, `contract_value=amount`, `contracted_at=now`, `category_id`.
+   - Upsert `budget_items` com `estimated_cost=amount`, `final_cost=amount`, `status='contracted'`, `category=slug`, `description=company_name`.
+   - `UPDATE quotes SET status='accepted', kanban_status='fechado' WHERE id=quoteId`.
+3. `toast({ title: "Fechado!", description: "Atualizamos fornecedores e orçamento." })`.
+4. `ConfirmFinishTaskDialog` (já existente) com a categoria — mantém o comportamento atual de sugerir concluir tarefa.
+5. `onContracted?.()` → recarrega listas nas páginas pai.
+
+Bloqueia botão se `!coupleId || !supplierId`.
+
+## Wrapper responsivo: full-height no mobile
+
+Em `CoupleDashboard.tsx` e `SupplierDashboard.tsx`, o container do Dialog vira responsivo. Padrão adotado:
+
+```tsx
+{isMobile ? (
+  <Sheet open={...} onOpenChange={...}>
+    <SheetContent side="bottom" className="h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
+      <SheetHeader className="px-4 py-3 border-b"><SheetTitle>...</SheetTitle></SheetHeader>
+      <QuoteConversation ... />
+    </SheetContent>
+  </Sheet>
 ) : (
-  <button onClick={(e)=>{ e.stopPropagation(); pedirOrcamento(f); }}
-          disabled={enviandoPedido === f.id}
-          className="...rounded-full py-2 text-xs font-semibold..."
-          style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}>
-    {enviandoPedido === f.id ? <Loader2 spin/> : "Pedir orçamento"}
-  </button>
-)}
-
-{jaEnviado && f.linkWhatsApp && (
-  <a href={f.linkWhatsApp} target="_blank" rel="noreferrer"
-     onClick={(e)=>e.stopPropagation()}
-     className="mt-2 block text-center text-[11px] underline"
-     style={{ color: "hsl(var(--color-text-muted))" }}>
-    <MessageCircle className="w-3 h-3 inline mr-1" /> Falar pelo WhatsApp
-  </a>
+  <Dialog ...>
+    <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col p-0 gap-0">
+      <DialogHeader className="px-4 py-3 border-b"><DialogTitle>...</DialogTitle></DialogHeader>
+      <QuoteConversation ... />
+    </DialogContent>
+  </Dialog>
 )}
 ```
 
-Remove o ramo `f.linkWhatsApp ? <a> : <Link>Ver perfil</Link>` como CTA primário. O link para o perfil do fornecedor continua acessível pelo nome do card (linhas 502–504), então nenhuma navegação é perdida.
+`useIsMobile()` já existe em `@/hooks/use-mobile`. `Sheet` já disponível em `@/components/ui/sheet`.
 
-## Não muda
-- Modo preview (`preview === true`): mantém o botão desabilitado "Pedir orçamento (criar conta)".
-- Visual dos cards, borda de seleção, blur/lock do preview, toggle "datas ociosas", modal "Assumir este plano".
-- Trigger `notify_supplier_on_quote` no banco já cobre a notificação — nenhuma migração necessária.
-- Todo texto em pt-BR.
+O `QuoteConversation` ocupa `flex-1 min-h-0` e organiza internamente `[Pill status] [Timeline scroll] [Composer]`.
+
+## Mudanças nas páginas
+
+### `src/pages/SupplierDashboard.tsx`
+- Remover imports `QuoteThread`, `QuoteProposalPanel`, e o `Select`/`SelectContent`/`SelectItem`/`SelectTrigger`/`SelectValue` **se não usados em outro lugar** (o arquivo usa Select para categorias na linha 380, então mantém o import; só remover a instância do select de status).
+- Remover o bloco `<Select value={selectedQuote.status} ...>` (linhas 462-483).
+- Remover a função `updateQuoteStatus` **exceto** a chamada `updateQuoteStatus(quote.id, "viewed")` em `openThread` — trocar essa chamada por um update direto inline (`await supabase.from("quotes").update({ status: "viewed" }).eq("id", quote.id)`) para preservar o comportamento de auto-marcar visto ao abrir. A função pode ser apagada.
+- Trocar o par `<QuoteThread>` + `<QuoteProposalPanel>` por `<QuoteConversation quoteId=... currentUserId={user.id} isSupplier coupleId={selectedQuote.couple_id} supplierId={supplier.id} onContracted={() => { loadQuotes(); setThreadOpen(false); }} />`.
+- Envolver com o wrapper responsivo Dialog/Sheet.
+
+### `src/pages/CoupleDashboard.tsx`
+- Remover imports `QuoteThread`, `QuoteProposalPanel`.
+- Trocar o par por `<QuoteConversation quoteId=... currentUserId={user.id} isSupplier={false} coupleId={couple.id} supplierId={selectedQuote.supplier_id} onContracted={() => setThreadOpen(false)} />`.
+- Envolver com wrapper responsivo Dialog/Sheet.
+
+### `src/pages/WeddingPlan.tsx`
+- **Não alterar** — fora do escopo. Continua usando `QuoteThread` + `QuoteProposalPanel`.
+
+### `src/components/QuoteThread.tsx` e `QuoteProposalPanel.tsx`
+- **Manter** os arquivos (ainda usados por `WeddingPlan.tsx`).
+
+## Preservado
+- Todos os triggers do banco (`notify_supplier_on_quote`, `notify_on_proposal`, `notify_supplier_on_quote_accepted`, `sync_quote_kanban_on_proposal`, `sync_couple_supplier_on_proposal`).
+- Bucket `quote-attachments` e componentes `AttachmentPicker`/`AttachmentList`.
+- Templates de resposta para fornecedor (dentro de `<details>` no composer).
+- `ConfirmFinishTaskDialog` acionado após aceitar/contratar.
+- Todos os textos em pt-BR.
