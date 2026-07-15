@@ -380,8 +380,8 @@ export default function SimuladorResultado() {
           </div>
         )}
 
-        {/* Toggle datas ociosas */}
-        <div
+        {/* Toggle datas ociosas — só fora do preview */}
+        {!preview && <div
           className="on-green sticky top-[57px] z-20 mb-6 rounded-xl p-3 flex items-center justify-between gap-3"
           style={{ background: "hsl(var(--color-accent))", border: "1px solid hsl(var(--color-accent))" }}
         >
@@ -394,7 +394,7 @@ export default function SimuladorResultado() {
             </p>
           </div>
           <Switch id="ociosas" checked={aceitaOciosas} disabled={recalculando} onCheckedChange={recalcular} />
-        </div>
+        </div>}
 
         {/* Categorias */}
         <div className="space-y-7">
@@ -405,7 +405,11 @@ export default function SimuladorResultado() {
                   <span className="mr-2">{cat.icon}</span>{cat.label}
                 </h2>
                 <div className="flex items-center gap-2">
-                  {editandoCat === cat.key ? (
+                  {preview ? (
+                    <p className="text-sm" style={{ color: "hsl(var(--color-text-muted))" }}>
+                      <strong style={{ color: "hsl(var(--color-dark))" }}>{formatarReais(cat.verba)}</strong>
+                    </p>
+                  ) : editandoCat === cat.key ? (
                     <>
                       <Input
                         type="number"
