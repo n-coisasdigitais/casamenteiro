@@ -588,6 +588,27 @@ export default function SimuladorResultado() {
                         )}
                       </div>
 
+                      {(f.preco_base || f.preco_por_convidado) && (
+                        <div className={`mb-3 ${bloqueado ? "pointer-events-none" : ""}`}>
+                          {f.pricing_model === "por_pessoa" && f.preco_por_convidado ? (
+                            <>
+                              <p className="text-xs" style={{ color: "hsl(var(--color-text-muted))" }}>
+                                <strong style={{ color: "hsl(var(--color-dark))" }}>{formatarReais(f.preco_por_convidado)}</strong> por convidado
+                              </p>
+                              {f.preco_base && (
+                                <p className="text-[11px]" style={{ color: "hsl(var(--color-text-muted))" }}>
+                                  ≈ {formatarReais(f.preco_base)} para {resultado.resumo.convidados} convidados
+                                </p>
+                              )}
+                            </>
+                          ) : f.preco_base ? (
+                            <p className="text-xs" style={{ color: "hsl(var(--color-text-muted))" }}>
+                              a partir de <strong style={{ color: "hsl(var(--color-dark))" }}>{formatarReais(f.preco_base)}</strong>
+                            </p>
+                          ) : null}
+                        </div>
+                      )}
+
                       {preview ? (
                         <button
                           disabled
