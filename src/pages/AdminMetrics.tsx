@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, ExternalLink, Search } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export default function AdminMetrics() {
   const { user, loading: authLoading } = useAuth();
@@ -21,6 +22,18 @@ export default function AdminMetrics() {
   const [sims, setSims] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [q, setQ] = useState("");
+
+  // Liquidez
+  const [liquidez, setLiquidez] = useState<{
+    porSemana: { semana: string; leads: number }[];
+    taxaResposta24h: number;
+    totalQuotesComResposta: number;
+    totalQuotes: number;
+    pctForaDaPlataforma: number;
+    totalCoupleSuppliers: number;
+    totalForaDaPlataforma: number;
+    porCidade: { cidade: string; fornecedores: number }[];
+  } | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -44,8 +57,97 @@ export default function AdminMetrics() {
       setSims(si.data || []);
       setReviews(rv.data || []);
       setLoading(false);
+      carregarLiquidez();
     });
   }, [user, authLoading, navigate]);
+
+  const carregarLiquidez = async () => {
+    const agora = new Date();
+    const inicio8Semanas = new Date(agora.getTime() - 8 * 7 * 24 * 60 * 60 * 1000);
+
+    const [qzAll, propsAll, msgsAll, supAll, csAll, supByCity] = await Promise.all([
+      supabase.from("quotes").select("id, supplier_id, created_at"),
+      supabase.from("quote_proposals").select("quote_id, sender_id, created_at"),
+      supabase.from("quote_messages").select("quote_id, sender_id, created_at"),
+      supabase.from("suppliers").select("id, user_id"),
+      supabase.from("couple_suppliers").select("kanban_status"),
+      supabase.from("suppliers").select("city").eq("status", "approved"),
+    ]);
+
+    const quotesArr = (qzAll.data || []) as any[];
+    const supUserById = new Map<string, string>();
+    (supAll.data || []).forEach((s: any) => { if (s.user_id) supUserById.set(s.id, s.user_id); });
+
+    // Barras: leads por semana (últimas 8)
+    const semanas: { inicio: Date; leads: number; label: string }[] = [];
+    for (let i = 7; i >= 0; i--) {
+      const inicio = new Date(agora);
+      inicio.setHours(0, 0, 0, 0);
+      inicio.setDate(inicio.getDate() - inicio.getDay() - i * 7); // domingo da semana
+      const label = inicio.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+      semanas.push({ inicio, leads: 0, label });
+    }
+    for (const q of quotesArr) {
+      const t = new Date(q.created_at).getTime();
+      if (t < inicio8Semanas.getTime()) continue;
+      for (let i = semanas.length - 1; i >= 0; i--) {
+        if (t >= semanas[i].inicio.getTime()) { semanas[i].leads++; break; }
+      }
+    }
+
+    // Taxa de resposta em 24h
+    const firstReply = new Map<string, number>(); // quote_id -> timestamp
+    const addReply = (row: any) => {
+      const quote = quotesArr.find((q) => q.id === row.quote_id);
+      if (!quote) return;
+      const supUser = supUserById.get(quote.supplier_id);
+      if (!supUser || row.sender_id !== supUser) return;
+      const t = new Date(row.created_at).getTime();
+      const cur = firstReply.get(row.quote_id);
+      if (cur === undefined || t < cur) firstReply.set(row.quote_id, t);
+    };
+    (propsAll.data || []).forEach(addReply);
+    (msgsAll.data || []).forEach(addReply);
+
+    let em24h = 0;
+    let responderam = 0;
+    for (const q of quotesArr) {
+      const t = firstReply.get(q.id);
+      if (t === undefined) continue;
+      responderam++;
+      if (t - new Date(q.created_at).getTime() <= 24 * 60 * 60 * 1000) em24h++;
+    }
+    const totalQuotes = quotesArr.length;
+    const taxaResposta24h = totalQuotes ? Math.round((em24h / totalQuotes) * 100) : 0;
+
+    // % fora_da_plataforma
+    const csRows = (csAll.data || []) as any[];
+    const fora = csRows.filter((r) => r.kanban_status === "fora_da_plataforma").length;
+    const pctFora = csRows.length ? Math.round((fora / csRows.length) * 100) : 0;
+
+    // Top 10 cidades
+    const cityCount = new Map<string, number>();
+    for (const s of (supByCity.data || []) as any[]) {
+      const c = (s.city || "").trim();
+      if (!c) continue;
+      cityCount.set(c, (cityCount.get(c) || 0) + 1);
+    }
+    const porCidade = Array.from(cityCount.entries())
+      .map(([cidade, fornecedores]) => ({ cidade, fornecedores }))
+      .sort((a, b) => b.fornecedores - a.fornecedores)
+      .slice(0, 10);
+
+    setLiquidez({
+      porSemana: semanas.map((s) => ({ semana: s.label, leads: s.leads })),
+      taxaResposta24h,
+      totalQuotesComResposta: responderam,
+      totalQuotes,
+      pctForaDaPlataforma: pctFora,
+      totalCoupleSuppliers: csRows.length,
+      totalForaDaPlataforma: fora,
+      porCidade,
+    });
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
 
@@ -96,6 +198,7 @@ export default function AdminMetrics() {
             <TabsTrigger value="couples">Casais ({filteredCouples.length})</TabsTrigger>
             <TabsTrigger value="suppliers">Fornecedores ({filteredSuppliers.length})</TabsTrigger>
             <TabsTrigger value="users">Usuários ({profiles.length})</TabsTrigger>
+            <TabsTrigger value="liquidez">Liquidez</TabsTrigger>
           </TabsList>
 
           <TabsContent value="couples" className="space-y-2">
@@ -159,6 +262,90 @@ export default function AdminMetrics() {
                 <Badge variant="outline">{p.account_type}</Badge>
               </CardContent></Card>
             ))}
+          </TabsContent>
+
+          <TabsContent value="liquidez" className="space-y-4">
+            {!liquidez ? (
+              <p className="text-sm text-muted-foreground">Carregando indicadores…</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground">Taxa de resposta em 24h</p>
+                      <p className="text-2xl font-bold">{liquidez.taxaResposta24h}%</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {liquidez.totalQuotesComResposta} de {liquidez.totalQuotes} pedidos tiveram resposta do fornecedor
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground">Negócios fora da plataforma</p>
+                      <p className="text-2xl font-bold">{liquidez.pctForaDaPlataforma}%</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {liquidez.totalForaDaPlataforma} de {liquidez.totalCoupleSuppliers} relações
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground">Leads nas últimas 8 semanas</p>
+                      <p className="text-2xl font-bold">
+                        {liquidez.porSemana.reduce((a, s) => a + s.leads, 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">total de pedidos de orçamento</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-semibold mb-3">Leads por semana (últimas 8 semanas)</p>
+                    <div style={{ width: "100%", height: 260 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={liquidez.porSemana}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="semana" fontSize={12} tickLine={false} />
+                          <YAxis allowDecimals={false} fontSize={12} tickLine={false} />
+                          <Tooltip
+                            formatter={(v: any) => [`${v} leads`, "Pedidos"]}
+                            labelFormatter={(l) => `Semana de ${l}`}
+                          />
+                          <Bar dataKey="leads" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-semibold mb-3">Fornecedores aprovados por cidade (top 10)</p>
+                    {liquidez.porCidade.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhum fornecedor aprovado com cidade cadastrada.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {liquidez.porCidade.map((c, i) => {
+                          const max = liquidez.porCidade[0].fornecedores || 1;
+                          const pct = Math.round((c.fornecedores / max) * 100);
+                          return (
+                            <div key={c.cidade} className="flex items-center gap-3">
+                              <span className="text-xs text-muted-foreground w-6 text-right">{i + 1}.</span>
+                              <span className="text-sm font-medium min-w-[140px]">{c.cidade}</span>
+                              <div className="flex-1 h-2 rounded bg-muted overflow-hidden">
+                                <div className="h-full" style={{ width: `${pct}%`, background: "hsl(var(--primary))" }} />
+                              </div>
+                              <span className="text-sm tabular-nums w-8 text-right">{c.fornecedores}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </div>
