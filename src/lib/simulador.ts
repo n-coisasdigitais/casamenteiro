@@ -106,6 +106,8 @@ export type FornecedorSugerido = {
   economiaEstimada: number;
   linkWhatsApp: string;
   aceita_datas_ociosas: boolean;
+  pricing_model: "fixo" | "por_pessoa";
+  preco_por_convidado: number | null;
 };
 
 export type CategoriaPlano = {
@@ -148,25 +150,37 @@ export function formatarReais(valor: number): string {
   return (valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
 
-function faixaPreco(s: any): "$" | "$$" | "$$$" {
-  const p = s.price_min ?? s.price_max ?? 0;
+function faixaPreco(s: any, convidados: number): "$" | "$$" | "$$$" {
+  let p = Number(s.price_min ?? s.price_max ?? 0);
+  if (s.pricing_model === "por_pessoa") p = p * Math.max(1, convidados);
   if (p < 5000) return "$";
   if (p < 20000) return "$$";
   return "$$$";
 }
 
-function precoBase(s: any): number {
+function precoBase(s: any, convidados: number): number {
   const a = s.price_min;
   const b = s.price_max;
-  if (a != null && b != null) return Math.round((Number(a) + Number(b)) / 2);
-  return Number(a ?? b ?? 0);
+  let unit = a != null && b != null
+    ? (Number(a) + Number(b)) / 2
+    : Number(a ?? b ?? 0);
+  if (s.pricing_model === "por_pessoa") unit = unit * Math.max(1, convidados);
+  return Math.round(unit);
 }
 
 function enriquecer(s: any, verba: number, convidados: number, aceitaOciosas: boolean): FornecedorSugerido {
   const tem = !!(aceitaOciosas && s.accepts_idle_dates && (s.idle_discount_pct || 0) > 0);
   const desconto = tem ? Number(s.idle_discount_pct) : 0;
-  const base = precoBase(s);
+  const base = precoBase(s, convidados);
   const economiaEstimada = tem && base ? Math.round(base * (desconto / 100)) : 0;
+  const isPorPessoa = s.pricing_model === "por_pessoa";
+  const unitario = isPorPessoa
+    ? Math.round(
+        s.price_min != null && s.price_max != null
+          ? (Number(s.price_min) + Number(s.price_max)) / 2
+          : Number(s.price_min ?? s.price_max ?? 0)
+      )
+    : null;
   const fone = (s.whatsapp || s.phone || "");
   const msg =
     `Olá! Vim pela plataforma Casamenteiro e tenho interesse no seu serviço. ` +
@@ -177,7 +191,7 @@ function enriquecer(s: any, verba: number, convidados: number, aceitaOciosas: bo
     cidade: s.city,
     whatsapp: s.whatsapp || s.phone || null,
     foto_perfil_url: s.profile_photo_url,
-    faixa_preco: faixaPreco(s),
+    faixa_preco: faixaPreco(s, convidados),
     destaque: !!s.featured,
     rating: s.rating,
     preco_base: base || null,
@@ -186,6 +200,8 @@ function enriquecer(s: any, verba: number, convidados: number, aceitaOciosas: bo
     economiaEstimada,
     linkWhatsApp: buildWhatsAppLink(fone, msg) || "",
     aceita_datas_ociosas: !!s.accepts_idle_dates,
+    pricing_model: isPorPessoa ? "por_pessoa" : "fixo",
+    preco_por_convidado: unitario,
   };
 }
 
@@ -205,7 +221,7 @@ async function buscarFornecedores(
   const { data, error } = await supabase
     .from("suppliers")
     .select(
-      "id, company_name, city, state, whatsapp, phone, profile_photo_url, price_min, price_max, featured, rating, accepts_idle_dates, idle_discount_pct, status, category_id, guest_min, guest_max, cidades_atendidas, raio_atendimento_km, lat, lng",
+      "id, company_name, city, state, whatsapp, phone, profile_photo_url, price_min, price_max, featured, rating, accepts_idle_dates, idle_discount_pct, status, category_id, guest_min, guest_max, cidades_atendidas, raio_atendimento_km, lat, lng, pricing_model",
     )
     .eq("status", "approved")
     .eq("category_id", catId)
@@ -246,7 +262,7 @@ async function buscarFornecedores(
     const fator = aceitaOciosas && s.accepts_idle_dates && (s.idle_discount_pct || 0) > 0
       ? 1 - Number(s.idle_discount_pct) / 100
       : 1;
-    const base = precoBase(s);
+    const base = precoBase(s, convidados);
     if (base > 0 && Math.round(base * fator) > verba * 1.15) return false;
     return true;
   });
