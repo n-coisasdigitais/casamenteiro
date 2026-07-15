@@ -460,27 +460,29 @@ export default function SimuladorResultado() {
                 </div>
               ) : (
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
-                  {cat.fornecedores.map((f) => {
+                  {cat.fornecedores.map((f, idx) => {
                     const catSel = selecionados[cat.key];
                     const isSel = catSel
                       ? catSel.has(f.id)
                       : cat.fornecedores[0]?.id === f.id; // padrão: 1º vem marcado
+                    const bloqueado = preview && idx > 0;
                     return (
                     <article
                       key={f.id}
-                      onClick={() => toggleFornecedor(cat.key, f.id)}
-                      className="flex-shrink-0 w-72 rounded-xl p-4 snap-start cursor-pointer transition relative"
+                      onClick={() => { if (!preview) toggleFornecedor(cat.key, f.id); }}
+                      className="flex-shrink-0 w-72 rounded-xl p-4 snap-start transition relative overflow-hidden"
                       style={{
                         background: "hsl(var(--card))",
-                        border: `2px solid ${isSel ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
+                        border: `2px solid ${(!preview && isSel) ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
+                        cursor: preview ? "default" : "pointer",
                       }}
                     >
-                      {isSel && (
+                      {!preview && isSel && (
                         <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--color-primary))" }}>
                           <Check className="w-3 h-3 text-white" />
                         </div>
                       )}
-                      <div className="flex items-start gap-3 mb-3">
+                      <div className={`flex items-start gap-3 mb-3 ${bloqueado ? "pointer-events-none" : ""}`}>
                         {f.foto_perfil_url ? (
                           <img src={f.foto_perfil_url} alt={f.nome} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
                         ) : (
@@ -492,16 +494,22 @@ export default function SimuladorResultado() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <Link to={`/fornecedor/${f.id}`} onClick={(e) => e.stopPropagation()} className="block text-sm font-semibold truncate hover:underline" style={{ color: "hsl(var(--color-dark))" }}>
-                            {f.nome}
-                          </Link>
+                          {preview ? (
+                            <span className="block text-sm font-semibold truncate" style={{ color: "hsl(var(--color-dark))" }}>
+                              {f.nome}
+                            </span>
+                          ) : (
+                            <Link to={`/fornecedor/${f.id}`} onClick={(e) => e.stopPropagation()} className="block text-sm font-semibold truncate hover:underline" style={{ color: "hsl(var(--color-dark))" }}>
+                              {f.nome}
+                            </Link>
+                          )}
                           {f.cidade && (
                             <p className="text-xs truncate" style={{ color: "hsl(var(--color-text-muted))" }}>{f.cidade}</p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-1.5 mb-3">
+                      <div className={`flex flex-wrap gap-1.5 mb-3 ${bloqueado ? "pointer-events-none" : ""}`}>
                         <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}>
                           {f.faixa_preco}
                         </span>
@@ -517,7 +525,15 @@ export default function SimuladorResultado() {
                         )}
                       </div>
 
-                      {f.linkWhatsApp ? (
+                      {preview ? (
+                        <button
+                          disabled
+                          className="block text-center w-full rounded-full py-2 text-xs font-semibold cursor-not-allowed opacity-70"
+                          style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-muted))" }}
+                        >
+                          Pedir orçamento (criar conta)
+                        </button>
+                      ) : f.linkWhatsApp ? (
                         <a
                           href={f.linkWhatsApp}
                           target="_blank"
@@ -537,6 +553,25 @@ export default function SimuladorResultado() {
                         >
                           <ExternalLink className="w-3.5 h-3.5 inline mr-1" /> Ver perfil
                         </Link>
+                      )}
+
+                      {bloqueado && (
+                        <button
+                          type="button"
+                          onClick={() => navigate("/cadastro?redirect=simulador&preview=1")}
+                          aria-label="Criar conta para ver este fornecedor"
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center px-4"
+                          style={{
+                            background: "hsl(var(--color-bg) / 0.6)",
+                            backdropFilter: "blur(6px)",
+                            WebkitBackdropFilter: "blur(6px)",
+                          }}
+                        >
+                          <Lock className="w-5 h-5" style={{ color: "hsl(var(--color-primary))" }} />
+                          <span className="text-xs font-semibold" style={{ color: "hsl(var(--color-dark))" }}>
+                            Crie sua conta grátis para ver
+                          </span>
+                        </button>
                       )}
                     </article>
                     );
