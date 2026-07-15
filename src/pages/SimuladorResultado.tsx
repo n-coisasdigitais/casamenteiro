@@ -7,7 +7,7 @@ import {
   recalcularSimulacao, recalcularCategoria, criarPlano, formatarReais,
   type Estilo, type SimuladorResultado as SimRes,
 } from "@/lib/simulador";
-import { Heart, ArrowLeft, AlertTriangle, Sparkles, Lightbulb, MessageCircle, Tag, ExternalLink, Loader2, Check, Pencil } from "lucide-react";
+import { Heart, ArrowLeft, AlertTriangle, Sparkles, Lightbulb, MessageCircle, Tag, ExternalLink, Loader2, Check, Pencil, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +29,7 @@ export default function SimuladorResultado() {
   const { toast } = useToast();
   const id = params.get("id");
   const assumirOnLoad = params.get("assumir") === "1";
+  const preview = params.get("preview") === "1";
 
   const [loading, setLoading] = useState(true);
   const [recalculando, setRecalculando] = useState(false);
@@ -72,7 +73,24 @@ export default function SimuladorResultado() {
   useEffect(() => {
     document.title = "Seu plano — Casamenteiro";
     (async () => {
-      if (!id) { navigate("/simulador"); return; }
+      // Modo preview (deslogado): lê do sessionStorage, não do banco.
+      if (preview || !id) {
+        const raw = sessionStorage.getItem("preview_simulacao");
+        if (!raw) { navigate("/simulador"); return; }
+        try {
+          const payload = JSON.parse(raw);
+          if (!payload?.resultado?.plano || !payload?.resultado?.resumo) {
+            navigate("/simulador"); return;
+          }
+          setSim(payload);
+          setResultado(payload.resultado as SimRes);
+          setAceitaOciosas(!!payload.resultado.resumo?.aceitaOciosas);
+        } catch {
+          navigate("/simulador"); return;
+        }
+        setLoading(false);
+        return;
+      }
       const { data } = await (supabase
         .from("home_simulacoes" as any)
         .select("*")
@@ -99,7 +117,7 @@ export default function SimuladorResultado() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, preview]);
 
   // Pre-preenche modal
   useEffect(() => {
