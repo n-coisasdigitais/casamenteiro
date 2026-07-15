@@ -7,7 +7,7 @@ import {
   recalcularSimulacao, recalcularCategoria, criarPlano, formatarReais,
   type Estilo, type SimuladorResultado as SimRes,
 } from "@/lib/simulador";
-import { Heart, ArrowLeft, AlertTriangle, Sparkles, Lightbulb, MessageCircle, Tag, ExternalLink, Loader2, Check, Pencil } from "lucide-react";
+import { Heart, ArrowLeft, AlertTriangle, Sparkles, Lightbulb, MessageCircle, Tag, ExternalLink, Loader2, Check, Pencil, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +29,7 @@ export default function SimuladorResultado() {
   const { toast } = useToast();
   const id = params.get("id");
   const assumirOnLoad = params.get("assumir") === "1";
+  const preview = params.get("preview") === "1";
 
   const [loading, setLoading] = useState(true);
   const [recalculando, setRecalculando] = useState(false);
@@ -72,7 +73,24 @@ export default function SimuladorResultado() {
   useEffect(() => {
     document.title = "Seu plano — Casamenteiro";
     (async () => {
-      if (!id) { navigate("/simulador"); return; }
+      // Modo preview (deslogado): lê do sessionStorage, não do banco.
+      if (preview || !id) {
+        const raw = sessionStorage.getItem("preview_simulacao");
+        if (!raw) { navigate("/simulador"); return; }
+        try {
+          const payload = JSON.parse(raw);
+          if (!payload?.resultado?.plano || !payload?.resultado?.resumo) {
+            navigate("/simulador"); return;
+          }
+          setSim(payload);
+          setResultado(payload.resultado as SimRes);
+          setAceitaOciosas(!!payload.resultado.resumo?.aceitaOciosas);
+        } catch {
+          navigate("/simulador"); return;
+        }
+        setLoading(false);
+        return;
+      }
       const { data } = await (supabase
         .from("home_simulacoes" as any)
         .select("*")
@@ -99,7 +117,7 @@ export default function SimuladorResultado() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, preview]);
 
   // Pre-preenche modal
   useEffect(() => {
@@ -362,8 +380,8 @@ export default function SimuladorResultado() {
           </div>
         )}
 
-        {/* Toggle datas ociosas */}
-        <div
+        {/* Toggle datas ociosas — só fora do preview */}
+        {!preview && <div
           className="on-green sticky top-[57px] z-20 mb-6 rounded-xl p-3 flex items-center justify-between gap-3"
           style={{ background: "hsl(var(--color-accent))", border: "1px solid hsl(var(--color-accent))" }}
         >
@@ -376,7 +394,7 @@ export default function SimuladorResultado() {
             </p>
           </div>
           <Switch id="ociosas" checked={aceitaOciosas} disabled={recalculando} onCheckedChange={recalcular} />
-        </div>
+        </div>}
 
         {/* Categorias */}
         <div className="space-y-7">
@@ -387,7 +405,11 @@ export default function SimuladorResultado() {
                   <span className="mr-2">{cat.icon}</span>{cat.label}
                 </h2>
                 <div className="flex items-center gap-2">
-                  {editandoCat === cat.key ? (
+                  {preview ? (
+                    <p className="text-sm" style={{ color: "hsl(var(--color-text-muted))" }}>
+                      <strong style={{ color: "hsl(var(--color-dark))" }}>{formatarReais(cat.verba)}</strong>
+                    </p>
+                  ) : editandoCat === cat.key ? (
                     <>
                       <Input
                         type="number"
@@ -438,27 +460,29 @@ export default function SimuladorResultado() {
                 </div>
               ) : (
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
-                  {cat.fornecedores.map((f) => {
+                  {cat.fornecedores.map((f, idx) => {
                     const catSel = selecionados[cat.key];
                     const isSel = catSel
                       ? catSel.has(f.id)
                       : cat.fornecedores[0]?.id === f.id; // padrão: 1º vem marcado
+                    const bloqueado = preview && idx > 0;
                     return (
                     <article
                       key={f.id}
-                      onClick={() => toggleFornecedor(cat.key, f.id)}
-                      className="flex-shrink-0 w-72 rounded-xl p-4 snap-start cursor-pointer transition relative"
+                      onClick={() => { if (!preview) toggleFornecedor(cat.key, f.id); }}
+                      className="flex-shrink-0 w-72 rounded-xl p-4 snap-start transition relative overflow-hidden"
                       style={{
                         background: "hsl(var(--card))",
-                        border: `2px solid ${isSel ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
+                        border: `2px solid ${(!preview && isSel) ? "hsl(var(--color-primary))" : "hsl(var(--color-border))"}`,
+                        cursor: preview ? "default" : "pointer",
                       }}
                     >
-                      {isSel && (
+                      {!preview && isSel && (
                         <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--color-primary))" }}>
                           <Check className="w-3 h-3 text-white" />
                         </div>
                       )}
-                      <div className="flex items-start gap-3 mb-3">
+                      <div className={`flex items-start gap-3 mb-3 ${bloqueado ? "pointer-events-none" : ""}`}>
                         {f.foto_perfil_url ? (
                           <img src={f.foto_perfil_url} alt={f.nome} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
                         ) : (
@@ -470,16 +494,22 @@ export default function SimuladorResultado() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <Link to={`/fornecedor/${f.id}`} onClick={(e) => e.stopPropagation()} className="block text-sm font-semibold truncate hover:underline" style={{ color: "hsl(var(--color-dark))" }}>
-                            {f.nome}
-                          </Link>
+                          {preview ? (
+                            <span className="block text-sm font-semibold truncate" style={{ color: "hsl(var(--color-dark))" }}>
+                              {f.nome}
+                            </span>
+                          ) : (
+                            <Link to={`/fornecedor/${f.id}`} onClick={(e) => e.stopPropagation()} className="block text-sm font-semibold truncate hover:underline" style={{ color: "hsl(var(--color-dark))" }}>
+                              {f.nome}
+                            </Link>
+                          )}
                           {f.cidade && (
                             <p className="text-xs truncate" style={{ color: "hsl(var(--color-text-muted))" }}>{f.cidade}</p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-1.5 mb-3">
+                      <div className={`flex flex-wrap gap-1.5 mb-3 ${bloqueado ? "pointer-events-none" : ""}`}>
                         <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}>
                           {f.faixa_preco}
                         </span>
@@ -495,7 +525,15 @@ export default function SimuladorResultado() {
                         )}
                       </div>
 
-                      {f.linkWhatsApp ? (
+                      {preview ? (
+                        <button
+                          disabled
+                          className="block text-center w-full rounded-full py-2 text-xs font-semibold cursor-not-allowed opacity-70"
+                          style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-muted))" }}
+                        >
+                          Pedir orçamento (criar conta)
+                        </button>
+                      ) : f.linkWhatsApp ? (
                         <a
                           href={f.linkWhatsApp}
                           target="_blank"
@@ -516,6 +554,25 @@ export default function SimuladorResultado() {
                           <ExternalLink className="w-3.5 h-3.5 inline mr-1" /> Ver perfil
                         </Link>
                       )}
+
+                      {bloqueado && (
+                        <button
+                          type="button"
+                          onClick={() => navigate("/cadastro?redirect=simulador&preview=1")}
+                          aria-label="Criar conta para ver este fornecedor"
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center px-4"
+                          style={{
+                            background: "hsl(var(--color-bg) / 0.6)",
+                            backdropFilter: "blur(6px)",
+                            WebkitBackdropFilter: "blur(6px)",
+                          }}
+                        >
+                          <Lock className="w-5 h-5" style={{ color: "hsl(var(--color-primary))" }} />
+                          <span className="text-xs font-semibold" style={{ color: "hsl(var(--color-dark))" }}>
+                            Crie sua conta grátis para ver
+                          </span>
+                        </button>
+                      )}
                     </article>
                     );
                   })}
@@ -531,6 +588,17 @@ export default function SimuladorResultado() {
         className="fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur"
         style={{ background: "hsl(var(--color-bg) / 0.95)", borderColor: "hsl(var(--color-border))" }}
       >
+        {preview ? (
+          <div className="max-w-3xl mx-auto px-4 py-3">
+            <Button
+              onClick={() => navigate("/cadastro?redirect=simulador&preview=1")}
+              className="rounded-full w-full py-6 text-base"
+              style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
+            >
+              Criar conta grátis para ver todos os fornecedores →
+            </Button>
+          </div>
+        ) : (
         <div className="max-w-3xl mx-auto px-4 py-3 flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
@@ -547,6 +615,7 @@ export default function SimuladorResultado() {
             Assumir este plano →
           </Button>
         </div>
+        )}
       </div>
 
       {/* Modal Assumir */}
