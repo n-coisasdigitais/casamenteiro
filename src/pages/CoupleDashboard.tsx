@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Heart, Search, Calendar, Users, DollarSign, Copy, Share2,
@@ -14,8 +16,7 @@ import {
 } from "lucide-react";
 import { Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import QuoteThread from "@/components/QuoteThread";
-import QuoteProposalPanel from "@/components/QuoteProposalPanel";
+import QuoteConversation from "@/components/QuoteConversation";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import CouplePhotoUpload from "@/components/CouplePhotoUpload";
@@ -42,6 +43,7 @@ export default function CoupleDashboard() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [couple, setCouple] = useState<CoupleData | null>(null);
   const [favCount, setFavCount] = useState(0);
   const [quotes, setQuotes] = useState<any[]>([]);
@@ -562,26 +564,44 @@ export default function CoupleDashboard() {
           </div>
         )}
 
-        {/* Quote Thread Dialog */}
-        <Dialog open={threadOpen} onOpenChange={setThreadOpen}>
-          <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
-            <DialogHeader className="p-4 pb-2 border-b border-border">
-              <DialogTitle className="text-base">Conversa sobre orçamento</DialogTitle>
-            </DialogHeader>
-            {selectedQuote && user && (
-              <QuoteThread quoteId={selectedQuote.id} currentUserId={user.id} />
-            )}
-            {selectedQuote && user && couple && (
-              <QuoteProposalPanel
-                quoteId={selectedQuote.id}
-                currentUserId={user.id}
-                isSupplier={false}
-                coupleId={couple.id}
-                supplierId={selectedQuote.supplier_id}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Conversa de orçamento */}
+        {isMobile ? (
+          <Sheet open={threadOpen} onOpenChange={setThreadOpen}>
+            <SheetContent side="bottom" className="h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
+              <SheetHeader className="px-4 py-3 border-b border-border text-left">
+                <SheetTitle className="text-base">Conversa sobre orçamento</SheetTitle>
+              </SheetHeader>
+              {selectedQuote && user && couple && (
+                <QuoteConversation
+                  quoteId={selectedQuote.id}
+                  currentUserId={user.id}
+                  isSupplier={false}
+                  coupleId={couple.id}
+                  supplierId={selectedQuote.supplier_id}
+                  onContracted={() => setThreadOpen(false)}
+                />
+              )}
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Dialog open={threadOpen} onOpenChange={setThreadOpen}>
+            <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col p-0 gap-0">
+              <DialogHeader className="px-4 py-3 border-b border-border">
+                <DialogTitle className="text-base">Conversa sobre orçamento</DialogTitle>
+              </DialogHeader>
+              {selectedQuote && user && couple && (
+                <QuoteConversation
+                  quoteId={selectedQuote.id}
+                  currentUserId={user.id}
+                  isSupplier={false}
+                  coupleId={couple.id}
+                  supplierId={selectedQuote.supplier_id}
+                  onContracted={() => setThreadOpen(false)}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Invite code */}
         {couple.invite_code && (

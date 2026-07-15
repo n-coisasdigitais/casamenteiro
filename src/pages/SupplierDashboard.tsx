@@ -11,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays, BarChart3, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import QuoteThread from "@/components/QuoteThread";
-import QuoteProposalPanel from "@/components/QuoteProposalPanel";
+import QuoteConversation from "@/components/QuoteConversation";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 import PromoDatesManager from "@/components/PromoDatesManager";
 import CalendarConnections from "@/components/CalendarConnections";
@@ -33,6 +34,7 @@ type Category = { id: string; name: string };
 export default function SupplierDashboard() {
   const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const [supplier, setSupplier] = useState<any>(null);
   const [photos, setPhotos] = useState<any[]>([]);
@@ -141,26 +143,12 @@ export default function SupplierDashboard() {
     setQuotes(data || []);
   };
 
-  const updateQuoteStatus = async (quoteId: string, status: string) => {
-    const { error } = await supabase
-      .from("quotes")
-      .update({ status })
-      .eq("id", quoteId);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Status atualizado!" });
-      // Mark as viewed when opening
-      loadQuotes();
-    }
-  };
-
   const openThread = (quote: any) => {
     setSelectedQuote(quote);
     setThreadOpen(true);
     // Auto-mark as viewed
     if (quote.status === "pending") {
-      updateQuoteStatus(quote.id, "viewed");
+      supabase.from("quotes").update({ status: "viewed" }).eq("id", quote.id).then(() => loadQuotes());
     }
   };
 
@@ -447,55 +435,46 @@ export default function SupplierDashboard() {
           </TabsContent>
         </Tabs>
 
-        {/* Quote Thread Dialog */}
-        <Dialog open={threadOpen} onOpenChange={(v) => {
-          setThreadOpen(v);
-          if (!v && searchParams.get("quote")) {
-            const next = new URLSearchParams(searchParams);
-            next.delete("quote");
-            setSearchParams(next, { replace: true });
-          }
-        }}>
-          <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
-            <DialogHeader className="p-4 pb-2 border-b border-border">
-              <DialogTitle className="text-base">Orçamento</DialogTitle>
-              {selectedQuote && (
-                <div className="flex items-center gap-2 mt-2">
-                  <Select
-                    value={selectedQuote.status}
-                    onValueChange={(val) => {
-                      updateQuoteStatus(selectedQuote.id, val);
-                      setSelectedQuote({ ...selectedQuote, status: val });
-                    }}
-                  >
-                    <SelectTrigger className="w-40 h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Novo</SelectItem>
-                      <SelectItem value="viewed">Visualizado</SelectItem>
-                      <SelectItem value="answered">Respondido</SelectItem>
-                      <SelectItem value="accepted">Aceito ✓</SelectItem>
-                      <SelectItem value="rejected">Recusado ✕</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </DialogHeader>
-            {selectedQuote && user && (
-              <QuoteThread quoteId={selectedQuote.id} currentUserId={user.id} />
-            )}
-            {selectedQuote && user && supplier && (
-              <QuoteProposalPanel
-                quoteId={selectedQuote.id}
-                currentUserId={user.id}
-                isSupplier={true}
-                coupleId={selectedQuote.couple_id}
-                supplierId={supplier.id}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Conversa de orçamento */}
+        {(() => {
+          const handleOpenChange = (v: boolean) => {
+            setThreadOpen(v);
+            if (!v && searchParams.get("quote")) {
+              const next = new URLSearchParams(searchParams);
+              next.delete("quote");
+              setSearchParams(next, { replace: true });
+            }
+          };
+          const body = selectedQuote && user && supplier ? (
+            <QuoteConversation
+              quoteId={selectedQuote.id}
+              currentUserId={user.id}
+              isSupplier={true}
+              coupleId={selectedQuote.couple_id}
+              supplierId={supplier.id}
+              onContracted={() => { loadQuotes(); setThreadOpen(false); }}
+            />
+          ) : null;
+          return isMobile ? (
+            <Sheet open={threadOpen} onOpenChange={handleOpenChange}>
+              <SheetContent side="bottom" className="h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
+                <SheetHeader className="px-4 py-3 border-b border-border text-left">
+                  <SheetTitle className="text-base">Orçamento</SheetTitle>
+                </SheetHeader>
+                {body}
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <Dialog open={threadOpen} onOpenChange={handleOpenChange}>
+              <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col p-0 gap-0">
+                <DialogHeader className="px-4 py-3 border-b border-border">
+                  <DialogTitle className="text-base">Orçamento</DialogTitle>
+                </DialogHeader>
+                {body}
+              </DialogContent>
+            </Dialog>
+          );
+        })()}
       </main>
     </div>
   );
