@@ -1,68 +1,54 @@
-# Sistema de Feature Flags administráveis
+# Preview do resultado do simulador antes do cadastro
 
-## 1. Migration Supabase
+## Mudança 1 — `src/components/home/SimulatorCTA.tsx`
 
-Nova migration com:
+No ramo deslogado do `submit()` (dentro do `try`, quando `!user`):
 
-- Tabela `public.feature_flags` (key PK, enabled, label, grupo, essencial, description, updated_at, updated_by).
-- `GRANT SELECT ON public.feature_flags TO anon, authenticated;`
-- `GRANT ALL ON public.feature_flags TO authenticated, service_role;`
-- `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.
-- Policies:
-  - `SELECT` público (`USING (true)`) para `anon` e `authenticated`.
-  - `ALL` para admin usando `public.has_role(auth.uid(),'admin')`.
-- Trigger `update_updated_at_column` no `BEFORE UPDATE`.
-- Seed via `INSERT ... ON CONFLICT (key) DO NOTHING` com as 14 flags listadas, agrupadas em Aquisição, Casal, Fornecedor, Social.
+- Manter o cálculo já existente (`computeSimulador` → `payload.resultado`).
+- Fire-and-forget: `supabase.from("home_simulacoes").insert({ ...payload, user_id: null, couple_id: null })` sem `await` bloqueante nem `.select()`, dentro de `.then(() => {}, () => {})` — erros silenciosos (só serve para o admin ver o lead).
+- `sessionStorage.setItem("preview_simulacao", JSON.stringify(payload))` (inclui `payload.resultado`).
+- Trocar o toast: título "Seu plano está pronto!", descrição "Veja abaixo os detalhes do seu casamento.".
+- `navigate("/simulador/resultado?preview=1")` no lugar do `/cadastro?...`.
+- Remover o uso de `localStorage.setItem("pending_simulacao", ...)` desse ramo (sessionStorage passa a ser a fonte).
 
-## 2. Contexto de Feature Flags
+Ramo logado continua igual.
 
-**`src/contexts/FeatureFlagsContext.tsx`** (novo):
-- `FeatureFlagsProvider` carrega `feature_flags` uma vez no mount (leitura pública, funciona deslogado).
-- Mantém defaults hardcoded (mesmos do seed) para evitar flicker enquanto carrega.
-- Expõe `useFeatureFlag(key)` e `useFeatureFlags()`.
-- Provider inserido no `src/App.tsx` **acima** do `AuthProvider` (não depende de auth).
+## Mudança 2 — `src/pages/SimuladorResultado.tsx`
 
-**`src/hooks/useFeatureFlag.ts`**: reescrito para reexportar do contexto (mantém compatibilidade com `PlatformFeatures.tsx`, remove a query solta por chamada).
+**Carregamento**
+- `const preview = params.get("preview") === "1";`
+- No `useEffect` de load: se `preview` **ou** não houver `id`, ler `sessionStorage.getItem("preview_simulacao")`. Se existir, montar `sim` a partir do payload e `resultado` de `payload.resultado`, `setLoading(false)`. Se não existir, `navigate("/simulador")`.
+- Se `id` existir e `!preview`, mantém o fetch atual em `home_simulacoes`.
+- Pular efeitos que dependem do banco (o `useEffect` de `sim?.cidade` para checar fornecedores continua funcionando pois só lê `suppliers`; manter).
+- Desabilitar recalcular/persistência em preview: o toggle "datas ociosas" e "editar categoria" ficam ocultos em modo preview (ou desabilitados) porque não há linha no banco para atualizar.
 
-## 3. FlagGate + rotas sociais
+**Renderização em preview**
+- Resumo (`orcamentoTotal`, `convidados`, `cidade`, `estilo`) e badge de cobertura: totalmente visíveis.
+- Em cada categoria (`planoCats`), o **primeiro** card de fornecedor aparece normal; os demais recebem overlay com `backdrop-filter: blur(6px)` + camada `bg-background/60` + ícone `Lock` (lucide) e o texto "Crie sua conta grátis para ver". Cliques no card e nos links internos ficam bloqueados (`pointer-events-none` no conteúdo + camada de overlay clicável que abre `/cadastro?redirect=simulador&preview=1`).
+- Nos cards em preview, substituir o bloco `f.linkWhatsApp ? <a> : <Link>` por um `<button disabled>` cinza "Pedir orçamento (criar conta)". O `<Link to={/fornecedor/f.id}>` do nome também vira `<span>` inerte.
+- Barra fixa inferior em preview: um único `Button` largo "Criar conta grátis para ver todos os fornecedores" → `navigate("/cadastro?redirect=simulador&preview=1")`. Some o "Simular novamente" e o "Assumir este plano".
+- Header: se preview e `!user`, mostra "Entrar" (comportamento atual já cobre).
 
-**`src/components/FlagGate.tsx`** (novo): lê flag; se off, `<Navigate to="/" replace />`; senão renderiza children.
+## Mudança 3 — Pós-cadastro (`src/pages/Auth.tsx`)
 
-Em `src/App.tsx`, envolver com `<FlagGate flag="...">` estas rotas:
-- `/casais` → `casais_feed`
-- `/casais/:slug` → `casais_feed`
-- `/meu-casamento/perfil` → `perfil_social_casal`
-- `/mensagens` → `mensagens_casais`
-- `/meu-casamento/indicacoes` → `indicacoes`
-- `/i/:codigo` → `indicacoes`
-- `/admin/indicacoes` → `indicacoes`
+O handler pós-signup vive em `Auth.tsx` (`finishRedirect`), não em `CoupleOnboarding.tsx`. Ajustar lá:
 
-## 4. Home + menus
+- **Antes** de verificar `localStorage.getItem("pending_simulacao")` (mantido para compat), verificar `sessionStorage.getItem("preview_simulacao")`.
+- Se existir: buscar `couples.id` por `user_id`, inserir em `home_simulacoes` com `user_id`/`couple_id` do novo usuário, pegar `id` retornado, `sessionStorage.removeItem("preview_simulacao")`, `navigate(/simulador/resultado?id=<novoId>, { replace: true })` e `return`.
+- Em caso de erro, toast e cai no fluxo padrão.
+- Se `searchParams.get("redirect") === "simulador"` e não houver sessionStorage nem localStorage, cair no `/dashboard` como já faz.
 
-- `src/components/shared/PlatformFeatures.tsx`: já filtra via `useFeatureFlag` para `perfil_social_casal` e `indicacoes` (só passa a usar o novo provider).
-- Auditar `DashboardNav`, `UserMenu`, `HomeNavbar` e footer da Home/Supplier para esconder links de: `/casais`, `/mensagens`, `/meu-casamento/perfil`, `/meu-casamento/indicacoes` quando as flags correspondentes estiverem off.
-
-## 5. Admin — `src/pages/AdminSettings.tsx`
-
-Adicionar seção **Funcionalidades** acima da distribuição de orçamento:
-- Carrega todas as flags de `feature_flags` ordenadas por `grupo, label`.
-- Renderiza agrupado por `grupo` (Aquisição, Casal, Fornecedor, Social).
-- Cada linha: label + badge "essencial" (quando aplicável) + description + Switch (shadcn).
-- Toggle faz upsert (`enabled`, `updated_by=user.id`, `updated_at=now()`) e recarrega.
-- Flags essenciais pedem confirmação via `AlertDialog` antes de desligar.
-- Após save, invalida cache do provider (recarrega) para propagar mudança sem reload.
+`CoupleOnboarding.tsx` não precisa mudar — o insert acontece no login/callback via `Auth.tsx`, antes do onboarding.
 
 ## Detalhes técnicos
 
-- Nada de mudança de lógica de negócio; só visibilidade.
-- Tipagem: `feature_flags` não estará em `types.ts` até a migration ser aprovada — usar `as any` nas queries iniciais igual ao padrão de `system_settings` no projeto.
-- Tudo em pt-BR.
-- Sem alteração de RLS de outras tabelas.
+- Sem migration nova; a policy "Qualquer um cria simulação" já permite insert anônimo.
+- Preview não persiste alterações (toggle ociosas oculto), então nada de RLS quebrar.
+- Tudo em pt-BR, mantendo os tokens do design.
+- Fluxo logado (com `id`) permanece 100% intacto.
 
-## Ordem de execução
+## Ordem
 
-1. Rodar migration (aprovação do usuário).
-2. Criar provider, hook, FlagGate.
-3. Atualizar `App.tsx` (provider + gates).
-4. Ajustar menus/footer.
-5. Ajustar `AdminSettings.tsx`.
+1. `SimulatorCTA.tsx` — trocar ramo deslogado.
+2. `SimuladorResultado.tsx` — flag preview + sessionStorage + overlay + CTA.
+3. `Auth.tsx` — insert pós-signup a partir do sessionStorage.

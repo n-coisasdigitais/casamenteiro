@@ -74,9 +74,13 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
       payload.resultado = resultado;
 
       if (!user) {
-        localStorage.setItem("pending_simulacao", JSON.stringify(payload));
-        toast({ title: "Seu simulador foi salvo!", description: "Crie sua conta gratuita pra ver o resultado." });
-        navigate("/cadastro?redirect=simulador");
+        // Fire-and-forget: registra o lead pro admin ver (RLS permite insert anônimo).
+        (supabase.from("home_simulacoes" as any) as any)
+          .insert({ ...payload, user_id: null, couple_id: null })
+          .then(() => {}, () => {});
+        sessionStorage.setItem("preview_simulacao", JSON.stringify(payload));
+        toast({ title: "Seu plano está pronto!", description: "Veja abaixo os detalhes do seu casamento." });
+        navigate("/simulador/resultado?preview=1");
         return;
       }
       // pega o couple do usuário (se for casal) para vincular a simulação
