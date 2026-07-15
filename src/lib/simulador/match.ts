@@ -20,6 +20,7 @@ export type SupplierMatch = {
   featured: boolean;
   // computed
   estimated_price: number;
+  has_price: boolean;
   applied_discount_pct: number; // 0 if none
   is_idle_promo: boolean;
   fits_budget_slice: boolean;
@@ -57,6 +58,35 @@ function avgPrice(s: { price_min: number | null; price_max: number | null }): nu
   return a ?? b ?? null;
 }
 
+// ── Cache de coordenadas para Haversine (cascata de cidade) ──
+let _coordCache: Map<string, { lat: number; lng: number; estado: string }> | null = null;
+async function getCoordCache() {
+  if (_coordCache) return _coordCache;
+  const { data } = await supabase
+    .from("cidades_coordenadas")
+    .select("cidade, estado, lat, lng");
+  _coordCache = new Map();
+  for (const r of data || []) {
+    _coordCache.set(String((r as any).cidade).toLowerCase(), {
+      lat: Number((r as any).lat),
+      lng: Number((r as any).lng),
+      estado: (r as any).estado,
+    });
+  }
+  return _coordCache;
+}
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 export async function computeSimulador(input: SimuladorInput): Promise<SimuladorResult> {
   const col = styleColumn(input.estilo);
 
@@ -75,7 +105,7 @@ export async function computeSimulador(input: SimuladorInput): Promise<Simulador
   // Fetch all approved suppliers in city (or anywhere if city empty); we'll filter per category
   const sQuery = supabase
     .from("suppliers")
-    .select("id, company_name, city, rating, review_count, profile_photo_url, price_min, price_max, featured, category_id, accepts_idle_dates, idle_discount_pct, status")
+    .select("id, company_name, city, state, rating, review_count, profile_photo_url, price_min, price_max, featured, category_id, accepts_idle_dates, idle_discount_pct, status, cidades_atendidas, raio_atendimento_km, lat, lng")
     .eq("status", "approved");
   const { data: suppliers } = await sQuery;
 
@@ -98,6 +128,26 @@ export async function computeSimulador(input: SimuladorInput): Promise<Simulador
   }
 
   const cityNorm = input.cidade.trim().toLowerCase();
+  const buscaCoord = cityNorm ? (await getCoordCache()).get(cityNorm) || null : null;
+
+  const matchCidade = (s: any): boolean => {
+    if (!cityNorm) return true;
+    // 1) cidade exata / contém
+    if ((s.city || "").toLowerCase().includes(cityNorm)) return true;
+    // 2) cidades_atendidas (jsonb array de strings)
+    const atendidas: string[] = Array.isArray(s.cidades_atendidas) ? s.cidades_atendidas : [];
+    if (atendidas.some((c) => (c || "").toLowerCase().includes(cityNorm))) return true;
+    // 3) raio via Haversine
+    if (buscaCoord && s.lat && s.lng && s.raio_atendimento_km > 0) {
+      const d = haversineKm(buscaCoord.lat, buscaCoord.lng, Number(s.lat), Number(s.lng));
+      if (d <= s.raio_atendimento_km) return true;
+    }
+    // 4) fallback: mesmo estado se fornecedor declara raio
+    if (buscaCoord && s.state === buscaCoord.estado && s.raio_atendimento_km > 0) {
+      return true;
+    }
+    return false;
+  };
 
   const categories: CategoryResult[] = [];
 
@@ -110,9 +160,10 @@ export async function computeSimulador(input: SimuladorInput): Promise<Simulador
     const candidates = (suppliers || [])
       .filter((s: any) => s.category_id === cat.id)
       .filter((s: any) => !blockedSet.has(s.id))
-      .filter((s: any) => !cityNorm || (s.city || "").toLowerCase().includes(cityNorm) || true) // city: prefer match but don't exclude
+      .filter((s: any) => matchCidade(s))
       .map((s: any): SupplierMatch => {
-        let price = avgPrice(s) ?? slice;
+        const rawPrice = avgPrice(s);
+        const hasPrice = rawPrice != null;
         let appliedDiscount = 0;
         let isIdlePromo = false;
         if (input.data_evento) {
@@ -125,7 +176,9 @@ export async function computeSimulador(input: SimuladorInput): Promise<Simulador
             isIdlePromo = true;
           }
         }
-        const estimated = Math.round(price * (1 - appliedDiscount / 100));
+        const estimated = hasPrice
+          ? Math.round((rawPrice as number) * (1 - appliedDiscount / 100))
+          : 0;
         return {
           id: s.id,
           company_name: s.company_name,
@@ -137,9 +190,10 @@ export async function computeSimulador(input: SimuladorInput): Promise<Simulador
           price_max: s.price_max,
           featured: s.featured,
           estimated_price: estimated,
+          has_price: hasPrice,
           applied_discount_pct: appliedDiscount,
           is_idle_promo: isIdlePromo,
-          fits_budget_slice: estimated <= slice * 1.15, // 15% folga
+          fits_budget_slice: hasPrice && estimated <= slice * 1.15, // 15% folga; sem preço não conta como cabendo
         };
       });
 
