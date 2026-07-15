@@ -68,6 +68,29 @@ export default function Auth() {
         return;
       }
 
+      // Preview do simulador salvo em sessionStorage (novo fluxo)
+      const previewRaw = sessionStorage.getItem("preview_simulacao");
+      if (previewRaw) {
+        try {
+          const payload = JSON.parse(previewRaw);
+          const { data: couple } = await supabase
+            .from("couples")
+            .select("id")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+          const { data, error } = await (supabase.from("home_simulacoes" as any) as any)
+            .insert({ ...payload, user_id: session.user.id, couple_id: couple?.id || null })
+            .select("id")
+            .maybeSingle();
+          if (error) throw error;
+          sessionStorage.removeItem("preview_simulacao");
+          navigate(`/simulador/resultado?id=${data?.id}`, { replace: true });
+          return;
+        } catch (error: any) {
+          toast({ title: "Não foi possível recuperar a simulação", description: error.message, variant: "destructive" });
+        }
+      }
+
       const pending = localStorage.getItem("pending_simulacao");
       if (pending) {
         try {
