@@ -588,6 +588,17 @@ export default function SimuladorResultado() {
         className="fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur"
         style={{ background: "hsl(var(--color-bg) / 0.95)", borderColor: "hsl(var(--color-border))" }}
       >
+        {preview ? (
+          <div className="max-w-3xl mx-auto px-4 py-3">
+            <Button
+              onClick={() => navigate("/cadastro?redirect=simulador&preview=1")}
+              className="rounded-full w-full py-6 text-base"
+              style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
+            >
+              Criar conta grátis para ver todos os fornecedores →
+            </Button>
+          </div>
+        ) : (
         <div className="max-w-3xl mx-auto px-4 py-3 flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
@@ -604,6 +615,7 @@ export default function SimuladorResultado() {
             Assumir este plano →
           </Button>
         </div>
+        )}
       </div>
 
       {/* Modal Assumir */}
