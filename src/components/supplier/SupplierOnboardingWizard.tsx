@@ -46,6 +46,9 @@ export default function SupplierOnboardingWizard({
   const [priceMin, setPriceMin] = useState<string>(supplier.price_min ? String(supplier.price_min) : "");
   const [priceMax, setPriceMax] = useState<string>(supplier.price_max ? String(supplier.price_max) : "");
   const [acceptsIdle, setAcceptsIdle] = useState<boolean>(!!supplier.accepts_idle_dates);
+  const [pricingModel, setPricingModel] = useState<"fixo" | "por_pessoa">(
+    (supplier.pricing_model as "fixo" | "por_pessoa") || "fixo",
+  );
 
   useEffect(() => {
     supabase.from("categories").select("id, name").order("name").then(({ data }) => setCategories(data || []));
@@ -81,6 +84,7 @@ export default function SupplierOnboardingWizard({
       patch.price_min = Number(priceMin) || null;
       patch.price_max = priceMax ? Number(priceMax) : null;
       patch.accepts_idle_dates = acceptsIdle;
+      patch.pricing_model = pricingModel;
     }
     if (Object.keys(patch).length > 0) {
       const { error } = await supabase.from("suppliers").update(patch).eq("id", supplier.id);
@@ -236,14 +240,35 @@ export default function SupplierOnboardingWizard({
             <p className="text-sm text-muted-foreground">
               Os casais usam isso para filtrar — você pode ajustar depois e cobrir só o piso se preferir.
             </p>
+            <div>
+              <Label>Modelo de preço *</Label>
+              <Select value={pricingModel} onValueChange={(v) => setPricingModel(v as "fixo" | "por_pessoa")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixo">Fixo (valor total do serviço)</SelectItem>
+                  <SelectItem value="por_pessoa">Por pessoa (valor por convidado)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {pricingModel === "por_pessoa"
+                  ? "Os valores abaixo serão cobrados por convidado. O total é calculado automaticamente para os casais."
+                  : "Os valores abaixo representam o total do serviço."}
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>A partir de (R$) *</Label>
-                <Input type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="3000" />
+                <Label>
+                  {pricingModel === "por_pessoa" ? "A partir de (R$/convidado) *" : "A partir de (R$) *"}
+                </Label>
+                <Input type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value)}
+                  placeholder={pricingModel === "por_pessoa" ? "120" : "3000"} />
               </div>
               <div>
-                <Label>Até (R$) — opcional</Label>
-                <Input type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} placeholder="15000" />
+                <Label>
+                  {pricingModel === "por_pessoa" ? "Até (R$/convidado) — opcional" : "Até (R$) — opcional"}
+                </Label>
+                <Input type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value)}
+                  placeholder={pricingModel === "por_pessoa" ? "250" : "15000"} />
               </div>
             </div>
             <label className="flex items-start gap-2 cursor-pointer">

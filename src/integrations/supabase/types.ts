@@ -2498,6 +2498,7 @@ export type Database = {
           phone: string | null
           price_max: number | null
           price_min: number | null
+          pricing_model: string
           profile_photo_url: string | null
           promo_percentage: number | null
           raio_atendimento_km: number
@@ -2535,6 +2536,7 @@ export type Database = {
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
+          pricing_model?: string
           profile_photo_url?: string | null
           promo_percentage?: number | null
           raio_atendimento_km?: number
@@ -2572,6 +2574,7 @@ export type Database = {
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
+          pricing_model?: string
           profile_photo_url?: string | null
           promo_percentage?: number | null
           raio_atendimento_km?: number
