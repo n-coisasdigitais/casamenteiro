@@ -1,74 +1,68 @@
-## Objetivo
+# Sistema de Feature Flags administráveis
 
-Adicionar uma primeira dobra clara com proposta de valor e CTA na Home, mantendo o storytelling em scroll abaixo. Ajustar imagem de um capítulo e a grid de features (novo card + esconder por feature flag).
+## 1. Migration Supabase
 
-## Escopo (só frontend/presentation + 1 pequena leitura no Supabase)
+Nova migration com:
 
-### 1. Nova primeira dobra — `src/components/home/HomeHero.tsx` (novo)
+- Tabela `public.feature_flags` (key PK, enabled, label, grupo, essencial, description, updated_at, updated_by).
+- `GRANT SELECT ON public.feature_flags TO anon, authenticated;`
+- `GRANT ALL ON public.feature_flags TO authenticated, service_role;`
+- `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.
+- Policies:
+  - `SELECT` público (`USING (true)`) para `anon` e `authenticated`.
+  - `ALL` para admin usando `public.has_role(auth.uid(),'admin')`.
+- Trigger `update_updated_at_column` no `BEFORE UPDATE`.
+- Seed via `INSERT ... ON CONFLICT (key) DO NOTHING` com as 14 flags listadas, agrupadas em Aquisição, Casal, Fornecedor, Social.
 
-Renderizada em `src/pages/Home.tsx` como primeiro filho de `<main>`, ANTES de `<ScrollStory>`.
+## 2. Contexto de Feature Flags
 
-Layout desktop: 2 colunas (texto à esquerda, imagem à direita). Mobile: empilhado (texto em cima, imagem abaixo), CTA primário `w-full`. Altura da seção pensada para caber acima do fold em telas comuns (min-h-[calc(100svh-64px)] com padding generoso, sem forçar overflow).
+**`src/contexts/FeatureFlagsContext.tsx`** (novo):
+- `FeatureFlagsProvider` carrega `feature_flags` uma vez no mount (leitura pública, funciona deslogado).
+- Mantém defaults hardcoded (mesmos do seed) para evitar flicker enquanto carrega.
+- Expõe `useFeatureFlag(key)` e `useFeatureFlags()`.
+- Provider inserido no `src/App.tsx` **acima** do `AuthProvider` (não depende de auth).
 
-Conteúdo:
-- Eyebrow: `label-ui` discreto — "Marketplace de casamentos · Belo Horizonte e região metropolitana".
-- H1 serifado (font-serif do projeto, peso 500/600, tamanho `clamp(2.5rem, 5.5vw, 4rem)`, tracking apertado, sentence case): "Descubra quanto custa o seu casamento — e economize casando em datas com desconto."
-- Subtítulo sans, `text-muted-foreground`, `text-lg md:text-xl`, `max-w-xl`: "Simule em 1 minuto e receba fornecedores avaliados dentro do seu orçamento."
-- CTA primário (pill terracota, `bg-primary text-primary-foreground`, `h-14 px-8 text-base font-medium`) → `/simulador`: "Simular meu casamento". Mobile: `w-full`.
-- CTA secundário (pill contorno, `variant="outline"`, mais discreto, mesmo tamanho) → `/explorar`: "Explorar fornecedores".
-- Prova social: 5 estrelas terracota (`lucide Star fill`) + texto ao lado. Estado inicial "carregando" sem número; depois de ler o count:
-  - `count >= 20`: "{count} fornecedores verificados · BH e região"
-  - `count < 20`: "Fornecedores avaliados · BH e região"
-  - Query: `supabase.from('suppliers').select('id', { count: 'exact', head: true }).eq('status', 'approved')`.
+**`src/hooks/useFeatureFlag.ts`**: reescrito para reexportar do contexto (mantém compatibilidade com `PlatformFeatures.tsx`, remove a query solta por chamada).
 
-Imagem à direita:
-- Slot editável via `secoes_home`. Convenção: bloco com `grupo = 'hero'` (novo grupo lógico) — mas a tabela `secoes_home` não tem coluna `grupo` (é usada só como lista ordenada). Alternativa mais simples e sem migração: reservar `ordem = 0` como "bloco herói" e consumi-lo no HomeHero; se não existir, usar fallback estático (Unsplash luminoso, ex: `photo-1519741497674-611481863552` com params de brilho — validar visualmente).
-- Fallback definido no componente para nunca quebrar.
-- Renderização: `object-cover rounded-3xl aspect-[4/5]` no desktop, `aspect-[4/3]` no mobile, com leve sombra suave (nada de gradiente forte).
+## 3. FlagGate + rotas sociais
 
-Tokens: apenas `--primary`, `--accent` (sálvia só para selos), `--muted`, `--background`, `--foreground`. Sem gradientes chamativos.
+**`src/components/FlagGate.tsx`** (novo): lê flag; se off, `<Navigate to="/" replace />`; senão renderiza children.
 
-### 2. Ajustes no `ScrollStory` / dados da Home — `src/pages/Home.tsx`
+Em `src/App.tsx`, envolver com `<FlagGate flag="...">` estas rotas:
+- `/casais` → `casais_feed`
+- `/casais/:slug` → `casais_feed`
+- `/meu-casamento/perfil` → `perfil_social_casal`
+- `/mensagens` → `mensagens_casais`
+- `/meu-casamento/indicacoes` → `indicacoes`
+- `/i/:codigo` → `indicacoes`
+- `/admin/indicacoes` → `indicacoes`
 
-- Ao carregar `secoes_home`, se `ordem = 0` for tratado como herói, filtrar esse bloco para não repetir no storytelling (passar só `ordem >= 1` para `ScrollStory`). Se optarmos por não usar `ordem = 0`, deixar HomeHero 100% estático editável só via código — decidir na implementação (recomendo `ordem = 0` = herói).
-- Trocar a foto do capítulo "Datas que ninguém disputou" no `FALLBACK_BLOCOS` por uma imagem premium luminosa (Unsplash editorial de casamento em dia claro). A imagem "de verdade" continua editável em `secoes_home` pelo admin — só o fallback muda.
+## 4. Home + menus
 
-### 3. Grid "Como o Casamenteiro funciona pra você" — `src/components/shared/PlatformFeatures.tsx`
+- `src/components/shared/PlatformFeatures.tsx`: já filtra via `useFeatureFlag` para `perfil_social_casal` e `indicacoes` (só passa a usar o novo provider).
+- Auditar `DashboardNav`, `UserMenu`, `HomeNavbar` e footer da Home/Supplier para esconder links de: `/casais`, `/mensagens`, `/meu-casamento/perfil`, `/meu-casamento/indicacoes` quando as flags correspondentes estiverem off.
 
-- Adicionar novo card "Datas com desconto":
-  - Ícone: `Tag` (lucide).
-  - Título: "Datas com desconto".
-  - Texto: "Economize casando em datas ociosas."
-  - Aparecer na variante `couple` (a usada na Home).
-- Esconder condicionalmente por feature flag (`useFeatureFlag`):
-  - Card "Perfil social do casal" → escondido quando `perfil_social_casal` off.
-  - Card "Indicações que rendem" → escondido quando `indicacoes` off.
-  - Verificar nomes exatos dos cards existentes ao abrir o arquivo; ajustar labels se divergirem.
-  - Se `useFeatureFlag` ainda não existir no projeto, criar hook simples em `src/hooks/useFeatureFlag.ts` que lê `system_settings` (chave por flag) com cache leve — investigar no início da implementação se já existe algo similar.
+## 5. Admin — `src/pages/AdminSettings.tsx`
 
-### 4. SEO / metadata
+Adicionar seção **Funcionalidades** acima da distribuição de orçamento:
+- Carrega todas as flags de `feature_flags` ordenadas por `grupo, label`.
+- Renderiza agrupado por `grupo` (Aquisição, Casal, Fornecedor, Social).
+- Cada linha: label + badge "essencial" (quando aplicável) + description + Switch (shadcn).
+- Toggle faz upsert (`enabled`, `updated_by=user.id`, `updated_at=now()`) e recarrega.
+- Flags essenciais pedem confirmação via `AlertDialog` antes de desligar.
+- Após save, invalida cache do provider (recarrega) para propagar mudança sem reload.
 
-- Sem mudança de rota. Manter `<SEO>` atual. Ajustar `description` da Home para refletir a nova proposta ("Simule o custo do seu casamento e economize casando em datas com desconto. Fornecedores avaliados em BH e região.").
+## Detalhes técnicos
 
-## Direção visual (checklist)
+- Nada de mudança de lógica de negócio; só visibilidade.
+- Tipagem: `feature_flags` não estará em `types.ts` até a migration ser aprovada — usar `as any` nas queries iniciais igual ao padrão de `system_settings` no projeto.
+- Tudo em pt-BR.
+- Sem alteração de RLS de outras tabelas.
 
-- 1 accent (terracota). Fundos creme/off-white (`bg-background`). Sálvia só em selos/badges de desconto.
-- H1 serifado grande + subtítulo sans menor. Pesos: 400 e 500/600 apenas. Sentence case.
-- Respiro generoso: `py-20 md:py-28` na dobra herói.
-- 1 CTA primário por dobra; secundário mais discreto (outline, mesmo tamanho).
-- Mobile-first: empilha, CTA primário `w-full`, imagem depois.
+## Ordem de execução
 
-## O que NÃO muda
-
-- `SimulatorCTA`, footer, navbar, storytelling (exceto foto fallback do capítulo indicado).
-- Nenhuma migração de banco. Nenhuma alteração em lógica de negócio.
-- Admin de `secoes_home`/`frases_home` continua igual.
-
-## Passos de implementação
-
-1. Ler `PlatformFeatures.tsx`, `ScrollStory.tsx`, `HomeNavbar.tsx` e procurar `useFeatureFlag` no projeto.
-2. Criar `src/components/home/HomeHero.tsx` com layout, textos, CTAs, prova social e leitura do count.
-3. Editar `src/pages/Home.tsx`: importar e renderizar `HomeHero` antes de `ScrollStory`; ajustar fetch/filtro de `secoes_home` (bloco `ordem = 0` como herói) e trocar fallback do capítulo "Datas que ninguém disputou".
-4. Editar `PlatformFeatures.tsx`: novo card "Datas com desconto" + esconder condicional via feature flags.
-5. Ajustar `<SEO description>` da Home.
-6. Verificar responsivo (desktop 1280, mobile 390) via Playwright + screenshots; conferir que o CTA primário fica acima do fold em altura ~800px.
+1. Rodar migration (aprovação do usuário).
+2. Criar provider, hook, FlagGate.
+3. Atualizar `App.tsx` (provider + gates).
+4. Ajustar menus/footer.
+5. Ajustar `AdminSettings.tsx`.

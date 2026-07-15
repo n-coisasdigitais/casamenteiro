@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { FeatureFlagsProvider } from "@/contexts/FeatureFlagsContext";
+import FlagGate from "@/components/FlagGate";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Auth from "./pages/Auth";
@@ -72,8 +74,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
+        <FeatureFlagsProvider>
+          <AuthProvider>
+            <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/explorar" element={<Explore />} />
             <Route path="/login" element={<Auth />} />
@@ -92,12 +95,12 @@ const App = () => (
             <Route path="/meu-casamento/plano" element={<WeddingPlan />} />
             <Route path="/buscar" element={<Explore />} />
             <Route path="/categoria/:slug" element={<CategoriaPublica />} />
-            <Route path="/casais" element={<CasaisFeed />} />
-            <Route path="/casais/:slug" element={<CasalPerfilPublico />} />
-            <Route path="/meu-casamento/perfil" element={<MeuCasamentoPerfil />} />
-            <Route path="/meu-casamento/indicacoes" element={<MeuCasamentoIndicacoes />} />
-            <Route path="/mensagens" element={<MensagensCasais />} />
-            <Route path="/i/:codigo" element={<CapturarIndicacao />} />
+            <Route path="/casais" element={<FlagGate flag="casais_feed"><CasaisFeed /></FlagGate>} />
+            <Route path="/casais/:slug" element={<FlagGate flag="casais_feed"><CasalPerfilPublico /></FlagGate>} />
+            <Route path="/meu-casamento/perfil" element={<FlagGate flag="perfil_social_casal"><MeuCasamentoPerfil /></FlagGate>} />
+            <Route path="/meu-casamento/indicacoes" element={<FlagGate flag="indicacoes"><MeuCasamentoIndicacoes /></FlagGate>} />
+            <Route path="/mensagens" element={<FlagGate flag="mensagens_casais"><MensagensCasais /></FlagGate>} />
+            <Route path="/i/:codigo" element={<FlagGate flag="indicacoes"><CapturarIndicacao /></FlagGate>} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
             <Route path="/fornecedor" element={<SupplierLanding />} />
@@ -134,14 +137,15 @@ const App = () => (
             <Route path="/admin/tarefas-padrao" element={<AdminLayout><AdminDefaultTasks /></AdminLayout>} />
             <Route path="/admin/configuracoes" element={<AdminLayout><AdminSettings /></AdminLayout>} />
             <Route path="/admin/financeiro" element={<AdminLayout><AdminFinance /></AdminLayout>} />
-            <Route path="/admin/indicacoes" element={<AdminLayout><AdminIndicacoes /></AdminLayout>} />
+            <Route path="/admin/indicacoes" element={<FlagGate flag="indicacoes"><AdminLayout><AdminIndicacoes /></AdminLayout></FlagGate>} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />
             <Route path="/meu-plano/:id" element={<MeuPlano />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+            </Routes>
+          </AuthProvider>
+        </FeatureFlagsProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
