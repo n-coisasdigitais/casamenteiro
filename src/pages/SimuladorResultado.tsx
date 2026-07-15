@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ToastAction } from "@/components/ui/toast";
 import SEO from "@/components/SEO";
 
 const estiloLabel: Record<Estilo, string> = {
@@ -56,6 +57,68 @@ export default function SimuladorResultado() {
 
   // Aviso quando a cidade não tem fornecedores cadastrados
   const [cidadeSemFornecedor, setCidadeSemFornecedor] = useState(false);
+
+  // Pedidos de orçamento enviados nesta sessão (ou já existentes no banco)
+  const [pedidosEnviados, setPedidosEnviados] = useState<Set<string>>(new Set());
+  const [enviandoPedido, setEnviandoPedido] = useState<string | null>(null);
+
+  // Carrega quotes já existentes deste casal para os fornecedores da simulação
+  useEffect(() => {
+    if (preview || !user || !resultado) return;
+    (async () => {
+      const supplierIds = Object.values(resultado.plano).flatMap((c) => c.fornecedores.map((f) => f.id));
+      if (supplierIds.length === 0) return;
+      const { data: c } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
+      if (!c?.id) return;
+      const { data: qs } = await (supabase.from("quotes") as any)
+        .select("supplier_id")
+        .eq("couple_id", c.id)
+        .in("supplier_id", supplierIds);
+      if (qs && qs.length) {
+        setPedidosEnviados(new Set((qs as any[]).map((q) => q.supplier_id)));
+      }
+    })();
+  }, [preview, user, resultado]);
+
+  const pedirOrcamento = async (f: any) => {
+    if (!user) {
+      navigate("/cadastro?redirect=simulador");
+      return;
+    }
+    if (!resultado) return;
+    setEnviandoPedido(f.id);
+    try {
+      const { data: c, error: ce } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
+      if (ce || !c?.id) throw new Error("Não conseguimos localizar seu plano de casamento.");
+      const { error } = await (supabase.from("quotes") as any).insert({
+        couple_id: c.id,
+        supplier_id: f.id,
+        kanban_status: "enviado",
+        message: `Vim pelo simulador. Orçamento para ${resultado.resumo.convidados} convidados em ${resultado.resumo.cidade}.`,
+        guest_count: resultado.resumo.convidados,
+        event_date: sim?.data_evento ?? null,
+      });
+      if (error) throw error;
+      setPedidosEnviados((prev) => {
+        const s = new Set(prev);
+        s.add(f.id);
+        return s;
+      });
+      toast({
+        title: "Pedido enviado!",
+        description: "Acompanhe em Orçamentos.",
+        action: (
+          <ToastAction altText="Abrir orçamentos" onClick={() => navigate("/orcamento")}>
+            Abrir
+          </ToastAction>
+        ),
+      });
+    } catch (e: any) {
+      toast({ title: "Erro ao enviar pedido", description: e.message, variant: "destructive" });
+    } finally {
+      setEnviandoPedido(null);
+    }
+  };
 
   // Verifica se a cidade tem fornecedores aprovados
   useEffect(() => {
@@ -533,26 +596,42 @@ export default function SimuladorResultado() {
                         >
                           Pedir orçamento (criar conta)
                         </button>
-                      ) : f.linkWhatsApp ? (
-                        <a
-                          href={f.linkWhatsApp}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
-                          style={{ background: "hsl(var(--color-accent))", color: "hsl(var(--accent-foreground))" }}
-                        >
-                          <MessageCircle className="w-3.5 h-3.5 inline mr-1" /> Falar pelo WhatsApp
-                        </a>
+                      ) : pedidosEnviados.has(f.id) ? (
+                        <>
+                          <button
+                            disabled
+                            className="block text-center w-full rounded-full py-2 text-xs font-semibold cursor-default"
+                            style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}
+                          >
+                            <Check className="w-3.5 h-3.5 inline mr-1" /> Pedido enviado
+                          </button>
+                          {f.linkWhatsApp && (
+                            <a
+                              href={f.linkWhatsApp}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-2 block text-center text-[11px] hover:underline"
+                              style={{ color: "hsl(var(--color-text-muted))" }}
+                            >
+                              <MessageCircle className="w-3 h-3 inline mr-1" /> Falar pelo WhatsApp
+                            </a>
+                          )}
+                        </>
                       ) : (
-                        <Link
-                          to={`/fornecedor/${f.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90"
-                          style={{ background: "hsl(var(--color-secondary))", color: "hsl(var(--color-text-body))" }}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); pedirOrcamento(f); }}
+                          disabled={enviandoPedido === f.id}
+                          className="block text-center w-full rounded-full py-2 text-xs font-semibold transition hover:opacity-90 disabled:opacity-70"
+                          style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
                         >
-                          <ExternalLink className="w-3.5 h-3.5 inline mr-1" /> Ver perfil
-                        </Link>
+                          {enviandoPedido === f.id ? (
+                            <><Loader2 className="w-3.5 h-3.5 inline mr-1 animate-spin" /> Enviando…</>
+                          ) : (
+                            "Pedir orçamento"
+                          )}
+                        </button>
                       )}
 
                       {bloqueado && (
