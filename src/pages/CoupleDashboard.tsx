@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Heart, Search, Calendar, Users, DollarSign, Copy, Share2,
@@ -14,8 +16,7 @@ import {
 } from "lucide-react";
 import { Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import QuoteThread from "@/components/QuoteThread";
-import QuoteProposalPanel from "@/components/QuoteProposalPanel";
+import QuoteConversation from "@/components/QuoteConversation";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import CouplePhotoUpload from "@/components/CouplePhotoUpload";
