@@ -65,6 +65,8 @@ import MeuCasamentoIndicacoes from "./pages/MeuCasamentoIndicacoes";
 import MensagensCasais from "./pages/MensagensCasais";
 import CapturarIndicacao from "./pages/CapturarIndicacao";
 import AdminIndicacoes from "./pages/AdminIndicacoes";
+import DemoLanding from "./pages/DemoLanding";
+import DemoBanner from "./components/DemoBanner";
 
 const queryClient = new QueryClient();
 
@@ -76,9 +78,11 @@ const App = () => (
       <BrowserRouter>
         <FeatureFlagsProvider>
           <AuthProvider>
+            <DemoBanner />
             <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/explorar" element={<Explore />} />
+            <Route path="/demo" element={<DemoLanding />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/cadastro" element={<Auth />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />

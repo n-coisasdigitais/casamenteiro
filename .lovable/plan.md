@@ -1,65 +1,105 @@
-# Correção de `match.ts` + unificação dos motores
 
-## Parte 1 — Bugs em `src/lib/simulador/match.ts`
+# Área de Demonstração (/demo)
 
-### Bug 1: filtro de cidade anulado por `|| true`
-Linha 113 hoje:
-```ts
-.filter((s: any) => !cityNorm || (s.city || "").toLowerCase().includes(cityNorm) || true)
+Cria uma área pública de demonstração da plataforma, com contas fictícias já logáveis, dados de exemplo populados e proteções para não misturar com produção. Serve para você apresentar a plataforma a fornecedores e casais reais sem impactar o banco de produção "de verdade".
+
+## Como vai funcionar (visão do usuário)
+
+1. Você (ou um prospect) acessa `casamenteiro.com.br/demo`.
+2. Vê uma landing simples com dois botões: **"Entrar como casal demo"** e **"Entrar como fornecedor demo"**.
+3. Ao clicar, o sistema faz login automático com a conta fictícia correspondente e leva ao dashboard normal.
+4. Um **banner amarelo fixo no topo** aparece em toda a navegação: *"Você está no ambiente de demonstração. Os dados aqui são fictícios."*
+5. Dentro da demo, tudo funciona: navegar, cadastrar convidados, mandar orçamento, ver Kanban, etc. Exceto ações "de mundo real" (envio de e-mail, cobrança) — essas ficam simuladas.
+6. Um botão discreto **"Sair da demo"** e outro **"Resetar demo"** (visível só para admins) ficam disponíveis.
+
+## Escopo — o que ENTRA e o que NÃO ENTRA
+
+**Entra:**
+- Landing `/demo` com dois CTAs.
+- Contas fictícias: `casal.demo@casamenteiro.com.br` e `fornecedor.demo@casamenteiro.com.br` (já criadas via SQL, senhas fixas).
+- Seed rico de dados: casal com data, orçamento, 150 convidados, 5 fornecedores no Kanban (2 contratados, 2 negociando, 1 descartado), 3 orçamentos ativos com conversa, tarefas seedadas, perfil público preenchido. Fornecedor com fotos, categoria, cidade, 3 avaliações reais e 4 leads recebidos.
+- Coluna `is_demo` boolean nas tabelas `profiles`, `couples`, `suppliers` para filtrar.
+- Banner global de demonstração (visível quando o usuário logado tem `is_demo=true`).
+- Bloqueio de ações sensíveis quando `is_demo`: envio real de e-mail (funções edge checam e simulam), pagamento, alteração de dados de contato reais.
+- Botão "Resetar demo" no admin (`/admin/configuracoes`) que roda um SQL de reset.
+- Filtro automático nas queries que listam usuários/casais/fornecedores para o público — contas demo **não aparecem** no `/casais` feed, `/explorar`, sitemap, métricas de admin, e nem contam nas contagens de social proof da home.
+
+**Não entra:**
+- Banco separado ou projeto Lovable duplicado (fica no mesmo projeto/banco).
+- Duplicação do código — a demo é o mesmo app, só muda dado + banner.
+- Ambiente de "staging" separado — para isso, o Preview URL do Lovable já serve.
+
+## Detalhes técnicos
+
+**1) Migration nova (schema):**
+- Adicionar coluna `is_demo boolean NOT NULL DEFAULT false` em `public.profiles`, `public.couples`, `public.suppliers`.
+- Adicionar índice parcial `WHERE is_demo = true` em cada uma para filtragem rápida.
+
+**2) Migration de exclusão nas listagens públicas:**
+- Ajustar as policies/queries de:
+  - `couple_public_profiles` (feed `/casais`) → filtrar `is_demo=false` no join com `couples`.
+  - `suppliers` público (`/explorar`, `/categoria/:slug`, `SupplierProfile`) → adicionar `.eq('is_demo', false)` nos hooks de leitura pública.
+  - `scripts/generate-sitemap.ts` → excluir demo.
+  - Métricas admin (`AdminMetrics`, `AdminCoupleCRM`, `AdminSupplierCRM`) → adicionar toggle "Incluir demo" (padrão desligado).
+  - `HomeHero` contagem de fornecedores → excluir demo.
+  - Contagem `frases_home` e social proof → excluir demo.
+
+**3) Seed de dados (via insert tool):**
+- Criar via `auth.admin` os 2 usuários fictícios com `is_demo=true` no profile.
+- Popular casal demo com: `wedding_date` 6 meses no futuro, `partner_name`, orçamento R$ 120k, cidade "São Paulo", 150 convidados (mix de status), 5 `couple_suppliers` em stages diferentes, 3 `quotes` com mensagens, `couple_public_profiles` com bio e slug `ana-e-carlos-demo`.
+- Popular fornecedor demo: categoria "Fotografia", cidade "São Paulo", fotos de portfólio (reaproveitar bucket `supplier-photos`), status `approved`, 3 `reviews` fictícias, 4 leads.
+
+**4) Frontend:**
+- `src/pages/DemoLanding.tsx` — landing pública com 2 CTAs.
+- Rota `/demo` no `App.tsx`.
+- `src/lib/demoAuth.ts` — helper que faz `signInWithPassword` com credenciais hardcoded (senhas públicas — são contas demo, não tem risco).
+- `src/components/DemoBanner.tsx` — banner amarelo fixo, renderizado no `App.tsx` quando `profile.is_demo === true`. Botão "Sair da demo" (signOut + redirect `/demo`).
+- Extender `AuthContext` para expor `isDemo` derivado do profile.
+- Guards em componentes que fazem ações sensíveis (envio de invite por email real) — quando `isDemo`, mostrar toast "Ação simulada no ambiente demo".
+
+**5) Reset da demo (admin):**
+- Botão em `AdminSettings.tsx` "Resetar dados demo".
+- Chama nova função `admin_reset_demo()` (SECURITY DEFINER, checa `has_role admin`) que:
+  - Deleta todos os dados vinculados aos user_ids demo (guests, tasks, quotes, budget, reviews, photos, etc).
+  - Re-executa o seed populando dados fresquinhos.
+- Feedback com toast e contagem de registros recriados.
+
+**6) Segurança:**
+- As senhas das contas demo são públicas de propósito (ficam no botão). Isso é aceitável porque:
+  - As contas têm `is_demo=true` e são invisíveis para listagens públicas.
+  - Não têm dados reais.
+  - Não podem executar ações destrutivas em produção.
+- Bloqueio explícito: RLS extra que impede contas demo de: promover-se a admin, alterar `feature_flags`, alterar dados de outros usuários.
+
+## Estrutura de arquivos afetada
+
+```text
+supabase/migrations/xxx_demo_mode.sql          [novo — schema]
+src/pages/DemoLanding.tsx                       [novo]
+src/components/DemoBanner.tsx                   [novo]
+src/lib/demoAuth.ts                             [novo]
+src/contexts/AuthContext.tsx                    [editar — expor isDemo]
+src/App.tsx                                     [editar — rota /demo + banner global]
+src/pages/AdminSettings.tsx                     [editar — botão reset]
+src/pages/Home.tsx                              [editar — filtrar demo em contagens]
+src/pages/CasaisFeed.tsx                        [editar — filtrar demo]
+src/pages/Explore.tsx / CategoriaPublica        [editar — filtrar demo]
+scripts/generate-sitemap.ts                     [editar — filtrar demo]
+supabase/functions/send-invite-emails/index.ts  [editar — no-op se is_demo]
 ```
-O `|| true` faz o filtro sempre passar. Substituir pela mesma cascata usada em `simulador.ts` (`matchCidade`): cidade exata → `cidades_atendidas` (jsonb array) → raio Haversine → mesmo estado se o fornecedor declara raio.
 
-Mudanças em `match.ts`:
-- Adicionar helper de coordenadas cacheadas + `haversineKm` (copiar de `simulador.ts`).
-- Ampliar o `select` de `suppliers` para incluir `state, cidades_atendidas, raio_atendimento_km, lat, lng`.
-- Antes do loop de categorias, resolver `buscaCoord` da cidade digitada via cache de `cidades_coordenadas`.
-- Substituir o filtro atual por `matchCidade(s)` (mesma função de `simulador.ts`). Se `cityNorm` for vazio, aceita todos.
-- Manter o boost de score "cidade exata → +100".
+## Ordem de execução
 
-### Bug 2: `avgPrice(s) ?? slice` faz fornecedor sem preço "sempre caber"
-Linha 115 hoje:
-```ts
-let price = avgPrice(s) ?? slice;
-```
-Fornecedor sem preço vira `slice` → `fits_budget_slice = true` (sempre). Isso infla resultados.
+1. Migration de schema (`is_demo` + índices).
+2. Seed inicial das contas demo e dados.
+3. Frontend: landing, banner, contexto, rota.
+4. Filtros de exclusão nas listagens públicas.
+5. Botão de reset no admin.
+6. Guards nas edge functions sensíveis.
+7. Teste manual: entrar em `/demo`, verificar banner, navegar, confirmar que a conta demo não aparece em `/casais` nem `/explorar`, testar reset.
 
-Mudança: tratar preço desconhecido como desconhecido:
-- `const rawPrice = avgPrice(s);` (pode ser `null`).
-- `estimated_price = rawPrice != null ? Math.round(rawPrice * (1 - appliedDiscount / 100)) : 0;` (ou manter `null` no tipo — vou manter 0 para não quebrar o tipo `number`, mas adicionar campo interno `has_price`).
-- `fits_budget_slice = rawPrice != null && estimated <= slice * 1.15;` (sem preço → `false`).
-- No score, remover o bônus `+50` de `fits_budget_slice` quando `!has_price` (já é `false`), e adicionar uma pequena penalidade opcional para sem preço não subir demais. Manter simples: apenas `fits_budget_slice` deixa de ser `true`.
+## Depois de implementar
 
-## Parte 2 — Unificação dos motores
-
-**Sim, dá para unificar.** Recomendo `calcularSimulacao` de `src/lib/simulador.ts` como fonte única, e apagar `src/lib/simulador/match.ts`.
-
-Justificativa:
-- `SimuladorResultado.tsx` já consome exclusivamente a forma `{ resumo, plano }` de `simulador.ts` (linhas 145, 165, 178). Hoje, quando `SimulatorCTA` chama `computeSimulador` e grava em `sessionStorage.preview_simulacao`, o resultado tem `{ categories, total_budget, ... }` — sem `plano` nem `resumo` — e a verificação `!payload?.resultado?.plano` em `SimuladorResultado` **redireciona de volta para `/simulador`**. Ou seja, o preview do CTA já está quebrado hoje pela divergência dos motores. Unificar corrige isso.
-- `simulador.ts` cobre tudo que `match.ts` cobre e mais: cascata de cidade (Haversine + estado), filtro de guest_min/max, filtro efetivo por orçamento, `pricing_model = por_pessoa`, geração de alertas, persistência em `home_simulacoes`, `recalcularCategoria`.
-- O único recurso presente em `match.ts` e ausente em `simulador.ts` é o filtro por `data_evento` específica (`supplier_blocked_dates` daquela data + `supplier_promo_dates` daquela data). Isso hoje **não é usado por `SimuladorResultado.tsx`** (o recálculo lá só passa `aceitaOciosas` como toggle, nunca uma data). Portanto, apagar `match.ts` não regride nada visível na UI atual. Se no futuro quisermos honrar `data_evento`, migramos essa parte para dentro de `simulador.ts`.
-
-### O que muda no `SimulatorCTA.tsx`
-- Trocar `import { computeSimulador } from "@/lib/simulador/match";` por `import { calcularSimulacao, type Estilo } from "@/lib/simulador";`.
-- Substituir o bloco `submit()`:
-  - Normalizar `estilo` (o CTA já usa "intimista"/"elegante"/"grandioso", que casam com o `Estilo` do simulador — `calcularSimulacao` também aceita rótulos livres).
-  - Chamar `const r = await calcularSimulacao(orcamento, convidados ?? 100, cidade, estilo as Estilo, false)` — isso já grava a simulação em `home_simulacoes` internamente e devolve `simulacaoId`.
-  - Para usuário logado: `calcularSimulacao` já vincula `couple_id` via `auth.getUser()`; navegar para `/simulador/resultado?id=${r.simulacaoId}`.
-  - Para usuário anônimo: `calcularSimulacao` grava sem `couple_id`/`user_id` (o INSERT em `home_simulacoes` já suporta valores nulos e o `salvarSimulacao` só busca `couples` se houver `user`). Guardar `{ resultado: { resumo: r.resumo, plano: r.plano, alertas: r.alertas }, orcamento_total, num_convidados, cidade, estilo, data_evento }` em `sessionStorage.preview_simulacao` para o preview mode e navegar para `/simulador/resultado?preview=1`.
-  - Remover o `payload.data_evento`/`prazo_meses` que hoje é enviado ao insert manual — `calcularSimulacao` já faz o insert. Se quisermos manter `data_evento`/`prazo_meses` no lead do admin, precisaríamos passar isso adiante; por ora ficam **apenas no `sessionStorage` do preview** (já usados na UI). Alternativa: fazer um `UPDATE home_simulacoes SET ... WHERE id = simulacaoId` logo depois com esses dois campos, se importar para métricas.
-
-### O que muda no `SimuladorResultado.tsx`
-- Nenhuma mudança de shape. Passa a ler `resultado.plano`/`resultado.resumo` no preview também (que hoje falha).
-
-### Arquivos
-- **Editar**: `src/lib/simulador/match.ts` (bugs 1 e 2) **OU**, se unificarmos na mesma passada, apagar. Recomendo:
-  1. Aplicar as correções em `match.ts` para não deixar código ruim vivo enquanto migro.
-  2. Migrar `SimulatorCTA.tsx` para `calcularSimulacao`.
-  3. `grep` confirmar que ninguém mais importa `@/lib/simulador/match` (SimulatorCTA é o único uso hoje) e **deletar** `src/lib/simulador/match.ts` + a pasta se ficar vazia.
-
-### Impedimentos conhecidos
-- Nenhum bloqueante. Perda funcional zero em relação ao que a UI hoje usa. Trade-off: perdemos o suporte a `data_evento` específica no cálculo (blocked/promo do dia); recuperável depois migrando essa lógica para `simulador.ts`.
-
-## Resumo das mudanças de arquivos
-- `src/lib/simulador/match.ts`: corrigir bugs 1 e 2 **e depois deletar** após migrar o CTA.
-- `src/components/home/SimulatorCTA.tsx`: usar `calcularSimulacao`; ajustar preview e navegação.
-- `src/pages/SimuladorResultado.tsx`: **sem alterações**.
+- Você usa `/demo` para apresentações comerciais.
+- Contas de teste antigas (`casal.teste` / `fornecedor.teste`) continuam existindo para seus testes internos de fluxo.
+- Preview x Publish continua funcionando normalmente para você trabalhar no código sem afetar produção (mudanças de tela só sobem quando você clicar Publish).

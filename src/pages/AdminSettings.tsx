@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, ArrowLeft, Save, Flag } from "lucide-react";
+import { Heart, ArrowLeft, Save, Flag, PlayCircle, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReloadFeatureFlags } from "@/contexts/FeatureFlagsContext";
 
@@ -37,6 +37,8 @@ export default function AdminSettings() {
   const [dist, setDist] = useState<Record<string, number>>(DEFAULTS);
   const [flags, setFlags] = useState<FeatureFlagRow[]>([]);
   const [pendingOff, setPendingOff] = useState<FeatureFlagRow | null>(null);
+  const [resettingDemo, setResettingDemo] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const loadFlags = async () => {
     const { data } = await (supabase.from("feature_flags" as any).select("*").order("grupo").order("label") as any);
@@ -92,6 +94,21 @@ export default function AdminSettings() {
     applyFlagChange(flag, next);
   };
 
+  const runResetDemo = async () => {
+    setResettingDemo(true);
+    const { data, error } = await (supabase.rpc as any)("admin_reset_demo");
+    setResettingDemo(false);
+    setConfirmReset(false);
+    if (error) {
+      toast({ title: "Erro ao resetar demo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Demo resetada",
+      description: `Contas afetadas: ${data?.demo_users ?? 0} · casais: ${data?.demo_couples ?? 0} · fornecedores: ${data?.demo_suppliers ?? 0}`,
+    });
+  };
+
   const grouped = flags.reduce<Record<string, FeatureFlagRow[]>>((acc, f) => {
     (acc[f.grupo] = acc[f.grupo] || []).push(f);
     return acc;
@@ -116,6 +133,34 @@ export default function AdminSettings() {
         </div>
       </header>
       <main className="container py-6 max-w-2xl space-y-10">
+        <section>
+          <div className="flex items-center gap-2 mb-1">
+            <PlayCircle className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Área de demonstração</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Contas fictícias pré-populadas para apresentar a plataforma a fornecedores e clientes. Acessível em <code>/demo</code>.
+          </p>
+          <div className="border rounded-lg p-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/demo" target="_blank">Abrir /demo</Link>
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setConfirmReset(true)}
+                disabled={resettingDemo}
+              >
+                <RotateCcw className="h-4 w-4 mr-1" /> Resetar dados demo
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              O reset apaga todos os dados vinculados às contas demo (convidados, tarefas, orçamentos, mensagens, avaliações etc). As contas em si continuam existindo. Faça login em <code>/demo</code> e repopule manualmente depois, se quiser dados de exemplo novos.
+            </p>
+          </div>
+        </section>
+
         <section>
           <div className="flex items-center gap-2 mb-1">
             <Flag className="h-5 w-5 text-primary" />
@@ -191,6 +236,21 @@ export default function AdminSettings() {
             >
               Desativar mesmo assim
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Resetar dados demo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Todos os dados criados pelas contas demo (convidados, tarefas, orçamentos, mensagens, avaliações etc) serão apagados. Esta ação não afeta usuários reais.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={runResetDemo}>Resetar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
