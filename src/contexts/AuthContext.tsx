@@ -10,6 +10,7 @@ type Profile = {
   full_name: string | null;
   account_type: string;
   avatar_url: string | null;
+  is_demo?: boolean | null;
 };
 
 type AuthContextType = {
@@ -17,6 +18,7 @@ type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isDemo: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
 };
@@ -26,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   isAdmin: false,
+  isDemo: false,
   loading: true,
   signOut: async () => {},
 });
@@ -94,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, isAdmin, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, isAdmin, isDemo: !!profile?.is_demo, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
