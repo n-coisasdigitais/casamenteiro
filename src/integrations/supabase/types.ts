@@ -968,6 +968,7 @@ export type Database = {
           invite_message: string | null
           invite_photo_url: string | null
           invite_video_url: string | null
+          is_demo: boolean
           needed_services: string[] | null
           onboarding_completed: boolean
           partner_name: string | null
@@ -1006,6 +1007,7 @@ export type Database = {
           invite_message?: string | null
           invite_photo_url?: string | null
           invite_video_url?: string | null
+          is_demo?: boolean
           needed_services?: string[] | null
           onboarding_completed?: boolean
           partner_name?: string | null
@@ -1044,6 +1046,7 @@ export type Database = {
           invite_message?: string | null
           invite_photo_url?: string | null
           invite_video_url?: string | null
+          is_demo?: boolean
           needed_services?: string[] | null
           onboarding_completed?: boolean
           partner_name?: string | null
@@ -1549,6 +1552,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_demo: boolean
           suspended: boolean
           suspended_at: string | null
           suspended_reason: string | null
@@ -1561,6 +1565,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_demo?: boolean
           suspended?: boolean
           suspended_at?: string | null
           suspended_reason?: string | null
@@ -1573,6 +1578,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_demo?: boolean
           suspended?: boolean
           suspended_at?: string | null
           suspended_reason?: string | null
@@ -2840,6 +2846,7 @@ export type Database = {
         Args: { _amount: number; _lead_id: string }
         Returns: undefined
       }
+      admin_reset_demo: { Args: never; Returns: Json }
       admin_set_user_suspended: {
         Args: { _reason?: string; _suspended: boolean; _user_id: string }
         Returns: undefined
@@ -2915,6 +2922,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_demo_user: { Args: { _user_id: string }; Returns: boolean }
       link_partner_by_invite_code: { Args: { _code: string }; Returns: Json }
       move_to_dlq: {
         Args: {
