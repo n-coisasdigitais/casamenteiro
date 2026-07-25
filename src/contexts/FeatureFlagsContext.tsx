@@ -15,7 +15,8 @@ export type FeatureFlagKey =
   | "perfil_social_casal"
   | "mensagens_casais"
   | "indicacoes"
-  | "avaliacao_bidirecional";
+  | "avaliacao_bidirecional"
+  | "vagas";
 
 // Defaults espelham o seed da migration — evita flicker enquanto carrega.
 export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
@@ -33,6 +34,7 @@ export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
   mensagens_casais: false,
   indicacoes: false,
   avaliacao_bidirecional: false,
+  vagas: false,
 };
 
 type Ctx = {
