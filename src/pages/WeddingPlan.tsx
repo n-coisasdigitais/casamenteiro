@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,15 +10,31 @@ import PlanKanban, { PlanSupplier, KanbanStatus } from "@/components/plan/PlanKa
 import BudgetTab from "@/components/plan/BudgetTab";
 import PaymentsTab, { PaymentRow } from "@/components/plan/PaymentsTab";
 import AddExternalSupplierDialog from "@/components/plan/AddExternalSupplierDialog";
+import PlanBudgetSidebar from "@/components/plan/PlanBudgetSidebar";
+import CardDetailDrawer from "@/components/plan/CardDetailDrawer";
+import BulkContactTab from "@/components/plan/BulkContactTab";
+import ContractSupplierDialog, { ContractTarget } from "@/components/plan/ContractSupplierDialog";
+import NegotiateSupplierDialog, { NegotiateTarget } from "@/components/plan/NegotiateSupplierDialog";
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import QuoteThread from "@/components/QuoteThread";
 import QuoteProposalPanel from "@/components/QuoteProposalPanel";
+import { useToast } from "@/hooks/use-toast";
+
+const STATUS_LABEL: Record<string, string> = {
+  nao_iniciado: "No plano",
+  em_orcamento: "Em orçamento",
+  negociando: "Negociando",
+  contratado: "Contratado",
+  descartado: "Descartado",
+  fora_da_plataforma: "Fora da plataforma",
+};
 
 export default function WeddingPlan() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [coupleId, setCoupleId] = useState<string>("");
@@ -30,6 +46,15 @@ export default function WeddingPlan() {
   const [newProposals, setNewProposals] = useState<{ id: string; title: string; body: string | null; link: string | null }[]>([]);
   const [externalDialogOpen, setExternalDialogOpen] = useState(false);
   const [openQuoteId, setOpenQuoteId] = useState<string | null>(null);
+  const [detailItem, setDetailItem] = useState<PlanSupplier | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [budgetSubTab, setBudgetSubTab] = useState<"resumo" | "contato">("resumo");
+  const [contractOpen, setContractOpen] = useState(false);
+  const [contractTarget, setContractTarget] = useState<ContractTarget | null>(null);
+  const [negotiateOpen, setNegotiateOpen] = useState(false);
+  const [negotiateTarget, setNegotiateTarget] = useState<NegotiateTarget | null>(null);
+  const prevItemsRef = useRef<PlanSupplier[]>([]);
 
   const load = useCallback(async (cId: string) => {
     // 1. Couple suppliers + categoria
@@ -76,7 +101,22 @@ export default function WeddingPlan() {
         external_phone: r.external_supplier_phone || null,
       };
     });
+    // Detecta transições automáticas comparando com estado anterior
+    if (prevItemsRef.current.length > 0) {
+      for (const it of planItems) {
+        const prev = prevItemsRef.current.find((p) => p.id === it.id);
+        if (prev && prev.kanban_status !== it.kanban_status) {
+          toast({
+            title: `${it.company_name} movido para ${STATUS_LABEL[it.kanban_status] || it.kanban_status}`,
+            description: `Antes estava em ${STATUS_LABEL[prev.kanban_status] || prev.kanban_status}.`,
+          });
+        }
+      }
+    }
+    prevItemsRef.current = planItems;
     setItems(planItems);
+    // atualiza detailItem se aberto
+    setDetailItem((cur) => cur ? (planItems.find((i) => i.id === cur.id) || cur) : cur);
 
     // 2. Pagamentos via budget_items (precisamos do supplier_id)
     const { data: bis } = await supabase
@@ -105,7 +145,7 @@ export default function WeddingPlan() {
         .limit(5);
       setNewProposals(notifs || []);
     }
-  }, [user]);
+  }, [user, toast]);
 
   useEffect(() => {
     if (!user) return;
@@ -172,6 +212,41 @@ export default function WeddingPlan() {
 
   const openQuote = quotes.find((q: any) => q.id === openQuoteId);
   const openSupplierId = openQuote?.supplier_id || null;
+
+  const openCardDetail = (item: PlanSupplier) => {
+    setDetailItem(item);
+    setDetailOpen(true);
+  };
+  const openContractFromDrawer = (item: PlanSupplier) => {
+    setContractTarget({
+      coupleSupplierId: item.id,
+      supplierId: item.supplier_id || "",
+      supplierName: item.company_name,
+      coupleId,
+      suggestedValue: item.valor_cotado || item.valor_plano || null,
+    });
+    setContractOpen(true);
+  };
+  const openNegotiateFromDrawer = (item: PlanSupplier) => {
+    setNegotiateTarget({
+      coupleSupplierId: item.id,
+      supplierName: item.company_name,
+      suggestedValue: item.valor_cotado || item.valor_plano || null,
+    });
+    setNegotiateOpen(true);
+  };
+  const discardFromDrawer = async (item: PlanSupplier) => {
+    if (!window.confirm(`Descartar ${item.company_name}?`)) return;
+    await (supabase.from("couple_suppliers") as any).update({ kanban_status: "descartado" }).eq("id", item.id);
+    setDetailOpen(false);
+    load(coupleId);
+  };
+  const registerPaymentFromDrawer = () => {
+    setDetailOpen(false);
+    // Navega para aba de pagamentos
+    const el = document.querySelector('[data-value="pagamentos"]') as HTMLElement | null;
+    el?.click();
+  };
 
   if (loading) {
     return (
@@ -248,16 +323,31 @@ export default function WeddingPlan() {
                 Nenhum fornecedor no plano ainda. Faça uma simulação ou adicione fornecedores aos seus favoritos.
               </div>
             ) : (
-              <PlanKanban
-                coupleId={coupleId}
-                items={items}
-                onChange={() => load(coupleId)}
-                supplierIdsWithNewProposal={supplierIdsWithNewProposal}
-                onOpenQuoteForSupplier={(sid) => {
-                  const q = quotes.find((x: any) => x.supplier_id === sid);
-                  if (q) openQuoteDialog(q.id);
-                }}
-              />
+              <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
+                <div className="hidden lg:block sticky top-4">
+                  <PlanBudgetSidebar
+                    coupleId={coupleId}
+                    items={items}
+                    planoTotal={orcamentoTotal}
+                    collapsed={sidebarCollapsed}
+                    onToggle={() => setSidebarCollapsed((v) => !v)}
+                  />
+                </div>
+                <div className="lg:hidden">
+                  <PlanBudgetSidebar coupleId={coupleId} items={items} planoTotal={orcamentoTotal} />
+                </div>
+                <PlanKanban
+                  coupleId={coupleId}
+                  items={items}
+                  onChange={() => load(coupleId)}
+                  supplierIdsWithNewProposal={supplierIdsWithNewProposal}
+                  onOpenQuoteForSupplier={(sid) => {
+                    const q = quotes.find((x: any) => x.supplier_id === sid);
+                    if (q) openQuoteDialog(q.id);
+                  }}
+                  onOpenCard={openCardDetail}
+                />
+              </div>
             )}
             <AddExternalSupplierDialog
               open={externalDialogOpen}
@@ -268,21 +358,34 @@ export default function WeddingPlan() {
           </TabsContent>
 
           <TabsContent value="orcamento" className="mt-6">
-            <BudgetTab
-              coupleId={coupleId}
-              items={items}
-              planoTotal={orcamentoTotal}
-              onChange={() => load(coupleId)}
-              quotes={quotes}
-              quoteIdsWithNewProposal={quoteIdsWithNewProposal}
-              onOpenQuote={openQuoteDialog}
-              contextoMensagem={{
-                nomeCasal: coupleName,
-                data: couple?.wedding_date ? new Date(couple.wedding_date + "T00:00:00").toLocaleDateString("pt-BR") : "",
-                cidade: couple?.wedding_city || "",
-                convidados: Number(couple?.estimated_guests || 0),
-              }}
-            />
+            <Tabs value={budgetSubTab} onValueChange={(v) => setBudgetSubTab(v as any)}>
+              <TabsList className="grid w-full max-w-sm grid-cols-2 mb-4">
+                <TabsTrigger value="resumo">Resumo</TabsTrigger>
+                <TabsTrigger value="contato">Contatar fornecedores</TabsTrigger>
+              </TabsList>
+              <TabsContent value="resumo">
+                <BudgetTab
+                  items={items}
+                  planoTotal={orcamentoTotal}
+                  quotes={quotes}
+                  quoteIdsWithNewProposal={quoteIdsWithNewProposal}
+                  onOpenQuote={openQuoteDialog}
+                />
+              </TabsContent>
+              <TabsContent value="contato">
+                <BulkContactTab
+                  coupleId={coupleId}
+                  items={items}
+                  onChange={() => load(coupleId)}
+                  contextoMensagem={{
+                    nomeCasal: coupleName,
+                    data: couple?.wedding_date ? new Date(couple.wedding_date + "T00:00:00").toLocaleDateString("pt-BR") : "",
+                    cidade: couple?.wedding_city || "",
+                    convidados: Number(couple?.estimated_guests || 0),
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="pagamentos" className="mt-6">
@@ -312,6 +415,33 @@ export default function WeddingPlan() {
             )}
           </DialogContent>
         </Dialog>
+
+        {user && (
+          <CardDetailDrawer
+            open={detailOpen}
+            onOpenChange={setDetailOpen}
+            item={detailItem}
+            coupleId={coupleId}
+            currentUserId={user.id}
+            onOpenContract={openContractFromDrawer}
+            onOpenNegotiate={openNegotiateFromDrawer}
+            onDiscard={discardFromDrawer}
+            onRegisterPayment={registerPaymentFromDrawer}
+            onChange={() => load(coupleId)}
+          />
+        )}
+        <ContractSupplierDialog
+          open={contractOpen}
+          onOpenChange={setContractOpen}
+          target={contractTarget}
+          onConfirmed={() => { setContractTarget(null); setContractOpen(false); load(coupleId); }}
+        />
+        <NegotiateSupplierDialog
+          open={negotiateOpen}
+          onOpenChange={setNegotiateOpen}
+          target={negotiateTarget}
+          onConfirmed={() => { setNegotiateTarget(null); setNegotiateOpen(false); load(coupleId); }}
+        />
       </div>
     </div>
   );

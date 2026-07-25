@@ -816,6 +816,47 @@ export type Database = {
           },
         ]
       }
+      couple_supplier_events: {
+        Row: {
+          couple_supplier_id: string
+          created_at: string
+          created_by: string | null
+          from_status: string | null
+          id: string
+          payload: Json | null
+          to_status: string | null
+          type: string
+        }
+        Insert: {
+          couple_supplier_id: string
+          created_at?: string
+          created_by?: string | null
+          from_status?: string | null
+          id?: string
+          payload?: Json | null
+          to_status?: string | null
+          type: string
+        }
+        Update: {
+          couple_supplier_id?: string
+          created_at?: string
+          created_by?: string | null
+          from_status?: string | null
+          id?: string
+          payload?: Json | null
+          to_status?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_supplier_events_couple_supplier_id_fkey"
+            columns: ["couple_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "couple_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couple_suppliers: {
         Row: {
           category_id: string | null
