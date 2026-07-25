@@ -40,12 +40,24 @@ export function formatDueDate(d: Date | null): string {
 /**
  * Status temporal: atrasada, próxima (<=30 dias), no prazo, sem data.
  */
-export function dueStatus(d: Date | null, isCompleted: boolean): "completed" | "overdue" | "soon" | "ok" | "none" {
+export function dueStatus(
+  d: Date | null,
+  isCompleted: boolean,
+  opts?: { createdAt?: Date | string | null; seededAsBacklog?: boolean }
+): "completed" | "overdue" | "soon" | "ok" | "none" | "backlog" {
   if (isCompleted) return "completed";
+  if (opts?.seededAsBacklog) return "backlog";
   if (!d) return "none";
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const diffDays = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return "overdue";
+  if (diffDays < 0) {
+    // só é "atrasada" se venceu DEPOIS que o casal já usava a plataforma
+    const created = opts?.createdAt
+      ? (typeof opts.createdAt === "string" ? new Date(opts.createdAt) : opts.createdAt)
+      : null;
+    if (created && d.getTime() <= created.getTime()) return "backlog";
+    return "overdue";
+  }
   if (diffDays <= 30) return "soon";
   return "ok";
 }

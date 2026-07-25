@@ -1,16 +1,17 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Printer } from "lucide-react";
+import { Download, Printer, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import TaskItem from "@/components/TaskItem";
 import AddTaskDialog from "@/components/AddTaskDialog";
+import { useToast } from "@/hooks/use-toast";
 
 type Task = {
   id: string;
@@ -21,10 +22,16 @@ type Task = {
   due_date: string | null;
   is_completed: boolean;
   sort_order: number;
+  created_at?: string | null;
+  seeded_as_backlog?: boolean;
+  is_custom?: boolean;
+  action_label?: string | null;
+  action_url?: string | null;
   supplier_id?: string | null;
   supplier_name?: string | null;
 };
 
+const BACKLOG_KEY = "comece-aqui";
 const periodOrder = [
   "10-12 meses",
   "7-9 meses",
@@ -34,8 +41,10 @@ const periodOrder = [
   "ultima-semana",
   "dia-do-casamento",
 ];
+const allBuckets = [BACKLOG_KEY, ...periodOrder];
 
 const periodLabels: Record<string, string> = {
+  [BACKLOG_KEY]: "Comece por aqui",
   "10-12 meses": "De 10 a 12 meses",
   "7-9 meses": "De 7 a 9 meses",
   "4-6 meses": "De 4 a 6 meses",
@@ -45,14 +54,20 @@ const periodLabels: Record<string, string> = {
   "dia-do-casamento": "Dia do casamento",
 };
 
+const priorityRank: Record<string, number> = { essential: 0, recommended: 1, optional: 2 };
+
 export default function WeddingTasks() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [coupleId, setCoupleId] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<"all" | "pending" | "completed">("all");
   const [filterPeriod, setFilterPeriod] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [showAllPhases, setShowAllPhases] = useState(false);
+  const [expanding, setExpanding] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -66,7 +81,7 @@ export default function WeddingTasks() {
   const loadTasks = async (cId: string) => {
     const { data } = await (supabase
       .from("wedding_tasks") as any)
-      .select("id, title, category, priority, due_period, due_date, is_completed, sort_order, supplier_id")
+      .select("id, title, category, priority, due_period, due_date, is_completed, sort_order, supplier_id, created_at, seeded_as_backlog, is_custom, action_label, action_url")
       .eq("couple_id", cId)
       .order("sort_order", { ascending: true });
     const list = (data || []) as Task[];
@@ -102,7 +117,13 @@ export default function WeddingTasks() {
     return tasks.filter((t) => {
       if (filterState === "pending" && t.is_completed) return false;
       if (filterState === "completed" && !t.is_completed) return false;
-      if (filterPeriod && t.due_period !== filterPeriod) return false;
+      if (filterPeriod) {
+        if (filterPeriod === BACKLOG_KEY) {
+          if (!t.seeded_as_backlog) return false;
+        } else if (t.seeded_as_backlog || t.due_period !== filterPeriod) {
+          return false;
+        }
+      }
       if (filterCategory && t.category !== filterCategory) return false;
       return true;
     });
@@ -111,14 +132,45 @@ export default function WeddingTasks() {
   const grouped = useMemo(() => {
     const map: Record<string, Task[]> = {};
     for (const t of filtered) {
-      const key = t.due_period || "geral";
+      const key = t.seeded_as_backlog ? BACKLOG_KEY : (t.due_period || "geral");
       if (!map[key]) map[key] = [];
       map[key].push(t);
     }
-    return periodOrder
+    // ordenação especial do backlog: por prioridade
+    if (map[BACKLOG_KEY]) {
+      map[BACKLOG_KEY].sort((a, b) => (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3));
+    }
+    return allBuckets
       .filter((p) => map[p])
       .map((p) => ({ period: p, tasks: map[p] }));
   }, [filtered]);
+
+  // Fase atual = primeira faixa (não-backlog) com tarefa pendente
+  const faseAtual = useMemo(() => {
+    for (const p of periodOrder) {
+      const bucket = tasks.filter((t) => !t.seeded_as_backlog && t.due_period === p);
+      if (bucket.some((t) => !t.is_completed)) return p;
+    }
+    return null;
+  }, [tasks]);
+
+  const faseSeguinte = useMemo(() => {
+    if (!faseAtual) return null;
+    const idx = periodOrder.indexOf(faseAtual);
+    return periodOrder[idx + 1] ?? null;
+  }, [faseAtual]);
+
+  const bucketsVisiveis = useMemo(() => {
+    if (showAllPhases || filterPeriod) return grouped;
+    const foco = new Set([BACKLOG_KEY, faseAtual, faseSeguinte].filter(Boolean) as string[]);
+    return grouped.filter((g) => foco.has(g.period));
+  }, [grouped, showAllPhases, filterPeriod, faseAtual, faseSeguinte]);
+
+  const faseAtualStats = useMemo(() => {
+    if (!faseAtual) return null;
+    const bucket = tasks.filter((t) => !t.seeded_as_backlog && t.due_period === faseAtual);
+    return { done: bucket.filter((t) => t.is_completed).length, total: bucket.length, label: periodLabels[faseAtual] };
+  }, [tasks, faseAtual]);
 
   const total = tasks.length;
   const completed = tasks.filter((t) => t.is_completed).length;
@@ -128,6 +180,34 @@ export default function WeddingTasks() {
     const set = new Set(tasks.map((t) => t.category));
     return Array.from(set).sort();
   }, [tasks]);
+
+  const marcadorExpandir = useMemo(
+    () => tasks.find((t) => t.is_custom && t.action_url === "/tarefas?expandir=1"),
+    [tasks]
+  );
+
+  const expandirTarefas = async () => {
+    if (!coupleId || expanding) return;
+    setExpanding(true);
+    const { data, error } = await (supabase.rpc as any)("expandir_tarefas_detalhadas", { _couple_id: coupleId });
+    setExpanding(false);
+    if (error) {
+      toast({ title: "Erro ao expandir", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Tarefas detalhadas adicionadas", description: `${data ?? 0} tarefas incluídas no seu plano.` });
+    await loadTasks(coupleId);
+  };
+
+  // Auto-expandir via ?expandir=1
+  useEffect(() => {
+    if (searchParams.get("expandir") === "1" && coupleId && marcadorExpandir) {
+      expandirTarefas();
+      searchParams.delete("expandir");
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coupleId, marcadorExpandir]);
 
   const handleExport = () => {
     const csv = ["Tarefa,Categoria,Período,Status"]
@@ -150,10 +230,24 @@ export default function WeddingTasks() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold">Agenda de Tarefas</h1>
-            <p className="text-muted-foreground mt-1">
-              Você completou {completed} de {total} tarefas ({pct}%)
-            </p>
-            <Progress value={pct} className="mt-2 h-2 w-64" />
+            {faseAtualStats ? (
+              <>
+                <p className="text-base mt-1">
+                  Nesta fase: <strong>{faseAtualStats.done}/{faseAtualStats.total} concluídas</strong>
+                  <span className="text-muted-foreground"> — {faseAtualStats.label}</span>
+                </p>
+                <Progress
+                  value={faseAtualStats.total > 0 ? Math.round((faseAtualStats.done / faseAtualStats.total) * 100) : 0}
+                  className="mt-2 h-2 w-64"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Total geral: {completed}/{total} ({pct}%)</p>
+              </>
+            ) : (
+              <>
+                <p className="text-muted-foreground mt-1">Você completou {completed} de {total} tarefas ({pct}%)</p>
+                <Progress value={pct} className="mt-2 h-2 w-64" />
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <AddTaskDialog onAdd={addTask} />
@@ -165,6 +259,23 @@ export default function WeddingTasks() {
             </Button>
           </div>
         </div>
+
+        {marcadorExpandir && (
+          <Card className="mb-6 border-primary/40 bg-primary/5">
+            <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+              <div className="flex items-start gap-3">
+                <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-medium text-sm">Seu plano está enxuto porque faltam poucos meses</p>
+                  <p className="text-xs text-muted-foreground">Semeamos só o essencial. Quando quiser mais detalhes, expanda com todas as tarefas complementares.</p>
+                </div>
+              </div>
+              <Button size="sm" onClick={expandirTarefas} disabled={expanding}>
+                {expanding ? "Adicionando..." : "Adicionar tarefas detalhadas"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid md:grid-cols-[240px_1fr] gap-6">
           {/* Filters */}
@@ -192,7 +303,7 @@ export default function WeddingTasks() {
                 >
                   Todos
                 </button>
-                {periodOrder.map((p) => (
+                {allBuckets.map((p) => (
                   <button
                     key={p}
                     onClick={() => setFilterPeriod(p)}
@@ -227,14 +338,17 @@ export default function WeddingTasks() {
 
           {/* Task list */}
           <div className="space-y-6">
-            {grouped.length === 0 && (
+            {bucketsVisiveis.length === 0 && (
               <p className="text-muted-foreground text-center py-12">Nenhuma tarefa encontrada.</p>
             )}
-            {grouped.map(({ period, tasks: periodTasks }) => (
+            {bucketsVisiveis.map(({ period, tasks: periodTasks }) => (
               <Card key={period}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="font-semibold text-lg">{periodLabels[period] || period}</h2>
+                    <h2 className="font-semibold text-lg flex items-center gap-2">
+                      {period === BACKLOG_KEY && <Sparkles className="h-4 w-4 text-primary" />}
+                      {periodLabels[period] || period}
+                    </h2>
                     <Badge variant="secondary" className="text-xs">
                       {periodTasks.filter((t) => t.is_completed).length}/{periodTasks.length}
                     </Badge>
@@ -248,9 +362,13 @@ export default function WeddingTasks() {
                         category={t.category}
                         priority={t.priority}
                         isCompleted={t.is_completed}
+                        actionLabel={t.action_label ?? null}
+                        actionUrl={t.action_url ?? null}
                         supplierId={t.supplier_id || null}
                         supplierName={t.supplier_name || null}
                         dueDate={t.due_date}
+                        createdAt={t.created_at ?? null}
+                        seededAsBacklog={!!t.seeded_as_backlog}
                         onToggle={toggleTask}
                       />
                     ))}
@@ -258,6 +376,17 @@ export default function WeddingTasks() {
                 </CardContent>
               </Card>
             ))}
+            {!filterPeriod && grouped.length > bucketsVisiveis.length && (
+              <div className="text-center">
+                <Button variant="outline" onClick={() => setShowAllPhases((v) => !v)}>
+                  {showAllPhases ? (
+                    <><ChevronDown className="h-4 w-4 mr-1" /> Recolher fases futuras</>
+                  ) : (
+                    <><ChevronRight className="h-4 w-4 mr-1" /> Ver todas as fases ({grouped.length - bucketsVisiveis.length} recolhidas)</>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </main>
