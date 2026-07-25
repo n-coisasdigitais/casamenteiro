@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/UserMenu";
 
 export default function HomeNavbar({ onSimularClick }: { onSimularClick: () => void }) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   return (
     <header className="fixed top-0 inset-x-0 z-40 backdrop-blur-md animate-fade-in" style={{ background: "hsl(var(--color-bg) / 0.88)", borderBottom: "1px solid hsl(var(--color-border))" }}>
       <div className="container flex items-center justify-between h-14">
@@ -14,7 +14,9 @@ export default function HomeNavbar({ onSimularClick }: { onSimularClick: () => v
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           <Link to="/explorar" className="hidden sm:inline px-3 py-1.5 hover:opacity-80" style={{ color: "hsl(var(--color-text-body))" }}>Explorar</Link>
-          <Link to="/demo" className="hidden md:inline px-3 py-1.5 hover:opacity-80" style={{ color: "hsl(var(--color-text-body))" }}>Ver demo</Link>
+          {isAdmin && (
+            <Link to="/demo" className="hidden md:inline px-3 py-1.5 hover:opacity-80" style={{ color: "hsl(var(--color-text-body))" }}>Ver demo</Link>
+          )}
           <Link to="/fornecedor" className="hidden sm:inline px-3 py-1.5 hover:opacity-80" style={{ color: "hsl(var(--color-text-body))" }}>Sou fornecedor →</Link>
           {user ? <UserMenu /> : (
             <Link

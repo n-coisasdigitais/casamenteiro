@@ -1,14 +1,19 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { Heart, Users, Store, Loader2, ArrowLeft } from "lucide-react";
 import { DEMO_ACCOUNTS, loginAsDemo, DemoRole } from "@/lib/demoAuth";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function DemoLanding() {
   const [loading, setLoading] = useState<DemoRole | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, loading: authLoading, user } = useAuth();
+
+  if (authLoading) return null;
+  if (!user || !isAdmin) return <Navigate to="/login" replace />;
 
   const enter = async (role: DemoRole) => {
     setLoading(role);
