@@ -341,7 +341,6 @@ async function salvarSimulacao(input: {
         cidade: input.cidade,
         estilo: input.estilo,
         resultado: input.resultado ?? null,
-        categorias_selecionadas: input.categoriasSelecionadas ?? null,
       })
       .select("id")
       .maybeSingle();
