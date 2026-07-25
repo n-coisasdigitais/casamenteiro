@@ -1,81 +1,136 @@
-## Objetivo
+## Meus Fornecedores + Aba Orçamento — Reestruturação
 
-Corrigir a experiência atual em que as 79 tarefas nascem marcadas em vermelho quando o casamento está próximo, e reorganizar a visualização para focar no que importa agora.
+### Parte 1 — Página "Meus Fornecedores" (`src/pages/MySuppliers.tsx`)
 
-## Diagnóstico rápido (confirmado)
+**1. Correção do bug "Guardados (0)"**
+Hoje a lista `couple_favorites` é buscada, mas o cálculo de `savedCategoriesCount` depende de `category_id` — coluna que não existe em `couple_favorites` e é preenchida via `supMap` apenas se o `supplier` também está em `couple_suppliers`. Quando o casal só favoritou (sem inserir em `couple_suppliers`), o supplier não é carregado e `category_id` fica `null`.
+Correção: incluir os IDs de fornecedores dos favoritos na query `suppliers.in("id", ids)` (já é feito), mas garantir que o filtro `filter(favoritedCategoryIds.has(cat.id))` conte também favoritos cujo supplier não está em couple_suppliers. Adicionar log de fallback e assegurar que `supMap` cobre `favList`.
 
-- `default_tasks` tem 79 linhas (41 essenciais, 29 recomendadas, 9 opcionais) e coluna `priority`. Não precisa nova coluna — reaproveitamos `priority='essential'`, apenas revisando a lista para deixar entre 20-25 essenciais.
-- `wedding_tasks` já tem `due_date`, `due_period`, `priority`, `created_at`, `is_custom`, `auto_completed_*`. Falta um marcador de "criada em faixa passada" para distinguir de "vencida em uso".
-- `WeddingTasks.tsx` renderiza tudo agrupado por `due_period` na ordem fixa. `TaskItem` marca `overdue` (vermelho) sempre que `due_date < hoje`.
-- `seed_default_tasks_from_table` gera todas as 79 sem levar em conta o quão perto está o casamento.
+**2. Tags de status reais**
+Substituir a badge única "Guardado/Contratado" por chips derivados de `couple_suppliers.kanban_status` + `quotes` + `couple_favorites`:
+- `Contratado` (emerald) — `kanban_status = 'contratado'`
+- `Negociando` (blue) — `kanban_status = 'negociando'`
+- `Em orçamento` (amber) — `kanban_status = 'em_orcamento'` ou tem `quote` aberta
+- `No plano` (slate) — `kanban_status = 'nao_iniciado'`
+- `Favorito` (rose outline) — só em `couple_favorites`, sem couple_supplier
 
-## Mudanças
+Um fornecedor pode ter Contratado + Favorito, então o card mostra mais de uma tag quando aplicável.
 
-### 1. Banco (migration)
-
-- **`default_tasks`**: revisar `priority`. Rebaixar para `recommended` as ~16-21 tarefas essenciais menos críticas para deixar 20-25 verdadeiramente essenciais (as âncoras: local, buffet, foto, música, alianças, convites, cerimônia civil, decoração, RSVP, últimos ajustes, dia D).
-- **`wedding_tasks`**: adicionar coluna `seeded_as_backlog boolean NOT NULL DEFAULT false`. Sinaliza tarefas cujo `due_period` já estava vencido no momento do plano — vão para o bucket "Comece por aqui" e nunca aparecem como "Atrasada".
-- **Nova função `seed_default_tasks_smart(_couple_id, _wedding_date)`** (SECURITY DEFINER, search_path=public):
-  1. Calcula `meses_ate` = meses entre hoje e `_wedding_date` (NULL → semeia tudo como hoje).
-  2. Define, para cada `due_period`, se está `passado`, `atual`, `futuro` em relação a `meses_ate`.
-  3. Se `meses_ate < 6`: insere só tarefas `priority='essential'` (das faixas atual + futuras) + as vencidas essenciais como backlog. Insere também uma tarefa marcadora `is_custom=true`, título "Adicionar tarefas detalhadas ao meu plano", `action_label='Adicionar todas'`, `action_url='/tarefas?expandir=1'`.
-  4. Caso contrário: insere todas as ativas.
-  5. Para toda tarefa cujo `due_period` está `passado`, marca `seeded_as_backlog=true` e zera `due_date` (não vira "Atrasada").
-  6. Preserva a chamada de `recalc_task_due_dates` no fim para faixas atual/futura.
-- **Trigger `trigger_seed_tasks_on_onboarding`**: passa a chamar `seed_default_tasks_smart` em vez de `seed_default_tasks`.
-- **Não deleta nada de casais existentes.** Migração só afeta novos onboardings e novas semeaduras manuais.
-- **Endpoint manual para expandir**: função `expandir_tarefas_detalhadas(_couple_id)` que insere as tarefas não-essenciais que faltam, respeitando faixas passadas como backlog. Chamada pelo botão "Adicionar tarefas detalhadas".
-
-### 2. Front (`src/lib/taskDueDate.ts` + `TaskItem`)
-
-- `dueStatus` recebe também `createdAt` e `seededAsBacklog`. Regra nova para "overdue":
-  - Se `seededAsBacklog` → retorna `"backlog"` (sem vermelho).
-  - Se `due_date < hoje` **E** `due_date > createdAt` → `"overdue"` (vermelho).
-  - Caso contrário, mesmo se `due_date < hoje` mas foi criada depois do prazo → `"backlog"`.
-- `TaskItem`: novo chip cinza "Comece por aqui" para `backlog`; mantém "Atrasada" vermelho só para `overdue` real.
-
-### 3. Front (`src/pages/WeddingTasks.tsx`)
-
-- Carrega `created_at` e `seeded_as_backlog` no select.
-- **Agrupamento** vira: `["comece-aqui", ...periodOrder]`, onde `comece-aqui` recebe tudo com `seeded_as_backlog=true`.
-- **Ordena "Comece por aqui"** por `priority` (essential → recommended → optional).
-- **Colapso por padrão**:
-  - Identifica `faseAtual` = primeira faixa não-passada com tarefas pendentes.
-  - Expande por padrão: `comece-aqui`, `faseAtual`, `faseSeguinte`. As demais ficam recolhidas atrás de um botão "Ver todas as fases".
-- **Resumo (header)**:
-  - Destaque grande: "Nesta fase: **X/Y concluídas** — {periodLabels[faseAtual]}".
-  - Linha menor, cinza: "Total geral: N/M ({pct}%)".
-  - Barra de progresso passa a refletir a fase atual; total vira texto secundário.
-- **Botão "Adicionar tarefas detalhadas"** aparece quando a tarefa marcadora está presente; chama a RPC `expandir_tarefas_detalhadas` e recarrega.
-
-### 4. Filtros
-
-- Novo item no filtro de Período: "Comece por aqui" no topo, antes de "10-12 meses".
-
-## Detalhes técnicos
-
-```text
-Regra de faixa vs. meses_ate:
-  10-12 meses     → passado se meses_ate < 10
-  7-9 meses       → passado se meses_ate < 7
-  4-6 meses       → passado se meses_ate < 4
-  2-3 meses       → passado se meses_ate < 2
-  ultimo-mes      → passado se meses_ate < 1
-  ultima-semana   → passado se dias_ate < 7
-  dia-do-casamento→ nunca "passado" antes do dia
+**3. Múltiplos fornecedores por categoria**
+Card de categoria vira lista compacta empilhada (sem carrossel):
 ```
-
-```text
-faseAtual = menor faixa cujo início ≤ meses_ate
-faseSeguinte = próxima na ordem
+[icon] Fotografia                    [Ver mais 2]
+ ─ Studio Luz     [Contratado]  ›
+ ─ Foto Bruna     [Negociando]  ›
+ ─ Alex Photos    [Favorito]    ›
+ [+ Pesquisar mais]
 ```
+Mostra até 3 linhas; se houver mais, botão "Ver mais N" expande inline. Cada linha é clicável e vai para `/fornecedor/:id`. Botão "Pesquisar" permanece no rodapé do card.
 
-## Fora do escopo
+**4. Perfil do fornecedor com contexto do casal**
+Em `src/pages/SupplierProfile.tsx`, quando existir `couple_suppliers` ou `quote` para este par (couple, supplier):
+- Chip de status no topo (mesma paleta das tags acima)
+- CTA principal muda:
+  - Sem interação: "Pedir orçamento" (abre `QuoteRequestForm`)
+  - Com quote/negociando: "Ver conversa" (abre o Dialog de `QuoteConversation` — reaproveitar padrão do WeddingPlan)
+  - Contratado: "Registrar pagamento" + "Ver conversa" secundário
 
-- Não mexe em `couples`, `budget_items`, `guest_*`, kanban.
-- Não altera visual dos filtros (só adiciona "Comece por aqui").
-- Não migra tarefas de casais existentes — a nova lógica vale para novos plans e para quem clicar em "resetar" (não implementado nesta iteração).
+---
 
-## Idioma
+### Parte 2 — Aba Orçamento (`src/pages/WeddingPlan.tsx` + `src/components/plan/*`)
 
-Todos os labels em pt-BR: "Comece por aqui", "Adicionar tarefas detalhadas ao meu plano", "Ver todas as fases", "Nesta fase", "Total geral".
+**1. Painel do PLANO sempre visível (extrato)**
+Novo componente `PlanBudgetSidebar.tsx` renderizado à esquerda do Kanban em desktop, e como acordeão acima do Kanban em mobile:
+```
+Plano                            R$ 228.000
+├─ Recepção       R$ 60.000 [▸]
+│    └─ (ao expandir) lista fornecedores dessa categoria com valor cotado/contratado e status
+├─ Fotografia     R$ 18.000 [▸]
+...
+Cotado            R$  92.400
+Contratado        R$  35.000
+Saldo             R$ 100.600
+```
+Fonte de dados: `budget_items` (verba planejada por categoria) + agregações de `items` (couple_suppliers). Recolhível com botão "Ocultar plano" no desktop.
+
+**2. Painel lateral ao clicar num card (estilo Trello)**
+Novo `CardDetailDrawer.tsx` (Sheet lateral):
+- Cabeçalho: nome, categoria, chip de status, valor plano/cotado/contratado
+- Abas ou seções:
+  - **Dados**: telefone/WhatsApp/site do fornecedor
+  - **Conversa**: `QuoteConversation` inline (do quote associado, se houver)
+  - **Histórico**: linha do tempo (`created_at`, mudanças de status, mensagens automáticas de "movido de X → Y")
+- Rodapé com botões: `Pedir orçamento` · `Abrir conversa` · `Marcar contratado` · `Registrar pagamento` · `Descartar`
+
+O clique no card do `PlanKanban` deixa de fazer drag imediato (drag por handle do avatar/ícone) e abre o drawer. Alternativa mais segura: drag continua igual, mas botão "Abrir" no card abre o drawer.
+
+**3. Status transparente com toast + histórico**
+Nova tabela `couple_supplier_events` (migration):
+- `id`, `couple_supplier_id`, `type` ('status_change' | 'quote_sent' | 'message' | 'contract' | 'payment'), `from_status`, `to_status`, `payload jsonb`, `created_at`, `created_by`
+- RLS: casal vê os próprios
+- Triggers já existentes (`sync_quote_to_couple_supplier`, `sync_couple_supplier_on_proposal`, `handle_kanban_contracted`) passam a inserir eventos
+- No frontend, sempre que a UI detectar transição automática (ex.: retorno do `load()` mostra novo status), disparar toast pt-BR explicando:
+  > "Fotógrafo Studio Luz movido para 'Em orçamento' — pedido enviado agora."
+- Drawer renderiza os eventos como timeline.
+
+**4. Comunicação em massa — sub-aba "Contatar fornecedores"**
+Remover o bloco "Enviar orçamento para fornecedores" de `BudgetTab.tsx` e criar sub-aba dedicada dentro da aba Orçamento (Tabs internas):
+- **Resumo** (o que hoje é BudgetTab: comparativo e projeção)
+- **Contatar fornecedores** (novo)
+
+Novo `BulkContactTab.tsx` reaproveitando o padrão de `BulkContactDialog.tsx`:
+- Tabela com checkbox: fornecedor, categoria, status, canal disponível (email ✓ / pedido interno ✓ / whatsapp — só individual)
+- Filtros: por categoria, por status
+- Escolha de canal: `Pedido interno da plataforma` (rastreável, cria `quotes`) ou `E-mail` (via edge function `send-invite-emails` estendida)
+- **WhatsApp em massa fica desabilitado** com aviso: "Envio em massa via WhatsApp não é permitido pela política do WhatsApp. Use 'Pedido interno' (rastreado) ou envie individualmente pelo card do fornecedor."
+- Preview da mensagem (com `{{nome}}` / `{{categoria}}`) antes de disparar
+- Ao enviar por pedido interno: cria linhas em `quotes` (igual `BulkContactDialog.sendPlatform`) e mostra progresso
+- Ao enviar por e-mail: chama função edge `send-bulk-supplier-emails` (novo endpoint) que envia via mesmo template transacional e registra em `couple_supplier_events`
+
+Individual (single card) continua com opção WhatsApp habilitada no drawer.
+
+---
+
+### Detalhes técnicos
+
+**Migração**
+```sql
+CREATE TABLE public.couple_supplier_events (
+  id uuid primary key default gen_random_uuid(),
+  couple_supplier_id uuid not null references public.couple_suppliers(id) on delete cascade,
+  type text not null,
+  from_status text,
+  to_status text,
+  payload jsonb,
+  created_by uuid,
+  created_at timestamptz not null default now()
+);
+GRANT SELECT, INSERT ON public.couple_supplier_events TO authenticated;
+GRANT ALL ON public.couple_supplier_events TO service_role;
+ALTER TABLE public.couple_supplier_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Casal vê próprios eventos" ON public.couple_supplier_events
+  FOR SELECT TO authenticated USING (
+    EXISTS (
+      SELECT 1 FROM public.couple_suppliers cs
+      JOIN public.couples c ON c.id = cs.couple_id
+      WHERE cs.id = couple_supplier_id AND c.user_id = auth.uid()
+    )
+  );
+-- policy de INSERT similar; triggers rodam como SECURITY DEFINER
+```
+Ajustar triggers existentes para inserir `type='status_change'` com `from_status`/`to_status`.
+
+**Nova edge function**: `send-bulk-supplier-emails` (usa `RESEND_API_KEY` já cadastrado).
+
+**Arquivos afetados**
+- `src/pages/MySuppliers.tsx` — correção do bug, lista compacta com tags
+- `src/pages/SupplierProfile.tsx` — chip de status do casal + CTA condicional
+- `src/pages/WeddingPlan.tsx` — grid com sidebar + sub-tabs em Orçamento
+- `src/components/plan/PlanBudgetSidebar.tsx` (novo)
+- `src/components/plan/CardDetailDrawer.tsx` (novo)
+- `src/components/plan/BulkContactTab.tsx` (novo)
+- `src/components/plan/BudgetTab.tsx` — remove seção de envio em massa
+- `src/components/plan/PlanKanban.tsx` — botão "Abrir" no card + toast em transições
+- `supabase/functions/send-bulk-supplier-emails/index.ts` (novo)
+
+Tudo em pt-BR; visual mantido (tokens semânticos, mesmos componentes shadcn).
