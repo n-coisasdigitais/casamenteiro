@@ -39,10 +39,9 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 // Categorias internas do simulador → slugs reais do banco `categories`
-// Algumas categorias são compartilhadas (ex: espaco/buffet → espacos-buffet)
 const CATEGORIA_SLUG: Record<string, string> = {
-  espaco: "espacos-buffet",
-  buffet: "espacos-buffet",
+  espaco: "espaco",
+  buffet: "buffet",
   fotografo: "fotografia",
   decoracao: "decoracao",
   banda: "musica-dj",
