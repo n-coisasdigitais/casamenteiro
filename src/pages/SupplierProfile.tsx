@@ -473,6 +473,14 @@ export default function SupplierProfile() {
                   </div>
                 )}
 
+                <SupplierPublicAttachments
+                  supplierId={supplier.id}
+                  showFloorPlan={isEspacoCategory(
+                    (supplier.categories as any)?.slug ?? null,
+                    (supplier.categories as any)?.name ?? null,
+                  )}
+                />
+
                 <div>
                   <h2 className="font-bold text-lg mb-4">Informação</h2>
                   {supplier.description ? (
