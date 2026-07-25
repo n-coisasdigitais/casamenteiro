@@ -57,25 +57,22 @@ export default function Simulador() {
           simulacao_id: r.simulacaoId,
         });
       }
-      if (!user) {
-        if (r.simulacaoId) {
-          sessionStorage.setItem(
-            "pendingSimulacao",
-            JSON.stringify({ id: r.simulacaoId }),
-          );
-        }
-        toast({
-          title: "Seu plano foi salvo!",
-          description: "Crie sua conta gratuita para acessá-lo.",
-        });
-        navigate(
-          r.simulacaoId
-            ? `/cadastro?redirect=${encodeURIComponent(`/simulador/resultado?id=${r.simulacaoId}`)}`
-            : "/cadastro",
-        );
-        return;
+      // Fallback sempre disponível
+      sessionStorage.setItem(
+        "preview_simulacao",
+        JSON.stringify({
+          orcamento_total: orcamento,
+          num_convidados: convidados,
+          cidade: cidade.trim(),
+          estilo,
+          resultado: { resumo: r.resumo, plano: r.plano, alertas: r.alertas },
+        }),
+      );
+      if (r.simulacaoId) {
+        navigate(`/simulador/resultado?id=${r.simulacaoId}`);
+      } else {
+        navigate("/simulador/resultado?preview=1");
       }
-      navigate(`/simulador/resultado?id=${r.simulacaoId}`);
     } catch (e: any) {
       toast({ title: "Erro ao calcular", description: e.message, variant: "destructive" });
       setStep(4);

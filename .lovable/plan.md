@@ -1,105 +1,57 @@
 
-# Área de Demonstração (/demo)
+## Diagnóstico
 
-Cria uma área pública de demonstração da plataforma, com contas fictícias já logáveis, dados de exemplo populados e proteções para não misturar com produção. Serve para você apresentar a plataforma a fornecedores e casais reais sem impactar o banco de produção "de verdade".
+- Em `home_simulacoes`, a policy de INSERT permite `user_id NULL` (usuário deslogado), mas a policy de SELECT exige `user_id = auth.uid()` ou `couple_id = ...`. Resultado: quando um visitante deslogado insere, o `.select("id")` após o `insert` **não retorna a linha** e `simulacaoId` volta como `null`. Confirmado nas policies atuais do banco.
+- `SimulatorCTA.tsx` (home) já trata parcialmente o caso `!user`, mas quando o usuário está **logado** e o id vier `null` por qualquer motivo, cai em `navigate("/simulador/resultado?preview=1")` **sem gravar `sessionStorage`**, o que dispara loop no resultado.
+- `Simulador.tsx` (página) hoje redireciona deslogado para `/cadastro?redirect=...` e, quando `simulacaoId` é null, cai em `navigate("/cadastro")` — nunca mostra o resultado.
+- `SimuladorResultado.tsx` trata `id` nulo, mas não trata `"null"`/`"undefined"` como string, nem faz fallback ao sessionStorage quando a busca no banco retorna vazio; em vez disso, redireciona direto para `/simulador`, fechando o loop.
 
-## Como vai funcionar (visão do usuário)
+## Correções (todas em pt-BR)
 
-1. Você (ou um prospect) acessa `casamenteiro.com.br/demo`.
-2. Vê uma landing simples com dois botões: **"Entrar como casal demo"** e **"Entrar como fornecedor demo"**.
-3. Ao clicar, o sistema faz login automático com a conta fictícia correspondente e leva ao dashboard normal.
-4. Um **banner amarelo fixo no topo** aparece em toda a navegação: *"Você está no ambiente de demonstração. Os dados aqui são fictícios."*
-5. Dentro da demo, tudo funciona: navegar, cadastrar convidados, mandar orçamento, ver Kanban, etc. Exceto ações "de mundo real" (envio de e-mail, cobrança) — essas ficam simuladas.
-6. Um botão discreto **"Sair da demo"** e outro **"Resetar demo"** (visível só para admins) ficam disponíveis.
+### 1) `src/lib/simulador.ts` — `salvarSimulacao`
+- Pegar `supabase.auth.getUser()` antes do insert (já faz) e gravar `user_id` explicitamente (id do usuário ou `null`).
+- Manter `.select("id").maybeSingle()`, mas envolver em try/catch tolerante: se `data` vier vazio (RLS bloqueando o retorno para deslogado) ou houver erro, apenas logar e retornar `null` — nunca lançar exceção.
+- Não alterar contrato público de `calcularSimulacao`: já retorna `{ simulacaoId: string | null, ... }`.
 
-## Escopo — o que ENTRA e o que NÃO ENTRA
+### 2) Migration — RLS de `home_simulacoes`
+- Manter as policies existentes de UPDATE/DELETE/SELECT (dono + admin).
+- Adicionar policy extra de SELECT que permite ler linhas com `user_id IS NULL AND couple_id IS NULL` **apenas dentro da mesma sessão de insert** — ou, mais simples e seguro: manter a lógica atual e aceitar que deslogado sempre cai no fluxo sessionStorage (correção 3). Nesse caso, **nenhuma migration é necessária** — a mudança fica só no frontend.
+- Decisão: **não mexer no RLS**. Deslogado usa sessionStorage (correção 3). Logado já consegue ler a linha via policy `user_id = auth.uid()`.
 
-**Entra:**
-- Landing `/demo` com dois CTAs.
-- Contas fictícias: `casal.demo@casamenteiro.com.br` e `fornecedor.demo@casamenteiro.com.br` (já criadas via SQL, senhas fixas).
-- Seed rico de dados: casal com data, orçamento, 150 convidados, 5 fornecedores no Kanban (2 contratados, 2 negociando, 1 descartado), 3 orçamentos ativos com conversa, tarefas seedadas, perfil público preenchido. Fornecedor com fotos, categoria, cidade, 3 avaliações reais e 4 leads recebidos.
-- Coluna `is_demo` boolean nas tabelas `profiles`, `couples`, `suppliers` para filtrar.
-- Banner global de demonstração (visível quando o usuário logado tem `is_demo=true`).
-- Bloqueio de ações sensíveis quando `is_demo`: envio real de e-mail (funções edge checam e simulam), pagamento, alteração de dados de contato reais.
-- Botão "Resetar demo" no admin (`/admin/configuracoes`) que roda um SQL de reset.
-- Filtro automático nas queries que listam usuários/casais/fornecedores para o público — contas demo **não aparecem** no `/casais` feed, `/explorar`, sitemap, métricas de admin, e nem contam nas contagens de social proof da home.
+### 3) `src/components/home/SimulatorCTA.tsx`
+- Após `calcularSimulacao`, sempre gravar o payload em `sessionStorage["preview_simulacao"]` (útil como fallback para logado e deslogado).
+- Regra única de navegação:
+  - Se `r.simulacaoId` (truthy) → `navigate(\`/simulador/resultado?id=${r.simulacaoId}\`)`.
+  - Senão → `navigate("/simulador/resultado?preview=1")`.
+- Vale para logado e deslogado.
 
-**Não entra:**
-- Banco separado ou projeto Lovable duplicado (fica no mesmo projeto/banco).
-- Duplicação do código — a demo é o mesmo app, só muda dado + banner.
-- Ambiente de "staging" separado — para isso, o Preview URL do Lovable já serve.
+### 4) `src/pages/Simulador.tsx` — `finalizar`
+- Aplicar a mesma regra da correção 3: sempre gravar payload em `sessionStorage["preview_simulacao"]`; se `simulacaoId` existir, navegar com `?id=`; senão, `?preview=1`.
+- Remover o redirecionamento para `/cadastro` — o usuário vê o resultado; o CTA de cadastro fica dentro da página de resultado (já existente para o modo preview).
+- Manter o registro em `cidades_interesse` quando `cidadeSemFornecedor` **e** houver `simulacaoId`.
 
-## Detalhes técnicos
+### 5) `src/pages/SimuladorResultado.tsx`
+- Normalizar `id`: tratar `null`, `"null"`, `"undefined"`, `""` como ausente.
+- Fluxo unificado no `useEffect`:
+  1. Se `id` ausente **ou** `preview=1` → tentar `sessionStorage["preview_simulacao"]`. Se válido, renderizar. Se não, ir para 3.
+  2. Se `id` válido → buscar no banco via `.maybeSingle()`. Se retornar linha, renderizar. Se retornar vazio, tentar sessionStorage como fallback antes de qualquer navigate.
+  3. Se nada existir → renderizar **tela de erro amigável** ("Não encontramos essa simulação") com botão "Fazer nova simulação" (`/simulador`) — **sem navigate automático**.
 
-**1) Migration nova (schema):**
-- Adicionar coluna `is_demo boolean NOT NULL DEFAULT false` em `public.profiles`, `public.couples`, `public.suppliers`.
-- Adicionar índice parcial `WHERE is_demo = true` em cada uma para filtragem rápida.
-
-**2) Migration de exclusão nas listagens públicas:**
-- Ajustar as policies/queries de:
-  - `couple_public_profiles` (feed `/casais`) → filtrar `is_demo=false` no join com `couples`.
-  - `suppliers` público (`/explorar`, `/categoria/:slug`, `SupplierProfile`) → adicionar `.eq('is_demo', false)` nos hooks de leitura pública.
-  - `scripts/generate-sitemap.ts` → excluir demo.
-  - Métricas admin (`AdminMetrics`, `AdminCoupleCRM`, `AdminSupplierCRM`) → adicionar toggle "Incluir demo" (padrão desligado).
-  - `HomeHero` contagem de fornecedores → excluir demo.
-  - Contagem `frases_home` e social proof → excluir demo.
-
-**3) Seed de dados (via insert tool):**
-- Criar via `auth.admin` os 2 usuários fictícios com `is_demo=true` no profile.
-- Popular casal demo com: `wedding_date` 6 meses no futuro, `partner_name`, orçamento R$ 120k, cidade "São Paulo", 150 convidados (mix de status), 5 `couple_suppliers` em stages diferentes, 3 `quotes` com mensagens, `couple_public_profiles` com bio e slug `ana-e-carlos-demo`.
-- Popular fornecedor demo: categoria "Fotografia", cidade "São Paulo", fotos de portfólio (reaproveitar bucket `supplier-photos`), status `approved`, 3 `reviews` fictícias, 4 leads.
-
-**4) Frontend:**
-- `src/pages/DemoLanding.tsx` — landing pública com 2 CTAs.
-- Rota `/demo` no `App.tsx`.
-- `src/lib/demoAuth.ts` — helper que faz `signInWithPassword` com credenciais hardcoded (senhas públicas — são contas demo, não tem risco).
-- `src/components/DemoBanner.tsx` — banner amarelo fixo, renderizado no `App.tsx` quando `profile.is_demo === true`. Botão "Sair da demo" (signOut + redirect `/demo`).
-- Extender `AuthContext` para expor `isDemo` derivado do profile.
-- Guards em componentes que fazem ações sensíveis (envio de invite por email real) — quando `isDemo`, mostrar toast "Ação simulada no ambiente demo".
-
-**5) Reset da demo (admin):**
-- Botão em `AdminSettings.tsx` "Resetar dados demo".
-- Chama nova função `admin_reset_demo()` (SECURITY DEFINER, checa `has_role admin`) que:
-  - Deleta todos os dados vinculados aos user_ids demo (guests, tasks, quotes, budget, reviews, photos, etc).
-  - Re-executa o seed populando dados fresquinhos.
-- Feedback com toast e contagem de registros recriados.
-
-**6) Segurança:**
-- As senhas das contas demo são públicas de propósito (ficam no botão). Isso é aceitável porque:
-  - As contas têm `is_demo=true` e são invisíveis para listagens públicas.
-  - Não têm dados reais.
-  - Não podem executar ações destrutivas em produção.
-- Bloqueio explícito: RLS extra que impede contas demo de: promover-se a admin, alterar `feature_flags`, alterar dados de outros usuários.
-
-## Estrutura de arquivos afetada
+## Arquivos afetados
 
 ```text
-supabase/migrations/xxx_demo_mode.sql          [novo — schema]
-src/pages/DemoLanding.tsx                       [novo]
-src/components/DemoBanner.tsx                   [novo]
-src/lib/demoAuth.ts                             [novo]
-src/contexts/AuthContext.tsx                    [editar — expor isDemo]
-src/App.tsx                                     [editar — rota /demo + banner global]
-src/pages/AdminSettings.tsx                     [editar — botão reset]
-src/pages/Home.tsx                              [editar — filtrar demo em contagens]
-src/pages/CasaisFeed.tsx                        [editar — filtrar demo]
-src/pages/Explore.tsx / CategoriaPublica        [editar — filtrar demo]
-scripts/generate-sitemap.ts                     [editar — filtrar demo]
-supabase/functions/send-invite-emails/index.ts  [editar — no-op se is_demo]
+src/lib/simulador.ts              [editar — salvarSimulacao tolerante]
+src/components/home/SimulatorCTA.tsx  [editar — sessionStorage sempre + regra única]
+src/pages/Simulador.tsx           [editar — mesma regra, sem /cadastro]
+src/pages/SimuladorResultado.tsx  [editar — normalizar id, fallback, tela de erro]
 ```
 
-## Ordem de execução
+Nenhuma migration necessária.
 
-1. Migration de schema (`is_demo` + índices).
-2. Seed inicial das contas demo e dados.
-3. Frontend: landing, banner, contexto, rota.
-4. Filtros de exclusão nas listagens públicas.
-5. Botão de reset no admin.
-6. Guards nas edge functions sensíveis.
-7. Teste manual: entrar em `/demo`, verificar banner, navegar, confirmar que a conta demo não aparece em `/casais` nem `/explorar`, testar reset.
+## Testes manuais (4 caminhos)
 
-## Depois de implementar
-
-- Você usa `/demo` para apresentações comerciais.
-- Contas de teste antigas (`casal.teste` / `fornecedor.teste`) continuam existindo para seus testes internos de fluxo.
-- Preview x Publish continua funcionando normalmente para você trabalhar no código sem afetar produção (mudanças de tela só sobem quando você clicar Publish).
+1. **Home + deslogado**: simular, esperar `?preview=1`, resultado renderizado do sessionStorage.
+2. **Home + logado**: simular, esperar `?id=...`, resultado do banco; recarregar a página funciona.
+3. **/simulador + deslogado**: mesmo comportamento do 1 (não redirecionar para /cadastro).
+4. **/simulador + logado**: mesmo comportamento do 2.
+5. Bônus: abrir `/simulador/resultado?id=null` → tela de erro amigável, sem loop.

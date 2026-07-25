@@ -345,10 +345,13 @@ async function salvarSimulacao(input: {
       })
       .select("id")
       .maybeSingle();
-    if (error) throw error;
+    if (error) {
+      console.warn("salvarSimulacao: erro no insert (seguindo em modo preview)", error.message);
+      return null;
+    }
     return data?.id ?? null;
   } catch (e) {
-    console.error("salvarSimulacao", e);
+    console.warn("salvarSimulacao: exceção (seguindo em modo preview)", e);
     return null;
   }
 }

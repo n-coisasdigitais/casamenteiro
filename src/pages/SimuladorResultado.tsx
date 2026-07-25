@@ -28,11 +28,13 @@ export default function SimuladorResultado() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const id = params.get("id");
+  const rawId = params.get("id");
+  const id = rawId && rawId !== "null" && rawId !== "undefined" && rawId.trim() !== "" ? rawId : null;
   const assumirOnLoad = params.get("assumir") === "1";
   const preview = params.get("preview") === "1";
 
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [recalculando, setRecalculando] = useState(false);
   const [sim, setSim] = useState<any>(null);
   const [resultado, setResultado] = useState<SimRes | null>(null);
@@ -136,30 +138,37 @@ export default function SimuladorResultado() {
   useEffect(() => {
     document.title = "Seu plano — Casamenteiro";
     (async () => {
-      // Modo preview (deslogado): lê do sessionStorage, não do banco.
-      if (preview || !id) {
+      const readFromSession = (): boolean => {
         const raw = sessionStorage.getItem("preview_simulacao");
-        if (!raw) { navigate("/simulador"); return; }
+        if (!raw) return false;
         try {
           const payload = JSON.parse(raw);
-          if (!payload?.resultado?.plano || !payload?.resultado?.resumo) {
-            navigate("/simulador"); return;
-          }
+          if (!payload?.resultado?.plano || !payload?.resultado?.resumo) return false;
           setSim(payload);
           setResultado(payload.resultado as SimRes);
           setAceitaOciosas(!!payload.resultado.resumo?.aceitaOciosas);
+          return true;
         } catch {
-          navigate("/simulador"); return;
+          return false;
         }
-        setLoading(false);
-        return;
+      };
+
+      // Modo preview ou sem id → tenta sessionStorage
+      if (preview || !id) {
+        if (readFromSession()) { setLoading(false); return; }
+        setNotFound(true); setLoading(false); return;
       }
+
+      // Com id → busca no banco, com fallback para sessionStorage
       const { data } = await (supabase
         .from("home_simulacoes" as any)
         .select("*")
         .eq("id", id)
         .maybeSingle() as any);
-      if (!data) { navigate("/simulador"); return; }
+      if (!data) {
+        if (readFromSession()) { setLoading(false); return; }
+        setNotFound(true); setLoading(false); return;
+      }
       setSim(data);
       // resultado salvo
       if (data.resultado && data.resultado.plano && data.resultado.resumo) {
@@ -349,6 +358,29 @@ export default function SimuladorResultado() {
     if (cobertura >= 50) return { bg: "hsl(45 92% 92%)", fg: "hsl(32 60% 28%)", border: "hsl(38 80% 60%)" };
     return { bg: "hsl(0 70% 95%)", fg: "hsl(0 60% 35%)", border: "hsl(0 60% 65%)" };
   }, [cobertura]);
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "hsl(var(--color-bg))" }}>
+        <div className="text-center max-w-md">
+          <div className="text-5xl mb-4">🔍</div>
+          <h1 className="font-serif text-2xl mb-3" style={{ color: "hsl(var(--color-dark))" }}>
+            Não encontramos essa simulação
+          </h1>
+          <p className="text-sm mb-6" style={{ color: "hsl(var(--color-text-muted))" }}>
+            Ela pode ter expirado ou o link está incompleto. Sem problema: refazer é rápido.
+          </p>
+          <Link
+            to="/simulador"
+            className="inline-block rounded-full px-7 py-3 font-semibold text-sm transition hover:opacity-90"
+            style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
+          >
+            Fazer nova simulação →
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (loading || !resultado || !sim) {
     return (
