@@ -1,89 +1,96 @@
+## Objetivo
 
-## Importação de convidados — CSV/XLSX com mapeamento e relatório
+Organizar os anexos dos fornecedores em uma seção única "Arquivos" no painel, com tipos distintos por categoria: **Planta baixa** exclusiva para locação de espaços, e **Anexos gerais** (com título/descrição livre) para todos os fornecedores. Galeria e documentos internos continuam suportados.
 
-Reescrever `src/components/ImportGuestsDialog.tsx` como um wizard de 4 passos, mantendo o botão atual em `WeddingGuests.tsx` (nenhuma outra tela muda).
+---
 
-### Passo 1 — Upload
-- Aceitar `.csv`, `.xlsx`, `.xls` (parser: `papaparse` para CSV, `xlsx` — SheetJS — para Excel; adicionar `xlsx` ao package.json).
-- Manter a opção "colar lista" atual como alternativa.
-- Texto de ajuda em destaque: *"Exporte sua lista do iCasei/Casar.com em CSV ou Excel e envie aqui. Aceitamos também planilhas do Google Sheets/Excel."*
-- Ler primeira aba do XLSX; primeira linha = cabeçalho.
+## 1. Banco de dados
 
-### Passo 2 — Mapeamento de colunas
-Tabela com uma linha por coluna do arquivo:
+Nova tabela `public.supplier_attachments`:
 
-| Coluna do arquivo | Exemplo (1ª linha) | Mapear para ▾ |
+- `id` (uuid, pk)
+- `supplier_id` (uuid, fk → suppliers)
+- `tipo` (text, check: `galeria` | `planta_baixa` | `anexo` | `documento`)
+- `titulo` (text) — obrigatório para `anexo`, opcional para os demais
+- `descricao` (text, nullable) — texto de apoio/legenda
+- `storage_path` (text) — caminho no bucket
+- `file_name`, `mime_type`, `size_bytes`
+- `drive_file_id`, `drive_synced_at` (nullable, para sync futuro)
+- `ordem` (int, default 0) — ordenação manual
+- `created_by` (uuid), `created_at`, `updated_at`
 
-Campos-alvo do select:
-- Nome *(obrigatório)*
-- Telefone / WhatsApp
-- E-mail
-- Grupo / Família
-- Tipo (adulto / criança / bebê)
-- Confirmação (RSVP)
-- Mesa
-- Observação
-- **Ignorar** (padrão para colunas não reconhecidas)
+**GRANTs** para `authenticated` e `service_role`.
 
-**Adivinhação automática** por nome de cabeçalho (case/acento-insensível), cobrindo variações do iCasei e Casar.com:
-- `nome`, `convidado`, `name`, `nome completo` → Nome
-- `telefone`, `celular`, `whatsapp`, `phone`, `fone` → Telefone
-- `email`, `e-mail`, `endereço de e-mail` → E-mail
-- `grupo`, `família`, `familia`, `lado`, `categoria de convidado` → Grupo
-- `tipo`, `faixa etária`, `adulto/criança` → Tipo
-- `confirmação`, `confirmado`, `rsvp`, `status`, `presença` → Confirmação
-- `mesa`, `table` → Mesa
-- `observação`, `obs`, `notas`, `comentário` → Observação
+**RLS**:
+- Dono (supplier.user_id = auth.uid()) gerencia todos os próprios registros.
+- Admins gerenciam todos.
+- SELECT público apenas para `tipo IN ('galeria','planta_baixa','anexo')` quando o supplier estiver `status='approved'` e o dono não for demo.
+- `documento` fica sempre restrito ao dono/admin.
 
-Erro bloqueante se **Nome** não estiver mapeado.
+**Bucket Storage** `supplier-files` (privado). Estrutura: `{supplier_id}/{tipo}/{uuid-arquivo.ext}`.
 
-### Passo 3 — Preview + configurações
-- Tabela das **10 primeiras linhas** após mapeamento aplicado, mostrando cada campo já convertido (tipo normalizado, telefone formatado com `formatPhoneBR`, confirmação em pt-BR).
-- Contador: "X linhas no total, N com aviso" (aviso = telefone inválido, e-mail malformado, tipo não reconhecido → assume adulto).
-- Select "Grupo padrão" (para linhas sem grupo mapeado) — reaproveita o existente.
-- **Detecção de duplicados** com radio:
-  - "Ignorar duplicados" (padrão)
-  - "Atualizar dados do convidado existente"
-  
-  Duplicado = mesmo `couple_id` + (nome normalizado + telefone com dígitos iguais). Se telefone vazio, apenas nome normalizado.
+Policies em `storage.objects`:
+- Upload/update/delete: apenas dono do supplier ou admin, restrito ao bucket e ao prefixo do próprio `supplier_id`.
+- SELECT via URL assinada (pública p/ galeria/planta_baixa/anexo, privada p/ documento).
 
-### Passo 4 — Importação e relatório
-Processamento em lotes de 50, com barra de progresso, e classificação linha a linha:
-- **Importado** — inserido com sucesso
-- **Atualizado** — duplicado encontrado + modo "atualizar"
-- **Ignorado** — duplicado + modo "ignorar" (motivo: "Já existe: <nome>")
-- **Erro** — sem nome, ou falha do banco (motivo do Postgres)
+---
 
-Tela final:
-```
-✔ 128 importados
-↻ 12 atualizados
-⊘ 8 ignorados (duplicados)
-✕ 3 com erro   [Baixar linhas com erro (CSV)]
-```
-O CSV de erro contém as colunas originais + coluna extra `erro`.
+## 2. Painel do fornecedor — nova aba "Arquivos"
 
-### Detalhes técnicos
+Componente `SupplierFilesTab.tsx` dentro de `SupplierDashboard.tsx`, com subabas:
 
-**Dependência nova**: `xlsx` (SheetJS) via `bun add xlsx`.
+- **Galeria** — imagens do portfólio (já existente em `supplier_photos`, mantida como está; a nova tabela cuida do resto).
+- **Planta baixa** *(apenas se `categoria = Espaços e Buffet / Local`)*
+  - Upload drag-and-drop, até 10 MB, imagens (JPG/PNG/WEBP) ou PDF.
+  - Campos: título opcional, legenda/descrição.
+  - Texto de apoio fixo: *"A planta baixa ajuda bandas, buffets e cerimonialistas a planejar tomadas, palco, circulação e disposição de mesas."*
+- **Anexos** *(todas as categorias)*
+  - Upload drag-and-drop, até 10 MB, imagens + PDF.
+  - Campos obrigatórios: **título** e **tipo/descrição** (ex.: "Cardápio 2026", "Portfólio de show", "Tabela de preços").
+  - Lista com reordenação, edição inline, exclusão com confirmação.
+- **Documentos internos** — arquivos privados (contratos-modelo etc.), não aparecem no perfil público.
 
-**Normalização**:
-- Nome: `trim` + colapsar espaços; comparação de duplicado usa lowercase + sem acento.
-- Telefone: `onlyDigits` de `src/lib/phone.ts`; grava formatado; duplicado compara só dígitos.
-- Tipo: dicionário estendido — `adulto/adult/grown` → adult; `criança/crianca/kid/child/menor` → child; `bebê/bebe/baby/infante` → baby; default adult.
-- Confirmação: `sim/confirmado/yes/y/1` → true; `não/nao/no/n/0/pendente` → false/null; grava em `wedding_guests.confirmed` (bool existente).
+Todos os uploads via signed URL do bucket, com validação client-side de tamanho/mime e barra de progresso.
 
-**Query de duplicados**: um único `select id, name, phone` do casal antes do loop, indexado em Map por chave `nomeNormalizado|telefoneDigitos`.
+---
 
-**Grupos**: mantém lógica atual de criar grupos ausentes; passa a rodar em batch antes das inserções.
+## 3. Perfil público (`SupplierProfile.tsx`)
 
-**Estado do wizard**: `step: 'upload' | 'map' | 'preview' | 'result'` dentro do próprio Dialog, com botões Voltar/Avançar no rodapé.
+- **Planta baixa**: nova seção "Planta baixa do espaço" com visualizador (imagem com lightbox / preview de PDF via `<iframe>`) + botão download. Renderizada apenas quando houver arquivo E a categoria for de locação de espaço. Oculta caso contrário.
+- **Anexos**: nova seção "Materiais e anexos" listando cada anexo com título, descrição e botão de download/visualização. Oculta se vazia.
+- Documentos internos nunca aparecem.
+- URLs de download geradas via signed URL (validade curta) no client.
 
-**Colunas alvo já existentes** em `wedding_guests`: `name`, `email`, `phone`, `guest_type`, `group_id`, `confirmed`, `table_number`, `notes` — nenhuma migração necessária (confirmar com read_query os nomes exatos das duas últimas antes de codar; se não existirem, silenciosamente ignoradas com aviso no preview em vez de migrar sem pedir).
+---
 
-### Arquivos afetados
-- `src/components/ImportGuestsDialog.tsx` — reescrita (wizard).
-- `package.json` — adiciona `xlsx`.
-- Nenhuma alteração em `WeddingGuests.tsx`, banco ou edge functions.
+## 4. Detecção da categoria "locação de espaços"
 
-Tudo em pt-BR.
+Baseada no slug da categoria (ex.: `espacos`, `local`, `recepcao`). Adicionar helper `isEspacoCategory(categorySlug)` em `src/lib/categories.ts` para reutilizar no painel e no perfil público.
+
+---
+
+## 5. i18n
+
+Todos os textos, validações e toasts em pt-BR.
+
+---
+
+## Arquivos a criar/alterar
+
+**Criar**
+- Migração SQL (tabela + RLS + grants + policies do bucket)
+- `src/components/supplier/SupplierFilesTab.tsx`
+- `src/components/supplier/AttachmentUploader.tsx` (reutilizável)
+- `src/components/supplier/FloorPlanViewer.tsx` (perfil público)
+- `src/lib/categories.ts` (helper `isEspacoCategory`)
+
+**Alterar**
+- `src/pages/SupplierDashboard.tsx` — adicionar aba "Arquivos"
+- `src/pages/SupplierProfile.tsx` — seções de planta baixa e anexos
+
+---
+
+## Fora do escopo
+
+- Sincronização com Google Drive (campos `drive_*` ficam preparados, sem lógica).
+- Migração do `supplier_photos` atual para a nova tabela (permanece funcionando em paralelo).
