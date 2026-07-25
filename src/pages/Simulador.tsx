@@ -49,15 +49,15 @@ export default function Simulador() {
     setStep(5);
     try {
       const r = await calcularSimulacao(orcamento, convidados, cidade.trim(), estilo, false);
-      // Se a cidade não tem fornecedor, registrar interesse
-      if (cidadeSemFornecedor && r.simulacaoId) {
+      // Registrar interesse mesmo sem simulacaoId — não perde o sinal de demanda
+      if (cidadeSemFornecedor) {
         await supabase.from("cidades_interesse").insert({
           cidade: cidade.trim(),
           estado: estadoCidade,
-          simulacao_id: r.simulacaoId,
+          simulacao_id: r.simulacaoId ?? null,
         });
       }
-      // Fallback sempre disponível
+      // Fallback sempre disponível (payload completo esperado pelo SimuladorResultado)
       sessionStorage.setItem(
         "preview_simulacao",
         JSON.stringify({
@@ -65,9 +65,12 @@ export default function Simulador() {
           num_convidados: convidados,
           cidade: cidade.trim(),
           estilo,
+          data_evento: null,
+          prazo_meses: null,
           resultado: { resumo: r.resumo, plano: r.plano, alertas: r.alertas },
         }),
       );
+      toast({ title: "Seu plano está pronto!", description: "Veja abaixo os detalhes." });
       if (r.simulacaoId) {
         navigate(`/simulador/resultado?id=${r.simulacaoId}`);
       } else {
