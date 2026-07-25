@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ExternalLink, Loader2, Plus, Save, Trash2, Upload, ArrowUp, ArrowDown } from "lucide-react";
-import { DEFAULT_LANDING, SupplierLandingConfig, HowStep, WhyItem, TestimonialItem } from "@/lib/supplierLandingConfig";
+import { DEFAULT_LANDING, SupplierLandingConfig, HowStep, WhyItem, TestimonialItem, TrustPillar } from "@/lib/supplierLandingConfig";
 
 export default function AdminFornecedorLanding() {
   const { toast } = useToast();
@@ -88,6 +88,7 @@ export default function AdminFornecedorLanding() {
             <TabsTrigger value="hero">Hero</TabsTrigger>
             <TabsTrigger value="how">Como funciona</TabsTrigger>
             <TabsTrigger value="why">Por que anunciar</TabsTrigger>
+            <TabsTrigger value="trust">Prova social</TabsTrigger>
             <TabsTrigger value="testimonials">Depoimentos</TabsTrigger>
             <TabsTrigger value="cta">CTA final</TabsTrigger>
           </TabsList>
@@ -260,6 +261,9 @@ export default function AdminFornecedorLanding() {
 
           {/* TESTIMONIALS */}
           <TabsContent value="testimonials" className="mt-6 space-y-4">
+            <Card className="p-4 border-amber-300 bg-amber-50 text-sm text-amber-900 max-w-2xl">
+              Use apenas depoimentos <strong>reais</strong>, com autorização do fornecedor. Nunca inclua números de avaliação inventados nem depoimentos fictícios.
+            </Card>
             <Card className="p-6 space-y-3 max-w-2xl">
               <div><Label>Eyebrow</Label><Input value={cfg.testimonials.eyebrow} onChange={(e) => update("testimonials", { eyebrow: e.target.value })} /></div>
               <div className="grid md:grid-cols-2 gap-2">
@@ -267,7 +271,6 @@ export default function AdminFornecedorLanding() {
                 <div><Label>Título — palavra em destaque</Label><Input value={cfg.testimonials.title_em} onChange={(e) => update("testimonials", { title_em: e.target.value })} /></div>
               </div>
               <div><Label>Subtítulo</Label><Input value={cfg.testimonials.subtitle} onChange={(e) => update("testimonials", { subtitle: e.target.value })} /></div>
-              <div><Label>Texto da avaliação</Label><Input value={cfg.testimonials.rating_text} onChange={(e) => update("testimonials", { rating_text: e.target.value })} /></div>
             </Card>
             <div className="space-y-3">
               {cfg.testimonials.items.map((t, i) => (
