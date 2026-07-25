@@ -131,46 +131,100 @@ export default function WeddingBudget() {
       setCouple({ ...coupleData, ...updates } as CoupleData);
     }
 
-    const { data: planSuppliers } = await supabase
-      .from("couple_suppliers")
-      .select("supplier_id, category_id, status, contract_value, estimated_value, proposed_value, final_value")
-      .eq("couple_id", coupleData.id);
-    const planRows = planSuppliers || [];
-    if (planRows.length === 0) return;
+    // ── Limpeza one-shot: consolida linhas duplicadas herdadas do sync antigo ──
+    // Antes gravávamos uma linha por fornecedor sugerido (inflando o total). Agora
+    // a fonte da verdade é 1 linha de VERBA por categoria (supplier_id NULL).
+    await consolidarBudgetItemsAntigos(coupleData.id, latestSim);
+  };
 
-    const { data: existingItems } = await supabase
+  const consolidarBudgetItemsAntigos = async (coupleId: string, latestSim: any) => {
+    const { data: items } = await supabase
       .from("budget_items")
-      .select("supplier_id")
-      .eq("couple_id", coupleData.id);
-    const existingSupplierIds = new Set((existingItems || []).map((item) => item.supplier_id).filter(Boolean));
-    const missing = planRows.filter((row) => row.supplier_id && !existingSupplierIds.has(row.supplier_id));
-    if (missing.length === 0) return;
+      .select("id, category, supplier_id, estimated_cost, final_cost, status, description")
+      .eq("couple_id", coupleId);
+    const rows = items || [];
+    if (rows.length === 0) return;
 
-    const supplierIds = missing.map((row) => row.supplier_id);
-    const categoryIds = Array.from(new Set(missing.map((row) => row.category_id).filter(Boolean)));
-    const [{ data: sups }, { data: cats }] = await Promise.all([
-      supabase.from("suppliers").select("id, company_name, category_id").in("id", supplierIds),
-      categoryIds.length
-        ? supabase.from("categories").select("id, slug, name").in("id", categoryIds as string[])
-        : Promise.resolve({ data: [] as any[] }),
-    ]);
-    const supplierMap = new Map((sups || []).map((s: any) => [s.id, s]));
-    const categoryMap = new Map((cats || []).map((c: any) => [c.id, c]));
+    // Já tem uma linha de verba por categoria? Então o novo criarPlano já rodou aqui.
+    const verbasPorCat = new Map<string, number>();
+    for (const r of rows) {
+      if (!r.supplier_id) {
+        verbasPorCat.set(r.category, (verbasPorCat.get(r.category) || 0) + 1);
+      }
+    }
+    const contratados = rows.filter((r) => r.status === "contracted");
+    // Se toda categoria já tem só 1 linha de verba (sem supplier), nada a fazer
+    const temSupplierRows = rows.some((r) => r.supplier_id);
+    if (!temSupplierRows) return;
 
-    await (supabase.from("budget_items") as any).insert(missing.map((row: any) => {
-      const supplier = supplierMap.get(row.supplier_id);
-      const category = categoryMap.get(row.category_id || supplier?.category_id);
-      const amount = Number(row.final_value || row.contract_value || row.proposed_value || row.estimated_value || 0);
-      return {
-        couple_id: coupleData.id,
-        supplier_id: row.supplier_id,
-        category: category?.slug || category?.name || "outros",
-        description: supplier?.company_name || "Fornecedor do plano",
-        estimated_cost: amount,
-        final_cost: row.status === "contracted" ? amount : null,
-        status: row.status === "contracted" ? "contracted" : "estimated",
-      };
-    }));
+    // Estratégia: para categorias que têm linhas "por fornecedor" (supplier_id != null)
+    // e não são contratadas, deletamos essas linhas e recriamos uma linha de verba.
+    // Fornecedores contratados viram linhas próprias mantidas (com final_cost).
+    const targetBudget = Number(latestSim?.orcamento_total || 0);
+    const planoResumo = latestSim?.resultado?.plano as Record<string, any> | undefined;
+
+    // Deleta linhas por fornecedor NÃO contratadas
+    const paraDeletar = rows.filter((r) => r.supplier_id && r.status !== "contracted").map((r) => r.id);
+    if (paraDeletar.length) {
+      await supabase.from("budget_items").delete().in("id", paraDeletar);
+    }
+
+    // Recria linhas de verba a partir do plano da última simulação
+    if (planoResumo && typeof planoResumo === "object") {
+      const verbaAgg = new Map<string, { label: string; verba: number }>();
+      for (const cat of Object.values(planoResumo)) {
+        const c: any = cat;
+        if (!c?.slug) continue;
+        const acc = verbaAgg.get(c.slug);
+        if (acc) {
+          acc.verba += Number(c.verba || 0);
+        } else {
+          verbaAgg.set(c.slug, { label: c.label || c.slug, verba: Number(c.verba || 0) });
+        }
+      }
+      let totalVerbas = 0;
+      for (const [slug, { label, verba }] of verbaAgg.entries()) {
+        totalVerbas += verba;
+        // upsert manual (índice único bloqueia duplicatas)
+        const existente = rows.find((r) => !r.supplier_id && r.category === slug);
+        if (existente) {
+          await supabase.from("budget_items")
+            .update({ description: label, estimated_cost: verba, status: "estimated" })
+            .eq("id", existente.id);
+        } else {
+          await (supabase.from("budget_items") as any).insert({
+            couple_id: coupleId,
+            category: slug,
+            description: label,
+            estimated_cost: verba,
+            status: "estimated",
+          });
+        }
+      }
+      // linha reserva
+      if (targetBudget > 0) {
+        const reserva = Math.max(0, targetBudget - totalVerbas);
+        const reservaExistente = rows.find((r) => !r.supplier_id && r.category === "reserva");
+        if (reserva > 0) {
+          if (reservaExistente) {
+            await supabase.from("budget_items")
+              .update({ description: "Reserva / não alocado", estimated_cost: reserva, status: "estimated" })
+              .eq("id", reservaExistente.id);
+          } else {
+            await (supabase.from("budget_items") as any).insert({
+              couple_id: coupleId,
+              category: "reserva",
+              description: "Reserva / não alocado",
+              estimated_cost: reserva,
+              status: "estimated",
+            });
+          }
+        } else if (reservaExistente) {
+          await supabase.from("budget_items").delete().eq("id", reservaExistente.id);
+        }
+      }
+    }
+    void verbasPorCat; void contratados;
   };
 
   const loadBudgetData = async (coupleId: string) => {
