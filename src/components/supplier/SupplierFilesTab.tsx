@@ -75,11 +75,12 @@ export default function SupplierFilesTab({ supplierId, isEspaco }: Props) {
     load();
   };
 
-  const tabs: { value: Tipo; label: string; icon: React.ReactNode; visible: boolean }[] = [
+  const allTabs: { value: Tipo; label: string; icon: React.ReactNode; visible: boolean }[] = [
     { value: "planta_baixa", label: "Planta baixa", icon: <Layers className="h-4 w-4" />, visible: isEspaco },
     { value: "anexo", label: "Anexos", icon: <Paperclip className="h-4 w-4" />, visible: true },
     { value: "documento", label: "Documentos internos", icon: <Lock className="h-4 w-4" />, visible: true },
-  ].filter(t => t.visible);
+  ];
+  const tabs = allTabs.filter(t => t.visible);
 
   return (
     <div className="space-y-6">
