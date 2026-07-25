@@ -86,12 +86,12 @@ export default function BulkContactTab({
   const renderMsg = (item: PlanSupplier) => {
     const c = contextoMensagem;
     return template
-      .replaceAll("{{nome}}", item.company_name)
-      .replaceAll("{{casal}}", c.nomeCasal || "um casal")
-      .replaceAll("{{categoria}}", (item.category_name || "o seu serviço").toLowerCase())
-      .replaceAll("{{data}}", c.data || "em breve")
-      .replaceAll("{{cidade}}", c.cidade || "nossa cidade")
-      .replaceAll("{{convidados}}", String(c.convidados || "alguns"));
+      .split("{{nome}}").join(item.company_name)
+      .split("{{casal}}").join(c.nomeCasal || "um casal")
+      .split("{{categoria}}").join((item.category_name || "o seu serviço").toLowerCase())
+      .split("{{data}}").join(c.data || "em breve")
+      .split("{{cidade}}").join(c.cidade || "nossa cidade")
+      .split("{{convidados}}").join(String(c.convidados || "alguns"));
   };
 
   const previewItem = filtered.find(canSend) || filtered[0];
