@@ -17,12 +17,15 @@ export interface WhyCfg { eyebrow: string; title_line1: string; title_line2: str
 export interface TestimonialItem { id: string; name: string; role: string; city: string; text: string; rating: number; avatarUrl?: string; emoji?: string }
 export interface TestimonialsCfg { eyebrow: string; title_pre: string; title_em: string; subtitle: string; rating_text: string; items: TestimonialItem[] }
 export interface CtaCfg { eyebrow: string; title: string; subtitle: string; button_label: string; redirect_path: string; footnote: string }
+export interface TrustPillar { id: string; icon: "gift" | "clock" | "target" | "calendar"; title: string; description: string }
+export interface TrustCfg { eyebrow: string; title: string; subtitle: string; items: TrustPillar[] }
 
 export interface SupplierLandingConfig {
   navbar: NavbarCfg;
   hero: HeroCfg;
   how: HowCfg;
   why: WhyCfg;
+  trust: TrustCfg;
   testimonials: TestimonialsCfg;
   cta: CtaCfg;
 }
@@ -64,15 +67,21 @@ export const DEFAULT_LANDING: SupplierLandingConfig = {
   },
   testimonials: {
     eyebrow: "Depoimentos",
-    title_pre: "Wall of",
-    title_em: "love",
-    subtitle: "Fornecedores reais, resultados reais.",
-    rating_text: "4.9 de avaliação média na plataforma",
+    title_pre: "Depoimentos",
+    title_em: "reais",
+    subtitle: "Adicionamos aqui somente depoimentos verificados de fornecedores.",
+    rating_text: "",
+    items: [],
+  },
+  trust: {
+    eyebrow: "Por que confiar",
+    title: "Prova social honesta",
+    subtitle: "Compromissos claros — sem números inventados nem depoimentos fabricados.",
     items: [
-      { id: "1", name: "Camila Rocha", role: "Cerimonialista", city: "Belo Horizonte", rating: 5, emoji: "👰", text: "Em 2 semanas já tinha fechado 3 contratos para datas que estavam paradas há meses." },
-      { id: "2", name: "Rafael Mendes", role: "Fotógrafo", city: "São Paulo", rating: 5, emoji: "📸", text: "Aqui os pedidos chegam com data, local e valor em mente. Outra realidade." },
-      { id: "3", name: "Juliana Lima", role: "Buffet", city: "Curitiba", rating: 5, emoji: "🍽️", text: "Cadastrei numa segunda, na quarta já tinha visita agendada." },
-      { id: "4", name: "André Costa", role: "DJ", city: "Rio de Janeiro", rating: 5, emoji: "🎧", text: "Minha agenda de fim de semana lotou em 30 dias." },
+      { id: "1", icon: "gift",     title: "Cadastro gratuito",                    description: "Crie seu perfil sem cartão de crédito e sem mensalidade obrigatória." },
+      { id: "2", icon: "clock",    title: "Aprovação em 24h",                     description: "Nossa equipe revisa e publica seu perfil em até um dia útil." },
+      { id: "3", icon: "target",   title: "Leads com orçamento e data definidos", description: "Os pedidos chegam com valor esperado, cidade e data do casamento." },
+      { id: "4", icon: "calendar", title: "Datas ociosas: encha sua agenda",      description: "Marque dias com pouca procura e receba pedidos de casais buscando data flexível." },
     ],
   },
   cta: {
