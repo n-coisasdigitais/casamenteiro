@@ -1,6 +1,6 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, CheckCircle2, Calendar, AlertCircle, Clock } from "lucide-react";
+import { ExternalLink, CheckCircle2, Calendar, AlertCircle, Clock, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { dueStatus, formatDueDate } from "@/lib/taskDueDate";
 
@@ -15,6 +15,8 @@ type TaskItemProps = {
   supplierId?: string | null;
   supplierName?: string | null;
   dueDate?: string | null;
+  createdAt?: string | null;
+  seededAsBacklog?: boolean;
   onToggle: (id: string, completed: boolean) => void;
 };
 
@@ -46,11 +48,12 @@ const priorityVariant: Record<string, "default" | "secondary" | "outline"> = {
   optional: "outline",
 };
 
-export default function TaskItem({ id, title, category, priority, isCompleted, actionLabel, actionUrl, supplierId, supplierName, dueDate, onToggle }: TaskItemProps) {
+export default function TaskItem({ id, title, category, priority, isCompleted, actionLabel, actionUrl, supplierId, supplierName, dueDate, createdAt, seededAsBacklog, onToggle }: TaskItemProps) {
   const d = dueDate ? new Date(dueDate) : null;
-  const status = dueStatus(d, isCompleted);
+  const status = dueStatus(d, isCompleted, { createdAt: createdAt ?? null, seededAsBacklog });
   const dueChip = (() => {
     if (status === "overdue") return { icon: AlertCircle, label: `Atrasada — ${formatDueDate(d)}`, cls: "text-destructive" };
+    if (status === "backlog") return { icon: Sparkles, label: "Comece por aqui", cls: "text-muted-foreground" };
     if (status === "soon")    return { icon: Clock, label: `Em breve — ${formatDueDate(d)}`, cls: "text-amber-700" };
     if (status === "ok")      return { icon: Calendar, label: formatDueDate(d), cls: "text-muted-foreground" };
     return null;
