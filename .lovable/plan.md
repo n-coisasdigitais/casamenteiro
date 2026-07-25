@@ -1,57 +1,85 @@
+## Diagnóstico confirmado
 
-## Diagnóstico
+O painel mostra dois números porque eles vêm de fontes diferentes:
 
-- Em `home_simulacoes`, a policy de INSERT permite `user_id NULL` (usuário deslogado), mas a policy de SELECT exige `user_id = auth.uid()` ou `couple_id = ...`. Resultado: quando um visitante deslogado insere, o `.select("id")` após o `insert` **não retorna a linha** e `simulacaoId` volta como `null`. Confirmado nas policies atuais do banco.
-- `SimulatorCTA.tsx` (home) já trata parcialmente o caso `!user`, mas quando o usuário está **logado** e o id vier `null` por qualquer motivo, cai em `navigate("/simulador/resultado?preview=1")` **sem gravar `sessionStorage`**, o que dispara loop no resultado.
-- `Simulador.tsx` (página) hoje redireciona deslogado para `/cadastro?redirect=...` e, quando `simulacaoId` é null, cai em `navigate("/cadastro")` — nunca mostra o resultado.
-- `SimuladorResultado.tsx` trata `id` nulo, mas não trata `"null"`/`"undefined"` como string, nem faz fallback ao sessionStorage quando a busca no banco retorna vazio; em vez disso, redireciona direto para `/simulador`, fechando o loop.
+- **"Orçamento do plano" R$ 228.000** = `couples.target_budget` (teto herdado do `orcamento_total` da simulação).
+- **"Meu Orçamento Estimado" R$ 174.960** = soma real de `budget_items.estimated_cost`.
 
-## Correções (todas em pt-BR)
+E `budget_items` está inconsistente por três motivos:
 
-### 1) `src/lib/simulador.ts` — `salvarSimulacao`
-- Pegar `supabase.auth.getUser()` antes do insert (já faz) e gravar `user_id` explicitamente (id do usuário ou `null`).
-- Manter `.select("id").maybeSingle()`, mas envolver em try/catch tolerante: se `data` vier vazio (RLS bloqueando o retorno para deslogado) ou houver erro, apenas logar e retornar `null` — nunca lançar exceção.
-- Não alterar contrato público de `calcularSimulacao`: já retorna `{ simulacaoId: string | null, ... }`.
+1. **`criarPlano` perde a verba do Buffet** porque `espaco` e `buffet` compartilham o slug `espacos-buffet` e o loop deduplica por slug (só a primeira verba entra).
+2. **`syncPlanIntoBudget` (WeddingBudget.tsx) grava uma linha por fornecedor sugerido** com `estimated_cost` = preço-base do fornecedor, misturando "verba planejada" com "preço de sugestão".
+3. **Sem uniqueness** por `(couple_id, supplier_id)`, cada nova simulação salva pelo casal reinseriu os mesmos fornecedores (Rafael Luz 3×, Sabor & Arte 3×, etc.).
 
-### 2) Migration — RLS de `home_simulacoes`
-- Manter as policies existentes de UPDATE/DELETE/SELECT (dono + admin).
-- Adicionar policy extra de SELECT que permite ler linhas com `user_id IS NULL AND couple_id IS NULL` **apenas dentro da mesma sessão de insert** — ou, mais simples e seguro: manter a lógica atual e aceitar que deslogado sempre cai no fluxo sessionStorage (correção 3). Nesse caso, **nenhuma migration é necessária** — a mudança fica só no frontend.
-- Decisão: **não mexer no RLS**. Deslogado usa sessionStorage (correção 3). Logado já consegue ler a linha via policy `user_id = auth.uid()`.
+## O que vai mudar
 
-### 3) `src/components/home/SimulatorCTA.tsx`
-- Após `calcularSimulacao`, sempre gravar o payload em `sessionStorage["preview_simulacao"]` (útil como fallback para logado e deslogado).
-- Regra única de navegação:
-  - Se `r.simulacaoId` (truthy) → `navigate(\`/simulador/resultado?id=${r.simulacaoId}\`)`.
-  - Senão → `navigate("/simulador/resultado?preview=1")`.
-- Vale para logado e deslogado.
+### 1. Separar `espaco` e `buffet` no banco (migração)
 
-### 4) `src/pages/Simulador.tsx` — `finalizar`
-- Aplicar a mesma regra da correção 3: sempre gravar payload em `sessionStorage["preview_simulacao"]`; se `simulacaoId` existir, navegar com `?id=`; senão, `?preview=1`.
-- Remover o redirecionamento para `/cadastro` — o usuário vê o resultado; o CTA de cadastro fica dentro da página de resultado (já existente para o modo preview).
-- Manter o registro em `cidades_interesse` quando `cidadeSemFornecedor` **e** houver `simulacaoId`.
+Hoje `categories` só tem `espacos-buffet`. Vou adicionar duas categorias novas:
 
-### 5) `src/pages/SimuladorResultado.tsx`
-- Normalizar `id`: tratar `null`, `"null"`, `"undefined"`, `""` como ausente.
-- Fluxo unificado no `useEffect`:
-  1. Se `id` ausente **ou** `preview=1` → tentar `sessionStorage["preview_simulacao"]`. Se válido, renderizar. Se não, ir para 3.
-  2. Se `id` válido → buscar no banco via `.maybeSingle()`. Se retornar linha, renderizar. Se retornar vazio, tentar sessionStorage como fallback antes de qualquer navigate.
-  3. Se nada existir → renderizar **tela de erro amigável** ("Não encontramos essa simulação") com botão "Fazer nova simulação" (`/simulador`) — **sem navigate automático**.
+- `espaco` — "Espaço / Local"
+- `buffet` — "Buffet / Gastronomia"
 
-## Arquivos afetados
+E migrar os `budget_items` e `couple_suppliers` existentes que apontam para `espacos-buffet`: se o fornecedor tem `pricing_model = 'por_pessoa'` (ou nome contém "buffet"), vira `buffet`; caso contrário `espaco`. Fornecedores em `suppliers` também são reclassificados. A categoria antiga `espacos-buffet` fica desativada (não removida) para não quebrar histórico.
 
-```text
-src/lib/simulador.ts              [editar — salvarSimulacao tolerante]
-src/components/home/SimulatorCTA.tsx  [editar — sessionStorage sempre + regra única]
-src/pages/Simulador.tsx           [editar — mesma regra, sem /cadastro]
-src/pages/SimuladorResultado.tsx  [editar — normalizar id, fallback, tela de erro]
+### 2. `src/lib/simulador.ts`
+
+- `CATEGORIA_SLUG`: `espaco → "espaco"`, `buffet → "buffet"` (deixam de colidir).
+- `buscarFornecedores`: aceita filtrar por qualquer um dos dois slugs.
+- `criarPlano`:
+  - **Agrupa `budgetRows` por slug antes de inserir**, somando verbas caso ainda existam colisões futuras (defesa em profundidade).
+  - **Grava uma linha `budget_items` por categoria do plano, com `estimated_cost = verba da categoria`.** Fornecedores sugeridos vão só para `couple_suppliers`, não para `budget_items`.
+  - Se `sum(verbas) < orcamento_total`, insere linha extra `category = "reserva"`, `description = "Reserva / não alocado"` com a diferença.
+
+### 3. `src/pages/WeddingBudget.tsx`
+
+- **Remover a criação automática de `budget_items` por fornecedor sugerido** dentro de `syncPlanIntoBudget`. O sync passa a atualizar apenas `final_cost` da linha da categoria quando um fornecedor daquela categoria é contratado (`status = 'contracted'`).
+- One-shot de limpeza: no primeiro load após deploy, detectar casais cujos `budget_items` foram inflados por sync anterior (mais de uma linha por categoria com `supplier_id != null`) e consolidar em uma linha por categoria com verba correta. Backup em coluna `notes` do primeiro item antes de deletar.
+- Rótulos padronizados no header e nos cards:
+  - "Meta" → **"Orçamento do plano"** (teto)
+  - "Orçamento Estimado" → **"Alocado no plano"** (soma de estimated_cost)
+  - Novo card **"Reserva"** = `orcamento_do_plano − alocado`, com badge verde se ≥ 0.
+  - "Custo Final" continua igual.
+  - "Saldo" segue como está (meta − gasto).
+
+### 4. `src/components/plan/PlanHeader.tsx`
+
+- Mesma padronização: "Orçamento do plano" (teto) e um segundo card "Alocado no plano" abaixo.
+
+### 5. Deduplicação preventiva
+
+- Índice único em `budget_items`: `(couple_id, category)` **quando `supplier_id IS NULL`** — impede duas linhas de verba para a mesma categoria.
+- `criarPlano` passa a fazer `upsert` na categoria em vez de checar `existingCats` na aplicação.
+
+## Detalhes técnicos
+
+**Migrações:**
+```sql
+-- 1. novas categorias
+INSERT INTO categories (name, slug, ...) VALUES
+  ('Espaço / Local', 'espaco', ...),
+  ('Buffet / Gastronomia', 'buffet', ...);
+
+-- 2. reclassifica fornecedores
+UPDATE suppliers SET category_id = (SELECT id FROM categories WHERE slug='buffet')
+  WHERE category_id = (SELECT id FROM categories WHERE slug='espacos-buffet')
+    AND (pricing_model = 'por_pessoa' OR lower(company_name) LIKE '%buffet%');
+UPDATE suppliers SET category_id = (SELECT id FROM categories WHERE slug='espaco')
+  WHERE category_id = (SELECT id FROM categories WHERE slug='espacos-buffet');
+
+-- 3. reclassifica budget_items e couple_suppliers idem
+-- 4. desativa slug antigo (active=false)
+-- 5. índice único parcial
+CREATE UNIQUE INDEX budget_items_couple_category_verba
+  ON budget_items(couple_id, category) WHERE supplier_id IS NULL;
 ```
 
-Nenhuma migration necessária.
+**Ordem de aplicação:** migração primeiro (com approval), depois edits em `simulador.ts`, `WeddingBudget.tsx`, `PlanHeader.tsx`. Nada quebra durante a transição porque o slug antigo continua existindo.
 
-## Testes manuais (4 caminhos)
+**Validação:** após aplicar, o casal de teste (287ad287…) deve mostrar `alocado = 228.000` (ou `alocado = 174.960` + `reserva = 53.040` se decidirmos preservar as verbas atuais em vez de recalcular). O plano vai recalcular verbas para todas as 9 categorias e reescrever a linha "reserva" a cada `criarPlano`.
 
-1. **Home + deslogado**: simular, esperar `?preview=1`, resultado renderizado do sessionStorage.
-2. **Home + logado**: simular, esperar `?id=...`, resultado do banco; recarregar a página funciona.
-3. **/simulador + deslogado**: mesmo comportamento do 1 (não redirecionar para /cadastro).
-4. **/simulador + logado**: mesmo comportamento do 2.
-5. Bônus: abrir `/simulador/resultado?id=null` → tela de erro amigável, sem loop.
+## Fora de escopo
+
+- Não vou tocar em `couple_suppliers`, quotes, ou negociações — só nas verbas planejadas.
+- Não vou apagar histórico de simulações antigas.
+- Não vou mexer no simulador público (Home / `/simulador`) além do split de slug.
