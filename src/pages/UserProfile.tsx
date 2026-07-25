@@ -297,7 +297,7 @@ export default function UserProfile() {
         </div>
 
         <Tabs defaultValue="conta" className="w-full">
-          <div className="-mx-4 px-4 mb-6 overflow-x-auto no-scrollbar">
+          <div className="-mx-4 px-4 mb-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <TabsList className="inline-flex w-max min-w-full sm:grid sm:grid-cols-4">
               <TabsTrigger value="conta">Conta</TabsTrigger>
               <TabsTrigger value="casamento">Casamento</TabsTrigger>
