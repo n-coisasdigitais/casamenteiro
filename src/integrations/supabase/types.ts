@@ -2752,6 +2752,7 @@ export type Database = {
           is_completed: boolean
           is_custom: boolean
           priority: string
+          seeded_as_backlog: boolean
           sort_order: number
           supplier_id: string | null
           title: string
@@ -2773,6 +2774,7 @@ export type Database = {
           is_completed?: boolean
           is_custom?: boolean
           priority?: string
+          seeded_as_backlog?: boolean
           sort_order?: number
           supplier_id?: string | null
           title: string
@@ -2794,6 +2796,7 @@ export type Database = {
           is_completed?: boolean
           is_custom?: boolean
           priority?: string
+          seeded_as_backlog?: boolean
           sort_order?: number
           supplier_id?: string | null
           title?: string
@@ -2821,6 +2824,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _meses_ate: { Args: { _wedding_date: string }; Returns: number }
+      _periodo_vencido: {
+        Args: { _due_period: string; _wedding_date: string }
+        Returns: boolean
+      }
       admin_broadcast_notification: {
         Args: {
           _body: string
@@ -2877,6 +2885,10 @@ export type Database = {
       }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
+        Returns: number
+      }
+      expandir_tarefas_detalhadas: {
+        Args: { _couple_id: string }
         Returns: number
       }
       generate_couple_profile_slug: {
@@ -2964,6 +2976,10 @@ export type Database = {
       }
       seed_default_tasks_from_table: {
         Args: { _couple_id: string }
+        Returns: undefined
+      }
+      seed_default_tasks_smart: {
+        Args: { _couple_id: string; _wedding_date?: string }
         Returns: undefined
       }
     }
