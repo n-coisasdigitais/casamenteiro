@@ -22,6 +22,8 @@ import { absoluteUrl, breadcrumbJsonLd, priceRangeLabel, truncate } from "@/lib/
 import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
 import DynamicFieldsView from "@/components/dynamic-fields/DynamicFieldsView";
+import SupplierPublicAttachments from "@/components/supplier/SupplierPublicAttachments";
+import { isEspacoCategory } from "@/lib/categories";
 
 type Review = {
   id: string;
