@@ -324,6 +324,7 @@ export default function SupplierDashboard() {
               Arquivos
             </TabsTrigger>
             <TabsTrigger value="reviews">Avaliações</TabsTrigger>
+            {vagasEnabled && <TabsTrigger value="vagas">Equipe e vagas</TabsTrigger>}
           </TabsList>
 
           {/* METRICS TAB */}
