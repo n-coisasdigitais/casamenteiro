@@ -22,6 +22,8 @@ import { absoluteUrl, breadcrumbJsonLd, priceRangeLabel, truncate } from "@/lib/
 import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
 import DynamicFieldsView from "@/components/dynamic-fields/DynamicFieldsView";
+import SupplierPublicAttachments from "@/components/supplier/SupplierPublicAttachments";
+import { isEspacoCategory } from "@/lib/categories";
 
 type Review = {
   id: string;
@@ -63,7 +65,7 @@ export default function SupplierProfile() {
   useEffect(() => {
     if (!id) return;
     
-    supabase.from("suppliers").select("*, categories(name)").eq("id", id).maybeSingle().then(({ data }) => {
+    supabase.from("suppliers").select("*, categories(name, slug)").eq("id", id).maybeSingle().then(({ data }) => {
       setSupplier(data);
       setLoading(false);
       if (data?.category_id) {
@@ -470,6 +472,14 @@ export default function SupplierProfile() {
                     />
                   </div>
                 )}
+
+                <SupplierPublicAttachments
+                  supplierId={supplier.id}
+                  showFloorPlan={isEspacoCategory(
+                    (supplier.categories as any)?.slug ?? null,
+                    (supplier.categories as any)?.name ?? null,
+                  )}
+                />
 
                 <div>
                   <h2 className="font-bold text-lg mb-4">Informação</h2>

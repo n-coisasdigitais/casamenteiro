@@ -28,8 +28,10 @@ import SupplierReviewCouples from "@/components/supplier/SupplierReviewCouples";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
 import UserMenu from "@/components/UserMenu";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
+import SupplierFilesTab from "@/components/supplier/SupplierFilesTab";
+import { isEspacoCategory } from "@/lib/categories";
 
-type Category = { id: string; name: string };
+type Category = { id: string; name: string; slug?: string | null };
 
 export default function SupplierDashboard() {
   const { user, profile, signOut } = useAuth();
@@ -314,6 +316,10 @@ export default function SupplierDashboard() {
             </TabsTrigger>
             <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
             <TabsTrigger value="photos">Fotos</TabsTrigger>
+            <TabsTrigger value="files" className="flex items-center gap-1.5">
+              <Upload className="h-4 w-4" />
+              Arquivos
+            </TabsTrigger>
             <TabsTrigger value="reviews">Avaliações</TabsTrigger>
           </TabsList>
 
@@ -432,6 +438,15 @@ export default function SupplierDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* FILES TAB */}
+          <TabsContent value="files">
+            {(() => {
+              const cat = categories.find(c => c.id === supplier.category_id);
+              const isEspaco = isEspacoCategory(cat?.slug ?? null, cat?.name ?? null);
+              return <SupplierFilesTab supplierId={supplier.id} isEspaco={isEspaco} />;
+            })()}
           </TabsContent>
         </Tabs>
 
