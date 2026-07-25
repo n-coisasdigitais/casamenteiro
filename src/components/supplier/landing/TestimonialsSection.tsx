@@ -38,13 +38,7 @@ export default function TestimonialsSection({ cfg = DEFAULT_LANDING.testimonials
           <h2 className="font-serif text-3xl md:text-4xl mt-3 mb-4">
             {cfg.title_pre} <em className="italic font-normal text-primary">{cfg.title_em}</em> 💛
           </h2>
-          <p className="text-base text-muted-foreground mb-3">{cfg.subtitle}</p>
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <span className="flex" aria-hidden>
-              {[0,1,2,3,4].map((i) => (<Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />))}
-            </span>
-            <span>{cfg.rating_text}</span>
-          </div>
+          <p className="text-base text-muted-foreground">{cfg.subtitle}</p>
         </motion.div>
 
         <div className="overflow-hidden" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>

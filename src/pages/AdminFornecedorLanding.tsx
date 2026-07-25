@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ExternalLink, Loader2, Plus, Save, Trash2, Upload, ArrowUp, ArrowDown } from "lucide-react";
-import { DEFAULT_LANDING, SupplierLandingConfig, HowStep, WhyItem, TestimonialItem } from "@/lib/supplierLandingConfig";
+import { DEFAULT_LANDING, SupplierLandingConfig, HowStep, WhyItem, TestimonialItem, TrustPillar } from "@/lib/supplierLandingConfig";
 
 export default function AdminFornecedorLanding() {
   const { toast } = useToast();
@@ -88,6 +88,7 @@ export default function AdminFornecedorLanding() {
             <TabsTrigger value="hero">Hero</TabsTrigger>
             <TabsTrigger value="how">Como funciona</TabsTrigger>
             <TabsTrigger value="why">Por que anunciar</TabsTrigger>
+            <TabsTrigger value="trust">Prova social</TabsTrigger>
             <TabsTrigger value="testimonials">Depoimentos</TabsTrigger>
             <TabsTrigger value="cta">CTA final</TabsTrigger>
           </TabsList>
@@ -258,8 +259,67 @@ export default function AdminFornecedorLanding() {
             </div>
           </TabsContent>
 
+          {/* TRUST — Prova social honesta */}
+          <TabsContent value="trust" className="mt-6 space-y-4">
+            <Card className="p-6 space-y-3 max-w-2xl">
+              <div><Label>Eyebrow</Label><Input value={cfg.trust.eyebrow} onChange={(e) => update("trust", { eyebrow: e.target.value })} /></div>
+              <div><Label>Título</Label><Input value={cfg.trust.title} onChange={(e) => update("trust", { title: e.target.value })} /></div>
+              <div><Label>Subtítulo</Label><Textarea value={cfg.trust.subtitle} onChange={(e) => update("trust", { subtitle: e.target.value })} /></div>
+              <p className="text-xs text-muted-foreground">
+                Não inclua números de avaliação, contagem de fornecedores ou métricas de volume sem dado real.
+              </p>
+            </Card>
+            <div className="space-y-3">
+              {cfg.trust.items.map((p, i) => (
+                <Card key={p.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase text-muted-foreground">Pilar {i + 1}</span>
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" disabled={i === 0} onClick={() => {
+                        const arr = [...cfg.trust.items]; [arr[i-1], arr[i]] = [arr[i], arr[i-1]]; update("trust", { items: arr });
+                      }}><ArrowUp className="h-3 w-3" /></Button>
+                      <Button size="icon" variant="ghost" disabled={i === cfg.trust.items.length - 1} onClick={() => {
+                        const arr = [...cfg.trust.items]; [arr[i+1], arr[i]] = [arr[i], arr[i+1]]; update("trust", { items: arr });
+                      }}><ArrowDown className="h-3 w-3" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => update("trust", { items: cfg.trust.items.filter((_, j) => j !== i) })}>
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-2">
+                    <Input placeholder="Título" value={p.title} onChange={(e) => {
+                      const arr = [...cfg.trust.items]; arr[i] = { ...p, title: e.target.value }; update("trust", { items: arr });
+                    }} />
+                    <select
+                      className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                      value={p.icon}
+                      onChange={(e) => {
+                        const arr = [...cfg.trust.items]; arr[i] = { ...p, icon: e.target.value as TrustPillar["icon"] }; update("trust", { items: arr });
+                      }}
+                    >
+                      <option value="gift">Presente (Cadastro grátis)</option>
+                      <option value="clock">Relógio (Aprovação)</option>
+                      <option value="target">Alvo (Leads qualificados)</option>
+                      <option value="calendar">Agenda (Datas ociosas)</option>
+                    </select>
+                  </div>
+                  <Textarea placeholder="Descrição" value={p.description} onChange={(e) => {
+                    const arr = [...cfg.trust.items]; arr[i] = { ...p, description: e.target.value }; update("trust", { items: arr });
+                  }} />
+                </Card>
+              ))}
+              <Button variant="outline" onClick={() => {
+                const novo: TrustPillar = { id: crypto.randomUUID(), icon: "gift", title: "", description: "" };
+                update("trust", { items: [...cfg.trust.items, novo] });
+              }}><Plus className="h-3 w-3 mr-1" />Adicionar pilar</Button>
+            </div>
+          </TabsContent>
+
           {/* TESTIMONIALS */}
           <TabsContent value="testimonials" className="mt-6 space-y-4">
+            <Card className="p-4 border-amber-300 bg-amber-50 text-sm text-amber-900 max-w-2xl">
+              Use apenas depoimentos <strong>reais</strong>, com autorização do fornecedor. Nunca inclua números de avaliação inventados nem depoimentos fictícios.
+            </Card>
             <Card className="p-6 space-y-3 max-w-2xl">
               <div><Label>Eyebrow</Label><Input value={cfg.testimonials.eyebrow} onChange={(e) => update("testimonials", { eyebrow: e.target.value })} /></div>
               <div className="grid md:grid-cols-2 gap-2">
@@ -267,7 +327,6 @@ export default function AdminFornecedorLanding() {
                 <div><Label>Título — palavra em destaque</Label><Input value={cfg.testimonials.title_em} onChange={(e) => update("testimonials", { title_em: e.target.value })} /></div>
               </div>
               <div><Label>Subtítulo</Label><Input value={cfg.testimonials.subtitle} onChange={(e) => update("testimonials", { subtitle: e.target.value })} /></div>
-              <div><Label>Texto da avaliação</Label><Input value={cfg.testimonials.rating_text} onChange={(e) => update("testimonials", { rating_text: e.target.value })} /></div>
             </Card>
             <div className="space-y-3">
               {cfg.testimonials.items.map((t, i) => (
