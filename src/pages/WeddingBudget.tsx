@@ -368,9 +368,14 @@ export default function WeddingBudget() {
             <h1 className="text-2xl md:text-3xl font-serif mt-1">{coupleName || "Casamenteiro"}</h1>
             <div className="mt-6 flex flex-wrap gap-6 items-end">
               <div>
-                <p className="text-xs opacity-80">Meta</p>
+                <p className="text-xs opacity-80">Orçamento do plano</p>
                 <p className="text-2xl font-bold">R$ {target.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
-                <p className="text-xs opacity-70">Meta do casal</p>
+                <p className="text-xs opacity-70">Teto planejado</p>
+              </div>
+              <div>
+                <p className="text-xs opacity-80">Alocado no plano</p>
+                <p className="text-2xl font-bold">R$ {estimatedTotal.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</p>
+                <p className="text-xs opacity-70">Soma das verbas por categoria</p>
               </div>
               <div>
                 <p className="text-xs opacity-80">Gasto/comprometido</p>
@@ -485,12 +490,15 @@ export default function WeddingBudget() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Orçamento Estimado</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Alocado no plano</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 R$ {estimatedTotal.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}
               </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                de R$ {target.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} do plano
+              </p>
             </CardContent>
           </Card>
 
