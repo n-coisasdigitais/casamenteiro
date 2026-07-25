@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, Maximize2 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -47,13 +47,14 @@ const COLUMNS: { key: KanbanStatus; label: string; tone: string }[] = [
 const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
 
 export default function PlanKanban({
-  coupleId, items, onChange, supplierIdsWithNewProposal, onOpenQuoteForSupplier,
+  coupleId, items, onChange, supplierIdsWithNewProposal, onOpenQuoteForSupplier, onOpenCard,
 }: {
   coupleId: string;
   items: PlanSupplier[];
   onChange: () => void;
   supplierIdsWithNewProposal?: Set<string>;
   onOpenQuoteForSupplier?: (supplierId: string) => void;
+  onOpenCard?: (item: PlanSupplier) => void;
 }) {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -173,7 +174,11 @@ export default function PlanKanban({
                 <div className="space-y-2">
                   {colItems.map((item) => (
                     <div key={item.id} className="space-y-2">
-                      <KanbanCard item={item} onEditValue={item.kanban_status === "negociando" ? () => openNegotiateEdit(item) : undefined} />
+                      <KanbanCard
+                        item={item}
+                        onEditValue={item.kanban_status === "negociando" ? () => openNegotiateEdit(item) : undefined}
+                        onOpen={onOpenCard ? () => onOpenCard(item) : undefined}
+                      />
                       {item.supplier_id && supplierIdsWithNewProposal?.has(item.supplier_id) && (
                         <Button
                           size="sm"
@@ -243,6 +248,7 @@ export default function PlanKanban({
                 onEditValue={openNegotiateEdit}
                 supplierIdsWithNewProposal={supplierIdsWithNewProposal}
                 onOpenQuoteForSupplier={onOpenQuoteForSupplier}
+                onOpenCard={onOpenCard}
               />
             ))}
           </div>
@@ -268,12 +274,13 @@ export default function PlanKanban({
   );
 }
 
-function Column({ col, items, onEditValue, supplierIdsWithNewProposal, onOpenQuoteForSupplier }: {
+function Column({ col, items, onEditValue, supplierIdsWithNewProposal, onOpenQuoteForSupplier, onOpenCard }: {
   col: { key: KanbanStatus; label: string; tone: string };
   items: PlanSupplier[];
   onEditValue: (item: PlanSupplier) => void;
   supplierIdsWithNewProposal?: Set<string>;
   onOpenQuoteForSupplier?: (supplierId: string) => void;
+  onOpenCard?: (item: PlanSupplier) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.key });
   return (
@@ -288,7 +295,11 @@ function Column({ col, items, onEditValue, supplierIdsWithNewProposal, onOpenQuo
       <div className="space-y-2">
         {items.map((item) => (
           <div key={item.id} className="space-y-1.5">
-            <DraggableCard item={item} onEditValue={item.kanban_status === "negociando" ? () => onEditValue(item) : undefined} />
+            <DraggableCard
+              item={item}
+              onEditValue={item.kanban_status === "negociando" ? () => onEditValue(item) : undefined}
+              onOpen={onOpenCard ? () => onOpenCard(item) : undefined}
+            />
             {item.supplier_id && supplierIdsWithNewProposal?.has(item.supplier_id) && (
               <Button
                 size="sm"
@@ -309,7 +320,7 @@ function Column({ col, items, onEditValue, supplierIdsWithNewProposal, onOpenQuo
   );
 }
 
-function DraggableCard({ item, onEditValue }: { item: PlanSupplier; onEditValue?: () => void }) {
+function DraggableCard({ item, onEditValue, onOpen }: { item: PlanSupplier; onEditValue?: () => void; onOpen?: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
   return (
     <div
@@ -317,19 +328,36 @@ function DraggableCard({ item, onEditValue }: { item: PlanSupplier; onEditValue?
       className={cn("touch-none", isDragging && "opacity-30")}
     >
       <div {...listeners} {...attributes}>
-        <KanbanCard item={item} onEditValue={onEditValue} />
+        <KanbanCard item={item} onEditValue={onEditValue} onOpen={onOpen} />
       </div>
     </div>
   );
 }
 
-function KanbanCard({ item, dragging, onEditValue }: { item: PlanSupplier; dragging?: boolean; onEditValue?: () => void }) {
+function KanbanCard({ item, dragging, onEditValue, onOpen }: { item: PlanSupplier; dragging?: boolean; onEditValue?: () => void; onOpen?: () => void }) {
   return (
     <Card className={cn("p-3 space-y-1.5 cursor-grab active:cursor-grabbing", dragging && "shadow-xl rotate-1")}>
-      {item.category_name && (
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.category_name}</p>
-      )}
-      <p className="text-sm font-semibold leading-tight">{item.company_name}</p>
+      <div className="flex items-start gap-1">
+        <div className="min-w-0 flex-1">
+          {item.category_name && (
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.category_name}</p>
+          )}
+          <p className="text-sm font-semibold leading-tight">{item.company_name}</p>
+        </div>
+        {onOpen && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            aria-label="Abrir detalhes"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onOpen(); }}
+          >
+            <Maximize2 className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
       <div className="text-xs space-y-0.5">
         <p className="text-muted-foreground">Plano: <span className="font-medium text-foreground">{fmt(item.valor_plano)}</span></p>
         {item.valor_cotado > 0 && (
