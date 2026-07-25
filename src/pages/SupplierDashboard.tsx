@@ -439,6 +439,15 @@ export default function SupplierDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* FILES TAB */}
+          <TabsContent value="files">
+            {(() => {
+              const cat = categories.find(c => c.id === supplier.category_id);
+              const isEspaco = isEspacoCategory(cat?.slug ?? null, cat?.name ?? null);
+              return <SupplierFilesTab supplierId={supplier.id} isEspaco={isEspaco} />;
+            })()}
+          </TabsContent>
         </Tabs>
 
         {/* Conversa de orçamento */}
