@@ -1992,6 +1992,273 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_applications: {
+        Row: {
+          convidado_em: string
+          created_at: string
+          expira_em: string | null
+          id: string
+          job_id: string
+          origem: string
+          respondido_em: string | null
+          staff_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          convidado_em?: string
+          created_at?: string
+          expira_em?: string | null
+          id?: string
+          job_id: string
+          origem?: string
+          respondido_em?: string | null
+          staff_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          convidado_em?: string
+          created_at?: string
+          expira_em?: string | null
+          id?: string
+          job_id?: string
+          origem?: string
+          respondido_em?: string | null
+          staff_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "staff_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_applications_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_jobs: {
+        Row: {
+          cidade: string | null
+          created_at: string
+          data: string
+          estado: string | null
+          funcao: string
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string
+          is_public: boolean
+          local: string | null
+          observacoes: string | null
+          status: string
+          supplier_id: string
+          updated_at: string
+          vagas: number
+          valor_turno: number | null
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string
+          data: string
+          estado?: string | null
+          funcao: string
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          is_public?: boolean
+          local?: string | null
+          observacoes?: string | null
+          status?: string
+          supplier_id: string
+          updated_at?: string
+          vagas?: number
+          valor_turno?: number | null
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string
+          data?: string
+          estado?: string | null
+          funcao?: string
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          is_public?: boolean
+          local?: string | null
+          observacoes?: string | null
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+          vagas?: number
+          valor_turno?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_jobs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_profiles: {
+        Row: {
+          bio: string | null
+          cidade: string | null
+          consentimento_lgpd: boolean
+          created_at: string
+          criado_por: string | null
+          email: string | null
+          estado: string | null
+          eventos_aceitos: number
+          eventos_concluidos: number
+          foto_url: string | null
+          funcoes: string[]
+          id: string
+          is_public: boolean
+          nome: string
+          raio_km: number
+          rating: number | null
+          review_count: number
+          slug: string | null
+          telefone: string | null
+          updated_at: string
+          user_id: string | null
+          valor_min_turno: number | null
+        }
+        Insert: {
+          bio?: string | null
+          cidade?: string | null
+          consentimento_lgpd?: boolean
+          created_at?: string
+          criado_por?: string | null
+          email?: string | null
+          estado?: string | null
+          eventos_aceitos?: number
+          eventos_concluidos?: number
+          foto_url?: string | null
+          funcoes?: string[]
+          id?: string
+          is_public?: boolean
+          nome: string
+          raio_km?: number
+          rating?: number | null
+          review_count?: number
+          slug?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string | null
+          valor_min_turno?: number | null
+        }
+        Update: {
+          bio?: string | null
+          cidade?: string | null
+          consentimento_lgpd?: boolean
+          created_at?: string
+          criado_por?: string | null
+          email?: string | null
+          estado?: string | null
+          eventos_aceitos?: number
+          eventos_concluidos?: number
+          foto_url?: string | null
+          funcoes?: string[]
+          id?: string
+          is_public?: boolean
+          nome?: string
+          raio_km?: number
+          rating?: number | null
+          review_count?: number
+          slug?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string | null
+          valor_min_turno?: number | null
+        }
+        Relationships: []
+      }
+      staff_reviews: {
+        Row: {
+          autor_id: string
+          autor_tipo: string
+          avaliado_id: string
+          comentario: string | null
+          created_at: string
+          estrelas: number
+          id: string
+          job_id: string
+        }
+        Insert: {
+          autor_id: string
+          autor_tipo: string
+          avaliado_id: string
+          comentario?: string | null
+          created_at?: string
+          estrelas: number
+          id?: string
+          job_id: string
+        }
+        Update: {
+          autor_id?: string
+          autor_tipo?: string
+          avaliado_id?: string
+          comentario?: string | null
+          created_at?: string
+          estrelas?: number
+          id?: string
+          job_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_reviews_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "staff_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_unavailability: {
+        Row: {
+          created_at: string
+          data: string
+          id: string
+          motivo: string | null
+          staff_id: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          id?: string
+          motivo?: string | null
+          staff_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          id?: string
+          motivo?: string | null
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_unavailability_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_attachments: {
         Row: {
           created_at: string
@@ -3028,6 +3295,13 @@ export type Database = {
           rsvp_response: string
           user_full_name: string
           wedding_date: string
+        }[]
+      }
+      get_staff_contact: {
+        Args: { _job_id: string; _staff_id: string }
+        Returns: {
+          email: string
+          telefone: string
         }[]
       }
       has_role: {
