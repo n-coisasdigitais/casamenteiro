@@ -30,6 +30,8 @@ import UserMenu from "@/components/UserMenu";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import SupplierFilesTab from "@/components/supplier/SupplierFilesTab";
 import { isEspacoCategory } from "@/lib/categories";
+import SupplierStaffTab from "@/components/staff/SupplierStaffTab";
+import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 
 type Category = { id: string; name: string; slug?: string | null };
 
@@ -49,6 +51,7 @@ export default function SupplierDashboard() {
   const [rejectMotivo, setRejectMotivo] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("metrics");
   const [bannerDismissed, setBannerDismissed] = useState<string | null>(null);
+  const vagasEnabled = useFeatureFlag("vagas", false);
 
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
@@ -321,6 +324,7 @@ export default function SupplierDashboard() {
               Arquivos
             </TabsTrigger>
             <TabsTrigger value="reviews">Avaliações</TabsTrigger>
+            {vagasEnabled && <TabsTrigger value="vagas">Equipe e vagas</TabsTrigger>}
           </TabsList>
 
           {/* METRICS TAB */}
@@ -448,6 +452,12 @@ export default function SupplierDashboard() {
               return <SupplierFilesTab supplierId={supplier.id} isEspaco={isEspaco} />;
             })()}
           </TabsContent>
+
+          {vagasEnabled && (
+            <TabsContent value="vagas">
+              <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Conversa de orçamento */}

@@ -67,6 +67,10 @@ import CapturarIndicacao from "./pages/CapturarIndicacao";
 import AdminIndicacoes from "./pages/AdminIndicacoes";
 import DemoLanding from "./pages/DemoLanding";
 import DemoBanner from "./components/DemoBanner";
+import StaffLanding from "./pages/StaffLanding";
+import StaffOnboarding from "./pages/StaffOnboarding";
+import StaffDashboard from "./pages/StaffDashboard";
+import StaffPublicProfile from "./pages/StaffPublicProfile";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +114,12 @@ const App = () => (
             <Route path="/fornecedor" element={<SupplierLanding />} />
             <Route path="/fornecedor/login" element={<Auth />} />
             <Route path="/fornecedor/cadastro" element={<SupplierOnboarding />} />
+            <Route path="/profissional" element={<FlagGate flag="vagas"><StaffLanding /></FlagGate>} />
+            <Route path="/profissional/login" element={<FlagGate flag="vagas"><Auth /></FlagGate>} />
+            <Route path="/profissional/cadastro" element={<FlagGate flag="vagas"><Auth /></FlagGate>} />
+            <Route path="/profissional/onboarding" element={<FlagGate flag="vagas"><StaffOnboarding /></FlagGate>} />
+            <Route path="/profissional/painel" element={<FlagGate flag="vagas"><StaffDashboard /></FlagGate>} />
+            <Route path="/profissional/:slug" element={<FlagGate flag="vagas"><StaffPublicProfile /></FlagGate>} />
             <Route path="/favoritos" element={<Favorites />} />
             <Route path="/perfil" element={<UserProfile />} />
             <Route path="/convite/:token" element={<InviteRSVP />} />

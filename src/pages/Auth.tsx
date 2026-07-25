@@ -11,16 +11,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { traduzirErroAuth } from "@/lib/authErrors";
 import SEO from "@/components/SEO";
+import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const path = typeof window !== "undefined" ? window.location.pathname : "";
   const isSupplierContext = path.startsWith("/fornecedor");
+  const isProfissionalContext = path.startsWith("/profissional");
   const isLogin =
     !searchParams.get("tipo") &&
-    (path === "/login" || path === "/fornecedor/login");
+    (path === "/login" || path === "/fornecedor/login" || path === "/profissional/login");
   const defaultType =
-    searchParams.get("tipo") === "supplier" || isSupplierContext ? "supplier" : "couple";
+    searchParams.get("tipo") === "supplier" || isSupplierContext
+      ? "supplier"
+      : searchParams.get("tipo") === "profissional" || isProfissionalContext
+      ? "profissional"
+      : "couple";
+  const vagasFlag = useFeatureFlag("vagas", false);
 
   const [mode, setMode] = useState<"login" | "signup">(isLogin ? "login" : "signup");
   const [accountType, setAccountType] = useState(defaultType);
@@ -54,6 +61,18 @@ export default function Auth() {
       } catch (_) { /* noop */ }
 
       if (profile.account_type !== "couple") {
+        if (profile.account_type === "profissional") {
+          const { data: sp } = await (supabase.from("staff_profiles" as any) as any)
+            .select("cidade, consentimento_lgpd")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+          if (!sp?.cidade || !sp?.consentimento_lgpd) {
+            navigate("/profissional/onboarding", { replace: true });
+          } else {
+            navigate("/profissional/painel", { replace: true });
+          }
+          return;
+        }
         // se onboarding pendente, manda completar; senão, painel
         const { data: sup } = await supabase
           .from("suppliers")
@@ -203,7 +222,7 @@ export default function Auth() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
               <>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     type="button"
                     variant={accountType === "couple" ? "default" : "outline"}
@@ -220,6 +239,16 @@ export default function Auth() {
                   >
                     Sou Fornecedor
                   </Button>
+                  {vagasFlag && (
+                    <Button
+                      type="button"
+                      variant={accountType === "profissional" ? "default" : "outline"}
+                      className="flex-1"
+                      onClick={() => setAccountType("profissional")}
+                    >
+                      Sou Profissional
+                    </Button>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="fullName">Nome completo</Label>
