@@ -78,23 +78,20 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
           .then(() => {}, () => {});
       }
 
-      if (!user) {
-        sessionStorage.setItem(
-          "preview_simulacao",
-          JSON.stringify({
-            orcamento_total,
-            num_convidados,
-            cidade,
-            estilo: estiloIn,
-            data_evento,
-            prazo_meses,
-            resultado,
-          }),
-        );
-        toast({ title: "Seu plano está pronto!", description: "Veja abaixo os detalhes do seu casamento." });
-        navigate("/simulador/resultado?preview=1");
-        return;
-      }
+      // Sempre grava o payload como fallback (vale para logado e deslogado)
+      sessionStorage.setItem(
+        "preview_simulacao",
+        JSON.stringify({
+          orcamento_total,
+          num_convidados,
+          cidade,
+          estilo: estiloIn,
+          data_evento,
+          prazo_meses,
+          resultado,
+        }),
+      );
+      toast({ title: "Seu plano está pronto!", description: "Veja abaixo os detalhes do seu casamento." });
       if (r.simulacaoId) {
         navigate(`/simulador/resultado?id=${r.simulacaoId}`);
       } else {
