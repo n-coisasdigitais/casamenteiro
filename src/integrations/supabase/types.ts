@@ -1992,6 +1992,68 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_attachments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          drive_file_id: string | null
+          drive_synced_at: string | null
+          file_name: string
+          id: string
+          mime_type: string | null
+          ordem: number
+          size_bytes: number | null
+          storage_path: string
+          supplier_id: string
+          tipo: string
+          titulo: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          drive_file_id?: string | null
+          drive_synced_at?: string | null
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          ordem?: number
+          size_bytes?: number | null
+          storage_path: string
+          supplier_id: string
+          tipo: string
+          titulo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          drive_file_id?: string | null
+          drive_synced_at?: string | null
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          ordem?: number
+          size_bytes?: number | null
+          storage_path?: string
+          supplier_id?: string
+          tipo?: string
+          titulo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_attachments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_blocked_dates: {
         Row: {
           blocked_date: string
