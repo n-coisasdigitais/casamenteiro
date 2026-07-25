@@ -51,6 +51,7 @@ export default function SupplierDashboard() {
   const [rejectMotivo, setRejectMotivo] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("metrics");
   const [bannerDismissed, setBannerDismissed] = useState<string | null>(null);
+  const vagasEnabled = useFeatureFlag("vagas", false);
 
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
