@@ -452,6 +452,12 @@ export default function SupplierDashboard() {
               return <SupplierFilesTab supplierId={supplier.id} isEspaco={isEspaco} />;
             })()}
           </TabsContent>
+
+          {vagasEnabled && (
+            <TabsContent value="vagas">
+              <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Conversa de orçamento */}
