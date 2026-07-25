@@ -30,6 +30,8 @@ import UserMenu from "@/components/UserMenu";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import SupplierFilesTab from "@/components/supplier/SupplierFilesTab";
 import { isEspacoCategory } from "@/lib/categories";
+import SupplierStaffTab from "@/components/staff/SupplierStaffTab";
+import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 
 type Category = { id: string; name: string; slug?: string | null };
 
