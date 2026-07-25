@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import CouplePhotoUpload from "@/components/CouplePhotoUpload";
 import CepInput from "@/components/CepInput";
 import AlbumUpload from "@/components/AlbumUpload";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -295,8 +296,19 @@ export default function UserProfile() {
           </div>
         </div>
 
-        {/* Dados pessoais */}
-        <Card className="mb-6">
+        <Tabs defaultValue="conta" className="w-full">
+          <div className="-mx-4 px-4 mb-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <TabsList className="inline-flex w-max min-w-full sm:grid sm:grid-cols-4">
+              <TabsTrigger value="conta">Conta</TabsTrigger>
+              <TabsTrigger value="casamento">Casamento</TabsTrigger>
+              <TabsTrigger value="casal">Casal</TabsTrigger>
+              <TabsTrigger value="convite">Convite</TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* ==================== CONTA ==================== */}
+          <TabsContent value="conta" className="space-y-6">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg">Dados pessoais</CardTitle>
           </CardHeader>
@@ -316,10 +328,6 @@ export default function UserProfile() {
               <p className="text-xs text-muted-foreground mt-1">Ao alterar, você precisará confirmar pelo link enviado ao novo email.</p>
             </div>
             <div>
-              <Label htmlFor="partnerName">Nome do(a) parceiro(a)</Label>
-              <Input id="partnerName" value={partnerName} onChange={(e) => setPartnerName(e.target.value)} />
-            </div>
-            <div>
               <Label>Eu sou</Label>
               <Select value={coupleRole} onValueChange={setCoupleRole}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -329,11 +337,40 @@ export default function UserProfile() {
                 </SelectContent>
               </Select>
             </div>
+            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? "Salvando..." : "Salvar dados pessoais"}
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Dados do casamento */}
-        <Card className="mb-6">
+        {/* Alterar senha */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              Alterar senha
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="newPassword">Nova senha</Label>
+              <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
+              <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            </div>
+            <Button onClick={handleChangePassword} disabled={savingPassword} variant="outline" className="w-full">
+              {savingPassword ? "Alterando..." : "Alterar senha"}
+            </Button>
+          </CardContent>
+        </Card>
+          </TabsContent>
+
+          {/* ==================== CASAMENTO ==================== */}
+          <TabsContent value="casamento" className="space-y-6">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg">Dados do casamento</CardTitle>
           </CardHeader>
@@ -365,16 +402,33 @@ export default function UserProfile() {
                 </SelectContent>
               </Select>
             </div>
+            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? "Salvando..." : "Salvar dados do casamento"}
+            </Button>
+          </CardContent>
+        </Card>
+          </TabsContent>
+
+          {/* ==================== CASAL ==================== */}
+          <TabsContent value="casal" className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Sobre o casal</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="partnerName">Nome do(a) parceiro(a)</Label>
+              <Input id="partnerName" value={partnerName} onChange={(e) => setPartnerName(e.target.value)} />
+            </div>
+            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? "Salvando..." : "Salvar"}
+            </Button>
           </CardContent>
         </Card>
 
-        <Button onClick={handleSaveProfile} disabled={saving} className="w-full mb-8">
-          <Save className="mr-2 h-4 w-4" />
-          {saving ? "Salvando..." : "Salvar alterações"}
-        </Button>
-
-        {/* Vínculo de parceiro */}
-        <Card className="mb-6">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Link2 className="h-4 w-4" />
@@ -443,7 +497,7 @@ export default function UserProfile() {
         </Card>
 
         {/* Personalização do painel */}
-        <Card className="mb-6">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg">Personalize seu painel</CardTitle>
             <p className="text-sm text-muted-foreground">Foto e frase que aparecem no topo da página de orçamento.</p>
@@ -457,14 +511,16 @@ export default function UserProfile() {
               <Label htmlFor="headerQuote">Sua frase</Label>
               <Textarea id="headerQuote" rows={2} value={headerQuote} onChange={(e) => setHeaderQuote(e.target.value)} placeholder="Ex.: Construindo o nosso grande dia, juntos." />
             </div>
-            <Button onClick={handleSaveProfile} disabled={saving} variant="outline" className="w-full">
+            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
               <Save className="mr-2 h-4 w-4" />Salvar personalização
             </Button>
           </CardContent>
         </Card>
+          </TabsContent>
 
-        {/* Dados do convite */}
-        <Card className="mb-6">
+          {/* ==================== CONVITE ==================== */}
+          <TabsContent value="convite" className="space-y-6">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg">Dados do convite</CardTitle>
             <p className="text-sm text-muted-foreground">Esses dados aparecerão no convite enviado por email aos convidados.</p>
@@ -550,35 +606,14 @@ export default function UserProfile() {
               <Label>Álbum de fotos (até 10)</Label>
               <AlbumUpload album={inviteAlbum} onChange={setInviteAlbum} max={10} />
             </div>
-            <Button onClick={handleSaveProfile} disabled={saving} variant="outline" className="w-full">
+            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
               <Save className="mr-2 h-4 w-4" />
               Salvar dados do convite
             </Button>
           </CardContent>
         </Card>
-
-        {/* Alterar senha */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Alterar senha
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="newPassword">Nova senha</Label>
-              <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
-              <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </div>
-            <Button onClick={handleChangePassword} disabled={savingPassword} variant="outline" className="w-full">
-              {savingPassword ? "Alterando..." : "Alterar senha"}
-            </Button>
-          </CardContent>
-        </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
