@@ -63,7 +63,7 @@ export default function SupplierProfile() {
   useEffect(() => {
     if (!id) return;
     
-    supabase.from("suppliers").select("*, categories(name)").eq("id", id).maybeSingle().then(({ data }) => {
+    supabase.from("suppliers").select("*, categories(name, slug)").eq("id", id).maybeSingle().then(({ data }) => {
       setSupplier(data);
       setLoading(false);
       if (data?.category_id) {
