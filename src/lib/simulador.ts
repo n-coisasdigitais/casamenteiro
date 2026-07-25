@@ -39,10 +39,9 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 // Categorias internas do simulador → slugs reais do banco `categories`
-// Algumas categorias são compartilhadas (ex: espaco/buffet → espacos-buffet)
 const CATEGORIA_SLUG: Record<string, string> = {
-  espaco: "espacos-buffet",
-  buffet: "espacos-buffet",
+  espaco: "espaco",
+  buffet: "buffet",
   fotografo: "fotografia",
   decoracao: "decoracao",
   banda: "musica-dj",
@@ -557,25 +556,70 @@ export async function criarPlano(
   const catIdMap = new Map<string, string>();
   (cats || []).forEach((c: any) => catIdMap.set(c.slug, c.id));
 
-  // budget_items por categoria (estimativa)
-  const { data: existingBudget } = await supabase
-    .from("budget_items").select("category, supplier_id").eq("couple_id", coupleId);
-  const existingCats = new Set((existingBudget || []).map((b: any) => b.category));
-  const budgetRows: any[] = [];
+  // ── budget_items: uma linha de VERBA por categoria (supplier_id = NULL) ──
+  // Agrupa por slug para defesa em profundidade (caso duas categorias colidam)
+  const verbaPorSlug = new Map<string, { label: string; verba: number }>();
   for (const cat of Object.values(resultado.plano)) {
-    if (!existingCats.has(cat.slug)) {
-      budgetRows.push({
-        couple_id: coupleId,
-        category: cat.slug,
-        description: cat.label,
-        estimated_cost: cat.verba,
-        status: "estimated",
-      });
-      existingCats.add(cat.slug);
+    const acc = verbaPorSlug.get(cat.slug);
+    if (acc) {
+      acc.verba += cat.verba;
+      acc.label = acc.label.includes(cat.label) ? acc.label : `${acc.label} + ${cat.label}`;
+    } else {
+      verbaPorSlug.set(cat.slug, { label: cat.label, verba: cat.verba });
     }
   }
-  if (budgetRows.length) {
-    await (supabase.from("budget_items") as any).insert(budgetRows);
+
+  // Lista existente de linhas de verba (supplier_id IS NULL) do casal
+  const { data: existingVerbas } = await supabase
+    .from("budget_items")
+    .select("id, category")
+    .eq("couple_id", coupleId)
+    .is("supplier_id", null);
+  const existingVerbaMap = new Map<string, string>();
+  (existingVerbas || []).forEach((b: any) => existingVerbaMap.set(b.category, b.id));
+
+  let totalVerbas = 0;
+  for (const [slug, { label, verba }] of verbaPorSlug.entries()) {
+    totalVerbas += verba;
+    const existingId = existingVerbaMap.get(slug);
+    if (existingId) {
+      await (supabase.from("budget_items") as any)
+        .update({ description: label, estimated_cost: verba, status: "estimated" })
+        .eq("id", existingId);
+    } else {
+      await (supabase.from("budget_items") as any).insert({
+        couple_id: coupleId,
+        category: slug,
+        description: label,
+        estimated_cost: verba,
+        status: "estimated",
+      });
+    }
+    existingVerbaMap.delete(slug);
+  }
+
+  // Linha "Reserva / não alocado" — sempre garante soma = orcamento_total
+  const orcamentoTotal = resultado.resumo.orcamentoTotal;
+  const reserva = Math.max(0, orcamentoTotal - totalVerbas);
+  const reservaExistente = existingVerbaMap.get("reserva");
+  if (reserva > 0) {
+    if (reservaExistente) {
+      await (supabase.from("budget_items") as any)
+        .update({ description: "Reserva / não alocado", estimated_cost: reserva, status: "estimated" })
+        .eq("id", reservaExistente);
+    } else {
+      await (supabase.from("budget_items") as any).insert({
+        couple_id: coupleId,
+        category: "reserva",
+        description: "Reserva / não alocado",
+        estimated_cost: reserva,
+        status: "estimated",
+      });
+    }
+    existingVerbaMap.delete("reserva");
+  } else if (reservaExistente) {
+    await (supabase.from("budget_items") as any).delete().eq("id", reservaExistente);
+    existingVerbaMap.delete("reserva");
   }
 
   // couple_suppliers — primeiro fornecedor sugerido por categoria, status nao_iniciado
