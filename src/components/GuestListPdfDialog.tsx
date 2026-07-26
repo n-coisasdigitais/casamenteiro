@@ -53,14 +53,14 @@ export default function GuestListPdfDialog({ guests, groups, dadosCasal, tipoEve
       toast({ title: "Selecione ao menos um relatório", variant: "destructive" });
       return null;
     }
-    const blob = await gerarPdfConvidados({
+    const blob = (await gerarPdfConvidados({
       tipoEvento,
       relatorios: { alfabetico, porMesa },
       agruparAlfabeticoPor: agrupar,
       dados: { ...dadosCasal, guests, groups },
       returnBlob: true,
-    } as any);
-    return blob as Blob | undefined;
+    })) as Blob | undefined;
+    return blob;
   };
 
   const preview = async () => {
