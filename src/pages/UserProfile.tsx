@@ -408,6 +408,23 @@ export default function UserProfile() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="border-t pt-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Label htmlFor="quer-datas-ociosas" className="cursor-pointer">Aceito receber datas com desconto</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Avisamos você quando um fornecedor abrir uma data ociosa que combina com seu casamento.
+                  </p>
+                </div>
+                <Switch id="quer-datas-ociosas" checked={querDatasOciosas} onCheckedChange={setQuerDatasOciosas} />
+              </div>
+              {querDatasOciosas && (
+                <div>
+                  <Label htmlFor="data-pretendida">Tenho preferência por essa data (opcional)</Label>
+                  <Input id="data-pretendida" type="date" value={dataPretendida} onChange={(e) => setDataPretendida(e.target.value)} />
+                </div>
+              )}
+            </div>
             <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
               <Save className="mr-2 h-4 w-4" />
               {saving ? "Salvando..." : "Salvar dados do casamento"}
