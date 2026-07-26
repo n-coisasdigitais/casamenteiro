@@ -74,6 +74,7 @@ import StaffPublicProfile from "./pages/StaffPublicProfile";
 import AdminPlatformPrices from "./pages/AdminPlatformPrices";
 import AdminReservations from "./pages/AdminReservations";
 import AdminIdleDates from "./pages/AdminIdleDates";
+import AdminCommissionLedger from "./pages/AdminCommissionLedger";
 
 const queryClient = new QueryClient();
 
@@ -158,6 +159,7 @@ const App = () => (
             <Route path="/admin/tabela-precos" element={<AdminLayout><AdminPlatformPrices /></AdminLayout>} />
             <Route path="/admin/reservas" element={<FlagGate flag="reserva_datas_ociosas"><AdminLayout><AdminReservations /></AdminLayout></FlagGate>} />
             <Route path="/admin/datas-ociosas" element={<FlagGate flag="datas_ociosas"><AdminLayout><AdminIdleDates /></AdminLayout></FlagGate>} />
+            <Route path="/admin/corretagem" element={<FlagGate flag="corretagem_datas_ociosas"><AdminLayout><AdminCommissionLedger /></AdminLayout></FlagGate>} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />

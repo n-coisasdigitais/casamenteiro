@@ -7,13 +7,22 @@ import RequestReservationDialog from "./RequestReservationDialog";
 import { formatarData } from "@/lib/reservas";
 import { formatBRL } from "@/lib/platformPricing";
 
-type PromoRow = { id: string; date: string; discount_pct: number | null; estimated_value?: number | null };
+type PromoRow = {
+  id: string;
+  date: string;
+  discount_pct: number | null;
+  estimated_value?: number | null;
+  piso_fornecedor?: number | null;
+  markup_pct?: number | null;
+  valor_ofertado?: number | null;
+};
 
 export default function PromoDatesInline({ supplierId, supplierName, priceMin }: {
   supplierId: string; supplierName: string; priceMin?: number | null;
 }) {
   const enabled = useFeatureFlag("reserva_datas_ociosas", false);
   const idleFlag = useFeatureFlag("datas_ociosas", true);
+  const corretagemOn = useFeatureFlag("corretagem_datas_ociosas", false);
   const [rows, setRows] = useState<PromoRow[]>([]);
   const [selected, setSelected] = useState<PromoRow | null>(null);
 
@@ -21,12 +30,13 @@ export default function PromoDatesInline({ supplierId, supplierName, priceMin }:
     if (!supplierId || !idleFlag) return;
     (async () => {
       const { data } = await (supabase.from("supplier_promo_dates" as any)
-        .select("id, date, discount_pct")
+        .select("id, promo_date, discount_pct, piso_fornecedor, markup_pct, valor_ofertado")
         .eq("supplier_id", supplierId)
-        .gte("date", new Date().toISOString().slice(0, 10))
-        .order("date", { ascending: true })
+        .gte("promo_date", new Date().toISOString().slice(0, 10))
+        .order("promo_date", { ascending: true })
         .limit(6) as any);
-      setRows((data as PromoRow[]) || []);
+      const mapped = (data as any[] | null)?.map((r) => ({ ...r, date: r.promo_date })) ?? [];
+      setRows(mapped as PromoRow[]);
     })();
   }, [supplierId, idleFlag]);
 
@@ -55,10 +65,12 @@ export default function PromoDatesInline({ supplierId, supplierName, priceMin }:
                 <div className="font-medium">{formatarData(p.date)}</div>
                 <div className="text-xs text-muted-foreground">
                   {p.discount_pct ? `${p.discount_pct}% off` : "Data promocional"}
-                  {valor ? ` · a partir de ${formatBRL(valor)}` : ""}
+                  {corretagemOn && p.valor_ofertado != null
+                    ? ` · ${formatBRL(Number(p.valor_ofertado))}`
+                    : valor ? ` · a partir de ${formatBRL(valor)}` : ""}
                 </div>
               </div>
-              {enabled ? (
+              {(enabled || (corretagemOn && p.valor_ofertado != null)) ? (
                 <Button size="sm" variant="outline" onClick={() => setSelected(p)}>
                   <CalendarClock className="h-3 w-3 mr-1" /> Solicitar
                 </Button>
@@ -77,6 +89,9 @@ export default function PromoDatesInline({ supplierId, supplierName, priceMin }:
           promoDate={selected.date}
           discountPct={selected.discount_pct}
           estimatedValue={calcularValorComDesconto(selected)}
+          pisoFornecedor={selected.piso_fornecedor ?? null}
+          markupPct={selected.markup_pct ?? null}
+          valorOfertado={selected.valor_ofertado ?? null}
         />
       )}
     </div>

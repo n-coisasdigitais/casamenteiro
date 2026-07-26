@@ -1,124 +1,109 @@
 
-# Datas Ociosas, Reservas e Tabela de Preços
+# Corretagem de datas ociosas — entrega sem Mercado Pago
 
-Quatro entregas conectadas, todas em pt-BR e atrás de feature flags. O núcleo é a **tabela de preços central** (item 4) — ela alimenta a taxa de reserva (item 1) e futuras cobranças. Reservas (item 2) e automação (item 3) usam essa taxa.
-
----
-
-## 1. Tabela de preços central (fundação — construir primeiro)
-
-Nova rota `/admin/tabela-precos` com abas. Fonte única para qualquer cobrança da plataforma.
-
-**Migration**
-- Tabela `platform_prices`:
-  - `chave text unique` (ex.: `reserva_data_ociosa`, `assinatura_fornecedor_pro`, `destaque_busca`)
-  - `categoria text` (aba: `reservas`, `assinaturas`, `destaques`, `outros`)
-  - `label text`, `descricao text`
-  - `modo check(fixo|percentual|hibrido) default 'fixo'`
-  - `valor_fixo numeric default 0`, `percentual numeric default 0`, `valor_min numeric`, `valor_max numeric`
-  - `moeda text default 'BRL'`, `ativo bool default true`
-  - `overrides jsonb default '{}'` — overrides por categoria de fornecedor (`{ "buffet": { "modo": "percentual", "percentual": 3 } }`)
-  - `updated_by uuid`, `updated_at`, `created_at`
-- Seed: linha `reserva_data_ociosa` com `modo='fixo'`, `valor_fixo=100`.
-- RLS: leitura pública (para exibir "taxa aplicável" ao fornecedor antes de aceitar); escrita só admin.
-- GRANTs padrão + `SELECT` a `anon`.
-
-**Helper**
-- `src/lib/platformPricing.ts` com `getPreco(chave, { categoriaSlug?, valorBase? })` → resolve override por categoria e devolve `{ valorCalculado, memoria: { modo, base, aplicado } }` para explicar na UI.
-
-**UI admin**
-- Página com `Tabs`: Reservas / Assinaturas / Destaques / Outros.
-- Cada linha edita modo, valor, min/max e permite adicionar overrides por categoria (drawer).
-- Histórico simples: log em `admin_audit_log` a cada save.
+Sim, dá para entregar tudo agora **sem** a integração Mercado Pago. O split MP entra numa segunda etapa; nesta primeira construímos schema, regras, UI e o "esqueleto" do checkout com um stub que registra a intenção de pagamento mas não movimenta dinheiro. Tudo fica atrás da flag `corretagem_datas_ociosas` (grupo Aquisição, essencial=false, enabled=false) — com a flag off, nada aparece nem roda.
 
 ---
 
-## 2. Reservas de datas ociosas (flag `reserva_datas_ociosas`, Aquisição, essencial=false, off)
+## 1. Feature flag
 
-**Migration**
-- Registrar flag no seed de `feature_flags` e em `FEATURE_FLAG_DEFAULTS`.
-- Tabela `idle_date_reservations`:
-  - `supplier_id`, `couple_id`, `promo_date date`, `guest_count int`, `valor_estimado numeric`, `desconto_pct numeric`
-  - `status check(solicitada|pre_reservada|confirmada|recusada|expirada|cancelada) default 'solicitada'`
-  - `solicitada_em timestamptz default now()`, `expira_em timestamptz`, `respondida_em timestamptz`
-  - `taxa_plataforma numeric`, `taxa_status check(pendente|faturada|paga|estornada) default 'pendente'`
-  - `taxa_memoria jsonb` (snapshot do cálculo), `mp_payment_id text`, `mp_status text`
-  - GRANTs + RLS: casal cria/vê próprias; fornecedor vê/responde próprias; admin tudo.
-  - Índice único parcial: `UNIQUE (supplier_id, promo_date) WHERE status = 'confirmada'`.
-  - Índice `(supplier_id, status)` e `(couple_id, status)`.
-- Trigger: ao virar `confirmada`, insere em `supplier_blocked_dates` (motivo "Reserva confirmada").
+- Registrar `corretagem_datas_ociosas` em `feature_flags` (seed) e em `FEATURE_FLAG_DEFAULTS` do `FeatureFlagsContext.tsx`.
+- Toda UI nova envolvida em `useFeatureFlag("corretagem_datas_ociosas")`; rotas admin novas com `<FlagGate>`.
 
-**Backend**
-- Edge `reserva-solicitar` (JWT on): casal → cria `solicitada`, `expira_em = min(now()+24h, promo_date-48h)`, notifica fornecedor (in-app + e-mail via fila existente).
-- Edge `reserva-responder` (JWT on): fornecedor recusa → `recusada`; fornecedor aceita → calcula taxa via `getPreco('reserva_data_ociosa', { categoriaSlug })`, grava `taxa_plataforma` e `taxa_memoria`, gera cobrança Mercado Pago:
-  - Se `valor <= R$ 500` → Pix + cartão (Checkout Pro / Preference).
-  - Se maior → Pix + boleto.
-  - Status vira `pre_reservada`, `expira_em = now()+72h`.
-- Webhook `mp-webhook` (público, valida assinatura): pagamento aprovado → `confirmada`, `taxa_status='paga'`, dispara notificação ao casal e insere bloqueio.
-- Cron diário `reservas-expirar-cron`: marca `expirada` as vencidas (`solicitada` sem resposta ou `pre_reservada` sem pagamento).
+## 2. Migration (schema completo, pronto para MP no futuro)
 
-**Segredo novo**
-- Solicitar `MP_ACCESS_TOKEN` via add_secret quando o item 2 for para build.
+**`supplier_promo_dates`** — novas colunas:
+- `piso_fornecedor numeric` (mínimo que o fornecedor aceita)
+- `markup_pct numeric` (percentual sugerido no cadastro; motor de preço pode sobrescrever)
+- `valor_ofertado numeric` (calculado; snapshot para exibição ao casal)
 
-**UI casal**
-- Botão "Solicitar esta data" no `SupplierProfile.tsx` (badge de data promo) e nos cards do `SimuladorResultado.tsx`.
-- Modal explica: "A data só está garantida após a confirmação do fornecedor. Você não paga nada."
-- Nova aba em `MeuPlano.tsx` ou seção em `MySuppliers.tsx`: "Minhas solicitações de reserva" com status humanizado (**solicitada → aguardando confirmação → confirmada**). Nunca usar "reservada"/"garantida" antes de `confirmada`.
+**`idle_date_reservations`** — novas colunas:
+- `piso_fornecedor numeric` (snapshot no momento da oferta)
+- `markup_pct numeric`
+- `valor_ofertado numeric`
+- `comissao_plataforma numeric`
+- `mp_split_payment_id text` (fica NULL até a integração MP)
+- `modo_cobranca text check in ('taxa_reserva','corretagem') default 'taxa_reserva'` — separa o fluxo P2.4 do novo
+- `contrato_id uuid` fk → `reservation_contracts.id`
 
-**UI fornecedor**
-- Nova aba "Reservas" em `SupplierDashboard.tsx` (atrás da flag): lista de solicitadas com card mostrando **valor da taxa calculada antes do aceite** ("Ao confirmar, será cobrada uma taxa de reserva de R$ X — cobrada só se o casal fechar? Não, cobrada agora, no aceite"). Ações: Confirmar disponibilidade / Recusar. Estado `pre_reservada` mostra "Aguardando pagamento da taxa" com link de checkout MP.
+**`suppliers.mp_account_id text`** (nullable — preenchido só quando MP entrar).
 
-**UI admin**
-- `/admin/reservas`: filtros por status, coluna taxa (pendente/faturada/paga), export CSV. Métricas: % confirmação, nº expirações por fornecedor (para política de saída). Card "higiene": promo dates sem revisão há 30 dias.
+**Nova tabela `commission_ledger`** (idempotente por reserva):
+- `reservation_id uuid unique fk`, `piso numeric`, `valor_ofertado numeric`, `comissao numeric`
+- `mp_payment_id text` (NULL enquanto MP não integrar)
+- `status text check in ('pendente','pago','estornado','cancelado') default 'pendente'`
+- created/updated_at + trigger de updated_at
+- GRANTs authenticated/service_role; RLS: fornecedor vê os próprios, admin tudo.
 
----
+**Nova tabela `reservation_contracts`**:
+- `reservation_id uuid unique fk`, `couple_id`, `supplier_id`
+- `piso numeric`, `valor_ofertado numeric`, `comissao numeric`
+- `corpo_html text` (contrato renderizado — placeholder para assinatura futura)
+- `assinado_casal_em timestamptz`, `assinado_fornecedor_em timestamptz` (nullable — não usamos ainda)
+- `status text check in ('rascunho','emitido','assinado','cancelado') default 'rascunho'`
+- GRANTs + RLS: partes veem o próprio contrato; admin tudo.
 
-## 3. Automação demanda × oferta (usa flag `datas_ociosas` existente)
+**Função `calc_oferta_corretagem(_piso numeric, _markup_pct numeric)`**: devolve `valor_ofertado` e `comissao` (motor de preço; começa simples: `valor = piso * (1 + markup/100)`, `comissao = valor - piso`; encapsulado para depois puxar overrides de `platform_prices`).
 
-**Migration**
-- `couples`: adicionar `quer_datas_ociosas bool default false`, `data_pretendida date` (só se ainda não existir; verificar antes).
-- `home_simulacoes`: garantir `data_pretendida date` e `quer_datas_ociosas bool` no payload/coluna.
-- Tabela `idle_match_notifications` para dedup: `(couple_id, supplier_id, promo_date)` unique + `sent_at`, com janela de 7 dias para respeitar "máx 1 e-mail/casal/semana".
+**Preço em `platform_prices`**: nova linha-chave `corretagem_data_ociosa` (modo `percentual`, percentual default 15, override por categoria permitido) — reaproveita infra existente.
 
-**Automação 1 — casal → fornecedor**
-- Trigger em `couples`/`home_simulacoes` quando `data_pretendida` bater com algum `supplier_promo_dates` compatível (cidade/categoria) → enfileira notificação e-mail + in-app para o fornecedor: "Um casal quer casar em [data], uma das suas datas com desconto."
+## 3. Motor de preço
 
-**Automação 2 — fornecedor → casais**
-- Trigger em `INSERT supplier_promo_dates` → função que busca casais compatíveis (cidade/região, orçamento, categoria ainda faltando no `couple_suppliers`) e enfileira notificação respeitando `idle_match_notifications`.
+`src/lib/corretagem.ts`:
+- `calcularOferta({ piso, categoriaSlug })` → chama RPC/`calc_platform_fee('corretagem_data_ociosa', ...)` sobre o piso e devolve `{ valorOfertado, comissao, markupPctEfetivo, memoria }`.
+- Helpers de formatação e labels (nunca exibir `piso`/`comissao` para o casal).
 
-**Painel admin `/admin/datas-ociosas`**
-- Cards: casais interessados por mês/cidade, promo dates publicadas, funil solicitada→confirmada, receita de taxa por status.
-- Tabela cruzada data × casais com ação "Notificar compatíveis".
-- Botão "Gerar campanha" → cria segmento em `/admin/broadcast` (casais da cidade X sem data).
+## 4. UI fornecedor (atrás da flag)
 
-**UI casal**
-- Toggle "Quero considerar datas com desconto" no `UserProfile.tsx` (aba Casamento) e no simulador.
+- `PromoDatesManager.tsx`: adicionar campos `piso_fornecedor` e `markup_pct` (opcional; se vazio, usa default). Preview mostrando "Casal verá: R$ X" e "Você recebe: R$ piso" — só visível ao fornecedor.
+- Aba "Reservas" (`SupplierReservationsTab.tsx`): quando a reserva for `modo_cobranca='corretagem'`, exibir card com piso, valor ofertado, comissão e status do split (por ora sempre "aguardando integração de pagamentos"). Nenhuma ação de cobrança ainda.
+- Perfil do fornecedor no painel: novo campo `mp_account_id` marcado como "Necessário para receber via corretagem (em breve)". Salvar mas exibir aviso de que o recebimento só é liberado após integração MP.
 
----
+## 5. UI casal (atrás da flag)
 
-## 4. Ordem de execução e flags
+- `RequestReservationDialog.tsx` e `PromoDatesInline.tsx`: quando a promo tiver `piso_fornecedor` definido e a flag on, mostrar CTA "Reservar por R$ valor_ofertado" (nunca expor piso/markup). Ao clicar:
+  1. Cria reserva com `modo_cobranca='corretagem'`, snapshot de piso/markup/valor/comissao, status `solicitada`.
+  2. Gera `reservation_contracts` em `rascunho` com corpo padrão pt-BR (cláusula de intermediação, sem responsabilidade pela execução).
+  3. Abre tela "Pagamento (em breve)" com resumo, contrato para leitura e botão desabilitado "Pagar com Mercado Pago — disponível em breve". Enquanto MP não entra, admin pode marcar manualmente como paga em `/admin/reservas` para testes.
+- Copy: "solicitação de reserva"/"aguardando pagamento"; "confirmada" só após pagamento.
 
-1. Migration da **tabela de preços** + UI admin (item 4).
-2. Migration `idle_date_reservations` + flag `reserva_datas_ociosas` + helper de preço.
-3. Edge functions solicitar/responder/webhook + cron expiração.
-4. UI casal/fornecedor/admin do item 2.
-5. Automação item 3 (triggers + dedup + painel).
+## 6. UI admin
 
-Flags ficam **desligadas** ao subir; ativação em `/admin/configuracoes` depois de testar.
+- `/admin/tabela-precos`: nova aba "Corretagem" (ou linha na aba Reservas) editando `corretagem_data_ociosa`.
+- `/admin/reservas`: filtro por `modo_cobranca`; coluna piso/valor/comissão; ação "Marcar pago manualmente" (só admin, só enquanto MP não integrar — gera linha no `commission_ledger` como `pago`, dispara mesmo caminho de confirmação: bloqueia data + notifica casal).
+- Nova página `/admin/corretagem-ledger` listando `commission_ledger` com totais por status.
 
----
+## 7. Contrato (placeholder)
 
-## Detalhes técnicos
+`src/lib/contratos.ts` com template pt-BR:
+- Partes (casal, fornecedor), data do evento, valor ofertado, cláusula de intermediação, política de cancelamento resumida, foro.
+- Renderiza `corpo_html` gravado em `reservation_contracts`. Tela do casal e do fornecedor conseguem visualizar/baixar (impressão via `window.print`).
+- Assinatura eletrônica fica para depois — campos já existem.
 
-- **Mercado Pago**: usar Checkout Pro (Preference API) para o fornecedor pagar a taxa; webhook público em `supabase/functions/mp-webhook/` com `verify_jwt=false` e validação de assinatura (`x-signature`). Segredo `MP_ACCESS_TOKEN` via `add_secret` no momento do build.
-- **Notificações**: reaproveitar `notifications` + fila de e-mails existente (`enqueue_email`). Templates novos em `supabase/functions/_shared/email-templates/`: `reserva-solicitada.tsx`, `reserva-confirmada.tsx`, `reserva-recusada.tsx`, `match-casal-fornecedor.tsx`, `match-fornecedor-casais.tsx`.
-- **Cron**: novas edges `reservas-expirar-cron` e opcional `idle-hygiene-cron` (limpa promo dates estagnadas), registradas via `pg_cron` + `pg_net` (padrão do projeto, sem migration — usar tool `insert`).
-- **Copy**: nunca usar "reservado"/"garantido" antes de `confirmada`. Padronizar em `src/lib/reservas.ts` (labels de status).
-- **Tipagem**: `pricing_model`, `overrides` e `taxa_memoria` como `jsonb` tipado no client via zod.
-- **RLS**: `platform_prices` leitura pública; `idle_date_reservations` scoped por `auth.uid()` via `get_couple_id_for_user` e `suppliers.user_id`.
+## 8. Stub Mercado Pago
 
-## Fora de escopo
+- Nenhuma edge function MP nesta entrega. Comentário `// TODO(MP)` nos pontos exatos (`iniciarCheckoutSplit`, `webhookMP`).
+- Botão do casal fica desabilitado com tooltip "Pagamentos serão liberados em breve".
+- Campo `mp_split_payment_id` sempre NULL; `commission_ledger.mp_payment_id` NULL até integrar.
+- Admin usa "Marcar pago manualmente" para simular em ambiente controlado.
 
-- Split payment (repasse ao fornecedor do valor do evento) — a plataforma só cobra a taxa; o pagamento do evento continua fora.
-- Faturamento consolidado / notas fiscais.
-- Assinaturas de fornecedor (só cria a linha na tabela de preços; cobrança recorrente fica para outro plano).
+## 9. Segurança / RLS
+
+- `commission_ledger` e `reservation_contracts` com policies escopadas por `auth.uid()` via `get_couple_id_for_user` e `suppliers.user_id`. Admin usa `has_role`.
+- Impedir alteração de `piso_fornecedor`/`valor_ofertado`/`comissao` na reserva depois de criada (trigger `BEFORE UPDATE`).
+
+## 10. Ordem de execução
+
+1. Migration completa (schema + função `calc_oferta_corretagem` + seed `corretagem_data_ociosa` + flag).
+2. `src/lib/corretagem.ts` + `src/lib/contratos.ts`.
+3. UI fornecedor (promo dates + aba reservas + campo `mp_account_id`).
+4. UI casal (dialog de reserva por corretagem + tela pagamento stub + visualização contrato).
+5. UI admin (tabela de preços aba corretagem, filtro em reservas, `/admin/corretagem-ledger`, ação "marcar pago manualmente").
+6. Envolver tudo em `FlagGate`/`useFeatureFlag`; flag entregue **off**.
+
+## Fora de escopo (fica para a etapa MP)
+
+- Edge functions `mp-checkout-split` e `mp-webhook`.
+- Preenchimento real de `mp_split_payment_id` e transição automática de `commission_ledger` → `pago`.
+- Assinatura eletrônica do contrato.
+- Repasse/estorno automatizado.
