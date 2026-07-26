@@ -75,6 +75,7 @@ import AdminPlatformPrices from "./pages/AdminPlatformPrices";
 import AdminReservations from "./pages/AdminReservations";
 import AdminIdleDates from "./pages/AdminIdleDates";
 import AdminCommissionLedger from "./pages/AdminCommissionLedger";
+import AdminStaffJobs from "./pages/AdminStaffJobs";
 
 const queryClient = new QueryClient();
 
@@ -160,6 +161,7 @@ const App = () => (
             <Route path="/admin/reservas" element={<FlagGate flag="reserva_datas_ociosas"><AdminLayout><AdminReservations /></AdminLayout></FlagGate>} />
             <Route path="/admin/datas-ociosas" element={<FlagGate flag="datas_ociosas"><AdminLayout><AdminIdleDates /></AdminLayout></FlagGate>} />
             <Route path="/admin/corretagem" element={<FlagGate flag="corretagem_datas_ociosas"><AdminLayout><AdminCommissionLedger /></AdminLayout></FlagGate>} />
+            <Route path="/admin/vagas" element={<FlagGate flag="vagas"><AdminLayout><AdminStaffJobs /></AdminLayout></FlagGate>} />
             <Route path="/simulador/resultado" element={<SimuladorResultado />} />
             <Route path="/simulador" element={<Simulador />} />
             <Route path="/meu-plano" element={<MeuPlano />} />
