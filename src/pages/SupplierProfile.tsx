@@ -711,6 +711,12 @@ export default function SupplierProfile() {
                     )}
                   </div>
 
+                  <PromoDatesInline
+                    supplierId={supplier.id}
+                    supplierName={supplier.company_name}
+                    priceMin={supplier.price_min}
+                  />
+
                   <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" />
                     Dos mais pesquisados em {supplier.state || "sua região"}
