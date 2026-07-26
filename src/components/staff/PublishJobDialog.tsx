@@ -36,9 +36,18 @@ export default function PublishJobDialog({ supplierId, onCreated }: { supplierId
       local: local || null, cidade: cidade || null,
       valor_turno: Number(valor), observacoes: descricao || null,
       is_public: pub, status: "aberta",
+      criado_por_user_id: user.id,
     });
     setLoading(false);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) {
+      const msg = error.message || "";
+      const friendly = /column "?([a-z_]+)"? .* does not exist/i.test(msg)
+        ? `Campo "${msg.match(/column "?([a-z_]+)"?/i)?.[1]}" não existe no banco. Contate o suporte.`
+        : /violates row-level security/i.test(msg)
+        ? "Sem permissão para publicar. Verifique se seu cadastro está aprovado."
+        : msg;
+      return toast({ title: "Erro ao publicar vaga", description: friendly, variant: "destructive" });
+    }
     toast({ title: "Vaga publicada!" });
     setOpen(false);
     setFuncao(""); setData(""); setHoraIni(""); setHoraFim(""); setLocal(""); setCidade(""); setValor(""); setDescricao("");

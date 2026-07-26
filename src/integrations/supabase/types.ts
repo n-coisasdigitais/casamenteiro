@@ -2452,6 +2452,7 @@ export type Database = {
         Row: {
           cidade: string | null
           created_at: string
+          criado_por_user_id: string | null
           data: string
           estado: string | null
           funcao: string
@@ -2461,6 +2462,7 @@ export type Database = {
           is_public: boolean
           local: string | null
           observacoes: string | null
+          published_at: string | null
           status: string
           supplier_id: string
           updated_at: string
@@ -2470,6 +2472,7 @@ export type Database = {
         Insert: {
           cidade?: string | null
           created_at?: string
+          criado_por_user_id?: string | null
           data: string
           estado?: string | null
           funcao: string
@@ -2479,6 +2482,7 @@ export type Database = {
           is_public?: boolean
           local?: string | null
           observacoes?: string | null
+          published_at?: string | null
           status?: string
           supplier_id: string
           updated_at?: string
@@ -2488,6 +2492,7 @@ export type Database = {
         Update: {
           cidade?: string | null
           created_at?: string
+          criado_por_user_id?: string | null
           data?: string
           estado?: string | null
           funcao?: string
@@ -2497,6 +2502,7 @@ export type Database = {
           is_public?: boolean
           local?: string | null
           observacoes?: string | null
+          published_at?: string | null
           status?: string
           supplier_id?: string
           updated_at?: string
