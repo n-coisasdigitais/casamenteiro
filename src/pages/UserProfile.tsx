@@ -17,6 +17,7 @@ import CouplePhotoUpload from "@/components/CouplePhotoUpload";
 import CepInput from "@/components/CepInput";
 import AlbumUpload from "@/components/AlbumUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 
 export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
