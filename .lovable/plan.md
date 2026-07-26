@@ -1,109 +1,91 @@
+# Plano — Painel do Fornecedor: navegação, métricas acionáveis e mini-CRM
 
-# Corretagem de datas ociosas — entrega sem Mercado Pago
+Três frentes, entregues juntas mas isoladas por arquivo/flag para não quebrar o resto.
 
-Sim, dá para entregar tudo agora **sem** a integração Mercado Pago. O split MP entra numa segunda etapa; nesta primeira construímos schema, regras, UI e o "esqueleto" do checkout com um stub que registra a intenção de pagamento mas não movimenta dinheiro. Tudo fica atrás da flag `corretagem_datas_ociosas` (grupo Aquisição, essencial=false, enabled=false) — com a flag off, nada aparece nem roda.
+## 1) Nova navegação em 5 destinos
 
----
+Agrupar as 8 abas atuais (metrics, quotes, availability, area, profile, photos, files, reviews + vagas/reservas condicionais) em 5 destinos:
 
-## 1. Feature flag
+- **Painel** — `metrics`
+- **Orçamentos** — `quotes` (kanban + conversa, badge com contagem)
+- **Meu negócio** — container com sub-abas horizontais: Perfil · Fotos · Arquivos · Disponibilidade · Atendimento (+ Reservas se `reserva_datas_ociosas`)
+- **Equipe e vagas** — só quando `vagas` estiver ligada
+- **Avaliações** — `reviews`
 
-- Registrar `corretagem_datas_ociosas` em `feature_flags` (seed) e em `FEATURE_FLAG_DEFAULTS` do `FeatureFlagsContext.tsx`.
-- Toda UI nova envolvida em `useFeatureFlag("corretagem_datas_ociosas")`; rotas admin novas com `<FlagGate>`.
+### Layout responsivo
+- **Desktop (≥ md):** menu lateral fixo à esquerda (`w-60`), ícone + rótulo, item ativo destacado. Conteúdo à direita. Dentro de "Meu negócio", sub-abas horizontais (shadcn `Tabs`).
+- **Mobile (< md):** sem sidebar. Tab bar fixa no rodapé (`fixed bottom-0`) com 4 destinos principais: Painel · Orçamentos · Negócio · Vagas (Vagas oculto se flag off; nesse caso mostra Avaliações). Avaliações acessível como card/link dentro de Painel. Conteúdo com `padding-bottom` para não ficar atrás da barra.
+- **Badges** (contagem de Orçamentos, alerta de leads atrasados) aparecem nos dois layouts.
 
-## 2. Migration (schema completo, pronto para MP no futuro)
+URL continua com `?tab=` para deep-link (compatível com notificações e links atuais). Sub-abas de "Meu negócio" usam `?sub=`.
 
-**`supplier_promo_dates`** — novas colunas:
-- `piso_fornecedor numeric` (mínimo que o fornecedor aceita)
-- `markup_pct numeric` (percentual sugerido no cadastro; motor de preço pode sobrescrever)
-- `valor_ofertado numeric` (calculado; snapshot para exibição ao casal)
+## 2) Cards de métrica acionáveis no Painel
 
-**`idle_date_reservations`** — novas colunas:
-- `piso_fornecedor numeric` (snapshot no momento da oferta)
-- `markup_pct numeric`
-- `valor_ofertado numeric`
-- `comissao_plataforma numeric`
-- `mp_split_payment_id text` (fica NULL até a integração MP)
-- `modo_cobranca text check in ('taxa_reserva','corretagem') default 'taxa_reserva'` — separa o fluxo P2.4 do novo
-- `contrato_id uuid` fk → `reservation_contracts.id`
+No topo do Painel (`SupplierMetrics`), acrescentar três cards clicáveis:
 
-**`suppliers.mp_account_id text`** (nullable — preenchido só quando MP entrar).
+1. **Visitas no perfil** (já existe, mantém).
+2. **Leads aguardando resposta** — `quotes` do fornecedor com `kanban_status in ('enviado','visto')` e sem `quote_proposals` do fornecedor. Mostra contagem + "há Xh" do mais antigo. Borda/texto vermelho quando o mais antigo passa de 24h. Clique → aba Orçamentos com `?tab=quotes&filter=aguardando`.
+3. **Propostas sem retorno** — `quotes` com proposta enviada pelo fornecedor mas sem mensagem/proposta do casal há ≥ 3 dias. Ação inline "Lembrar" e clique → `?tab=quotes&filter=sem_retorno`.
 
-**Nova tabela `commission_ledger`** (idempotente por reserva):
-- `reservation_id uuid unique fk`, `piso numeric`, `valor_ofertado numeric`, `comissao numeric`
-- `mp_payment_id text` (NULL enquanto MP não integrar)
-- `status text check in ('pendente','pago','estornado','cancelado') default 'pendente'`
-- created/updated_at + trigger de updated_at
-- GRANTs authenticated/service_role; RLS: fornecedor vê os próprios, admin tudo.
+**Aviso no topo do Painel:** se houver pelo menos 1 lead aguardando > 24h, banner de atenção "Você tem N pedidos aguardando resposta — responder rápido aumenta suas chances de fechar." com CTA para a aba Orçamentos.
 
-**Nova tabela `reservation_contracts`**:
-- `reservation_id uuid unique fk`, `couple_id`, `supplier_id`
-- `piso numeric`, `valor_ofertado numeric`, `comissao numeric`
-- `corpo_html text` (contrato renderizado — placeholder para assinatura futura)
-- `assinado_casal_em timestamptz`, `assinado_fornecedor_em timestamptz` (nullable — não usamos ainda)
-- `status text check in ('rascunho','emitido','assinado','cancelado') default 'rascunho'`
-- GRANTs + RLS: partes veem o próprio contrato; admin tudo.
+Nenhuma tabela nova; tudo derivado de `quotes` + `quote_proposals` (última mensagem/proposta por remetente). Para "sem retorno", usar `quote_proposals.created_at` mais recente por `quote_id` cruzando com `sender_id` do casal via join com `quotes.user_id`.
 
-**Função `calc_oferta_corretagem(_piso numeric, _markup_pct numeric)`**: devolve `valor_ofertado` e `comissao` (motor de preço; começa simples: `valor = piso * (1 + markup/100)`, `comissao = valor - piso`; encapsulado para depois puxar overrides de `platform_prices`).
+O `SupplierQuotesKanban` passa a aceitar `initialFilter` para respeitar o `?filter=` da URL.
 
-**Preço em `platform_prices`**: nova linha-chave `corretagem_data_ociosa` (modo `percentual`, percentual default 15, override por categoria permitido) — reaproveita infra existente.
+## 3) Mini-CRM de leads (flag `crm_fornecedor`, on por padrão)
 
-## 3. Motor de preço
+Nova aba **"Leads"** dentro do destino **Orçamentos** (Tabs internas: "Kanban" · "Leads"), visível só com a flag ligada.
 
-`src/lib/corretagem.ts`:
-- `calcularOferta({ piso, categoriaSlug })` → chama RPC/`calc_platform_fee('corretagem_data_ociosa', ...)` sobre o piso e devolve `{ valorOfertado, comissao, markupPctEfetivo, memoria }`.
-- Helpers de formatação e labels (nunca exibir `piso`/`comissao` para o casal).
+### UI da lista
+Colunas/linhas com: casal, data do evento, nº convidados, categoria, valor proposto (última proposta), status kanban, tempo desde o último contato, próximo passo (badge), semáforo:
+- verde: respondido em < 24h
+- amarelo: aguardando 24–48h
+- vermelho: > 48h sem resposta do fornecedor
 
-## 4. UI fornecedor (atrás da flag)
+Filtros: status, categoria, urgência. Ordem padrão: mais antigos sem resposta primeiro.
 
-- `PromoDatesManager.tsx`: adicionar campos `piso_fornecedor` e `markup_pct` (opcional; se vazio, usa default). Preview mostrando "Casal verá: R$ X" e "Você recebe: R$ piso" — só visível ao fornecedor.
-- Aba "Reservas" (`SupplierReservationsTab.tsx`): quando a reserva for `modo_cobranca='corretagem'`, exibir card com piso, valor ofertado, comissão e status do split (por ora sempre "aguardando integração de pagamentos"). Nenhuma ação de cobrança ainda.
-- Perfil do fornecedor no painel: novo campo `mp_account_id` marcado como "Necessário para receber via corretagem (em breve)". Salvar mas exibir aviso de que o recebimento só é liberado após integração MP.
+**Métricas no topo do CRM:** taxa de resposta média (respondidos ÷ total), taxa de fechamento (`kanban_status='contratado'` ÷ total), valor médio fechado.
 
-## 5. UI casal (atrás da flag)
+### Ações por lead
+- **Lembrar** — botão nas propostas enviadas sem retorno há ≥ X dias. Insere `notifications` para `couples.user_id` e registra a nota `Lembrete enviado em <data>`.
+- **Anotação interna** — textarea salvo em `lead_notes`.
+- **Lembrete com data** — cria linha com `remind_at` que gera notificação para o fornecedor (via job existente `broadcast-cron` ou trigger simples de leitura no load).
 
-- `RequestReservationDialog.tsx` e `PromoDatesInline.tsx`: quando a promo tiver `piso_fornecedor` definido e a flag on, mostrar CTA "Reservar por R$ valor_ofertado" (nunca expor piso/markup). Ao clicar:
-  1. Cria reserva com `modo_cobranca='corretagem'`, snapshot de piso/markup/valor/comissao, status `solicitada`.
-  2. Gera `reservation_contracts` em `rascunho` com corpo padrão pt-BR (cláusula de intermediação, sem responsabilidade pela execução).
-  3. Abre tela "Pagamento (em breve)" com resumo, contrato para leitura e botão desabilitado "Pagar com Mercado Pago — disponível em breve". Enquanto MP não entra, admin pode marcar manualmente como paga em `/admin/reservas` para testes.
-- Copy: "solicitação de reserva"/"aguardando pagamento"; "confirmada" só após pagamento.
+### Schema novo
+Tabela `lead_notes`:
 
-## 6. UI admin
+```
+id uuid pk, quote_id uuid → quotes, supplier_id uuid → suppliers,
+author_id uuid, note text, remind_at timestamptz null,
+reminded_at timestamptz null, created_at, updated_at
+```
 
-- `/admin/tabela-precos`: nova aba "Corretagem" (ou linha na aba Reservas) editando `corretagem_data_ociosa`.
-- `/admin/reservas`: filtro por `modo_cobranca`; coluna piso/valor/comissão; ação "Marcar pago manualmente" (só admin, só enquanto MP não integrar — gera linha no `commission_ledger` como `pago`, dispara mesmo caminho de confirmação: bloqueia data + notifica casal).
-- Nova página `/admin/corretagem-ledger` listando `commission_ledger` com totais por status.
+RLS: fornecedor dono do supplier faz tudo; admin lê tudo. GRANTs padrão (authenticated + service_role, sem anon).
 
-## 7. Contrato (placeholder)
+Feature flag `crm_fornecedor` (grupo Fornecedor, essencial=false, enabled=true) registrada em `feature_flags` e adicionada em `FEATURE_FLAG_DEFAULTS` no `FeatureFlagsContext`.
 
-`src/lib/contratos.ts` com template pt-BR:
-- Partes (casal, fornecedor), data do evento, valor ofertado, cláusula de intermediação, política de cancelamento resumida, foro.
-- Renderiza `corpo_html` gravado em `reservation_contracts`. Tela do casal e do fornecedor conseguem visualizar/baixar (impressão via `window.print`).
-- Assinatura eletrônica fica para depois — campos já existem.
+## Detalhes técnicos
 
-## 8. Stub Mercado Pago
+**Arquivos novos**
+- `src/components/supplier/SupplierSidebar.tsx` — menu lateral (desktop) com 5 destinos.
+- `src/components/supplier/SupplierMobileTabBar.tsx` — tab bar fixa (mobile).
+- `src/components/supplier/SupplierBusinessTabs.tsx` — sub-abas de "Meu negócio".
+- `src/components/supplier/SupplierActionCards.tsx` — cards acionáveis do Painel + banner de atenção.
+- `src/components/supplier/SupplierLeadsCRM.tsx` — lista, filtros, métricas, ações.
+- `src/components/supplier/LeadNoteDialog.tsx` — anotação + lembrete.
+- Migration: cria `lead_notes` (com GRANT + RLS + trigger updated_at) e insere flag `crm_fornecedor` em `feature_flags`.
 
-- Nenhuma edge function MP nesta entrega. Comentário `// TODO(MP)` nos pontos exatos (`iniciarCheckoutSplit`, `webhookMP`).
-- Botão do casal fica desabilitado com tooltip "Pagamentos serão liberados em breve".
-- Campo `mp_split_payment_id` sempre NULL; `commission_ledger.mp_payment_id` NULL até integrar.
-- Admin usa "Marcar pago manualmente" para simular em ambiente controlado.
+**Arquivos alterados**
+- `src/pages/SupplierDashboard.tsx` — troca `TabsList` chapada por sidebar/tab bar + rotear destinos; mantém carregamento e handlers atuais.
+- `src/components/supplier/SupplierMetrics.tsx` — inclui `SupplierActionCards` no topo.
+- `src/components/supplier/SupplierQuotesKanban.tsx` — aceita `initialFilter` e (opcional) prop `hideInternalTabs`.
+- `src/contexts/FeatureFlagsContext.tsx` — adiciona `crm_fornecedor` na tipagem e nos defaults.
 
-## 9. Segurança / RLS
+**Regras derivadas (sem trigger novo)**
+- "Aguardando resposta" = `quotes` sem `quote_proposals` cujo `sender_id` seja o `user_id` do fornecedor.
+- "Sem retorno" = último `quote_proposals` do quote foi do fornecedor e a diferença de tempo até hoje ≥ 3 dias.
+- Cálculos feitos no client no primeiro momento (o volume por fornecedor é baixo). Se crescer, criar view/rpc depois.
 
-- `commission_ledger` e `reservation_contracts` com policies escopadas por `auth.uid()` via `get_couple_id_for_user` e `suppliers.user_id`. Admin usa `has_role`.
-- Impedir alteração de `piso_fornecedor`/`valor_ofertado`/`comissao` na reserva depois de criada (trigger `BEFORE UPDATE`).
-
-## 10. Ordem de execução
-
-1. Migration completa (schema + função `calc_oferta_corretagem` + seed `corretagem_data_ociosa` + flag).
-2. `src/lib/corretagem.ts` + `src/lib/contratos.ts`.
-3. UI fornecedor (promo dates + aba reservas + campo `mp_account_id`).
-4. UI casal (dialog de reserva por corretagem + tela pagamento stub + visualização contrato).
-5. UI admin (tabela de preços aba corretagem, filtro em reservas, `/admin/corretagem-ledger`, ação "marcar pago manualmente").
-6. Envolver tudo em `FlagGate`/`useFeatureFlag`; flag entregue **off**.
-
-## Fora de escopo (fica para a etapa MP)
-
-- Edge functions `mp-checkout-split` e `mp-webhook`.
-- Preenchimento real de `mp_split_payment_id` e transição automática de `commission_ledger` → `pago`.
-- Assinatura eletrônica do contrato.
-- Repasse/estorno automatizado.
+**Fora do escopo**
+Nenhuma mudança em `quotes`, `quote_proposals`, kanban interno, telas de conteúdo (Perfil, Fotos, Arquivos, Disponibilidade, Atendimento, Reviews, Vagas, Reservas) além de reagrupá-las visualmente.
