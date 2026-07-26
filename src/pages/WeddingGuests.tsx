@@ -11,13 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Users, Baby, Download, Printer, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon, MessageCircle, Mail } from "lucide-react";
+import { Users, Baby, Download, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon, MessageCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import AddGuestDialog from "@/components/AddGuestDialog";
 import AddGroupDialog from "@/components/AddGroupDialog";
 import ImportGuestsDialog from "@/components/ImportGuestsDialog";
+import GuestListPdfDialog from "@/components/GuestListPdfDialog";
 import { buildWhatsAppLink } from "@/lib/phone";
 
 type Guest = {
@@ -31,6 +32,8 @@ type Guest = {
   table_number: number | null;
   group_id: string | null;
   max_companions?: number | null;
+  notes?: string | null;
+  updated_at?: string | null;
 };
 
 type InviteMap = Record<string, { token: string; sent_at: string | null; opened_at: string | null; responded_at: string | null; rsvp_companions?: number | null }>;
@@ -39,9 +42,13 @@ type Group = { id: string; name: string };
 
 export default function WeddingGuests() {
   const { user } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [couple, setCouple] = useState<any>(null);
+  const [coupleCoverUrl, setCoupleCoverUrl] = useState<string | null>(null);
+  const [coupleDisplayName, setCoupleDisplayName] = useState<string>("Os Noivos");
   const [guests, setGuests] = useState<Guest[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [search, setSearch] = useState("");
@@ -57,9 +64,17 @@ export default function WeddingGuests() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("couples").select("id, onboarding_completed").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+    supabase.from("couples").select("*").eq("user_id", user.id).maybeSingle().then(async ({ data }) => {
       if (!data || !data.onboarding_completed) { navigate("/onboarding"); return; }
+      setCouple(data);
       setCoupleId(data.id);
+      const [{ data: prof }, { data: pubProf }] = await Promise.all([
+        supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
+        supabase.from("couple_public_profiles").select("foto_capa_url, nome_casal").eq("couple_id", data.id).maybeSingle(),
+      ]);
+      setCoupleCoverUrl(pubProf?.foto_capa_url || null);
+      const nome = pubProf?.nome_casal || [prof?.full_name, (data as any)?.partner_name].filter(Boolean).join(" & ") || "Os Noivos";
+      setCoupleDisplayName(nome);
       loadData(data.id);
     });
   }, [user]);
@@ -434,9 +449,34 @@ export default function WeddingGuests() {
           <Button variant="outline" size="icon" onClick={handleExport} title="Baixar CSV">
             <Download className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => window.print()} title="Imprimir">
-            <Printer className="h-4 w-4" />
-          </Button>
+          <GuestListPdfDialog
+            guests={guests.map((g) => ({
+              id: g.id,
+              name: g.name,
+              guest_type: g.guest_type,
+              rsvp_status: g.rsvp_status,
+              table_number: g.table_number,
+              group_id: g.group_id,
+              notes: g.notes ?? null,
+              max_companions: g.max_companions ?? 0,
+              rsvp_companions: invites[g.id]?.rsvp_companions ?? 0,
+            }))}
+            groups={groups}
+            dadosCasal={{
+              nomeCasal: coupleDisplayName,
+              fotoCapaUrl: coupleCoverUrl,
+              dataEvento: couple?.wedding_date ?? null,
+              horario: couple?.ceremony_time ?? null,
+              localCerimonia: [couple?.ceremony_local_nome, couple?.ceremony_address].filter(Boolean).join(" · ") || null,
+              localRecepcao: [couple?.reception_local_nome, couple?.reception_address].filter(Boolean).join(" · ") || null,
+              contatoCerimonial: null,
+              ultimaAtualizacao: guests.reduce<string | null>((acc, g) => {
+                if (!g.updated_at) return acc;
+                return !acc || g.updated_at > acc ? g.updated_at : acc;
+              }, null),
+              impressoPor: profile?.full_name ?? null,
+            }}
+          />
         </div>
 
         {/* Guest table */}
