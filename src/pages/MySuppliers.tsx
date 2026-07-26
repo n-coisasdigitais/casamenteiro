@@ -35,7 +35,7 @@ export default function MySuppliers() {
   const [coupleSuppliers, setCoupleSuppliers] = useState<CoupleSupplier[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [quotes, setQuotes] = useState<QuoteLite[]>([]);
-  const [filter, setFilter] = useState<"all" | "saved" | "contracted">("all");
+  const [filter, setFilter] = useState<"all" | "saved" | "andamento" | "contracted" | "descartado">("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -79,6 +79,8 @@ export default function MySuppliers() {
   };
 
   const contracted = coupleSuppliers.filter((s) => s.status === "contracted" || s.kanban_status === "contratado");
+  const emAndamento = coupleSuppliers.filter((s) => ["em_orcamento", "negociando"].includes(s.kanban_status || ""));
+  const descartados = coupleSuppliers.filter((s) => s.kanban_status === "descartado");
   const totalCategories = categories.length;
 
   const supplierIdsWithQuote = useMemo(
@@ -148,6 +150,8 @@ export default function MySuppliers() {
     const rows = rowsByCategory.get(cat.id) || [];
     if (filter === "all") return true;
     if (filter === "contracted") return rows.some((r) => r.tags.includes("contratado"));
+    if (filter === "andamento") return rows.some((r) => r.tags.includes("em_orcamento") || r.tags.includes("negociando"));
+    if (filter === "descartado") return rows.some((r) => r.tags.includes("descartado"));
     if (filter === "saved") return rows.some((r) => r.isFavorite || (r.tags.length > 0 && !r.tags.includes("contratado")));
     return rows.length > 0;
   });
@@ -192,8 +196,14 @@ export default function MySuppliers() {
           <Button variant={filter === "saved" ? "default" : "outline"} size="sm" onClick={() => setFilter("saved")}>
             <Heart className="mr-2 h-4 w-4" /> Guardados ({savedCategoriesCount})
           </Button>
+          <Button variant={filter === "andamento" ? "default" : "outline"} size="sm" onClick={() => setFilter("andamento")}>
+            Em andamento ({emAndamento.length})
+          </Button>
           <Button variant={filter === "contracted" ? "default" : "outline"} size="sm" onClick={() => setFilter("contracted")}>
             <CheckCircle className="mr-2 h-4 w-4" /> Contratados ({contracted.length})
+          </Button>
+          <Button variant={filter === "descartado" ? "default" : "outline"} size="sm" onClick={() => setFilter("descartado")}>
+            Descartados ({descartados.length})
           </Button>
         </div>
 
