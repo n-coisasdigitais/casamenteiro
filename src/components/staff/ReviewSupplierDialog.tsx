@@ -9,14 +9,14 @@ import { Star } from "lucide-react";
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  applicationId: string;
+  jobId: string;
   supplierId: string;
   staffId: string;
   supplierName?: string;
   onSaved?: () => void;
 }
 
-export default function ReviewSupplierDialog({ open, onOpenChange, applicationId, supplierId, staffId, supplierName, onSaved }: Props) {
+export default function ReviewSupplierDialog({ open, onOpenChange, jobId, supplierId, staffId, supplierName, onSaved }: Props) {
   const { toast } = useToast();
   const [estrelas, setEstrelas] = useState(5);
   const [comentario, setComentario] = useState("");
@@ -25,9 +25,9 @@ export default function ReviewSupplierDialog({ open, onOpenChange, applicationId
   const salvar = async () => {
     setLoading(true);
     const { error } = await (supabase.from("staff_reviews" as any) as any).insert({
-      application_id: applicationId,
+      job_id: jobId,
       avaliado_id: supplierId,
-      avaliador_id: staffId,
+      autor_id: staffId,
       autor_tipo: "profissional",
       estrelas,
       comentario: comentario || null,
