@@ -499,6 +499,73 @@ export type Database = {
           },
         ]
       }
+      commission_ledger: {
+        Row: {
+          comissao: number
+          couple_id: string
+          created_at: string
+          id: string
+          mp_payment_id: string | null
+          paid_at: string | null
+          piso: number
+          reservation_id: string
+          status: string
+          supplier_id: string
+          updated_at: string
+          valor_ofertado: number
+        }
+        Insert: {
+          comissao: number
+          couple_id: string
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          paid_at?: string | null
+          piso: number
+          reservation_id: string
+          status?: string
+          supplier_id: string
+          updated_at?: string
+          valor_ofertado: number
+        }
+        Update: {
+          comissao?: number
+          couple_id?: string
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          paid_at?: string | null
+          piso?: number
+          reservation_id?: string
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+          valor_ofertado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_ledger_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: true
+            referencedRelation: "idle_date_reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       convite_lembretes: {
         Row: {
           canal: string
@@ -1561,15 +1628,21 @@ export type Database = {
       }
       idle_date_reservations: {
         Row: {
+          comissao_plataforma: number | null
+          contrato_id: string | null
           couple_id: string
           created_at: string
           desconto_pct: number | null
           expira_em: string | null
           guest_count: number | null
           id: string
+          markup_pct: number | null
+          modo_cobranca: string
           mp_payment_id: string | null
+          mp_split_payment_id: string | null
           mp_status: string | null
           observacoes: string | null
+          piso_fornecedor: number | null
           promo_date: string
           respondida_em: string | null
           solicitada_em: string
@@ -1580,17 +1653,24 @@ export type Database = {
           taxa_status: string
           updated_at: string
           valor_estimado: number | null
+          valor_ofertado: number | null
         }
         Insert: {
+          comissao_plataforma?: number | null
+          contrato_id?: string | null
           couple_id: string
           created_at?: string
           desconto_pct?: number | null
           expira_em?: string | null
           guest_count?: number | null
           id?: string
+          markup_pct?: number | null
+          modo_cobranca?: string
           mp_payment_id?: string | null
+          mp_split_payment_id?: string | null
           mp_status?: string | null
           observacoes?: string | null
+          piso_fornecedor?: number | null
           promo_date: string
           respondida_em?: string | null
           solicitada_em?: string
@@ -1601,17 +1681,24 @@ export type Database = {
           taxa_status?: string
           updated_at?: string
           valor_estimado?: number | null
+          valor_ofertado?: number | null
         }
         Update: {
+          comissao_plataforma?: number | null
+          contrato_id?: string | null
           couple_id?: string
           created_at?: string
           desconto_pct?: number | null
           expira_em?: string | null
           guest_count?: number | null
           id?: string
+          markup_pct?: number | null
+          modo_cobranca?: string
           mp_payment_id?: string | null
+          mp_split_payment_id?: string | null
           mp_status?: string | null
           observacoes?: string | null
+          piso_fornecedor?: number | null
           promo_date?: string
           respondida_em?: string | null
           solicitada_em?: string
@@ -1622,6 +1709,7 @@ export type Database = {
           taxa_status?: string
           updated_at?: string
           valor_estimado?: number | null
+          valor_ofertado?: number | null
         }
         Relationships: [
           {
@@ -1636,6 +1724,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "idle_reservations_contrato_fk"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "reservation_contracts"
             referencedColumns: ["id"]
           },
         ]
@@ -2029,6 +2124,76 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: true
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reservation_contracts: {
+        Row: {
+          assinado_casal_em: string | null
+          assinado_fornecedor_em: string | null
+          comissao: number
+          corpo_html: string
+          couple_id: string
+          created_at: string
+          id: string
+          piso: number
+          reservation_id: string
+          status: string
+          supplier_id: string
+          updated_at: string
+          valor_ofertado: number
+        }
+        Insert: {
+          assinado_casal_em?: string | null
+          assinado_fornecedor_em?: string | null
+          comissao: number
+          corpo_html: string
+          couple_id: string
+          created_at?: string
+          id?: string
+          piso: number
+          reservation_id: string
+          status?: string
+          supplier_id: string
+          updated_at?: string
+          valor_ofertado: number
+        }
+        Update: {
+          assinado_casal_em?: string | null
+          assinado_fornecedor_em?: string | null
+          comissao?: number
+          corpo_html?: string
+          couple_id?: string
+          created_at?: string
+          id?: string
+          piso?: number
+          reservation_id?: string
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+          valor_ofertado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservation_contracts_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservation_contracts_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: true
+            referencedRelation: "idle_date_reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservation_contracts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -3012,25 +3177,34 @@ export type Database = {
           created_at: string
           discount_pct: number
           id: string
+          markup_pct: number | null
           note: string | null
+          piso_fornecedor: number | null
           promo_date: string
           supplier_id: string
+          valor_ofertado: number | null
         }
         Insert: {
           created_at?: string
           discount_pct: number
           id?: string
+          markup_pct?: number | null
           note?: string | null
+          piso_fornecedor?: number | null
           promo_date: string
           supplier_id: string
+          valor_ofertado?: number | null
         }
         Update: {
           created_at?: string
           discount_pct?: number
           id?: string
+          markup_pct?: number | null
           note?: string | null
+          piso_fornecedor?: number | null
           promo_date?: string
           supplier_id?: string
+          valor_ofertado?: number | null
         }
         Relationships: []
       }
@@ -3055,6 +3229,7 @@ export type Database = {
           is_demo: boolean
           lat: number | null
           lng: number | null
+          mp_account_id: string | null
           onboarding_completed: boolean
           onboarding_step: number
           phone: string | null
@@ -3093,6 +3268,7 @@ export type Database = {
           is_demo?: boolean
           lat?: number | null
           lng?: number | null
+          mp_account_id?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
@@ -3131,6 +3307,7 @@ export type Database = {
           is_demo?: boolean
           lat?: number | null
           lng?: number | null
+          mp_account_id?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
@@ -3427,6 +3604,10 @@ export type Database = {
           lat: number
           lng: number
         }[]
+      }
+      calc_oferta_corretagem: {
+        Args: { _markup_pct: number; _piso: number }
+        Returns: Json
       }
       calc_platform_fee: {
         Args: { _categoria_slug?: string; _chave: string; _valor_base?: number }
