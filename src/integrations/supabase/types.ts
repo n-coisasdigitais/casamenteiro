@@ -1581,6 +1581,38 @@ export type Database = {
           },
         ]
       }
+      guest_list_pdf_log: {
+        Row: {
+          couple_id: string
+          created_at: string
+          id: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          id?: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          id?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_list_pdf_log_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       home_simulacoes: {
         Row: {
           cidade: string | null
@@ -1770,6 +1802,51 @@ export type Database = {
           },
           {
             foreignKeyName: "idle_match_notifications_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          payload: Json | null
+          quote_id: string
+          supplier_id: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload?: Json | null
+          quote_id: string
+          supplier_id: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload?: Json | null
+          quote_id?: string
+          supplier_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_events_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_events_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
@@ -2245,6 +2322,47 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reservation_events: {
+        Row: {
+          ator_user_id: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          payload: Json | null
+          reservation_id: string
+          tipo: string
+          to_status: string | null
+        }
+        Insert: {
+          ator_user_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          payload?: Json | null
+          reservation_id: string
+          tipo: string
+          to_status?: string | null
+        }
+        Update: {
+          ator_user_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          payload?: Json | null
+          reservation_id?: string
+          tipo?: string
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservation_events_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "idle_date_reservations"
             referencedColumns: ["id"]
           },
         ]
@@ -3471,9 +3589,12 @@ export type Database = {
           menu_preference: string | null
           name: string
           notes: string | null
+          pessoas: Json | null
           phone: string | null
           rsvp_status: string
           table_number: number | null
+          tipo_convite: string
+          total_pessoas: number
           updated_at: string
         }
         Insert: {
@@ -3487,9 +3608,12 @@ export type Database = {
           menu_preference?: string | null
           name: string
           notes?: string | null
+          pessoas?: Json | null
           phone?: string | null
           rsvp_status?: string
           table_number?: number | null
+          tipo_convite?: string
+          total_pessoas?: number
           updated_at?: string
         }
         Update: {
@@ -3503,9 +3627,12 @@ export type Database = {
           menu_preference?: string | null
           name?: string
           notes?: string | null
+          pessoas?: Json | null
           phone?: string | null
           rsvp_status?: string
           table_number?: number | null
+          tipo_convite?: string
+          total_pessoas?: number
           updated_at?: string
         }
         Relationships: [
@@ -3689,6 +3816,7 @@ export type Database = {
         Args: { _couple_id: string }
         Returns: number
       }
+      expire_idle_reservations: { Args: never; Returns: number }
       generate_couple_profile_slug: {
         Args: { _nome: string; _wedding_date: string }
         Returns: string

@@ -439,7 +439,7 @@ function drawPorMesa(doc: jsPDF, input: GerarPdfInput, footerFn: () => void) {
   }
 }
 
-export async function gerarPdfConvidados(input: GerarPdfInput): Promise<void> {
+export async function gerarPdfConvidados(input: GerarPdfInput & { returnBlob?: boolean }): Promise<void | Blob> {
   // silence unused import warning (autoTable reserved for future tabular fallback)
   void autoTable;
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
@@ -462,6 +462,9 @@ export async function gerarPdfConvidados(input: GerarPdfInput): Promise<void> {
 
   drawFooterAllPages(doc, input);
 
+  if (input.returnBlob) {
+    return doc.output("blob");
+  }
   const filename = `lista-convidados-${(input.dados.nomeCasal || "casal").toLowerCase().replace(/[^a-z0-9]+/g, "-")}.pdf`;
   doc.save(filename);
 }

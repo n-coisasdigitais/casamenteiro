@@ -50,6 +50,8 @@ export default function SupplierLeadsCRM({ supplierId, supplierUserId, companyNa
   const [query, setQuery] = useState("");
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteFor, setNoteFor] = useState<{ quoteId: string; existing?: any } | null>(null);
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 20;
 
   const load = async () => {
     const [{ data: qs }, { data: cats }] = await Promise.all([
@@ -183,9 +185,35 @@ export default function SupplierLeadsCRM({ supplierId, supplierUserId, companyNa
       quote_id: lead.quote.id, supplier_id: supplierId, author_id: supplierUserId,
       note: `Lembrete enviado em ${new Date().toLocaleString("pt-BR")}`,
     });
+    await supabase.from("lead_events" as any).insert({
+      quote_id: lead.quote.id, supplier_id: supplierId, tipo: "lembrete",
+      created_by: supplierUserId,
+      payload: { canal: "in_app+email" },
+    });
+    // tenta e-mail (não bloqueia se falhar)
+    try {
+      const emails: string[] = [];
+      for (const uid of targetIds) {
+        const { data } = await supabase.from("profiles").select("full_name").eq("user_id", uid).maybeSingle();
+        if (data) { /* profiles não tem email; melhor pegar de auth via edge function futura */ }
+      }
+      if (couple?.email) emails.push(couple.email);
+      if (emails.length) {
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            to: emails,
+            subject: `${companyName || "Um fornecedor"} está aguardando seu retorno`,
+            html: `<p>Olá!</p><p><strong>${companyName || "Um fornecedor"}</strong> enviou uma proposta e ainda aguarda seu retorno.</p><p>Acesse seu painel para responder.</p>`,
+          },
+        });
+      }
+    } catch { /* silencioso */ }
     toast({ title: "Lembrete enviado ao casal" });
     load();
   };
+
+  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
 
   return (
     <div className="space-y-4">
@@ -228,7 +256,7 @@ export default function SupplierLeadsCRM({ supplierId, supplierUserId, companyNa
         <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Nenhum lead encontrado com esses filtros.</CardContent></Card>
       ) : (
         <div className="space-y-2">
-          {filtered.map((l) => (
+          {paged.map((l) => (
             <Card key={l.quote.id} className="hover:shadow-sm transition">
               <CardContent className="p-4 flex flex-wrap gap-3 items-start">
                 <span className={cn("h-3 w-3 rounded-full mt-1.5 shrink-0",
@@ -277,6 +305,18 @@ export default function SupplierLeadsCRM({ supplierId, supplierUserId, companyNa
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {filtered.length > PER_PAGE && (
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
+            Página {page} de {totalPages} · {filtered.length} leads
+          </span>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
+            <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Próxima</Button>
+          </div>
         </div>
       )}
 
