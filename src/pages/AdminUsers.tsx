@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Search, ShieldCheck, ShieldOff, Ban, RotateCcw, Trash2, ArrowLeft } from "lucide-react";
+import { Heart, Search, ShieldCheck, ShieldOff, Ban, RotateCcw, Trash2, ArrowLeft, LogIn } from "lucide-react";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 type Row = {
   user_id: string;
@@ -27,6 +28,8 @@ export default function AdminUsers() {
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "couple" | "supplier" | "admin" | "suspended">("all");
+  const impersonationEnabled = useFeatureFlag("admin_impersonation");
+  const [impersonating, setImpersonating] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -71,6 +74,22 @@ export default function AdminUsers() {
     });
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
     else { toast({ title: "Papel atualizado" }); load(); }
+  };
+
+  const impersonate = async (r: Row) => {
+    if (!confirm(`Entrar como "${r.full_name || r.user_id.slice(0,8)}"? Um link mágico será aberto em nova aba — você será desconectado do admin.`)) return;
+    setImpersonating(r.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-impersonate", {
+        body: { target_user_id: r.user_id },
+      });
+      if (error) throw error;
+      if (!data?.action_link) throw new Error("Link não retornado");
+      window.open(data.action_link, "_blank", "noopener");
+      toast({ title: "Link aberto em nova aba", description: "Acesse a nova janela para logar como o usuário." });
+    } catch (e: any) {
+      toast({ title: "Erro ao impersonar", description: e?.message, variant: "destructive" });
+    } finally { setImpersonating(null); }
   };
 
   if (!ready) return <div className="min-h-screen flex items-center justify-center">Verificando...</div>;
@@ -118,6 +137,12 @@ export default function AdminUsers() {
                   {r.suspended_reason && <p className="text-xs text-destructive mt-1">Motivo: {r.suspended_reason}</p>}
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                  {impersonationEnabled && (
+                    <Button size="sm" variant="outline" onClick={() => impersonate(r)} disabled={impersonating === r.user_id}>
+                      <LogIn className="h-3 w-3 mr-1" />
+                      {impersonating === r.user_id ? "Gerando..." : "Entrar como"}
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => toggleAdmin(r)}>
                     {r.is_admin ? <><ShieldOff className="h-3 w-3 mr-1" />Remover admin</> : <><ShieldCheck className="h-3 w-3 mr-1" />Tornar admin</>}
                   </Button>
