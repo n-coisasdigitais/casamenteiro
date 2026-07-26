@@ -11,3 +11,5 @@ project_id = "fglpzxtrvipizoymwteg"
     verify_jwt = false
   [functions.calendar-sync-cron]
     verify_jwt = false
+  [functions.send-transactional-email]
+    verify_jwt = false
