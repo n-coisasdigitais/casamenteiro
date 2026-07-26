@@ -67,6 +67,8 @@ export default function UserProfile() {
   const [headerQuote, setHeaderQuote] = useState("");
   const [targetBudget, setTargetBudget] = useState("");
   const [budgetMode, setBudgetMode] = useState<string>("fixed");
+  const [querDatasOciosas, setQuerDatasOciosas] = useState(false);
+  const [dataPretendida, setDataPretendida] = useState("");
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -105,6 +107,8 @@ export default function UserProfile() {
         setHeaderQuote((data as any).header_quote || "");
         setTargetBudget((data as any).target_budget?.toString() || "");
         setBudgetMode((data as any).budget_mode || "fixed");
+        setQuerDatasOciosas(!!(data as any).quer_datas_ociosas);
+        setDataPretendida((data as any).data_pretendida || "");
         setCeremonyCep((data as any).ceremony_cep || "");
         setCeremonyLat((data as any).ceremony_lat ?? null);
         setCeremonyLng((data as any).ceremony_lng ?? null);
@@ -214,6 +218,8 @@ export default function UserProfile() {
             header_quote: headerQuote || null,
             target_budget: targetBudget ? parseFloat(targetBudget) : null,
             budget_mode: budgetMode,
+            quer_datas_ociosas: querDatasOciosas,
+            data_pretendida: dataPretendida || null,
             ceremony_cep: ceremonyCep || null,
             ceremony_lat: ceremonyLat,
             ceremony_lng: ceremonyLng,
