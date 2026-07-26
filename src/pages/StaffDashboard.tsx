@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import PaymentDisclaimer from "@/components/staff/PaymentDisclaimer";
 import UserMenu from "@/components/UserMenu";
+import ReviewSupplierDialog from "@/components/staff/ReviewSupplierDialog";
+import { Input } from "@/components/ui/input";
 import { appStatusLabel, buildJobWhatsAppLink, fetchStaffContact } from "@/lib/staff";
 import { Heart, Calendar, Star } from "lucide-react";
 
@@ -22,6 +24,10 @@ export default function StaffDashboard() {
   const [feed, setFeed] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [unav, setUnav] = useState<any[]>([]);
+  const [reviewsGiven, setReviewsGiven] = useState<Record<string, boolean>>({});
+  const [reviewApp, setReviewApp] = useState<any>(null);
+  const [blockDate, setBlockDate] = useState("");
+  const [blockMotivo, setBlockMotivo] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -62,6 +68,12 @@ export default function StaffDashboard() {
     const { data: un } = await (supabase.from("staff_unavailability" as any) as any)
       .select("*").eq("staff_id", sp.id).order("data");
     setUnav(un || []);
+
+    const { data: given } = await (supabase.from("staff_reviews" as any) as any)
+      .select("job_id").eq("autor_id", sp.id).eq("autor_tipo", "profissional");
+    const map: Record<string, boolean> = {};
+    (given || []).forEach((r: any) => { map[r.job_id] = true; });
+    setReviewsGiven(map);
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
@@ -99,7 +111,29 @@ export default function StaffDashboard() {
     }
   };
 
+  const bloquearData = async () => {
+    if (!staff || !blockDate) return;
+    const { error } = await (supabase.from("staff_unavailability" as any) as any).insert({
+      staff_id: staff.id, data: blockDate, motivo: blockMotivo || null,
+    });
+    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    toast({ title: "Data bloqueada" });
+    setBlockDate(""); setBlockMotivo("");
+    load();
+  };
+
+  const desbloquear = async (id: string) => {
+    const { error } = await (supabase.from("staff_unavailability" as any) as any).delete().eq("id", id);
+    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    toast({ title: "Bloqueio removido" });
+    load();
+  };
+
   if (!staff) return null;
+
+  const concluidosParaAvaliar = applications.filter(
+    (a) => a.status === "concluido" && !reviewsGiven[a.job_id]
+  );
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -133,6 +167,22 @@ export default function StaffDashboard() {
 
         <PaymentDisclaimer />
 
+        {concluidosParaAvaliar.length > 0 && (
+          <Card className="border-primary/40 bg-primary/5">
+            <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="font-medium">Avaliações pendentes</p>
+                <p className="text-sm text-muted-foreground">
+                  Você tem {concluidosParaAvaliar.length} trabalho(s) concluído(s) para avaliar.
+                </p>
+              </div>
+              <Button size="sm" onClick={() => setReviewApp(concluidosParaAvaliar[0])}>
+                Avaliar agora
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs defaultValue="convites">
           <TabsList className="flex-wrap">
             <TabsTrigger value="convites">Convites e vagas</TabsTrigger>
@@ -165,6 +215,9 @@ export default function StaffDashboard() {
                     )}
                     {(a.status === "aceito" || a.status === "concluido") && (
                       <Button size="sm" variant="outline" onClick={() => abrirWhats(a)}>WhatsApp</Button>
+                    )}
+                    {a.status === "concluido" && !reviewsGiven[a.job_id] && (
+                      <Button size="sm" onClick={() => setReviewApp(a)}>Avaliar fornecedor</Button>
                     )}
                   </div>
                 </CardContent>
@@ -201,13 +254,21 @@ export default function StaffDashboard() {
             <Card>
               <CardHeader><CardTitle className="text-base flex items-center gap-2"><Calendar className="h-4 w-4" /> Datas bloqueadas</CardTitle></CardHeader>
               <CardContent>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <Input type="date" value={blockDate} onChange={(e) => setBlockDate(e.target.value)} className="max-w-40" />
+                  <Input placeholder="Motivo (opcional)" value={blockMotivo} onChange={(e) => setBlockMotivo(e.target.value)} className="max-w-xs" />
+                  <Button size="sm" onClick={bloquearData} disabled={!blockDate}>Bloquear data</Button>
+                </div>
                 {unav.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhum bloqueio. Aceitar vagas bloqueia a data automaticamente.</p>
                 ) : (
                   <ul className="text-sm space-y-1">
                     {unav.map((u) => (
-                      <li key={u.id}>
+                      <li key={u.id} className="flex items-center gap-2 justify-between">
+                        <span>
                         {new Date(u.data + "T00:00:00").toLocaleDateString("pt-BR")} — {u.motivo || "bloqueio manual"}
+                        </span>
+                        <Button size="sm" variant="ghost" onClick={() => desbloquear(u.id)}>Remover</Button>
                       </li>
                     ))}
                   </ul>
@@ -236,6 +297,18 @@ export default function StaffDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {reviewApp && (
+        <ReviewSupplierDialog
+          open={!!reviewApp}
+          onOpenChange={(v) => !v && setReviewApp(null)}
+          jobId={reviewApp.job_id}
+          supplierId={reviewApp.job?.supplier?.id}
+          staffId={staff.id}
+          supplierName={reviewApp.job?.supplier?.company_name}
+          onSaved={() => { setReviewApp(null); load(); }}
+        />
+      )}
     </div>
   );
 }
