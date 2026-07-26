@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,11 +29,15 @@ export default function LeadNoteDialog({
   const [note, setNote] = useState("");
   const [remindAt, setRemindAt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
     if (!open) return;
     setNote(existing?.note || "");
     setRemindAt(existing?.remind_at ? new Date(existing.remind_at).toISOString().slice(0, 16) : "");
+    supabase.from("lead_events" as any)
+      .select("*").eq("quote_id", quoteId).order("created_at", { ascending: false })
+      .then(({ data }) => setEvents((data as any[]) || []));
   }, [open, existing]);
 
   const save = async () => {
@@ -50,6 +55,11 @@ export default function LeadNoteDialog({
     const { error } = await q;
     setLoading(false);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    await supabase.from("lead_events" as any).insert({
+      quote_id: quoteId, supplier_id: supplierId, tipo: existing?.id ? "nota_editada" : "nota_criada",
+      created_by: authorId,
+      payload: { has_remind: !!remindAt },
+    });
     toast({ title: "Nota salva" });
     onOpenChange(false);
     onSaved?.();
@@ -59,7 +69,12 @@ export default function LeadNoteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>Anotação interna</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+        <Tabs defaultValue="nota">
+          <TabsList className="grid grid-cols-2 mb-3">
+            <TabsTrigger value="nota">Nota</TabsTrigger>
+            <TabsTrigger value="historico">Histórico ({events.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="nota" className="space-y-3">
           <div>
             <Label>Nota (só você vê)</Label>
             <Textarea rows={5} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex.: cliente pediu para retomar após visita ao espaço." />
@@ -72,7 +87,17 @@ export default function LeadNoteDialog({
           <Button onClick={save} disabled={loading} className="w-full">
             {loading ? "Salvando..." : "Salvar nota"}
           </Button>
-        </div>
+          </TabsContent>
+          <TabsContent value="historico" className="space-y-2 max-h-72 overflow-auto">
+            {events.length === 0 && <p className="text-sm text-muted-foreground italic">Nenhum evento ainda.</p>}
+            {events.map((e) => (
+              <div key={e.id} className="text-xs border-l-2 border-primary/40 pl-2 py-1">
+                <p className="font-medium capitalize">{String(e.tipo).replace(/_/g, " ")}</p>
+                <p className="text-muted-foreground">{new Date(e.created_at).toLocaleString("pt-BR")}</p>
+              </div>
+            ))}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
