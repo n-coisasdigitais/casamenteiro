@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Heart, ArrowLeft, CalendarRange } from "lucide-react";
+import { Heart, ArrowLeft, CalendarRange, History } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { RESERVA_STATUS_LABEL, RESERVA_STATUS_TONE, TAXA_STATUS_LABEL, formatarData, type ReservaStatus, type TaxaStatus } from "@/lib/reservas";
 import { formatBRL } from "@/lib/platformPricing";
@@ -31,6 +32,15 @@ export default function AdminReservations() {
   const [checked, setChecked] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [tab, setTab] = useState<ReservaStatus | "todas">("todas");
+  const [timelineFor, setTimelineFor] = useState<Row | null>(null);
+  const [events, setEvents] = useState<any[]>([]);
+
+  const abrirTimeline = async (r: Row) => {
+    setTimelineFor(r);
+    const { data } = await (supabase.from("reservation_events" as any)
+      .select("*").eq("reservation_id", r.id).order("created_at", { ascending: true }) as any);
+    setEvents((data as any[]) || []);
+  };
 
   const load = async () => {
     const { data } = await (supabase.from("idle_date_reservations" as any)
@@ -142,11 +152,42 @@ export default function AdminReservations() {
                       )}
                     </>
                   )}
+                  <Button size="sm" variant="ghost" className="ml-auto" onClick={() => abrirTimeline(r)}>
+                    <History className="h-3 w-3 mr-1" /> Timeline
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </TabsContent>
         </Tabs>
+
+        <Sheet open={!!timelineFor} onOpenChange={(v) => { if (!v) { setTimelineFor(null); setEvents([]); } }}>
+          <SheetContent className="sm:max-w-md overflow-auto">
+            <SheetHeader>
+              <SheetTitle>Timeline da reserva</SheetTitle>
+            </SheetHeader>
+            {timelineFor && (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm">
+                  <strong>{formatarData(timelineFor.promo_date)}</strong> · {timelineFor.suppliers?.company_name || "Fornecedor"}
+                </p>
+                <ol className="relative border-l pl-4 space-y-3">
+                  {events.length === 0 && <li className="text-xs text-muted-foreground italic">Sem eventos registrados.</li>}
+                  {events.map((e) => (
+                    <li key={e.id} className="text-xs">
+                      <div className="absolute -left-1.5 h-3 w-3 rounded-full bg-primary" />
+                      <p className="font-medium capitalize">{String(e.tipo).replace(/_/g, " ")}
+                        {e.from_status && <span className="ml-1 text-muted-foreground">({e.from_status} → {e.to_status})</span>}
+                        {!e.from_status && e.to_status && <span className="ml-1 text-muted-foreground">→ {e.to_status}</span>}
+                      </p>
+                      <p className="text-muted-foreground">{new Date(e.created_at).toLocaleString("pt-BR")}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
       </main>
     </div>
   );
