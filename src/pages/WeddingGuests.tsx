@@ -449,9 +449,34 @@ export default function WeddingGuests() {
           <Button variant="outline" size="icon" onClick={handleExport} title="Baixar CSV">
             <Download className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => window.print()} title="Imprimir">
-            <Printer className="h-4 w-4" />
-          </Button>
+          <GuestListPdfDialog
+            guests={guests.map((g) => ({
+              id: g.id,
+              name: g.name,
+              guest_type: g.guest_type,
+              rsvp_status: g.rsvp_status,
+              table_number: g.table_number,
+              group_id: g.group_id,
+              notes: g.notes ?? null,
+              max_companions: g.max_companions ?? 0,
+              rsvp_companions: invites[g.id]?.rsvp_companions ?? 0,
+            }))}
+            groups={groups}
+            dadosCasal={{
+              nomeCasal: coupleDisplayName,
+              fotoCapaUrl: coupleCoverUrl,
+              dataEvento: couple?.wedding_date ?? null,
+              horario: couple?.ceremony_time ?? null,
+              localCerimonia: [couple?.ceremony_local_nome, couple?.ceremony_address].filter(Boolean).join(" · ") || null,
+              localRecepcao: [couple?.reception_local_nome, couple?.reception_address].filter(Boolean).join(" · ") || null,
+              contatoCerimonial: null,
+              ultimaAtualizacao: guests.reduce<string | null>((acc, g) => {
+                if (!g.updated_at) return acc;
+                return !acc || g.updated_at > acc ? g.updated_at : acc;
+              }, null),
+              impressoPor: profile?.full_name ?? null,
+            }}
+          />
         </div>
 
         {/* Guest table */}
