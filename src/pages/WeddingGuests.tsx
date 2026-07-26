@@ -11,13 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Users, Baby, Download, Printer, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon, MessageCircle, Mail } from "lucide-react";
+import { Users, Baby, Download, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon, MessageCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import AddGuestDialog from "@/components/AddGuestDialog";
 import AddGroupDialog from "@/components/AddGroupDialog";
 import ImportGuestsDialog from "@/components/ImportGuestsDialog";
+import GuestListPdfDialog from "@/components/GuestListPdfDialog";
 import { buildWhatsAppLink } from "@/lib/phone";
 
 type Guest = {
@@ -31,6 +32,8 @@ type Guest = {
   table_number: number | null;
   group_id: string | null;
   max_companions?: number | null;
+  notes?: string | null;
+  updated_at?: string | null;
 };
 
 type InviteMap = Record<string, { token: string; sent_at: string | null; opened_at: string | null; responded_at: string | null; rsvp_companions?: number | null }>;
@@ -39,9 +42,13 @@ type Group = { id: string; name: string };
 
 export default function WeddingGuests() {
   const { user } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [couple, setCouple] = useState<any>(null);
+  const [coupleCoverUrl, setCoupleCoverUrl] = useState<string | null>(null);
+  const [coupleDisplayName, setCoupleDisplayName] = useState<string>("Os Noivos");
   const [guests, setGuests] = useState<Guest[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [search, setSearch] = useState("");
@@ -57,9 +64,17 @@ export default function WeddingGuests() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("couples").select("id, onboarding_completed").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+    supabase.from("couples").select("*").eq("user_id", user.id).maybeSingle().then(async ({ data }) => {
       if (!data || !data.onboarding_completed) { navigate("/onboarding"); return; }
+      setCouple(data);
       setCoupleId(data.id);
+      const [{ data: prof }, { data: pubProf }] = await Promise.all([
+        supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
+        supabase.from("couple_public_profiles").select("foto_capa_url, nome_casal").eq("couple_id", data.id).maybeSingle(),
+      ]);
+      setCoupleCoverUrl(pubProf?.foto_capa_url || null);
+      const nome = pubProf?.nome_casal || [prof?.full_name, (data as any)?.partner_name].filter(Boolean).join(" & ") || "Os Noivos";
+      setCoupleDisplayName(nome);
       loadData(data.id);
     });
   }, [user]);
