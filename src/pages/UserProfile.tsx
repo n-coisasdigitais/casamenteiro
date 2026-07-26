@@ -17,6 +17,7 @@ import CouplePhotoUpload from "@/components/CouplePhotoUpload";
 import CepInput from "@/components/CepInput";
 import AlbumUpload from "@/components/AlbumUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 
 export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -67,6 +68,8 @@ export default function UserProfile() {
   const [headerQuote, setHeaderQuote] = useState("");
   const [targetBudget, setTargetBudget] = useState("");
   const [budgetMode, setBudgetMode] = useState<string>("fixed");
+  const [querDatasOciosas, setQuerDatasOciosas] = useState(false);
+  const [dataPretendida, setDataPretendida] = useState("");
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -105,6 +108,8 @@ export default function UserProfile() {
         setHeaderQuote((data as any).header_quote || "");
         setTargetBudget((data as any).target_budget?.toString() || "");
         setBudgetMode((data as any).budget_mode || "fixed");
+        setQuerDatasOciosas(!!(data as any).quer_datas_ociosas);
+        setDataPretendida((data as any).data_pretendida || "");
         setCeremonyCep((data as any).ceremony_cep || "");
         setCeremonyLat((data as any).ceremony_lat ?? null);
         setCeremonyLng((data as any).ceremony_lng ?? null);
@@ -214,6 +219,8 @@ export default function UserProfile() {
             header_quote: headerQuote || null,
             target_budget: targetBudget ? parseFloat(targetBudget) : null,
             budget_mode: budgetMode,
+            quer_datas_ociosas: querDatasOciosas,
+            data_pretendida: dataPretendida || null,
             ceremony_cep: ceremonyCep || null,
             ceremony_lat: ceremonyLat,
             ceremony_lng: ceremonyLng,
@@ -401,6 +408,23 @@ export default function UserProfile() {
                   <SelectItem value="simulation">Pela última simulação</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="border-t pt-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Label htmlFor="quer-datas-ociosas" className="cursor-pointer">Aceito receber datas com desconto</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Avisamos você quando um fornecedor abrir uma data ociosa que combina com seu casamento.
+                  </p>
+                </div>
+                <Switch id="quer-datas-ociosas" checked={querDatasOciosas} onCheckedChange={setQuerDatasOciosas} />
+              </div>
+              {querDatasOciosas && (
+                <div>
+                  <Label htmlFor="data-pretendida">Tenho preferência por essa data (opcional)</Label>
+                  <Input id="data-pretendida" type="date" value={dataPretendida} onChange={(e) => setDataPretendida(e.target.value)} />
+                </div>
+              )}
             </div>
             <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
               <Save className="mr-2 h-4 w-4" />

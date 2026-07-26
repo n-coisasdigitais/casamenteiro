@@ -15,6 +15,7 @@ import {
   Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send, Eye, MessageCircle
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
+import PromoDatesInline from "@/components/reservas/PromoDatesInline";
 import SupplierMap from "@/components/SupplierMap";
 import { buildWhatsAppLink } from "@/lib/phone";
 import SEO from "@/components/SEO";
@@ -709,6 +710,12 @@ export default function SupplierProfile() {
                       </Button>
                     )}
                   </div>
+
+                  <PromoDatesInline
+                    supplierId={supplier.id}
+                    supplierName={supplier.company_name}
+                    priceMin={supplier.price_min}
+                  />
 
                   <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" />

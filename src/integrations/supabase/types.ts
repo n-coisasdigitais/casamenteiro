@@ -998,6 +998,7 @@ export type Database = {
           contact_phone: string | null
           couple_role: Database["public"]["Enums"]["couple_role"] | null
           created_at: string
+          data_pretendida: string | null
           dress_code: string | null
           estimated_budget: number | null
           estimated_guests: number | null
@@ -1014,6 +1015,7 @@ export type Database = {
           onboarding_completed: boolean
           partner_name: string | null
           party_duration_hours: number | null
+          quer_datas_ociosas: boolean
           reception_address: string | null
           reception_cep: string | null
           reception_lat: number | null
@@ -1037,6 +1039,7 @@ export type Database = {
           contact_phone?: string | null
           couple_role?: Database["public"]["Enums"]["couple_role"] | null
           created_at?: string
+          data_pretendida?: string | null
           dress_code?: string | null
           estimated_budget?: number | null
           estimated_guests?: number | null
@@ -1053,6 +1056,7 @@ export type Database = {
           onboarding_completed?: boolean
           partner_name?: string | null
           party_duration_hours?: number | null
+          quer_datas_ociosas?: boolean
           reception_address?: string | null
           reception_cep?: string | null
           reception_lat?: number | null
@@ -1076,6 +1080,7 @@ export type Database = {
           contact_phone?: string | null
           couple_role?: Database["public"]["Enums"]["couple_role"] | null
           created_at?: string
+          data_pretendida?: string | null
           dress_code?: string | null
           estimated_budget?: number | null
           estimated_guests?: number | null
@@ -1092,6 +1097,7 @@ export type Database = {
           onboarding_completed?: boolean
           partner_name?: string | null
           party_duration_hours?: number | null
+          quer_datas_ociosas?: boolean
           reception_address?: string | null
           reception_cep?: string | null
           reception_lat?: number | null
@@ -1553,6 +1559,129 @@ export type Database = {
         }
         Relationships: []
       }
+      idle_date_reservations: {
+        Row: {
+          couple_id: string
+          created_at: string
+          desconto_pct: number | null
+          expira_em: string | null
+          guest_count: number | null
+          id: string
+          mp_payment_id: string | null
+          mp_status: string | null
+          observacoes: string | null
+          promo_date: string
+          respondida_em: string | null
+          solicitada_em: string
+          status: string
+          supplier_id: string
+          taxa_memoria: Json | null
+          taxa_plataforma: number | null
+          taxa_status: string
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          desconto_pct?: number | null
+          expira_em?: string | null
+          guest_count?: number | null
+          id?: string
+          mp_payment_id?: string | null
+          mp_status?: string | null
+          observacoes?: string | null
+          promo_date: string
+          respondida_em?: string | null
+          solicitada_em?: string
+          status?: string
+          supplier_id: string
+          taxa_memoria?: Json | null
+          taxa_plataforma?: number | null
+          taxa_status?: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          desconto_pct?: number | null
+          expira_em?: string | null
+          guest_count?: number | null
+          id?: string
+          mp_payment_id?: string | null
+          mp_status?: string | null
+          observacoes?: string | null
+          promo_date?: string
+          respondida_em?: string | null
+          solicitada_em?: string
+          status?: string
+          supplier_id?: string
+          taxa_memoria?: Json | null
+          taxa_plataforma?: number | null
+          taxa_status?: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idle_date_reservations_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "idle_date_reservations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      idle_match_notifications: {
+        Row: {
+          couple_id: string
+          direcao: string
+          id: string
+          promo_date: string
+          sent_at: string
+          supplier_id: string
+        }
+        Insert: {
+          couple_id: string
+          direcao: string
+          id?: string
+          promo_date: string
+          sent_at?: string
+          supplier_id: string
+        }
+        Update: {
+          couple_id?: string
+          direcao?: string
+          id?: string
+          promo_date?: string
+          sent_at?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idle_match_notifications_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "idle_match_notifications_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1583,6 +1712,63 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      platform_prices: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          chave: string
+          created_at: string
+          descricao: string | null
+          id: string
+          label: string
+          modo: string
+          moeda: string
+          overrides: Json
+          percentual: number
+          updated_at: string
+          updated_by: string | null
+          valor_fixo: number
+          valor_max: number | null
+          valor_min: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string
+          chave: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          label: string
+          modo?: string
+          moeda?: string
+          overrides?: Json
+          percentual?: number
+          updated_at?: string
+          updated_by?: string | null
+          valor_fixo?: number
+          valor_max?: number | null
+          valor_min?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          chave?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          label?: string
+          modo?: string
+          moeda?: string
+          overrides?: Json
+          percentual?: number
+          updated_at?: string
+          updated_by?: string | null
+          valor_fixo?: number
+          valor_max?: number | null
+          valor_min?: number | null
         }
         Relationships: []
       }
@@ -3241,6 +3427,10 @@ export type Database = {
           lat: number
           lng: number
         }[]
+      }
+      calc_platform_fee: {
+        Args: { _categoria_slug?: string; _chave: string; _valor_base?: number }
+        Returns: Json
       }
       cidades_disponiveis: {
         Args: { _prefix: string }

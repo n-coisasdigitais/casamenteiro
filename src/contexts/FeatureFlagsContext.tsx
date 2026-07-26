@@ -16,7 +16,9 @@ export type FeatureFlagKey =
   | "mensagens_casais"
   | "indicacoes"
   | "avaliacao_bidirecional"
-  | "vagas";
+  | "vagas"
+  | "reserva_datas_ociosas"
+  | "tabela_precos";
 
 // Defaults espelham o seed da migration — evita flicker enquanto carrega.
 export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
@@ -35,6 +37,8 @@ export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
   indicacoes: false,
   avaliacao_bidirecional: false,
   vagas: false,
+  reserva_datas_ociosas: false,
+  tabela_precos: false,
 };
 
 type Ctx = {

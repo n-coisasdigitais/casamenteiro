@@ -13,6 +13,7 @@ import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
   Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
   Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal, MapPin, Zap, Mail, Share2,
+  CalendarRange, Sparkles, Tag,
 } from "lucide-react";
 
 const groups = [
@@ -47,6 +48,9 @@ const groups = [
       { title: "Financeiro", url: "/admin/financeiro", icon: DollarSign },
       { title: "Transações", url: "/admin/transacoes", icon: Receipt },
       { title: "Simulações", url: "/admin/simulacoes", icon: Calculator },
+      { title: "Tabela de preços", url: "/admin/tabela-precos", icon: Tag },
+      { title: "Reservas", url: "/admin/reservas", icon: CalendarRange },
+      { title: "Datas ociosas", url: "/admin/datas-ociosas", icon: Sparkles },
     ],
   },
   {
