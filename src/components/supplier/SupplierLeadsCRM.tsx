@@ -308,6 +308,18 @@ export default function SupplierLeadsCRM({ supplierId, supplierUserId, companyNa
         </div>
       )}
 
+      {filtered.length > PER_PAGE && (
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
+            Página {page} de {totalPages} · {filtered.length} leads
+          </span>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
+            <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Próxima</Button>
+          </div>
+        </div>
+      )}
+
       {noteFor && (
         <LeadNoteDialog
           open={noteOpen}
