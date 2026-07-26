@@ -15,6 +15,7 @@ import {
   Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send, Eye, MessageCircle
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
+import PromoDatesInline from "@/components/reservas/PromoDatesInline";
 import SupplierMap from "@/components/SupplierMap";
 import { buildWhatsAppLink } from "@/lib/phone";
 import SEO from "@/components/SEO";
