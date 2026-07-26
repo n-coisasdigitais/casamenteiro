@@ -31,11 +31,10 @@ export default function PublishJobDialog({ supplierId, onCreated }: { supplierId
     setLoading(true);
     const { error } = await (supabase.from("staff_jobs" as any) as any).insert({
       supplier_id: supplierId,
-      criado_por: user.id,
       funcao, data,
       hora_inicio: horaIni || null, hora_fim: horaFim || null,
       local: local || null, cidade: cidade || null,
-      valor_turno: Number(valor), descricao: descricao || null,
+      valor_turno: Number(valor), observacoes: descricao || null,
       is_public: pub, status: "aberta",
     });
     setLoading(false);
