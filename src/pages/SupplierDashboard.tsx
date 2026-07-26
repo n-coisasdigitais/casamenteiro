@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Heart, LogOut, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, Eye, Phone, Calendar, Users as UsersIcon, CalendarDays, BarChart3, MapPin } from "lucide-react";
+import { Heart, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, CalendarDays, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteConversation from "@/components/QuoteConversation";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
@@ -33,8 +33,27 @@ import { isEspacoCategory } from "@/lib/categories";
 import SupplierStaffTab from "@/components/staff/SupplierStaffTab";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import SupplierReservationsTab from "@/components/reservas/SupplierReservationsTab";
+import SupplierSidebar, { getSupplierDestinations, type SupplierDestination } from "@/components/supplier/SupplierSidebar";
+import SupplierMobileTabBar from "@/components/supplier/SupplierMobileTabBar";
+import SupplierActionCards from "@/components/supplier/SupplierActionCards";
+import SupplierLeadsCRM from "@/components/supplier/SupplierLeadsCRM";
 
 type Category = { id: string; name: string; slug?: string | null };
+
+type BusinessSub = "perfil" | "fotos" | "arquivos" | "disponibilidade" | "atendimento" | "reservas";
+
+const LEGACY_TAB_TO_DEST: Record<string, { dest: SupplierDestination; sub?: BusinessSub }> = {
+  metrics: { dest: "painel" },
+  quotes: { dest: "orcamentos" },
+  reviews: { dest: "avaliacoes" },
+  vagas: { dest: "vagas" },
+  profile: { dest: "negocio", sub: "perfil" },
+  photos: { dest: "negocio", sub: "fotos" },
+  files: { dest: "negocio", sub: "arquivos" },
+  availability: { dest: "negocio", sub: "disponibilidade" },
+  area: { dest: "negocio", sub: "atendimento" },
+  reservas: { dest: "negocio", sub: "reservas" },
+};
 
 export default function SupplierDashboard() {
   const { user, profile, signOut } = useAuth();
@@ -50,10 +69,14 @@ export default function SupplierDashboard() {
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [threadOpen, setThreadOpen] = useState(false);
   const [rejectMotivo, setRejectMotivo] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("metrics");
+  const [dest, setDest] = useState<SupplierDestination>("painel");
+  const [businessSub, setBusinessSub] = useState<BusinessSub>("perfil");
+  const [quotesInnerTab, setQuotesInnerTab] = useState<"kanban" | "leads">("kanban");
+  const [quotesFilter, setQuotesFilter] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState<string | null>(null);
   const vagasEnabled = useFeatureFlag("vagas", false);
   const reservasEnabled = useFeatureFlag("reserva_datas_ociosas", false);
+  const crmEnabled = useFeatureFlag("crm_fornecedor", true);
 
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
@@ -73,12 +96,26 @@ export default function SupplierDashboard() {
     if (supplier) loadQuotes();
   }, [supplier]);
 
-  // Define aba inicial conforme onboarding e respeita ?tab= da URL
+  // Sincroniza destino com URL (?tab=), aceitando chaves legadas
   useEffect(() => {
     if (!supplier) return;
     const tab = searchParams.get("tab");
-    if (tab) setActiveTab(tab);
-    else setActiveTab(supplier.onboarding_completed ? "metrics" : "quotes");
+    const sub = searchParams.get("sub") as BusinessSub | null;
+    const filter = searchParams.get("filter");
+    if (tab && LEGACY_TAB_TO_DEST[tab]) {
+      const map = LEGACY_TAB_TO_DEST[tab];
+      setDest(map.dest);
+      if (map.sub) setBusinessSub(map.sub);
+    } else if (tab && ["painel", "orcamentos", "negocio", "vagas", "avaliacoes"].includes(tab)) {
+      setDest(tab as SupplierDestination);
+    } else {
+      setDest(supplier.onboarding_completed ? "painel" : "orcamentos");
+    }
+    if (sub) setBusinessSub(sub);
+    if (filter) {
+      setQuotesFilter(filter);
+      setQuotesInnerTab("kanban");
+    }
   }, [supplier, searchParams]);
 
   // Abre automaticamente um quote vindo de notificação (?quote=)
@@ -100,6 +137,19 @@ export default function SupplierDashboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quotes, searchParams]);
+
+  const goDest = (d: SupplierDestination, extra?: { sub?: BusinessSub; filter?: string | null; inner?: "kanban" | "leads" }) => {
+    setDest(d);
+    if (extra?.sub) setBusinessSub(extra.sub);
+    if (extra?.filter !== undefined) setQuotesFilter(extra.filter);
+    if (extra?.inner) setQuotesInnerTab(extra.inner);
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", d);
+    if (d === "negocio") next.set("sub", extra?.sub || businessSub); else next.delete("sub");
+    if (extra?.filter) next.set("filter", extra.filter); else next.delete("filter");
+    next.delete("quote");
+    setSearchParams(next, { replace: true });
+  };
 
   // Carrega estado de dispensar banner
   useEffect(() => {
@@ -221,6 +271,194 @@ export default function SupplierDashboard() {
 
   if (!supplier) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
 
+  const overdueLeadsCount = quotesFilter === "__" ? 0 : 0; // placeholder; ActionCards controla o próprio alerta
+  const destinations = getSupplierDestinations({
+    quotesCount: quotes.length,
+    overdueLeads: 0,
+    vagasEnabled,
+  });
+  const cat = categories.find((c) => c.id === supplier.category_id);
+  const isEspaco = isEspacoCategory(cat?.slug ?? null, cat?.name ?? null);
+
+  const filteredQuotes = (() => {
+    if (!quotesFilter) return quotes;
+    // filtro simples: "aguardando" = kanban_status enviado/visto; "sem_retorno" = respondido/negociando
+    if (quotesFilter === "aguardando") return quotes.filter((q) => ["enviado", "visto"].includes(q.kanban_status || "enviado"));
+    if (quotesFilter === "sem_retorno") return quotes.filter((q) => ["respondido", "negociando"].includes(q.kanban_status || ""));
+    return quotes;
+  })();
+
+  const renderContent = () => {
+    if (dest === "painel") {
+      return (
+        <div className="space-y-6">
+          <SupplierActionCards
+            supplierId={supplier.id}
+            supplierUserId={user!.id}
+            onGoToQuotes={(filter) => goDest("orcamentos", { filter: filter || null, inner: "kanban" })}
+          />
+          <SupplierMetrics supplierId={supplier.id} />
+        </div>
+      );
+    }
+    if (dest === "orcamentos") {
+      return (
+        <div className="space-y-4">
+          {crmEnabled && (
+            <Tabs value={quotesInnerTab} onValueChange={(v) => setQuotesInnerTab(v as any)}>
+              <TabsList>
+                <TabsTrigger value="kanban">Kanban</TabsTrigger>
+                <TabsTrigger value="leads">Leads (CRM)</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+          {quotesFilter && quotesInnerTab === "kanban" && (
+            <div className="flex items-center gap-2 text-xs">
+              <Badge variant="secondary">
+                Filtro: {quotesFilter === "aguardando" ? "aguardando resposta" : "sem retorno do casal"}
+              </Badge>
+              <button className="underline text-muted-foreground" onClick={() => goDest("orcamentos", { filter: null })}>
+                limpar
+              </button>
+            </div>
+          )}
+          {quotesInnerTab === "leads" && crmEnabled ? (
+            <SupplierLeadsCRM
+              supplierId={supplier.id}
+              supplierUserId={user!.id}
+              companyName={supplier.company_name}
+              onOpenQuote={openThread}
+            />
+          ) : filteredQuotes.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">Nenhum pedido de orçamento {quotesFilter ? "para esse filtro" : "recebido ainda"}.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <SupplierQuotesKanban quotes={filteredQuotes} onOpen={openThread} onChange={loadQuotes} />
+          )}
+        </div>
+      );
+    }
+    if (dest === "avaliacoes") {
+      return <SupplierReviewCouples supplierId={supplier.id} />;
+    }
+    if (dest === "vagas" && vagasEnabled) {
+      return <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />;
+    }
+    if (dest === "negocio") {
+      const businessTabs: { key: BusinessSub; label: string }[] = [
+        { key: "perfil", label: "Meu Perfil" },
+        { key: "fotos", label: "Fotos" },
+        { key: "arquivos", label: "Arquivos" },
+        { key: "disponibilidade", label: "Disponibilidade" },
+        { key: "atendimento", label: "Atendimento" },
+        ...(reservasEnabled ? [{ key: "reservas" as BusinessSub, label: "Reservas" }] : []),
+      ];
+      return (
+        <div className="space-y-4">
+          <Tabs
+            value={businessSub}
+            onValueChange={(v) => {
+              setBusinessSub(v as BusinessSub);
+              const next = new URLSearchParams(searchParams);
+              next.set("tab", "negocio");
+              next.set("sub", v);
+              setSearchParams(next, { replace: true });
+            }}
+          >
+            <TabsList className="flex-wrap">
+              {businessTabs.map((t) => <TabsTrigger key={t.key} value={t.key}>{t.label}</TabsTrigger>)}
+            </TabsList>
+          </Tabs>
+
+          {businessSub === "perfil" && (
+            <>
+              <Card>
+                <CardHeader><CardTitle className="text-lg">Informações</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div><Label>Nome da empresa</Label><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></div>
+                  <div><Label>Descrição dos serviços</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
+                  <div><Label>Categoria</Label>
+                    <Select value={categoryId} onValueChange={setCategoryId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Cidade</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
+                    <div><Label>Estado</Label><Input value={state} onChange={(e) => setState(e.target.value)} /></div>
+                  </div>
+                  <div>
+                    <Label>WhatsApp (com DDD)</Label>
+                    <Input value={phone} onChange={(e) => setPhone(formatPhoneBR(e.target.value))} placeholder="(11) 91234-5678" inputMode="numeric" />
+                    {phone && !isValidPhoneBR(phone) && (<p className="text-xs text-destructive mt-1">Telefone inválido. Use DDD + número.</p>)}
+                  </div>
+                  <div><Label>E-mail de contato</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+                  <Button onClick={handleSave} disabled={loading} className="w-full">
+                    {loading ? "Salvando..." : "Salvar alterações"}
+                  </Button>
+                </CardContent>
+              </Card>
+              <Card className="mt-4">
+                <CardHeader><CardTitle className="text-lg">Detalhes da categoria</CardTitle></CardHeader>
+                <CardContent><DynamicFieldsForm supplierId={supplier.id} categoryId={categoryId || null} /></CardContent>
+              </Card>
+            </>
+          )}
+
+          {businessSub === "fotos" && (
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Portfólio ({photos.length}/10 fotos)</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                  {photos.map((photo) => (
+                    <div key={photo.id} className="relative group rounded-lg overflow-hidden aspect-square">
+                      <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
+                      <button onClick={() => deletePhoto(photo.id)} className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {photos.length < 10 && (
+                  <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent transition-colors">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{uploading ? "Enviando..." : "Adicionar foto"}</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+                  </label>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {businessSub === "arquivos" && (
+            <SupplierFilesTab supplierId={supplier.id} isEspaco={isEspaco} />
+          )}
+
+          {businessSub === "disponibilidade" && (
+            <div className="space-y-4">
+              <AvailabilityCalendar supplierId={supplier.id} />
+              <CalendarConnections supplierId={supplier.id} />
+              <PromoDatesManager supplierId={supplier.id} />
+            </div>
+          )}
+
+          {businessSub === "atendimento" && (
+            <SupplierAreaEditor supplierId={supplier.id} />
+          )}
+
+          {businessSub === "reservas" && reservasEnabled && (
+            <SupplierReservationsTab supplierId={supplier.id} categoriaSlug={cat?.slug ?? null} />
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border sticky top-0 z-40">
@@ -236,245 +474,85 @@ export default function SupplierDashboard() {
         </div>
       </header>
 
-      <main className="container px-4 py-8 max-w-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Painel do Fornecedor</h1>
-          {statusInfo && (
-            <Badge variant={statusInfo.variant} className="flex items-center gap-1">
-              <statusInfo.icon className="h-3 w-3" />
-              {statusInfo.label}
-            </Badge>
-          )}
-        </div>
+      <div className="flex">
+        <SupplierSidebar active={dest} onChange={(d) => goDest(d)} items={destinations} />
 
-        {supplier.status === "pending" && !bannerDismissed && (
-          <Card className="mb-6 border-primary/30 bg-primary/5">
-            <CardContent className="p-4 text-sm text-muted-foreground flex items-start gap-2">
-              <p className="flex-1"><strong>Seu perfil está em análise.</strong> Complete todas as informações e adicione fotos ao seu portfólio para agilizar a aprovação.</p>
-              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={dismissBanner} aria-label="Dispensar">
-                <X className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {supplier.status === "approved" && !bannerDismissed && (
-          <Card className="mb-6 border-green-500/40 bg-green-500/5">
-            <CardContent className="p-4 text-sm flex items-start gap-2">
-              <p className="flex-1"><strong className="text-green-700">Perfil aprovado!</strong> Você já está visível para os casais na vitrine.</p>
-              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={dismissBanner} aria-label="Dispensar">
-                <X className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {supplier.status === "rejected" && (
-          <Card className="mb-6 border-destructive/40 bg-destructive/5">
-            <CardContent className="p-4 text-sm space-y-2">
-              <p><strong className="text-destructive">Seu perfil precisa de ajustes.</strong></p>
-              {rejectMotivo && <p className="text-muted-foreground">Motivo: {rejectMotivo}</p>}
-              <p className="text-muted-foreground">Atualize as informações abaixo e reenvie para nova análise.</p>
-              <Button size="sm" onClick={async () => {
-                await supabase.from("suppliers").update({ status: "pending" }).eq("id", supplier.id);
-                await supabase.from("fornecedor_aprovacoes").insert({ supplier_id: supplier.id, acao: "resubmitted" });
-                toast({ title: "Reenviado para análise" });
-                loadSupplier();
-              }}>Reenviar para análise</Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {!supplier.onboarding_completed && (
-          <div className="mb-6">
-            <SupplierOnboardingWizard supplier={supplier} onComplete={loadSupplier} />
+        <main className="flex-1 min-w-0 px-4 py-8 pb-24 md:pb-8 max-w-4xl mx-auto w-full">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+            <h1 className="text-2xl font-bold">Painel do Fornecedor</h1>
+            {statusInfo && (
+              <Badge variant={statusInfo.variant} className="flex items-center gap-1">
+                <statusInfo.icon className="h-3 w-3" />
+                {statusInfo.label}
+              </Badge>
+            )}
           </div>
-        )}
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => {
-            setActiveTab(v);
-            const next = new URLSearchParams(searchParams);
-            next.set("tab", v);
-            next.delete("quote");
-            setSearchParams(next, { replace: true });
-          }}
-          className="space-y-6"
-        >
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="metrics" className="flex items-center gap-1.5">
-              <BarChart3 className="h-4 w-4" />
-              Painel
-            </TabsTrigger>
-            <TabsTrigger value="quotes" className="flex items-center gap-1.5">
-              <MessageSquare className="h-4 w-4" />
-              Orçamentos {quotes.length > 0 && <Badge variant="secondary" className="ml-1 text-xs h-5 px-1.5">{quotes.length}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="availability" className="flex items-center gap-1.5">
-              <CalendarDays className="h-4 w-4" />
-              Disponibilidade
-            </TabsTrigger>
-            <TabsTrigger value="area" className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" />
-              Atendimento
-            </TabsTrigger>
-            <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
-            <TabsTrigger value="photos">Fotos</TabsTrigger>
-            <TabsTrigger value="files" className="flex items-center gap-1.5">
-              <Upload className="h-4 w-4" />
-              Arquivos
-            </TabsTrigger>
-            <TabsTrigger value="reviews">Avaliações</TabsTrigger>
-            {vagasEnabled && <TabsTrigger value="vagas">Equipe e vagas</TabsTrigger>}
-            {reservasEnabled && (
-              <TabsTrigger value="reservas" className="flex items-center gap-1.5">
-                <CalendarDays className="h-4 w-4" />
-                Reservas
-              </TabsTrigger>
-            )}
-          </TabsList>
-
-          {/* METRICS TAB */}
-          <TabsContent value="metrics">
-            <SupplierMetrics supplierId={supplier.id} />
-          </TabsContent>
-
-          {/* QUOTES TAB */}
-          <TabsContent value="quotes">
-            {quotes.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">Nenhum pedido de orçamento recebido ainda.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <SupplierQuotesKanban quotes={quotes} onOpen={openThread} onChange={loadQuotes} />
-            )}
-          </TabsContent>
-
-          {/* AVAILABILITY TAB */}
-          <TabsContent value="availability" className="space-y-4">
-            <AvailabilityCalendar supplierId={supplier.id} />
-            <CalendarConnections supplierId={supplier.id} />
-            <PromoDatesManager supplierId={supplier.id} />
-          </TabsContent>
-
-          {/* AREA TAB */}
-          <TabsContent value="area">
-            <SupplierAreaEditor supplierId={supplier.id} />
-          </TabsContent>
-
-          {/* REVIEWS TAB */}
-          <TabsContent value="reviews">
-            <SupplierReviewCouples supplierId={supplier.id} />
-          </TabsContent>
-
-          {/* PROFILE TAB */}
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Informações</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div><Label>Nome da empresa</Label><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></div>
-                <div><Label>Descrição dos serviços</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
-                <div><Label>Categoria</Label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Cidade</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
-                  <div><Label>Estado</Label><Input value={state} onChange={(e) => setState(e.target.value)} /></div>
-                </div>
-                <div>
-                  <Label>WhatsApp (com DDD)</Label>
-                  <Input
-                    value={phone}
-                    onChange={(e) => setPhone(formatPhoneBR(e.target.value))}
-                    placeholder="(11) 91234-5678"
-                    inputMode="numeric"
-                  />
-                  {phone && !isValidPhoneBR(phone) && (
-                    <p className="text-xs text-destructive mt-1">Telefone inválido. Use DDD + número.</p>
-                  )}
-                </div>
-                <div><Label>E-mail de contato</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-                <Button onClick={handleSave} disabled={loading} className="w-full">
-                  {loading ? "Salvando..." : "Salvar alterações"}
+          {supplier.status === "pending" && !bannerDismissed && (
+            <Card className="mb-6 border-primary/30 bg-primary/5">
+              <CardContent className="p-4 text-sm text-muted-foreground flex items-start gap-2">
+                <p className="flex-1"><strong>Seu perfil está em análise.</strong> Complete todas as informações e adicione fotos ao seu portfólio para agilizar a aprovação.</p>
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={dismissBanner} aria-label="Dispensar">
+                  <X className="h-4 w-4" />
                 </Button>
               </CardContent>
             </Card>
+          )}
 
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle className="text-lg">Detalhes da categoria</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DynamicFieldsForm supplierId={supplier.id} categoryId={categoryId || null} />
+          {supplier.status === "approved" && !bannerDismissed && (
+            <Card className="mb-6 border-green-500/40 bg-green-500/5">
+              <CardContent className="p-4 text-sm flex items-start gap-2">
+                <p className="flex-1"><strong className="text-green-700">Perfil aprovado!</strong> Você já está visível para os casais na vitrine.</p>
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={dismissBanner} aria-label="Dispensar">
+                  <X className="h-4 w-4" />
+                </Button>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          {/* PHOTOS TAB */}
-          <TabsContent value="photos">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Portfólio ({photos.length}/10 fotos)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-                  {photos.map((photo) => (
-                    <div key={photo.id} className="relative group rounded-lg overflow-hidden aspect-square">
-                      <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => deletePhoto(photo.id)}
-                        className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {photos.length < 10 && (
-                  <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent transition-colors">
-                    <Upload className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      {uploading ? "Enviando..." : "Adicionar foto"}
-                    </span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
-                  </label>
-                )}
+          {supplier.status === "rejected" && (
+            <Card className="mb-6 border-destructive/40 bg-destructive/5">
+              <CardContent className="p-4 text-sm space-y-2">
+                <p><strong className="text-destructive">Seu perfil precisa de ajustes.</strong></p>
+                {rejectMotivo && <p className="text-muted-foreground">Motivo: {rejectMotivo}</p>}
+                <p className="text-muted-foreground">Atualize as informações abaixo e reenvie para nova análise.</p>
+                <Button size="sm" onClick={async () => {
+                  await supabase.from("suppliers").update({ status: "pending" }).eq("id", supplier.id);
+                  await supabase.from("fornecedor_aprovacoes").insert({ supplier_id: supplier.id, acao: "resubmitted" });
+                  toast({ title: "Reenviado para análise" });
+                  loadSupplier();
+                }}>Reenviar para análise</Button>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* FILES TAB */}
-          <TabsContent value="files">
-            {(() => {
-              const cat = categories.find(c => c.id === supplier.category_id);
-              const isEspaco = isEspacoCategory(cat?.slug ?? null, cat?.name ?? null);
-              return <SupplierFilesTab supplierId={supplier.id} isEspaco={isEspaco} />;
-            })()}
-          </TabsContent>
-
-          {vagasEnabled && (
-            <TabsContent value="vagas">
-              <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />
-            </TabsContent>
           )}
-          {reservasEnabled && (
-            <TabsContent value="reservas">
-              {(() => {
-                const cat = categories.find(c => c.id === supplier.category_id);
-                return <SupplierReservationsTab supplierId={supplier.id} categoriaSlug={cat?.slug ?? null} />;
-              })()}
-            </TabsContent>
+
+          {!supplier.onboarding_completed && (
+            <div className="mb-6">
+              <SupplierOnboardingWizard supplier={supplier} onComplete={loadSupplier} />
+            </div>
           )}
-        </Tabs>
+
+          {renderContent()}
+
+          {/* Atalho mobile para Avaliações no destino Painel */}
+          {isMobile && dest === "painel" && (
+            <button
+              onClick={() => goDest("avaliacoes")}
+              className="mt-6 w-full text-left text-sm underline text-muted-foreground"
+            >
+              Ver avaliações →
+            </button>
+          )}
+        </main>
+      </div>
+
+      <SupplierMobileTabBar
+        active={dest}
+        onChange={(d) => goDest(d)}
+        quotesCount={quotes.length}
+        overdueLeads={0}
+        vagasEnabled={vagasEnabled}
+      />
 
         {/* Conversa de orçamento */}
         {(() => {
@@ -516,7 +594,6 @@ export default function SupplierDashboard() {
             </Dialog>
           );
         })()}
-      </main>
     </div>
   );
 }
