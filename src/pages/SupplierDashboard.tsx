@@ -32,6 +32,7 @@ import SupplierFilesTab from "@/components/supplier/SupplierFilesTab";
 import { isEspacoCategory } from "@/lib/categories";
 import SupplierStaffTab from "@/components/staff/SupplierStaffTab";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
+import SupplierReservationsTab from "@/components/reservas/SupplierReservationsTab";
 
 type Category = { id: string; name: string; slug?: string | null };
 
@@ -52,6 +53,7 @@ export default function SupplierDashboard() {
   const [activeTab, setActiveTab] = useState<string>("metrics");
   const [bannerDismissed, setBannerDismissed] = useState<string | null>(null);
   const vagasEnabled = useFeatureFlag("vagas", false);
+  const reservasEnabled = useFeatureFlag("reserva_datas_ociosas", false);
 
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
@@ -325,6 +327,12 @@ export default function SupplierDashboard() {
             </TabsTrigger>
             <TabsTrigger value="reviews">Avaliações</TabsTrigger>
             {vagasEnabled && <TabsTrigger value="vagas">Equipe e vagas</TabsTrigger>}
+            {reservasEnabled && (
+              <TabsTrigger value="reservas" className="flex items-center gap-1.5">
+                <CalendarDays className="h-4 w-4" />
+                Reservas
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* METRICS TAB */}
@@ -456,6 +464,14 @@ export default function SupplierDashboard() {
           {vagasEnabled && (
             <TabsContent value="vagas">
               <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />
+            </TabsContent>
+          )}
+          {reservasEnabled && (
+            <TabsContent value="reservas">
+              {(() => {
+                const cat = categories.find(c => c.id === supplier.category_id);
+                return <SupplierReservationsTab supplierId={supplier.id} categoriaSlug={cat?.slug ?? null} />;
+              })()}
             </TabsContent>
           )}
         </Tabs>
