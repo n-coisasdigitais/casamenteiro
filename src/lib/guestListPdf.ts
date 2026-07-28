@@ -16,6 +16,8 @@ import jsPDF from "jspdf";
 // ---------------------------------------------------------------------------
 export type RsvpStatus = "confirmed" | "pending" | "declined";
 
+export type TipoEvento = "casamento" | "15anos" | "formatura" | "aniversario" | "corporativo";
+
 export type PdfGuest = {
   name: string;
   rsvp_status: RsvpStatus | string | null;
@@ -32,9 +34,9 @@ export type PdfGroup = { id: string; name: string };
 
 export type GerarPdfDados = {
   nomeCasal: string;
-  dataEvento: string | null;
-  ultimaAtualizacao: string | null;
-  fotoCapaUrl: string | null;
+  dataEvento?: string | null;
+  ultimaAtualizacao?: string | null;
+  fotoCapaUrl?: string | null;
   localCerimonia?: string | null;
   localRecepcao?: string | null;
   horario?: string | null;
@@ -48,7 +50,7 @@ export type GerarPdfInput = {
   dados: GerarPdfDados;
   relatorios: { alfabetico: boolean; porMesa: boolean };
   agruparAlfabeticoPor?: "letra" | "grupo";
-  tipoEvento?: "casamento" | "15anos" | "formatura" | "aniversario" | "corporativo";
+  tipoEvento?: TipoEvento;
   returnBlob?: boolean;
 };
 
