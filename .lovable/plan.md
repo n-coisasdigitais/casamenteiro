@@ -1,130 +1,90 @@
-# Plano de ajustes — execução em 6 fases
+## Escopo e abordagem
 
-Escopo: 20+ ajustes agrupados. Cada fase é auto-contida e pode ser aprovada/pausada individualmente. Tudo em pt-BR.
+Lista enorme e multi-domínio. Vou entregar em **8 fases independentes**, cada uma testável isoladamente, para você aprovar/pausar entre elas. Cada fase abaixo lista o que entra e a ordem de execução.
 
-## Fase 0 — Infra de e-mail (pré-requisito)
+---
 
-Configura o domínio de envio e a fila transacional que várias fases usam (reservas, CRM "Lembrar", convites de vaga).
+### Fase 1 — Correção crítica do cadastro profissional
+- Rodar `SELECT DISTINCT account_type FROM profiles` antes da migration para não perder valores em uso.
+- Migration: recriar `profiles_account_type_check` incluindo `couple`, `supplier`, `profissional`, `admin` + o que aparecer no distinct.
+- Auditar `prevent_role_conflict`, `admin_broadcast_notification`, `admin_broadcast_segmented`, `handle_new_user` e RLS para garantir que `profissional` não seja bloqueado.
+- Teste ponta a ponta: signup → confirmação → onboarding → painel.
 
-- Abrir diálogo de setup do domínio de e-mail (você precisará informar um domínio próprio; DNS pode propagar em paralelo).
-- Rodar `setup_email_infra` (cria filas pgmq, log, supressão, cron).
-- Scaffold de auth templates e transacional (`send-transactional-email` + templates React Email com identidade Casamenteiro).
-- Deploy das edge functions de e-mail.
+### Fase 2 — Profissional como conta de 1ª classe
+- Novo tipo de conta próprio (não reaproveita layout de casal): header/menu dedicado, sem abas de Casamento/Convidados/Orçamento.
+- Perfil público em `/profissional/:categoria/:slug` (SEO + JSON-LD `Person`), separado do `/vagas/:slug` atual.
+- Verificação de documentos: upload de RG/CNH + selfie, coluna `documento_status` (`pendente|aprovado|reprovado`), publicação bloqueada até aprovação, aba admin em `/admin/vagas` para revisar.
+- E-mail de novas vagas compatíveis (função + cidade + raio) via `send-transactional-email` + cron horário.
+- Ativar flag `vagas` e liberar navegação pública ("Sou prestador").
 
-Entregável: qualquer código posterior pode chamar `send-transactional-email` com `templateName` + `templateData`.
+### Fase 3 — Segurança, auditoria e mensagens de erro
+- Estender `admin_audit_log` para cobrir: exclusões, envio de convites, reservas (create/accept/expire), aceites de vaga, mudanças de plano, login de admin. Trigger genérico + inserts nas edge functions.
+- Nova página `/admin/auditoria` estilo Notion: filtros por ação, tabela, usuário, data; export CSV.
+- Bloquear signup com e-mail já existente antes da chamada Supabase (checar via RPC `email_disponivel`) + mensagem clara.
+- Investigar por que confirmação de e-mail não chega (checar template + hook + logs `email_send_log`).
+- Varredura em `src/lib/authErrors.ts` + toasts do app para traduzir todos os erros Supabase remanescentes.
+- Rodar `security--run_security_scan` no fim e corrigir findings.
 
-## Fase 1 — Módulo Profissional (Vagas)
+### Fase 4 — Perfil público do casal + indicações
+- Corrigir roteamento de `/casais/:slug` quando logado (bug de redirect para Home — provável guard em `AuthContext`/`App.tsx`).
+- Corrigir `/i/:codigo` (`CapturarIndicacao`) para levar a `/cadastro?ref=…` com banner "Fulano te indicou".
+- Slider de fotos no perfil do casal (embla-carousel já disponível).
+- Botão "Enviar mensagem" funcional → cria thread em `couple_messages` + notifica in-app + e-mail.
+- Avaliações do casal sobre a plataforma (`platform_reviews` nova tabela) exibidas em Home/perfil com toggle no admin.
+- Copy mais afetiva na página de indicações.
+- Desconto de indicação (50% 1º mês configurável em `platform_prices` como `desconto_indicacao_pct` / `_valor`), aplicado no checkout de assinatura.
 
-### 1.1 Painel `/profissional/painel`
-Nova página com abas:
-- **Meu perfil**: editar `staff_profiles` (nome, funções, cidade, foto, valor/hora, bio).
-- **Vagas disponíveis**: listar `staff_jobs` públicas abertas compatíveis (função + cidade + data livre).
-- **Meus convites**: `staff_applications` onde ele é convidado — aceitar/recusar com prazo.
-- **Meus trabalhos**: aceitos e concluídos, com botão de avaliar fornecedor quando concluído.
-- **Agenda**: gestão de indisponibilidades (ver 1.4).
+### Fase 5 — Melhorias do fluxo do Casal
+- Notificação de novas mensagens: push (se logado), badge no sino, e-mail transacional (padrão OLX).
+- Após 1ª mensagem do casal, disparar e-mail ao fornecedor com CTA "ver dados do cliente".
+- Tag "no seu plano/orçamento" no card e no perfil do fornecedor quando `couple_suppliers` já existe.
+- Convite: abrir/editar/cancelar direto na lista.
+- `wedding_guests.pessoas` (jsonb) já existe — mudar `AddGuestDialog` e listagem para permitir tipo por pessoa (adulto/criança) quando família, em vez de tipo único no convite.
 
-### 1.2 Notificações de convite
-Trigger DB em `staff_applications`:
-- ao criar convite → notificação in-app + `send-transactional-email` "novo convite".
-- ao aceitar/recusar → notifica o fornecedor (in-app + e-mail).
-- cron diário: convites com `expira_em < now + 24h` e sem resposta → e-mail "seu convite expira em breve".
+### Fase 6 — Melhorias do fluxo do Fornecedor
+- Remover do painel do fornecedor as rotas de casal (Casamento, Convidados, Tarefas etc.) — guard por `account_type`.
+- Gerenciar vagas: publicar, despublicar, editar (`SupplierStaffTab`).
+- Relatório PDF de tarefas do casal (concluídas × pendentes × prazo) substituindo `window.print`.
+- Refatorar "Adicionar fornecedor fora da plataforma": manter no mesmo Kanban com tag `externo`, permitir marcar como pago sem regredir de status. Revisar transições do Kanban de negociação (fornecedor↔casal).
+- Métricas por fornecedor (visitas, leads, conversão, tempo de resposta).
+- Avaliações: incluir avaliações de prestadores no painel do fornecedor, exibidas separadas + agregado, sempre com comentário.
 
-### 1.3 Avaliação mútua pós-conclusão
-- Só habilitar quando `staff_applications.status = 'concluido'`.
-- Fornecedor avalia profissional (já existe `staff_reviews`), profissional avalia fornecedor (mesma tabela com `autor_tipo='profissional'`).
-- Card no dashboard dos dois lados mostrando "avaliações pendentes".
+### Fase 7 — Home, menu e ajustes gerais
+- Home: adicionar todos os novos serviços (vagas, prestadores, importação iCasei/Casar, corretagem), planos com valores da tabela `platform_prices`, seções "Sou fornecedor / prestador / casal", CTA público "Explorar vagas" (candidatura exige login).
+- Menu principal reorganizado com esses eixos.
+- Corrigir barra de demo sobrepondo menus/botão fechar (z-index + safe-area).
+- Guided tour por tipo de conta (react-joyride) com passos diferentes para casal, fornecedor, prestador, admin.
+- Corrigir sobreposição de destaques no relatório de convidados PDF.
+- Admin: filtros/status/datas em `/admin/reservas`, `/admin/corretagem`, `/admin/indicacoes`, `/admin/usuarios` (estilo Notion — filtros persistidos na URL). Reenviar senha por e-mail em `/admin/usuarios`. Traduzir rótulos de tipo de usuário. Métricas + filtros em `/admin/simulacoes`.
+- Cupons e presentes de assinatura: tabela `subscription_coupons` (percentual/valor/meses grátis) + aplicação no checkout.
 
-### 1.4 Indisponibilidades
-- Aba "Agenda" no painel do profissional usando `staff_unavailability`.
-- Calendário mensal com bloqueio por clique + motivo opcional.
-- Ao aceitar vaga, trigger já bloqueia (existe). Adicionar validação inversa: convite para data bloqueada aparece como "indisponível" na busca.
+### Fase 8 — Mercado Pago real (destrava a corretagem e libera assinaturas)
+- Secrets `MP_ACCESS_TOKEN` e `MP_WEBHOOK_SECRET` via `add_secret`.
+- **Assinaturas** (flag `assinaturas`, off por padrão):
+  - Migration `subscription_plans` (seed grátis/profissional/destaque com `mp_plan_id` vazio) + `supplier_subscriptions`.
+  - Edge function `mp-subscription-create` → cria preapproval, devolve `init_point`.
+  - Edge function `mp-subscription-webhook` → processa eventos preapproval/payment, atualiza status, reflete `suppliers.featured` para destaque.
+  - Trial de 30 dias no cadastro.
+  - Frontend: `/fornecedor/planos` (3 cards, meio destacado) + card "Plano atual" no painel.
+- **Corretagem real** (flag `corretagem_datas_ociosas`):
+  - Substituir stub em `mp-checkout-split` por `POST /checkout/preferences` com `marketplace_fee = comissao_plataforma` e `collector_id = suppliers.mp_account_id`.
+  - Substituir stub em `mp-webhook` por validação de assinatura + `GET /v1/payments/:id`; ao `approved` confirma reserva, bloqueia data, insere em `commission_ledger`.
+- **Contrato de corretagem**: nova página no painel do fornecedor e do casal para visualizar/baixar o rascunho + notificação in-app + e-mail quando gerado.
+- **`/admin/corretagem`**: export CSV/PDF dos lançamentos + timeline de auditoria (`commission_ledger_events` novo).
 
-### 1.5 Busca avançada de profissionais (para o fornecedor)
-Na aba "Equipe e vagas" → "Buscar profissionais":
-- Filtros: múltiplas funções (chips), cidade + raio, faixa de valor/hora, rating mínimo.
-- Ordenação: relevância, mais próximos, melhor avaliados, menor valor.
-- Paginação (20/página) com `range()`.
-
-### 1.6 Erros amigáveis + auditoria de publicação
-- `PublishJobDialog`: catch de erro Postgres → mapear códigos comuns ("column X does not exist" → "Campo X não existe, contate o suporte").
-- Adicionar `criado_por_user_id` e `published_at` em `staff_jobs` (agora sim), logar em `admin_audit_log` no insert via trigger.
-
-### 1.7 Admin de vagas
-Nova página `/admin/vagas`:
-- Lista todas as vagas com status (rascunho/publicada/preenchida/expirada).
-- Filtros por fornecedor, cidade, data.
-- Ações: bloquear vaga, forçar expiração, ver candidaturas.
-- Sob flag existente + `has_role admin`.
-
-## Fase 2 — Reservas de datas ociosas
-
-### 2.1 E-mails transacionais
-Templates: `reserva-solicitada` (fornecedor), `reserva-confirmada` (casal+fornecedor), `reserva-recusada` (casal), `reserva-expirada` (ambos). Dispara nos triggers/UPDATE de `idle_date_reservations`.
-
-### 2.2 Cron de expiração
-Edge function `reservas-cron` agendada via pg_cron (a cada hora):
-- `UPDATE idle_date_reservations SET status='expirada' WHERE status IN ('solicitada','pre_reservada') AND expira_em < now()`.
-- Libera `supplier_promo_dates` (marcar `disponivel=true`).
-- Envia e-mails de expiração.
-
-### 2.3 Auditoria /admin/reservas
-Estender `AdminReservations.tsx` com:
-- Drawer por reserva mostrando timeline de eventos (nova tabela `reservation_events`: reservation_id, tipo, ator, payload, created_at) preenchida por trigger em cada mudança de status/taxa.
-
-## Fase 3 — CRM Fornecedor & Orçamentos
-
-### 3.1 E-mail no "Lembrar"
-Botão "Lembrar" em `SupplierLeadsCRM` passa a chamar `send-transactional-email` template `lembrete-orcamento` além da notificação in-app.
-
-### 3.2 Histórico por lead
-Nova tabela `lead_events` (quote_id, supplier_id, tipo: 'lembrete'|'nota'|'retomar_em', payload, created_at). Timeline exibida no `LeadNoteDialog` (aba "Histórico").
-
-### 3.3 Paginação + busca rápida no CRM
-- Debounced search já existe; adicionar paginação client-side (20/página) e ordenação persistida.
-- Manter filtros por status/categoria/urgência.
-
-### 3.4 Aba "Contratados" / "Em andamento" no casal
-Em `MySuppliers.tsx` / `PlanKanban`: adicionar sub-abas
-- **Em andamento** (`kanban_status IN ('em_orcamento','negociando')`)
-- **Contratados** (`status='contracted'`)
-- **Descartados**
-
-### 3.5 Badge de Orçamentos desktop/mobile
-Auditar `SupplierSidebar` e `SupplierMobileTabBar`: recalcular contagem via mesma fonte (leads com `statusFlow='aguardando'`) em ambos os layouts.
-
-## Fase 4 — Casal (Convidados, PDF, Orçamento)
-
-### 4.1 Convidado casal/família com total de pessoas
-`AddGuestDialog`:
-- Novo campo `tipo_convite`: individual | casal | família.
-- Se casal/família: campo dinâmico com nome de cada pessoa (array).
-- Coluna `total_pessoas` em `wedding_guests` (calculada); usar no PDF e nas contagens.
-
-### 4.2 Pré-visualização e histórico de PDF
-- `GuestListPdfDialog`: adicionar preview (iframe do blob PDF antes do download) e toggle alfabético / por mesa / ambos.
-- Nova tabela `guest_list_pdf_log` (couple_id, user_id, tipo, created_at) e tela "Histórico" acessível pelo mesmo diálogo.
-
-### 4.3 Divergência de orçamento no plano ativo
-Investigar `WeddingBudget` vs `MeuPlano`:
-- Rastrear: uma soma usa `budget_items.estimated_cost`, outra usa `simulated_budgets.resultado`. Padronizar em uma função `getPlanBudget(coupleId)` em `src/lib/budgetSource.ts` e consumir nos dois lugares.
-- Marca de "fonte: plano" vs "fonte: manual" visível ao usuário.
-
-## Fase 5 — Admin
-
-### 5.1 Login-como (impersonation real)
-- Edge function `admin-impersonate` (verify_jwt=true, checa `has_role admin`) que emite session via `supabase.auth.admin.generateLink` ou `signInWithOtp` para o `target_user_id`.
-- Front: em `/admin/usuarios`, botão "Entrar como" → chama function → grava sessão no cliente → redireciona para painel do papel do alvo.
-- Banner fixo "Você está vendo como X — sair" (limpa sessão e restaura via token do admin guardado em `sessionStorage`).
-- Log em `admin_audit_log` (action='impersonate', target_user_id, iniciado_em, encerrado_em).
+---
 
 ## Detalhes técnicos
 
-- **Migrations**: `staff_jobs` (add `criado_por_user_id`, `published_at`), `reservation_events`, `lead_events`, `guest_list_pdf_log`, `wedding_guests.total_pessoas` + `tipo_convite` + `pessoas jsonb`. GRANTs + RLS em cada uma.
-- **Edge functions novas**: `reservas-cron`, `admin-impersonate`, `staff-invite-expiry-cron`. Templates React Email em `_shared/transactional-email-templates/`.
-- **Feature flags**: reaproveitar `vagas`, `crm_fornecedor`, `reserva_datas_ociosas`; nova `admin_impersonation` (essencial=false, enabled=true).
-- **Ordem sugerida de aprovação**: Fase 0 → 1 → 2 → 3 → 4 → 5. Pode reordenar 2/3/4 sem impacto.
+- **Ordem de execução recomendada:** 1 → 3 → 2 → 4 → 5 → 6 → 7 → 8. Fase 1 é bloqueante para 2. Fase 3 vale a pena vir cedo para termos auditoria enquanto o resto muda. Fase 8 depende de você entregar `MP_ACCESS_TOKEN` e liberação jurídica.
+- **Flags novas:** `assinaturas`, mantém `vagas` e `corretagem_datas_ociosas`.
+- **Tabelas novas:** `platform_reviews`, `subscription_plans`, `supplier_subscriptions`, `subscription_coupons`, `commission_ledger_events`, colunas `documento_url`/`documento_status`/`documento_selfie_url` em `staff_profiles`.
+- **Edge functions novas:** `mp-subscription-create`, `mp-subscription-webhook`, `staff-job-match-cron` (e-mail de vaga compatível), `email-disponivel`.
+- **RLS/Grants:** cada tabela nova segue o padrão do projeto (grants explícitos + policies + `has_role`).
+- **Não incluído no plano:** WhatsApp (fora de escopo até você confirmar API/gateway); reformulação completa da Home (só entra "adicionar novos serviços e planos"), a reformulação total fica para uma fase própria quando você definir o novo layout.
 
-## Fora do escopo (confirmar depois)
+## Perguntas antes de começar
 
-- Envio via WhatsApp (você citou "e-mail e/ou WhatsApp") — mantido só e-mail nesta rodada; WhatsApp exige connector (ex.: GatewayAPI/Twilio) que podemos adicionar como fase extra.
-- Split de pagamento Mercado Pago para reservas (segue stub como já combinado).
+1. Confirma a ordem 1→3→2→4→5→6→7→8, ou prefere outra?
+2. Alguma fase que quer partir em cards separados ou pular agora?
+3. Para Fase 8, você já consegue providenciar `MP_ACCESS_TOKEN` (sandbox serve) para eu ir plugando, ou entrego só o código pronto atrás da flag?
