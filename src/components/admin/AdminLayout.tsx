@@ -73,6 +73,7 @@ const groups = [
     items: [
       { title: "Configurações", url: "/admin/configuracoes", icon: Settings },
       { title: "Auditoria", url: "/admin/auditoria", icon: ScrollText },
+      { title: "Envios de e-mail", url: "/admin/emails", icon: Mail },
     ],
   },
 ];
