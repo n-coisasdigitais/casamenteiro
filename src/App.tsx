@@ -44,6 +44,7 @@ import AdminBroadcastTriggers from "./pages/AdminBroadcastTriggers";
 import AdminUsers from "./pages/AdminUsers";
 import AdminReviews from "./pages/AdminReviews";
 import AdminAuditLog from "./pages/AdminAuditLog";
+import AdminEmailLogs from "./pages/AdminEmailLogs";
 import AdminDefaultTasks from "./pages/AdminDefaultTasks";
 import AdminSettings from "./pages/AdminSettings";
 import AdminFinance from "./pages/AdminFinance";
@@ -153,6 +154,7 @@ const App = () => (
             <Route path="/admin/usuarios" element={<AdminLayout><AdminUsers /></AdminLayout>} />
             <Route path="/admin/avaliacoes" element={<AdminLayout><AdminReviews /></AdminLayout>} />
             <Route path="/admin/auditoria" element={<AdminLayout><AdminAuditLog /></AdminLayout>} />
+            <Route path="/admin/emails" element={<AdminLayout><AdminEmailLogs /></AdminLayout>} />
             <Route path="/admin/tarefas-padrao" element={<AdminLayout><AdminDefaultTasks /></AdminLayout>} />
             <Route path="/admin/configuracoes" element={<AdminLayout><AdminSettings /></AdminLayout>} />
             <Route path="/admin/financeiro" element={<AdminLayout><AdminFinance /></AdminLayout>} />
