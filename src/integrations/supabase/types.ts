@@ -248,6 +248,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "budget_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       budget_payments: {
@@ -497,6 +504,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cidades_pendentes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       commission_ledger: {
@@ -562,6 +576,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -649,6 +670,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "couple_favorites_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1013,6 +1041,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "couple_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       couple_videos: {
@@ -1374,6 +1409,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fornecedor_aprovacoes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fornecedor_campos: {
@@ -1414,6 +1456,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fornecedor_campos_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1759,6 +1808,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "idle_date_reservations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "idle_reservations_contrato_fk"
             columns: ["contrato_id"]
             isOneToOne: false
@@ -1807,6 +1863,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "idle_match_notifications_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lead_events: {
@@ -1850,6 +1913,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_events_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1901,6 +1971,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_notes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2178,6 +2255,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "quotes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       referral_conversions: {
@@ -2324,6 +2408,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reservation_contracts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reservation_events: {
@@ -2436,6 +2527,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2633,6 +2731,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_jobs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2845,6 +2950,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "supplier_attachments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supplier_blocked_dates: {
@@ -2881,6 +2993,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_blocked_dates_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2960,6 +3079,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "supplier_details_beleza_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supplier_details_buffet: {
@@ -2990,6 +3116,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: true
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_details_buffet_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3024,6 +3157,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "supplier_details_cerimonialista_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supplier_details_convites: {
@@ -3054,6 +3194,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: true
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_details_convites_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3088,6 +3235,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "supplier_details_decoracao_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supplier_details_fotografo: {
@@ -3118,6 +3272,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: true
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_details_fotografo_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3152,6 +3313,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "supplier_details_local_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supplier_details_musica: {
@@ -3184,6 +3352,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "supplier_details_musica_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supplier_details_trajes: {
@@ -3214,6 +3389,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: true
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_details_trajes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3284,6 +3466,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "supplier_leads_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supplier_photos: {
@@ -3316,6 +3505,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "supplier_photos_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supplier_profile_views: {
@@ -3343,6 +3539,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_profile_views_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3734,11 +3937,88 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wedding_tasks_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      suppliers_public: {
+        Row: {
+          category_id: string | null
+          city: string | null
+          company_name: string | null
+          created_at: string | null
+          description: string | null
+          featured: boolean | null
+          id: string | null
+          instagram: string | null
+          is_demo: boolean | null
+          price_max: number | null
+          price_min: number | null
+          profile_photo_url: string | null
+          rating: number | null
+          review_count: number | null
+          state: string | null
+          status: Database["public"]["Enums"]["supplier_status"] | null
+          user_id: string | null
+          website: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string | null
+          instagram?: string | null
+          is_demo?: boolean | null
+          price_max?: number | null
+          price_min?: number | null
+          profile_photo_url?: string | null
+          rating?: number | null
+          review_count?: number | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["supplier_status"] | null
+          user_id?: string | null
+          website?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string | null
+          instagram?: string | null
+          is_demo?: boolean | null
+          price_max?: number | null
+          price_min?: number | null
+          profile_photo_url?: string | null
+          rating?: number | null
+          review_count?: number | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["supplier_status"] | null
+          user_id?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _meses_ate: { Args: { _wedding_date: string }; Returns: number }
@@ -3858,6 +4138,13 @@ export type Database = {
         Returns: {
           email: string
           telefone: string
+        }[]
+      }
+      get_supplier_contact: {
+        Args: { _supplier_id: string }
+        Returns: {
+          phone: string
+          whatsapp: string
         }[]
       }
       has_role: {
