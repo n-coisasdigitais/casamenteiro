@@ -13,7 +13,9 @@ import UserMenu from "@/components/UserMenu";
 import ReviewSupplierDialog from "@/components/staff/ReviewSupplierDialog";
 import { Input } from "@/components/ui/input";
 import { appStatusLabel, buildJobWhatsAppLink, fetchStaffContact } from "@/lib/staff";
-import { Heart, Calendar, Star } from "lucide-react";
+import { Heart, Calendar, Star, ShieldCheck } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import StaffDocumentsTab, { verificacaoLabel } from "@/components/staff/StaffDocumentsTab";
 
 export default function StaffDashboard() {
   const { user, profile } = useAuth();
@@ -129,6 +131,14 @@ export default function StaffDashboard() {
     load();
   };
 
+  const toggleDisponivel = async (v: boolean) => {
+    setStaff((s: any) => ({ ...s, disponivel: v }));
+    const { error } = await (supabase.from("staff_profiles" as any) as any)
+      .update({ disponivel: v }).eq("id", staff.id);
+    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    toast({ title: v ? "Você está disponível para vagas" : "Você não receberá novas vagas" });
+  };
+
   if (!staff) return null;
 
   const concluidosParaAvaliar = applications.filter(
@@ -156,8 +166,20 @@ export default function StaffDashboard() {
               {staff.cidade} • {staff.funcoes?.length || 0} funções •{" "}
               {staff.rating ? `${staff.rating}★ (${staff.review_count})` : "sem avaliações"}
             </p>
+            <div className="mt-1">
+              <Badge
+                variant={staff.verificacao_status === "verificado" ? "default" : staff.verificacao_status === "rejeitado" ? "destructive" : "secondary"}
+                className="gap-1"
+              >
+                <ShieldCheck className="h-3 w-3" /> {verificacaoLabel(staff.verificacao_status)}
+              </Badge>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <label className="flex items-center gap-2 text-sm mr-2">
+              <Switch checked={staff.disponivel !== false} onCheckedChange={toggleDisponivel} />
+              Disponível para vagas
+            </label>
             <Link to="/profissional/onboarding"><Button variant="outline">Editar perfil</Button></Link>
             {staff.slug && (
               <Link to={`/profissional/${staff.slug}`}><Button variant="outline">Ver perfil público</Button></Link>
@@ -189,6 +211,7 @@ export default function StaffDashboard() {
             <TabsTrigger value="feed">Vagas disponíveis</TabsTrigger>
             <TabsTrigger value="agenda">Minha agenda</TabsTrigger>
             <TabsTrigger value="avaliacoes">Avaliações</TabsTrigger>
+            <TabsTrigger value="documentos">Documentos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="convites" className="space-y-3">
@@ -294,6 +317,9 @@ export default function StaffDashboard() {
                 </CardContent>
               </Card>
             ))}
+          </TabsContent>
+          <TabsContent value="documentos">
+            <StaffDocumentsTab staff={staff} onChanged={load} />
           </TabsContent>
         </Tabs>
       </div>

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin } from "lucide-react";
+import { Star, MapPin, ShieldCheck } from "lucide-react";
 import SEO from "@/components/SEO";
 
 export default function StaffPublicProfile() {
@@ -15,7 +15,7 @@ export default function StaffPublicProfile() {
     if (!slug) return;
     (async () => {
       const { data } = await (supabase.from("staff_profiles" as any) as any)
-        .select("id, nome, foto_url, funcoes, cidade, estado, bio, rating, review_count, eventos_concluidos, is_public")
+        .select("id, nome, foto_url, funcoes, cidade, estado, bio, rating, review_count, eventos_concluidos, is_public, verificacao_status")
         .eq("slug", slug).eq("is_public", true).maybeSingle();
       setStaff(data);
       if (data?.id) {
@@ -43,7 +43,12 @@ export default function StaffPublicProfile() {
           <CardContent className="p-6 flex gap-4 items-start flex-wrap">
             {staff.foto_url && <img src={staff.foto_url} alt={staff.nome} className="h-24 w-24 rounded-full object-cover" />}
             <div className="flex-1">
-              <h1 className="text-2xl font-bold">{staff.nome}</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-bold">{staff.nome}</h1>
+                {staff.verificacao_status === "verificado" && (
+                  <Badge className="gap-1"><ShieldCheck className="h-3 w-3" /> Verificado</Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" /> {staff.cidade}{staff.estado ? ` - ${staff.estado}` : ""}
               </div>
