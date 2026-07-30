@@ -2664,6 +2664,50 @@ export type Database = {
           },
         ]
       }
+      staff_documents: {
+        Row: {
+          created_at: string
+          file_name: string | null
+          file_path: string
+          id: string
+          observacao: string | null
+          staff_id: string
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string | null
+          file_path: string
+          id?: string
+          observacao?: string | null
+          staff_id: string
+          status?: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string | null
+          file_path?: string
+          id?: string
+          observacao?: string | null
+          staff_id?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_documents_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_jobs: {
         Row: {
           cidade: string | null
@@ -2749,6 +2793,7 @@ export type Database = {
           consentimento_lgpd: boolean
           created_at: string
           criado_por: string | null
+          disponivel: boolean
           email: string | null
           estado: string | null
           eventos_aceitos: number
@@ -2766,6 +2811,9 @@ export type Database = {
           updated_at: string
           user_id: string | null
           valor_min_turno: number | null
+          verificacao_obs: string | null
+          verificacao_status: string
+          verificado_em: string | null
         }
         Insert: {
           bio?: string | null
@@ -2773,6 +2821,7 @@ export type Database = {
           consentimento_lgpd?: boolean
           created_at?: string
           criado_por?: string | null
+          disponivel?: boolean
           email?: string | null
           estado?: string | null
           eventos_aceitos?: number
@@ -2790,6 +2839,9 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           valor_min_turno?: number | null
+          verificacao_obs?: string | null
+          verificacao_status?: string
+          verificado_em?: string | null
         }
         Update: {
           bio?: string | null
@@ -2797,6 +2849,7 @@ export type Database = {
           consentimento_lgpd?: boolean
           created_at?: string
           criado_por?: string | null
+          disponivel?: boolean
           email?: string | null
           estado?: string | null
           eventos_aceitos?: number
@@ -2814,6 +2867,9 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           valor_min_turno?: number | null
+          verificacao_obs?: string | null
+          verificacao_status?: string
+          verificado_em?: string | null
         }
         Relationships: []
       }
