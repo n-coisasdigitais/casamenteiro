@@ -319,8 +319,10 @@ export default function StaffDashboard() {
             ))}
           </TabsContent>
         </Tabs>
-
-        <div className="hidden" />
+          <TabsContent value="documentos">
+            <StaffDocumentsTab staff={staff} onChanged={load} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {reviewApp && (
