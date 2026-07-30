@@ -318,7 +318,6 @@ export default function StaffDashboard() {
               </Card>
             ))}
           </TabsContent>
-        </Tabs>
           <TabsContent value="documentos">
             <StaffDocumentsTab staff={staff} onChanged={load} />
           </TabsContent>
