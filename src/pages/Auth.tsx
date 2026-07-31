@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { traduzirErroAuth } from "@/lib/authErrors";
+import { getStoredReferral } from "@/lib/referral";
 import SEO from "@/components/SEO";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 
@@ -41,6 +42,8 @@ export default function Auth() {
   const navigate = useNavigate();
   const { session, profile } = useAuth();
   const processingRedirect = useRef(false);
+  const refCodigo = searchParams.get("ref") || getStoredReferral()?.codigo || null;
+  const refNome = getStoredReferral()?.nome || null;
 
   useEffect(() => {
     if (!session || !profile || processingRedirect.current) return;
@@ -217,6 +220,16 @@ export default function Auth() {
               ? "Entre com seu e-mail e senha"
               : "Preencha os dados para se cadastrar"}
           </CardDescription>
+          {mode === "signup" && refCodigo && (
+            <div className="mt-4 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-left">
+              <span className="font-medium">
+                {refNome ? `${refNome} te indicou o Casamenteiro 💛` : "Você chegou por uma indicação 💛"}
+              </span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Crie sua conta para aproveitar os benefícios da indicação.
+              </p>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

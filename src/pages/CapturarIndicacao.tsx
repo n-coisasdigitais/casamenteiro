@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { captureReferralCode, incrementReferralClick } from "@/lib/referral";
+import { buscarNomeIndicador, captureReferralCode, incrementReferralClick } from "@/lib/referral";
 
 export default function CapturarIndicacao() {
   const { codigo } = useParams<{ codigo: string }>();
@@ -9,10 +9,11 @@ export default function CapturarIndicacao() {
   useEffect(() => {
     (async () => {
       if (codigo) {
-        captureReferralCode(codigo);
+        const nome = await buscarNomeIndicador(codigo).catch(() => null);
+        captureReferralCode(codigo, nome);
         await incrementReferralClick(codigo).catch(() => null);
       }
-      navigate("/cadastro?ref=" + (codigo ?? ""), { replace: true });
+      navigate("/cadastro?ref=" + encodeURIComponent(codigo ?? ""), { replace: true });
     })();
   }, [codigo, navigate]);
 

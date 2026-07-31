@@ -7,6 +7,7 @@ import HomeHero from "@/components/home/HomeHero";
 import ScrollStory from "@/components/home/ScrollStory";
 import SimulatorCTA from "@/components/home/SimulatorCTA";
 import PlatformFeatures from "@/components/shared/PlatformFeatures";
+import PlatformReviews from "@/components/PlatformReviews";
 import SEO from "@/components/SEO";
 import { absoluteUrl, SITE_URL } from "@/lib/seo";
 
@@ -95,6 +96,7 @@ export default function Home() {
         <HomeHero heroImage={heroImage} />
         <ScrollStory blocos={blocos as any} onCTA={scrollToCTA} />
         <PlatformFeatures variant="couple" />
+        <PlatformReviews />
         <SimulatorCTA ref={ctaRef} />
       </main>
 

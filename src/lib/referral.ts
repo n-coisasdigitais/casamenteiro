@@ -3,11 +3,43 @@ import { supabase } from "@/integrations/supabase/client";
 const STORAGE_KEY = "casamenteiro_ref";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
 
-export function captureReferralCode(codigo: string) {
+export function captureReferralCode(codigo: string, nome?: string | null) {
   try {
-    const payload = { codigo: codigo.toUpperCase(), ts: Date.now() };
+    const payload = { codigo: codigo.toUpperCase(), nome: nome ?? null, ts: Date.now() };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch {}
+}
+
+export function getStoredReferral(): { codigo: string; nome: string | null } | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { codigo: string; nome?: string | null; ts: number };
+    if (Date.now() - parsed.ts > TTL_MS) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return { codigo: parsed.codigo, nome: parsed.nome ?? null };
+  } catch {
+    return null;
+  }
+}
+
+/** Nome do casal dono do código de indicação (para exibir "Fulano te indicou"). */
+export async function buscarNomeIndicador(codigo: string): Promise<string | null> {
+  const { data: ref } = await supabase
+    .from("referrals")
+    .select("couple_id")
+    .eq("codigo", codigo.toUpperCase())
+    .eq("ativo", true)
+    .maybeSingle();
+  if (!ref?.couple_id) return null;
+  const { data: perfil } = await supabase
+    .from("couple_public_profiles")
+    .select("nome_casal")
+    .eq("couple_id", ref.couple_id)
+    .maybeSingle();
+  return perfil?.nome_casal ?? null;
 }
 
 export function getStoredReferralCode(): string | null {

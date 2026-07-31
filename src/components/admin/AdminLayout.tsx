@@ -31,6 +31,7 @@ const groups = [
       { title: "CRM Casais", url: "/admin/casais", icon: Heart },
       { title: "CRM Fornecedores", url: "/admin/fornecedores-crm", icon: Building2 },
       { title: "Avaliações", url: "/admin/avaliacoes", icon: Star },
+      { title: "Avaliações da plataforma", url: "/admin/avaliacoes-plataforma", icon: Star },
       { title: "Indicações", url: "/admin/indicacoes", icon: Share2 },
     ],
   },

@@ -2072,6 +2072,53 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_reviews: {
+        Row: {
+          aprovado: boolean
+          autor_nome: string | null
+          comentario: string | null
+          couple_id: string | null
+          created_at: string
+          destaque: boolean
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aprovado?: boolean
+          autor_nome?: string | null
+          comentario?: string | null
+          couple_id?: string | null
+          created_at?: string
+          destaque?: boolean
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aprovado?: boolean
+          autor_nome?: string | null
+          comentario?: string | null
+          couple_id?: string | null
+          created_at?: string
+          destaque?: boolean
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_reviews_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: string

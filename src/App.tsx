@@ -66,6 +66,7 @@ import MeuCasamentoIndicacoes from "./pages/MeuCasamentoIndicacoes";
 import MensagensCasais from "./pages/MensagensCasais";
 import CapturarIndicacao from "./pages/CapturarIndicacao";
 import AdminIndicacoes from "./pages/AdminIndicacoes";
+import AdminPlatformReviews from "./pages/AdminPlatformReviews";
 import DemoLanding from "./pages/DemoLanding";
 import DemoBanner from "./components/DemoBanner";
 import StaffLanding from "./pages/StaffLanding";
@@ -154,6 +155,7 @@ const App = () => (
             <Route path="/admin/comunicacao/historico" element={<AdminLayout><AdminBroadcastHistory /></AdminLayout>} />
             <Route path="/admin/usuarios" element={<AdminLayout><AdminUsers /></AdminLayout>} />
             <Route path="/admin/avaliacoes" element={<AdminLayout><AdminReviews /></AdminLayout>} />
+            <Route path="/admin/avaliacoes-plataforma" element={<AdminLayout><AdminPlatformReviews /></AdminLayout>} />
             <Route path="/admin/auditoria" element={<AdminLayout><AdminAuditLog /></AdminLayout>} />
             <Route path="/admin/emails" element={<AdminLayout><AdminEmailLogs /></AdminLayout>} />
             <Route path="/admin/tarefas-padrao" element={<AdminLayout><AdminDefaultTasks /></AdminLayout>} />
