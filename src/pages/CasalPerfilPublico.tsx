@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Heart, MapPin, Calendar, Star, MessageCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -27,6 +29,9 @@ export default function CasalPerfilPublico() {
   const [comentarios, setComentarios] = useState<any[]>([]);
   const [novoComentario, setNovoComentario] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [msgTexto, setMsgTexto] = useState("");
+  const [msgEnviando, setMsgEnviando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -90,6 +95,49 @@ export default function CasalPerfilPublico() {
     if (error) { toast.error("Erro ao enviar comentário"); return; }
     toast.success("Comentário enviado! Aguardando moderação.");
     setNovoComentario("");
+  };
+
+  const abrirMensagem = async () => {
+    if (!user) { navigate("/login"); return; }
+    const { data: myCouple } = await supabase
+      .from("couples").select("id").eq("user_id", user.id).maybeSingle();
+    if (!myCouple) { toast.error("Apenas casais podem enviar mensagens."); return; }
+    if (myCouple.id === perfil.couple_id) { toast.info("Este é o seu próprio perfil."); return; }
+    setMsgOpen(true);
+  };
+
+  const enviarMensagem = async () => {
+    if (msgTexto.trim().length < 2 || !user) return;
+    setMsgEnviando(true);
+    const { data: myCouple } = await supabase
+      .from("couples").select("id").eq("user_id", user.id).maybeSingle();
+    if (!myCouple) { setMsgEnviando(false); return; }
+    const { error } = await supabase.from("couple_messages").insert({
+      remetente_couple_id: myCouple.id,
+      destinatario_couple_id: perfil.couple_id,
+      texto: msgTexto.trim(),
+    });
+    if (error) {
+      toast.error("Não foi possível enviar sua mensagem");
+      setMsgEnviando(false);
+      return;
+    }
+    // Notificação in-app para o casal destinatário
+    const { data: dest } = await supabase
+      .from("couples").select("user_id").eq("id", perfil.couple_id).maybeSingle();
+    if (dest?.user_id) {
+      await supabase.from("notifications").insert({
+        user_id: dest.user_id,
+        type: "mensagem_casal",
+        title: "Você recebeu uma nova mensagem",
+        body: msgTexto.trim().slice(0, 120),
+        link: "/mensagens",
+      });
+    }
+    toast.success("Mensagem enviada!");
+    setMsgTexto("");
+    setMsgOpen(false);
+    setMsgEnviando(false);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Carregando…</div>;
@@ -166,26 +214,7 @@ export default function CasalPerfilPublico() {
               {perfil.bio && <p className="mt-4 text-foreground/80 leading-relaxed">{perfil.bio}</p>}
               {perfil.mensagens_casais && (
                 <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      if (!user) { navigate("/login"); return; }
-                      const { data: myCouple } = await supabase
-                        .from("couples").select("id").eq("user_id", user.id).maybeSingle();
-                      if (!myCouple) { toast.error("Apenas casais podem enviar mensagens."); return; }
-                      if (myCouple.id === perfil.couple_id) return;
-                      const texto = prompt("Sua mensagem para " + perfil.nome_casal + ":");
-                      if (!texto?.trim()) return;
-                      const { error } = await supabase.from("couple_messages").insert({
-                        remetente_couple_id: myCouple.id,
-                        destinatario_couple_id: perfil.couple_id,
-                        texto: texto.trim(),
-                      });
-                      if (error) toast.error("Não foi possível enviar");
-                      else toast.success("Mensagem enviada!");
-                    }}
-                  >
+                  <Button variant="outline" size="sm" onClick={abrirMensagem}>
                     <MessageCircle className="h-4 w-4 mr-2" />Enviar mensagem
                   </Button>
                 </div>
@@ -220,13 +249,32 @@ export default function CasalPerfilPublico() {
         {perfil.exibir_fotos && fotos.length > 0 && (
           <section className="mb-10">
             <h2 className="font-serif text-2xl mb-4">{isPast ? "Fotos do casamento" : "Prévia do casamento"}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {fotos.map((f: any) => (
-                <button key={f.id} onClick={() => setLightbox(f.url)} className="aspect-square rounded-lg overflow-hidden bg-muted hover:opacity-90">
-                  <img src={f.url} alt={f.legenda || ""} className="w-full h-full object-cover" loading="lazy" />
-                </button>
-              ))}
-            </div>
+            <Carousel opts={{ align: "start", loop: fotos.length > 2 }} className="w-full">
+              <CarouselContent className="-ml-3">
+                {fotos.map((f: any) => (
+                  <CarouselItem key={f.id} className="pl-3 basis-2/3 sm:basis-1/2 lg:basis-1/3">
+                    <button
+                      onClick={() => setLightbox(f.url)}
+                      className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-muted hover:opacity-90"
+                    >
+                      <img
+                        src={f.url}
+                        alt={f.legenda || `Foto do casamento de ${perfil.nome_casal}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </button>
+                    {f.legenda && <p className="text-xs text-muted-foreground mt-1 truncate">{f.legenda}</p>}
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {fotos.length > 1 && (
+                <>
+                  <CarouselPrevious className="hidden sm:flex" />
+                  <CarouselNext className="hidden sm:flex" />
+                </>
+              )}
+            </Carousel>
           </section>
         )}
 
@@ -314,6 +362,27 @@ export default function CasalPerfilPublico() {
           <img src={lightbox} alt="" className="max-w-full max-h-full object-contain" />
         </div>
       )}
+
+      <Dialog open={msgOpen} onOpenChange={setMsgOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enviar mensagem para {perfil.nome_casal}</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            placeholder="Escreva sua mensagem…"
+            value={msgTexto}
+            onChange={(e) => setMsgTexto(e.target.value)}
+            maxLength={1000}
+            rows={5}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMsgOpen(false)}>Cancelar</Button>
+            <Button onClick={enviarMensagem} disabled={msgEnviando || msgTexto.trim().length < 2}>
+              {msgEnviando ? "Enviando…" : "Enviar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
