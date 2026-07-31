@@ -20,7 +20,8 @@ export type FeatureFlagKey =
   | "reserva_datas_ociosas"
   | "tabela_precos"
   | "corretagem_datas_ociosas"
-  | "crm_fornecedor";
+  | "crm_fornecedor"
+  | "avaliacoes_plataforma";
 
 // Defaults espelham o seed da migration — evita flicker enquanto carrega.
 export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
@@ -43,6 +44,7 @@ export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
   tabela_precos: false,
   corretagem_datas_ociosas: false,
   crm_fornecedor: true,
+  avaliacoes_plataforma: false,
 };
 
 type Ctx = {
