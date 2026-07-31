@@ -12,6 +12,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import SEO from "@/components/SEO";
 import { buildReferralUrl, getOrCreateReferralForCouple } from "@/lib/referral";
+import { calcularTaxa } from "@/lib/platformPricing";
 
 type Referral = { id: string; codigo: string; cliques: number; conversoes: number; ativo: boolean };
 type Conversion = { id: string; tipo_conta: string; status: string; created_at: string };
@@ -22,6 +23,15 @@ export default function MeuCasamentoIndicacoes() {
   const [referral, setReferral] = useState<Referral | null>(null);
   const [conversions, setConversions] = useState<Conversion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [descontoPct, setDescontoPct] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const r = await calcularTaxa("desconto_indicacao");
+      const pct = Number((r.memoria as any)?.percentual ?? 0);
+      if (pct > 0) setDescontoPct(pct);
+    })();
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -69,10 +79,17 @@ export default function MeuCasamentoIndicacoes() {
       <DashboardHeader />
       <DashboardNav />
       <main className="container mx-auto py-8 px-4 max-w-3xl">
-        <h1 className="text-3xl font-serif mb-2">Indique o Casamenteiro</h1>
-        <p className="text-muted-foreground mb-6">
-          Compartilhe seu link com outros casais e fornecedores. Acompanhe quem se cadastrou pela sua indicação.
+        <h1 className="text-3xl font-serif mb-2">Espalhe esse amor 💛</h1>
+        <p className="text-muted-foreground mb-4">
+          Planejar casamento fica mais leve quando alguém indica o caminho. Compartilhe seu link com
+          outros casais e com os fornecedores que você ama — e acompanhe aqui quem chegou por você.
         </p>
+        {descontoPct && (
+          <div className="mb-6 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm">
+            Quem se cadastrar pelo seu link ganha <strong>{descontoPct}% de desconto</strong> no primeiro
+            mês de assinatura.
+          </div>
+        )}
 
         {loading ? (
           <Skeleton className="h-40 w-full" />
