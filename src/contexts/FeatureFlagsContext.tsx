@@ -88,6 +88,10 @@ export function useFeatureFlags() {
   return useContext(FeatureFlagsContext).flags;
 }
 
+export function useFeatureFlagsLoading() {
+  return useContext(FeatureFlagsContext).loading;
+}
+
 export function useFeatureFlag(key: string, defaultValue = true): boolean {
   const { flags } = useContext(FeatureFlagsContext);
   if (key in flags) return flags[key];
