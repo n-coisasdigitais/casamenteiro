@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
+import { PessoaConvite, resumoPessoas } from "@/lib/guestPeople";
 
 type AddGuestDialogProps = {
   groups: { id: string; name: string }[];
   onAdd: (guest: {
     name: string; email?: string; phone?: string; guest_type: string;
     group_id?: string; max_companions?: number;
-    tipo_convite?: string; pessoas?: string[]; total_pessoas?: number;
+    tipo_convite?: string; pessoas?: PessoaConvite[]; total_pessoas?: number;
   }) => void;
 };
 
@@ -24,15 +25,18 @@ export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
   const [groupId, setGroupId] = useState<string>("");
   const [maxCompanions, setMaxCompanions] = useState<number>(0);
   const [tipoConvite, setTipoConvite] = useState<"individual" | "casal" | "familia">("individual");
-  const [pessoas, setPessoas] = useState<string[]>([""]);
+  const [pessoas, setPessoas] = useState<PessoaConvite[]>([{ nome: "", tipo: "adult" }]);
 
   const totalPessoas = tipoConvite === "individual"
     ? 1
-    : Math.max(1, pessoas.filter((p) => p.trim()).length);
+    : Math.max(1, pessoas.filter((p) => p.nome.trim()).length);
 
   const handleSubmit = () => {
     if (!name.trim()) return;
-    const pessoasFiltradas = tipoConvite === "individual" ? [name.trim()] : pessoas.map((p) => p.trim()).filter(Boolean);
+    const pessoasFiltradas: PessoaConvite[] =
+      tipoConvite === "individual"
+        ? [{ nome: name.trim(), tipo: guestType as PessoaConvite["tipo"] }]
+        : pessoas.map((p) => ({ ...p, nome: p.nome.trim() })).filter((p) => p.nome);
     onAdd({
       name: name.trim(),
       email: email.trim() || undefined,
@@ -45,12 +49,13 @@ export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
       total_pessoas: totalPessoas,
     });
     setName(""); setEmail(""); setPhone(""); setGroupId(""); setMaxCompanions(0);
-    setTipoConvite("individual"); setPessoas([""]);
+    setTipoConvite("individual"); setPessoas([{ nome: "", tipo: "adult" }]);
     setOpen(false);
   };
 
-  const updatePessoa = (i: number, v: string) => setPessoas((prev) => prev.map((p, idx) => (idx === i ? v : p)));
-  const addPessoa = () => setPessoas((prev) => [...prev, ""]);
+  const updatePessoa = (i: number, patch: Partial<PessoaConvite>) =>
+    setPessoas((prev) => prev.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+  const addPessoa = () => setPessoas((prev) => [...prev, { nome: "", tipo: "adult" }]);
   const removePessoa = (i: number) => setPessoas((prev) => prev.filter((_, idx) => idx !== i));
 
   return (
@@ -68,7 +73,7 @@ export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
         <div className="space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
             <Label>Tipo de convite</Label>
-            <Select value={tipoConvite} onValueChange={(v) => { setTipoConvite(v as any); if (v !== "individual" && pessoas.length < 2) setPessoas([name || "", ""]); }}>
+            <Select value={tipoConvite} onValueChange={(v) => { setTipoConvite(v as any); if (v !== "individual" && pessoas.length < 2) setPessoas([{ nome: name || "", tipo: "adult" }, { nome: "", tipo: "adult" }]); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="individual">Individual (1 pessoa)</SelectItem>
@@ -87,7 +92,15 @@ export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
               <div className="space-y-2 mt-1">
                 {pessoas.map((p, i) => (
                   <div key={i} className="flex gap-2">
-                    <Input value={p} onChange={(e) => updatePessoa(i, e.target.value)} placeholder={`Pessoa ${i + 1}`} />
+                    <Input value={p.nome} onChange={(e) => updatePessoa(i, { nome: e.target.value })} placeholder={`Pessoa ${i + 1}`} />
+                    <Select value={p.tipo} onValueChange={(v) => updatePessoa(i, { tipo: v as PessoaConvite["tipo"] })}>
+                      <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="adult">Adulto</SelectItem>
+                        <SelectItem value="child">Criança</SelectItem>
+                        <SelectItem value="baby">Bebê</SelectItem>
+                      </SelectContent>
+                    </Select>
                     {pessoas.length > 1 && (
                       <Button type="button" variant="ghost" size="icon" onClick={() => removePessoa(i)}>
                         <X className="h-4 w-4" />
@@ -98,6 +111,9 @@ export default function AddGuestDialog({ groups, onAdd }: AddGuestDialogProps) {
                 <Button type="button" variant="outline" size="sm" onClick={addPessoa}>
                   <Plus className="mr-1 h-3 w-3" /> Adicionar pessoa
                 </Button>
+                {resumoPessoas(pessoas.filter((p) => p.nome.trim())) && (
+                  <p className="text-xs text-muted-foreground">{resumoPessoas(pessoas.filter((p) => p.nome.trim()))}</p>
+                )}
               </div>
             </div>
           )}
