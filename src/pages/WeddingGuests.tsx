@@ -20,6 +20,8 @@ import AddGroupDialog from "@/components/AddGroupDialog";
 import ImportGuestsDialog from "@/components/ImportGuestsDialog";
 import GuestListPdfDialog from "@/components/GuestListPdfDialog";
 import { buildWhatsAppLink } from "@/lib/phone";
+import EditGuestDialog, { EditableGuest } from "@/components/EditGuestDialog";
+import { normalizarPessoas, resumoPessoas } from "@/lib/guestPeople";
 
 type Guest = {
   id: string;
@@ -34,6 +36,9 @@ type Guest = {
   max_companions?: number | null;
   notes?: string | null;
   updated_at?: string | null;
+  tipo_convite?: string | null;
+  pessoas?: unknown;
+  total_pessoas?: number | null;
 };
 
 type InviteMap = Record<string, { token: string; sent_at: string | null; opened_at: string | null; responded_at: string | null; rsvp_companions?: number | null }>;
@@ -149,12 +154,15 @@ export default function WeddingGuests() {
     toast({ title: `${groupGuests.length} convite(s) gerado(s)`, description: "Use o ícone de link em cada convidado para copiar." });
   };
 
-  const addGuest = async (guest: { name: string; email?: string; phone?: string; guest_type: string; group_id?: string; max_companions?: number }) => {
+  const addGuest = async (guest: { name: string; email?: string; phone?: string; guest_type: string; group_id?: string; max_companions?: number; tipo_convite?: string; pessoas?: any[]; total_pessoas?: number }) => {
     if (!coupleId) return;
     const insertData: any = { couple_id: coupleId, name: guest.name, guest_type: guest.guest_type, max_companions: guest.max_companions || 0 };
     if (guest.email) insertData.email = guest.email;
     if (guest.phone) insertData.phone = guest.phone;
     if (guest.group_id && guest.group_id !== "none") insertData.group_id = guest.group_id;
+    if (guest.tipo_convite) insertData.tipo_convite = guest.tipo_convite;
+    if (guest.pessoas) insertData.pessoas = guest.pessoas;
+    if (guest.total_pessoas) insertData.total_pessoas = guest.total_pessoas;
     const { data, error } = await supabase.from("wedding_guests").insert(insertData).select().maybeSingle();
     if (error) {
       toast({ title: "Erro ao adicionar convidado", description: error.message, variant: "destructive" });
@@ -183,6 +191,24 @@ export default function WeddingGuests() {
   const deleteGuest = async (id: string) => {
     setGuests((prev) => prev.filter((g) => g.id !== id));
     await supabase.from("wedding_guests").delete().eq("id", id);
+  };
+
+  const [editing, setEditing] = useState<EditableGuest | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const openEdit = (g: Guest) => {
+    setEditing(g as EditableGuest);
+    setEditOpen(true);
+  };
+
+  const saveGuest = async (id: string, values: Record<string, any>) => {
+    const { error } = await (supabase.from("wedding_guests") as any).update(values).eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao salvar convidado", description: error.message, variant: "destructive" });
+      return;
+    }
+    setGuests((prev) => prev.map((g) => (g.id === id ? { ...g, ...values } : g)).sort((a, b) => a.name.localeCompare(b.name)));
+    toast({ title: "Convidado atualizado" });
   };
 
   const deleteSelected = async () => {
