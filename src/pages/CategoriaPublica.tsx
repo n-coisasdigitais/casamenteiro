@@ -23,6 +23,7 @@ type Supplier = {
 };
 
 const PAGE_SIZE = 18;
+import { useMyPlanSuppliers } from "@/hooks/useMyPlanSuppliers";
 
 const formatPrice = (n: number | null) => {
   if (!n) return null;
