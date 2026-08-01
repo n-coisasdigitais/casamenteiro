@@ -86,6 +86,7 @@ function SupplierCardItem({ s, inPlan }: { s: Supplier; inPlan?: boolean }) {
 export default function CategoriaPublica() {
   const { slug } = useParams<{ slug: string }>();
   const { user, profile } = useAuth();
+  const planIds = useMyPlanSuppliers();
   const [category, setCategory] = useState<Category | null>(null);
   const [otherCategories, setOtherCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
