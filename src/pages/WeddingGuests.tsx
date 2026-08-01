@@ -539,6 +539,7 @@ export default function WeddingGuests() {
                         onUpdateRsvp={updateRsvp}
                         onUpdateTable={updateTable}
                         onDelete={deleteGuest}
+                        onEdit={openEdit}
                         rsvpVariant={rsvpVariant}
                         rsvpLabel={rsvpLabel}
                         invites={invites}
@@ -557,6 +558,7 @@ export default function WeddingGuests() {
                       onUpdateRsvp={updateRsvp}
                       onUpdateTable={updateTable}
                       onDelete={deleteGuest}
+                      onEdit={openEdit}
                       rsvpVariant={rsvpVariant}
                       rsvpLabel={rsvpLabel}
                       invites={invites}
@@ -574,6 +576,7 @@ export default function WeddingGuests() {
                       onUpdateRsvp={updateRsvp}
                       onUpdateTable={updateTable}
                       onDelete={deleteGuest}
+                      onEdit={openEdit}
                       rsvpVariant={rsvpVariant}
                       rsvpLabel={rsvpLabel}
                       invites={invites}
@@ -592,6 +595,13 @@ export default function WeddingGuests() {
           </CardContent>
         </Card>
       </main>
+      <EditGuestDialog
+        guest={editing}
+        groups={groups}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSave={saveGuest}
+      />
     </div>
   );
 }
@@ -605,6 +615,7 @@ function GuestGroupSection({
   onUpdateRsvp,
   onUpdateTable,
   onDelete,
+  onEdit,
   rsvpVariant,
   rsvpLabel,
   invites,
@@ -619,6 +630,7 @@ function GuestGroupSection({
   onUpdateRsvp: (id: string, status: string) => void;
   onUpdateTable: (id: string, table: string) => void;
   onDelete: (id: string) => void;
+  onEdit?: (g: Guest) => void;
   rsvpVariant: (s: string) => "default" | "secondary" | "destructive" | "outline";
   rsvpLabel: (s: string) => string;
   invites: InviteMap;
@@ -651,6 +663,12 @@ function GuestGroupSection({
             <p className="font-medium">{g.name}</p>
             <p className="text-xs text-muted-foreground capitalize">
               {g.guest_type === "adult" ? "Adulto" : g.guest_type === "child" ? "Criança" : "Bebê"}
+              {g.tipo_convite && g.tipo_convite !== "individual" && (
+                <span className="ml-2 normal-case">
+                  • {g.tipo_convite === "casal" ? "Casal" : "Família"}
+                  {resumoPessoas(normalizarPessoas(g.pessoas)) ? ` (${resumoPessoas(normalizarPessoas(g.pessoas))})` : ""}
+                </span>
+              )}
               {invites[g.id]?.responded_at && <span className="ml-2 text-green-700">• respondeu</span>}
               {invites[g.id]?.opened_at && !invites[g.id]?.responded_at && <span className="ml-2 text-blue-700">• abriu</span>}
               {invites[g.id]?.sent_at && !invites[g.id]?.opened_at && <span className="ml-2">• enviado</span>}
@@ -698,6 +716,12 @@ function GuestGroupSection({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {onEdit && (
+                    <DropdownMenuItem onClick={() => onEdit(g)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar convidado
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => onSendInvite(g)}>
                     <LinkIcon className="mr-2 h-4 w-4" />
                     Copiar link do convite
