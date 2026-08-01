@@ -23,6 +23,7 @@ type Supplier = {
 };
 
 const PAGE_SIZE = 18;
+import { useMyPlanSuppliers } from "@/hooks/useMyPlanSuppliers";
 
 const formatPrice = (n: number | null) => {
   if (!n) return null;
@@ -30,7 +31,7 @@ const formatPrice = (n: number | null) => {
   return `R$ ${n}`;
 };
 
-function SupplierCardItem({ s }: { s: Supplier }) {
+function SupplierCardItem({ s, inPlan }: { s: Supplier; inPlan?: boolean }) {
   const photo = s.supplier_photos?.[0]?.photo_url;
   return (
     <Link to={`/fornecedor/${s.id}`} className="group block">
@@ -50,6 +51,11 @@ function SupplierCardItem({ s }: { s: Supplier }) {
         {s.featured && (
           <span className="absolute top-2 left-2 bg-background/95 text-foreground text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
             Destaque
+          </span>
+        )}
+        {inPlan && (
+          <span className="absolute bottom-2 left-2 bg-primary text-primary-foreground text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
+            No seu plano
           </span>
         )}
       </div>
@@ -81,6 +87,7 @@ function SupplierCardItem({ s }: { s: Supplier }) {
 export default function CategoriaPublica() {
   const { slug } = useParams<{ slug: string }>();
   const { user, profile } = useAuth();
+  const planIds = useMyPlanSuppliers();
   const [category, setCategory] = useState<Category | null>(null);
   const [otherCategories, setOtherCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -291,7 +298,7 @@ export default function CategoriaPublica() {
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-7">
-              {suppliers.map((s) => <SupplierCardItem key={s.id} s={s} />)}
+              {suppliers.map((s) => <SupplierCardItem key={s.id} s={s} inPlan={planIds.has(s.id)} />)}
             </div>
 
             {/* Sentinel + fallback "carregar mais" */}

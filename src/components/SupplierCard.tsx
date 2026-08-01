@@ -18,12 +18,13 @@ type SupplierCardProps = {
   featured?: boolean;
   category_name?: string | null;
   photo_url?: string | null;
+  inPlan?: boolean;
 };
 
 export default function SupplierCard({ 
   id, company_name, city, state, rating, review_count, 
   price_min, guest_min, guest_max, promo_percentage, featured,
-  category_name, photo_url 
+  category_name, photo_url, inPlan
 }: SupplierCardProps) {
   return (
     <Link to={`/fornecedor/${id}`} className="block group">
@@ -50,6 +51,11 @@ export default function SupplierCard({
           {promo_percentage && promo_percentage > 0 && (
             <Badge className="absolute top-3 right-3 bg-emerald-600 text-primary-foreground text-xs">
               -{promo_percentage}%
+            </Badge>
+          )}
+          {inPlan && (
+            <Badge variant="secondary" className="absolute bottom-3 left-3 text-xs">
+              No seu plano
             </Badge>
           )}
         </div>
