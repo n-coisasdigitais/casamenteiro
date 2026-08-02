@@ -26,6 +26,7 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
   const [categoria, setCategoria] = useState("");
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [valorEstimado, setValorEstimado] = useState("");
+  const [statusInicial, setStatusInicial] = useState<string>("fora_da_plataforma");
   const [saving, setSaving] = useState(false);
   const [categorias, setCategorias] = useState<Array<{ id: string; name: string; slug: string }>>([]);
 
@@ -38,6 +39,7 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
 
   const reset = () => {
     setNome(""); setTelefone(""); setCategoria(""); setCategoriaId(null); setValorEstimado("");
+    setStatusInicial("fora_da_plataforma");
   };
 
   const salvar = async () => {
@@ -58,8 +60,9 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
       external_supplier_name: nome.trim(),
       external_supplier_phone: telefone.trim() || null,
       external_supplier_category: categoria || null,
-      kanban_status: "fora_da_plataforma",
-      status: "saved",
+      kanban_status: statusInicial,
+      status: statusInicial === "contratado" ? "contracted" : "saved",
+      contract_value: statusInicial === "contratado" && valorEstimado ? Number(valorEstimado) : null,
       estimated_value: valorEstimado ? Number(valorEstimado) : null,
     });
     setSaving(false);
@@ -67,7 +70,7 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
       toast({ title: "Erro ao adicionar", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Fornecedor externo adicionado", description: "Ele aparecerá na coluna 'Fora da plataforma' do seu kanban." });
+    toast({ title: "Fornecedor externo adicionado", description: "Ele já aparece no seu kanban e no orçamento." });
     reset();
     onOpenChange(false);
     onAdded();
@@ -110,6 +113,17 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
           <div>
             <Label htmlFor="ext-valor">Valor estimado (R$)</Label>
             <Input id="ext-valor" type="number" value={valorEstimado} onChange={(e) => setValorEstimado(e.target.value)} placeholder="0,00" />
+          </div>
+          <div>
+            <Label>Situação atual</Label>
+            <Select value={statusInicial} onValueChange={setStatusInicial}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fora_da_plataforma">Fora da plataforma</SelectItem>
+                <SelectItem value="negociando">Negociando</SelectItem>
+                <SelectItem value="contratado">Já contratado</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

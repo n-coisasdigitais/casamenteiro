@@ -12,6 +12,7 @@ import DashboardNav from "@/components/DashboardNav";
 import TaskItem from "@/components/TaskItem";
 import AddTaskDialog from "@/components/AddTaskDialog";
 import { useToast } from "@/hooks/use-toast";
+import { gerarTarefasPdf } from "@/lib/tasksPdf";
 
 type Task = {
   id: string;
@@ -63,6 +64,7 @@ export default function WeddingTasks() {
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [casalInfo, setCasalInfo] = useState<{ nome: string; data: string | null }>({ nome: "Nosso casamento", data: null });
   const [filterState, setFilterState] = useState<"all" | "pending" | "completed">("all");
   const [filterPeriod, setFilterPeriod] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
@@ -71,9 +73,13 @@ export default function WeddingTasks() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("couples").select("id, onboarding_completed").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+    supabase.from("couples").select("id, onboarding_completed, partner_name, wedding_date").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (!data || !data.onboarding_completed) { navigate("/onboarding"); return; }
       setCoupleId(data.id);
+      setCasalInfo({
+        nome: [user.user_metadata?.full_name, (data as any).partner_name].filter(Boolean).join(" & ") || "Nosso casamento",
+        data: (data as any).wedding_date || null,
+      });
       loadTasks(data.id);
     });
   }, [user]);
@@ -221,6 +227,27 @@ export default function WeddingTasks() {
     a.click();
   };
 
+  const handlePdf = () => {
+    if (tasks.length === 0) {
+      toast({ title: "Nenhuma tarefa para exportar", variant: "destructive" });
+      return;
+    }
+    gerarTarefasPdf({
+      nomeCasal: casalInfo.nome,
+      dataEvento: casalInfo.data,
+      tasks: tasks.map((t) => ({
+        title: t.title,
+        category: t.category,
+        due_period: t.seeded_as_backlog ? BACKLOG_KEY : t.due_period,
+        due_date: t.due_date,
+        is_completed: t.is_completed,
+        supplier_name: t.supplier_name,
+      })),
+      periodOrder: allBuckets,
+      periodLabels,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />
@@ -254,8 +281,9 @@ export default function WeddingTasks() {
             <Button variant="outline" size="icon" onClick={handleExport} title="Baixar CSV">
               <Download className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => window.print()} title="Imprimir">
-              <Printer className="h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={handlePdf} title="Baixar relatório em PDF">
+              <Printer className="h-4 w-4 mr-2" />
+              PDF
             </Button>
           </div>
         </div>
