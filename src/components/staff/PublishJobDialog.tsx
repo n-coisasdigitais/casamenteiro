@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { FUNCOES_STAFF } from "@/lib/staff";
 
-export default function PublishJobDialog({ supplierId, onCreated }: { supplierId: string; onCreated?: () => void }) {
+export default function PublishJobDialog({
+  supplierId,
+  onCreated,
+  job,
+  open: openProp,
+  onOpenChange,
+}: {
+  supplierId: string;
+  onCreated?: () => void;
+  /** quando informado, o diálogo edita a vaga em vez de criar */
+  job?: any;
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+}) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? !!openProp : openState;
+  const setOpen = (v: boolean) => (isControlled ? onOpenChange?.(v) : setOpenState(v));
+  const isEdit = !!job;
   const [loading, setLoading] = useState(false);
   const [funcao, setFuncao] = useState("");
   const [data, setData] = useState("");
@@ -25,19 +42,38 @@ export default function PublishJobDialog({ supplierId, onCreated }: { supplierId
   const [descricao, setDescricao] = useState("");
   const [pub, setPub] = useState(true);
 
+  useEffect(() => {
+    if (!open || !job) return;
+    setFuncao(job.funcao || "");
+    setData(job.data || "");
+    setHoraIni(job.hora_inicio || "");
+    setHoraFim(job.hora_fim || "");
+    setLocal(job.local || "");
+    setCidade(job.cidade || "");
+    setValor(job.valor_turno ?? "");
+    setDescricao(job.observacoes || "");
+    setPub(job.is_public !== false);
+  }, [open, job]);
+
   const salvar = async () => {
     if (!user) return;
     if (!funcao || !data || !valor) return toast({ title: "Preencha função, data e valor", variant: "destructive" });
     setLoading(true);
-    const { error } = await (supabase.from("staff_jobs" as any) as any).insert({
-      supplier_id: supplierId,
+    const payload: any = {
       funcao, data,
       hora_inicio: horaIni || null, hora_fim: horaFim || null,
       local: local || null, cidade: cidade || null,
       valor_turno: Number(valor), observacoes: descricao || null,
-      is_public: pub, status: "aberta",
-      criado_por_user_id: user.id,
-    });
+      is_public: pub,
+    };
+    const { error } = isEdit
+      ? await (supabase.from("staff_jobs" as any) as any).update(payload).eq("id", job.id)
+      : await (supabase.from("staff_jobs" as any) as any).insert({
+          ...payload,
+          supplier_id: supplierId,
+          status: "aberta",
+          criado_por_user_id: user.id,
+        });
     setLoading(false);
     if (error) {
       const msg = error.message || "";
@@ -46,9 +82,9 @@ export default function PublishJobDialog({ supplierId, onCreated }: { supplierId
         : /violates row-level security/i.test(msg)
         ? "Sem permissão para publicar. Verifique se seu cadastro está aprovado."
         : msg;
-      return toast({ title: "Erro ao publicar vaga", description: friendly, variant: "destructive" });
+      return toast({ title: isEdit ? "Erro ao salvar vaga" : "Erro ao publicar vaga", description: friendly, variant: "destructive" });
     }
-    toast({ title: "Vaga publicada!" });
+    toast({ title: isEdit ? "Vaga atualizada!" : "Vaga publicada!" });
     setOpen(false);
     setFuncao(""); setData(""); setHoraIni(""); setHoraFim(""); setLocal(""); setCidade(""); setValor(""); setDescricao("");
     onCreated?.();
@@ -56,9 +92,9 @@ export default function PublishJobDialog({ supplierId, onCreated }: { supplierId
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button>Publicar vaga</Button></DialogTrigger>
+      {!isControlled && <DialogTrigger asChild><Button>Publicar vaga</Button></DialogTrigger>}
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Nova vaga</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEdit ? "Editar vaga" : "Nova vaga"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
             <Label>Função</Label>
@@ -83,7 +119,7 @@ export default function PublishJobDialog({ supplierId, onCreated }: { supplierId
             Publicar no marketplace aberto (além dos convites diretos)
           </label>
           <Button className="w-full" onClick={salvar} disabled={loading}>
-            {loading ? "Publicando..." : "Publicar vaga"}
+            {loading ? "Salvando..." : isEdit ? "Salvar alterações" : "Publicar vaga"}
           </Button>
         </div>
       </DialogContent>
