@@ -343,6 +343,9 @@ function KanbanCard({ item, dragging, onEditValue, onOpen }: { item: PlanSupplie
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.category_name}</p>
           )}
           <p className="text-sm font-semibold leading-tight">{item.company_name}</p>
+          {item.is_external && (
+            <Badge variant="outline" className="mt-1 h-4 px-1.5 text-[10px] font-normal">Externo</Badge>
+          )}
         </div>
         {onOpen && (
           <Button
