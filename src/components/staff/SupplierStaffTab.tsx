@@ -14,6 +14,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
   const [jobs, setJobs] = useState<any[]>([]);
   const [apps, setApps] = useState<Record<string, any[]>>({});
   const [staffs, setStaffs] = useState<any[]>([]);
+  const [editJob, setEditJob] = useState<any | null>(null);
 
   const load = async () => {
     const { data: js } = await (supabase.from("staff_jobs" as any) as any)
@@ -69,6 +70,15 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
     }
   };
 
+  const alterarStatusVaga = async (job: any, status: "aberta" | "pausada" | "cancelada") => {
+    const { error } = await (supabase.from("staff_jobs" as any) as any).update({ status }).eq("id", job.id);
+    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    toast({
+      title: status === "aberta" ? "Vaga republicada" : status === "pausada" ? "Vaga despublicada" : "Vaga cancelada",
+    });
+    load();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center flex-wrap gap-2">
@@ -98,6 +108,19 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
                 <p className="text-sm text-muted-foreground">
                   {j.cidade || j.local} • R$ {Number(j.valor_turno || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
+                <div className="flex gap-2 flex-wrap pt-1">
+                  <Button size="sm" variant="outline" onClick={() => setEditJob(j)}>Editar</Button>
+                  {j.status === "aberta" ? (
+                    <Button size="sm" variant="outline" onClick={() => alterarStatusVaga(j, "pausada")}>Despublicar</Button>
+                  ) : j.status === "pausada" ? (
+                    <Button size="sm" variant="outline" onClick={() => alterarStatusVaga(j, "aberta")}>Republicar</Button>
+                  ) : null}
+                  {j.status !== "cancelada" && (
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => alterarStatusVaga(j, "cancelada")}>
+                      Cancelar vaga
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 {(apps[j.id] || []).length === 0 && (
@@ -163,6 +186,16 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
           ))}
         </TabsContent>
       </Tabs>
+
+      {editJob && (
+        <PublishJobDialog
+          supplierId={supplierId}
+          job={editJob}
+          open={!!editJob}
+          onOpenChange={(v) => { if (!v) setEditJob(null); }}
+          onCreated={() => { setEditJob(null); load(); }}
+        />
+      )}
     </div>
   );
 }
