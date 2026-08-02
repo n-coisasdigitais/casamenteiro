@@ -25,6 +25,7 @@ import SupplierOnboardingWizard from "@/components/supplier/SupplierOnboardingWi
 import SupplierAreaEditor from "@/components/supplier/SupplierAreaEditor";
 import SupplierQuotesKanban from "@/components/supplier/SupplierQuotesKanban";
 import SupplierReviewCouples from "@/components/supplier/SupplierReviewCouples";
+import StaffReviewsReceived from "@/components/staff/StaffReviewsReceived";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
 import UserMenu from "@/components/UserMenu";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
@@ -343,7 +344,12 @@ export default function SupplierDashboard() {
       );
     }
     if (dest === "avaliacoes") {
-      return <SupplierReviewCouples supplierId={supplier.id} />;
+      return (
+        <div className="space-y-6">
+          <SupplierReviewCouples supplierId={supplier.id} />
+          {vagasEnabled && <StaffReviewsReceived supplierId={supplier.id} />}
+        </div>
+      );
     }
     if (dest === "vagas" && vagasEnabled) {
       return <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />;
