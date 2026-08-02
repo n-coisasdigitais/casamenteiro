@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { FeatureFlagsProvider } from "@/contexts/FeatureFlagsContext";
 import FlagGate from "@/components/FlagGate";
+import RequireAccountType from "@/components/RequireAccountType";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Auth from "./pages/Auth";
@@ -82,6 +83,10 @@ import AdminProfissionais from "./pages/AdminProfissionais";
 
 const queryClient = new QueryClient();
 
+const Casal = ({ children }: { children: React.ReactNode }) => (
+  <RequireAccountType allow={["couple", "admin"]}>{children}</RequireAccountType>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -103,19 +108,19 @@ const App = () => (
             <Route path="/termos" element={<Termos />} />
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/onboarding" element={<CoupleOnboarding />} />
-            <Route path="/dashboard" element={<CoupleDashboard />} />
-            <Route path="/tarefas" element={<WeddingTasks />} />
-            <Route path="/meus-fornecedores" element={<MySuppliers />} />
-            <Route path="/convidados" element={<WeddingGuests />} />
-            <Route path="/orcamento" element={<WeddingPlan />} />
-            <Route path="/meu-casamento/plano" element={<WeddingPlan />} />
+            <Route path="/dashboard" element={<Casal><CoupleDashboard /></Casal>} />
+            <Route path="/tarefas" element={<Casal><WeddingTasks /></Casal>} />
+            <Route path="/meus-fornecedores" element={<Casal><MySuppliers /></Casal>} />
+            <Route path="/convidados" element={<Casal><WeddingGuests /></Casal>} />
+            <Route path="/orcamento" element={<Casal><WeddingPlan /></Casal>} />
+            <Route path="/meu-casamento/plano" element={<Casal><WeddingPlan /></Casal>} />
             <Route path="/buscar" element={<Explore />} />
             <Route path="/categoria/:slug" element={<CategoriaPublica />} />
             <Route path="/casais" element={<FlagGate flag="casais_feed"><CasaisFeed /></FlagGate>} />
             <Route path="/casais/:slug" element={<FlagGate flag="casais_feed"><CasalPerfilPublico /></FlagGate>} />
-            <Route path="/meu-casamento/perfil" element={<FlagGate flag="perfil_social_casal"><MeuCasamentoPerfil /></FlagGate>} />
-            <Route path="/meu-casamento/indicacoes" element={<FlagGate flag="indicacoes"><MeuCasamentoIndicacoes /></FlagGate>} />
-            <Route path="/mensagens" element={<FlagGate flag="mensagens_casais"><MensagensCasais /></FlagGate>} />
+            <Route path="/meu-casamento/perfil" element={<FlagGate flag="perfil_social_casal"><Casal><MeuCasamentoPerfil /></Casal></FlagGate>} />
+            <Route path="/meu-casamento/indicacoes" element={<FlagGate flag="indicacoes"><Casal><MeuCasamentoIndicacoes /></Casal></FlagGate>} />
+            <Route path="/mensagens" element={<FlagGate flag="mensagens_casais"><Casal><MensagensCasais /></Casal></FlagGate>} />
             <Route path="/i/:codigo" element={<FlagGate flag="indicacoes"><CapturarIndicacao /></FlagGate>} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
