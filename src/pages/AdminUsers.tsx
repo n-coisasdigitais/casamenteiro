@@ -7,8 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Search, ShieldCheck, ShieldOff, Ban, RotateCcw, Trash2, ArrowLeft, LogIn } from "lucide-react";
+import { Heart, Search, ShieldCheck, ShieldOff, Ban, RotateCcw, Trash2, ArrowLeft, LogIn, Download } from "lucide-react";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import AdminPagination from "@/components/admin/AdminPagination";
+import { baixarCsv } from "@/lib/csv";
+
+const PAGE_SIZE = 25;
 
 type Row = {
   user_id: string;
@@ -28,6 +32,7 @@ export default function AdminUsers() {
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "couple" | "supplier" | "admin" | "suspended">("all");
+  const [page, setPage] = useState(0);
   const impersonationEnabled = useFeatureFlag("admin_impersonation");
   const [impersonating, setImpersonating] = useState<string | null>(null);
 
@@ -57,6 +62,22 @@ export default function AdminUsers() {
     if (q && !(r.full_name || "").toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
+
+  useEffect(() => { setPage(0); }, [q, filter]);
+  const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const exportar = () => baixarCsv(
+    `usuarios-${new Date().toISOString().slice(0, 10)}.csv`,
+    ["Nome", "Tipo", "Admin", "Suspenso", "Motivo", "Criado em"],
+    filtered.map(r => [
+      r.full_name || "",
+      r.account_type,
+      r.is_admin ? "sim" : "não",
+      r.suspended ? "sim" : "não",
+      r.suspended_reason || "",
+      new Date(r.created_at).toLocaleDateString("pt-BR"),
+    ])
+  );
 
   const toggleSuspend = async (r: Row) => {
     const reason = r.suspended ? null : prompt("Motivo da suspensão (opcional):") || null;
@@ -120,10 +141,15 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground">{filtered.length} usuário(s)</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">{filtered.length} usuário(s)</p>
+          <Button size="sm" variant="outline" onClick={exportar} disabled={!filtered.length}>
+            <Download className="h-4 w-4 mr-1" />CSV
+          </Button>
+        </div>
 
         <div className="space-y-2">
-          {filtered.map(r => (
+          {pageRows.map(r => (
             <Card key={r.user_id}>
               <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-[200px]">
@@ -154,6 +180,7 @@ export default function AdminUsers() {
             </Card>
           ))}
         </div>
+        <AdminPagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
       </main>
     </div>
   );

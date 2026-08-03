@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,8 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send, Search, Calendar, MapPin, Users, Wallet } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Send, Search, Calendar, MapPin, Users, Wallet, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import AdminPagination from "@/components/admin/AdminPagination";
+import { baixarCsv } from "@/lib/csv";
+
+const PAGE_SIZE = 20;
 
 function daysUntil(d?: string | null) {
   if (!d) return null;
@@ -22,6 +27,12 @@ function CoupleList() {
   const [couples, setCouples] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [q, setQ] = useState("");
+  const [cidade, setCidade] = useState("all");
+  const [onboarding, setOnboarding] = useState<"all" | "ok" | "pendente">("all");
+  const [quando, setQuando] = useState<"all" | "futuro" | "90" | "passado" | "sem_data">("all");
+  const [dataDe, setDataDe] = useState("");
+  const [dataAte, setDataAte] = useState("");
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -33,19 +44,88 @@ function CoupleList() {
     });
   }, []);
 
-  const filtered = couples.filter((c) => {
-    if (!q) return true;
+  const cidades = useMemo(
+    () => Array.from(new Set(couples.map((c) => c.wedding_city).filter(Boolean))).sort() as string[],
+    [couples]
+  );
+
+  const filtered = useMemo(() => couples.filter((c) => {
     const prof = profiles[c.user_id];
-    return [c.partner_name, c.wedding_city, prof?.full_name].some((v) => String(v || "").toLowerCase().includes(q.toLowerCase()));
-  });
+    if (q && ![c.partner_name, c.wedding_city, prof?.full_name].some((v) => String(v || "").toLowerCase().includes(q.toLowerCase()))) return false;
+    if (cidade !== "all" && c.wedding_city !== cidade) return false;
+    if (onboarding === "ok" && !c.onboarding_completed) return false;
+    if (onboarding === "pendente" && c.onboarding_completed) return false;
+    const d = daysUntil(c.wedding_date);
+    if (quando === "sem_data" && c.wedding_date) return false;
+    if (quando === "futuro" && (d === null || d < 0)) return false;
+    if (quando === "90" && (d === null || d < 0 || d > 90)) return false;
+    if (quando === "passado" && (d === null || d >= 0)) return false;
+    if (dataDe && (!c.wedding_date || c.wedding_date < dataDe)) return false;
+    if (dataAte && (!c.wedding_date || c.wedding_date > dataAte)) return false;
+    return true;
+  }), [couples, profiles, q, cidade, onboarding, quando, dataDe, dataAte]);
+
+  useEffect(() => { setPage(0); }, [q, cidade, onboarding, quando, dataDe, dataAte]);
+
+  const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const exportar = () => baixarCsv(
+    `casais-${new Date().toISOString().slice(0, 10)}.csv`,
+    ["Nome", "Parceiro(a)", "Data", "Cidade", "Convidados", "Orçamento", "Onboarding"],
+    filtered.map((c) => [
+      profiles[c.user_id]?.full_name || "",
+      c.partner_name || "",
+      c.wedding_date || "",
+      c.wedding_city || "",
+      c.estimated_guests || "",
+      c.estimated_budget || "",
+      c.onboarding_completed ? "concluído" : "pendente",
+    ])
+  );
 
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar casal..." className="pl-9" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 border rounded-lg p-3 bg-card">
+        <div className="relative md:col-span-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar casal..." className="pl-9" />
+        </div>
+        <Select value={cidade} onValueChange={setCidade}>
+          <SelectTrigger><SelectValue placeholder="Cidade" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as cidades</SelectItem>
+            {cidades.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={onboarding} onValueChange={(v) => setOnboarding(v as any)}>
+          <SelectTrigger><SelectValue placeholder="Onboarding" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todo onboarding</SelectItem>
+            <SelectItem value="ok">Onboarding concluído</SelectItem>
+            <SelectItem value="pendente">Onboarding pendente</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={quando} onValueChange={(v) => setQuando(v as any)}>
+          <SelectTrigger><SelectValue placeholder="Período" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Qualquer data</SelectItem>
+            <SelectItem value="futuro">Casamentos futuros</SelectItem>
+            <SelectItem value="90">Próximos 90 dias</SelectItem>
+            <SelectItem value="passado">Já casaram</SelectItem>
+            <SelectItem value="sem_data">Sem data</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input type="date" value={dataDe} onChange={(e) => setDataDe(e.target.value)} />
+        <Input type="date" value={dataAte} onChange={(e) => setDataAte(e.target.value)} />
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => { setQ(""); setCidade("all"); setOnboarding("all"); setQuando("all"); setDataDe(""); setDataAte(""); }}>Limpar</Button>
+          <Button variant="outline" size="sm" onClick={exportar} disabled={!filtered.length}><Download className="w-4 h-4 mr-1" />CSV</Button>
+        </div>
       </div>
-      {filtered.map((c) => {
+
+      <p className="text-xs text-muted-foreground">{filtered.length} casal(is)</p>
+
+      {pageRows.map((c) => {
         const prof = profiles[c.user_id];
         const days = daysUntil(c.wedding_date);
         return (
@@ -70,6 +150,7 @@ function CoupleList() {
         );
       })}
       {filtered.length === 0 && <p className="text-sm text-muted-foreground">Nenhum casal.</p>}
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
     </div>
   );
 }
