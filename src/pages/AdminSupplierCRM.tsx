@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,13 +8,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send, Search, ExternalLink } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Send, Search, ExternalLink, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import AdminPagination from "@/components/admin/AdminPagination";
+import { baixarCsv } from "@/lib/csv";
+
+const PAGE_SIZE = 20;
 
 function SupplierList() {
   const navigate = useNavigate();
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [q, setQ] = useState("");
+  const [status, setStatus] = useState("all");
+  const [categoria, setCategoria] = useState("all");
+  const [cidade, setCidade] = useState("all");
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     supabase.from("suppliers").select("*, categories(name)").order("created_at", { ascending: false }).then(({ data }) => {
@@ -22,17 +31,66 @@ function SupplierList() {
     });
   }, []);
 
-  const filtered = suppliers.filter((s) =>
-    !q || [s.company_name, s.email, s.city].some((v) => String(v || "").toLowerCase().includes(q.toLowerCase()))
+  const categorias = useMemo(() => Array.from(new Set(suppliers.map((s) => s.categories?.name).filter(Boolean))).sort() as string[], [suppliers]);
+  const cidades = useMemo(() => Array.from(new Set(suppliers.map((s) => s.city).filter(Boolean))).sort() as string[], [suppliers]);
+
+  const filtered = useMemo(() => suppliers.filter((s) => {
+    if (q && ![s.company_name, s.email, s.city].some((v) => String(v || "").toLowerCase().includes(q.toLowerCase()))) return false;
+    if (status !== "all" && s.status !== status) return false;
+    if (categoria !== "all" && s.categories?.name !== categoria) return false;
+    if (cidade !== "all" && s.city !== cidade) return false;
+    return true;
+  }), [suppliers, q, status, categoria, cidade]);
+
+  useEffect(() => { setPage(0); }, [q, status, categoria, cidade]);
+
+  const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const exportar = () => baixarCsv(
+    `fornecedores-${new Date().toISOString().slice(0, 10)}.csv`,
+    ["Empresa", "Categoria", "Cidade", "UF", "E-mail", "Telefone", "Status", "Nota", "Avaliações"],
+    filtered.map((s) => [s.company_name, s.categories?.name || "", s.city || "", s.state || "", s.email || "", s.phone || "", s.status, s.rating || "", s.review_count || 0])
   );
 
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar fornecedor..." className="pl-9" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 border rounded-lg p-3 bg-card">
+        <div className="relative md:col-span-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar fornecedor..." className="pl-9" />
+        </div>
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="approved">Aprovados</SelectItem>
+            <SelectItem value="pending">Pendentes</SelectItem>
+            <SelectItem value="rejected">Rejeitados</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={categoria} onValueChange={setCategoria}>
+          <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as categorias</SelectItem>
+            {categorias.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={cidade} onValueChange={setCidade}>
+          <SelectTrigger><SelectValue placeholder="Cidade" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as cidades</SelectItem>
+            {cidades.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <div className="md:col-span-3 flex gap-2 justify-end">
+          <Button variant="ghost" size="sm" onClick={() => { setQ(""); setStatus("all"); setCategoria("all"); setCidade("all"); }}>Limpar</Button>
+          <Button variant="outline" size="sm" onClick={exportar} disabled={!filtered.length}><Download className="w-4 h-4 mr-1" />CSV</Button>
+        </div>
       </div>
-      {filtered.map((s) => (
+
+      <p className="text-xs text-muted-foreground">{filtered.length} fornecedor(es)</p>
+
+      {pageRows.map((s) => (
         <Card key={s.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate(`/admin/fornecedor/${s.id}`)}>
           <CardContent className="p-3 flex justify-between flex-wrap gap-2 text-sm">
             <div>
@@ -45,6 +103,8 @@ function SupplierList() {
           </CardContent>
         </Card>
       ))}
+      {filtered.length === 0 && <p className="text-sm text-muted-foreground">Nenhum fornecedor.</p>}
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
     </div>
   );
 }
