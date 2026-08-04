@@ -1379,6 +1379,39 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_packages: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          dias: number
+          id: string
+          label: string
+          ordem: number
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          dias?: number
+          id?: string
+          label: string
+          ordem?: number
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          dias?: number
+          id?: string
+          label?: string
+          ordem?: number
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       featured_purchases: {
         Row: {
           ambiente: string
@@ -3196,6 +3229,7 @@ export type Database = {
           ordem: number
           preco_anual: number
           preco_mensal: number
+          recursos: Json
           slug: string
           updated_at: string
         }
@@ -3211,6 +3245,7 @@ export type Database = {
           ordem?: number
           preco_anual?: number
           preco_mensal?: number
+          recursos?: Json
           slug: string
           updated_at?: string
         }
@@ -3226,6 +3261,7 @@ export type Database = {
           ordem?: number
           preco_anual?: number
           preco_mensal?: number
+          recursos?: Json
           slug?: string
           updated_at?: string
         }
