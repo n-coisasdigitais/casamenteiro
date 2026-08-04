@@ -24,6 +24,10 @@ import SupplierProfile from "./pages/SupplierProfile";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import FornecedorPlanos from "./pages/FornecedorPlanos";
 import Pagamento from "./pages/Pagamento";
+import PagamentoStatus from "./pages/PagamentoStatus";
+import Comprovante from "./pages/Comprovante";
+import FornecedorFaturas from "./pages/FornecedorFaturas";
+import MinhasReservas from "./pages/MinhasReservas";
 import SupplierLanding from "./pages/SupplierLanding";
 import SupplierOnboarding from "./pages/SupplierOnboarding";
 import AdminPanel from "./pages/AdminPanel";
@@ -80,6 +84,7 @@ import AdminPlatformPrices from "./pages/AdminPlatformPrices";
 import AdminReservations from "./pages/AdminReservations";
 import AdminIdleDates from "./pages/AdminIdleDates";
 import AdminCommissionLedger from "./pages/AdminCommissionLedger";
+import AdminWebhooks from "./pages/AdminWebhooks";
 import AdminStaffJobs from "./pages/AdminStaffJobs";
 import AdminProfissionais from "./pages/AdminProfissionais";
 
@@ -128,6 +133,10 @@ const App = () => (
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
             <Route path="/fornecedor/planos" element={<FornecedorPlanos />} />
             <Route path="/pagamento" element={<Pagamento />} />
+            <Route path="/pagamento/status" element={<PagamentoStatus />} />
+            <Route path="/comprovante/:id" element={<Comprovante />} />
+            <Route path="/fornecedor/faturas" element={<FornecedorFaturas />} />
+            <Route path="/meu-casamento/reservas" element={<MinhasReservas />} />
             <Route path="/fornecedor" element={<SupplierLanding />} />
             <Route path="/fornecedor/login" element={<Auth />} />
             <Route path="/fornecedor/cadastro" element={<SupplierOnboarding />} />
@@ -174,6 +183,7 @@ const App = () => (
             <Route path="/admin/tabela-precos" element={<AdminLayout><AdminPlatformPrices /></AdminLayout>} />
             <Route path="/admin/reservas" element={<FlagGate flag="reserva_datas_ociosas"><AdminLayout><AdminReservations /></AdminLayout></FlagGate>} />
             <Route path="/admin/datas-ociosas" element={<FlagGate flag="datas_ociosas"><AdminLayout><AdminIdleDates /></AdminLayout></FlagGate>} />
+            <Route path="/admin/webhooks" element={<AdminLayout><AdminWebhooks /></AdminLayout>} />
             <Route path="/admin/corretagem" element={<FlagGate flag="corretagem_datas_ociosas"><AdminLayout><AdminCommissionLedger /></AdminLayout></FlagGate>} />
             <Route path="/admin/vagas" element={<FlagGate flag="vagas"><AdminLayout><AdminStaffJobs /></AdminLayout></FlagGate>} />
             <Route path="/admin/profissionais" element={<FlagGate flag="vagas"><AdminLayout><AdminProfissionais /></AdminLayout></FlagGate>} />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -131,8 +131,8 @@ export default function AdminWebhooks() {
               </TableHeader>
               <TableBody>
                 {rows.map((r) => (
-                  <>
-                    <TableRow key={r.id}>
+                  <Fragment key={r.id}>
+                    <TableRow>
                       <TableCell className="whitespace-nowrap">{formatarDataHora(r.created_at)}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={r.ambiente === "live" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}>
@@ -153,7 +153,7 @@ export default function AdminWebhooks() {
                         </Badge>
                       </TableCell>
                     </TableRow>
-                    <TableRow key={`${r.id}-payload`}>
+                    <TableRow>
                       <TableCell colSpan={8} className="py-1">
                         <Collapsible>
                           <CollapsibleTrigger className="text-xs text-muted-foreground underline">
@@ -167,7 +167,7 @@ export default function AdminWebhooks() {
                         </Collapsible>
                       </TableCell>
                     </TableRow>
-                  </>
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>
