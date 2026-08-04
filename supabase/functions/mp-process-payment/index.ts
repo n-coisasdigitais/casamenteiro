@@ -68,16 +68,44 @@ Deno.serve(async (req) => {
   // application_fee só é aceito em pagamentos de marketplace (com conta do vendedor).
   if (tipo === 'reserva' && Number(intent.comissao) > 0) payload.application_fee = Number(intent.comissao)
 
-  const res = await fetch('https://api.mercadopago.com/v1/payments', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'X-Idempotency-Key': crypto.randomUUID(),
-    },
-    body: JSON.stringify(payload),
-  })
-  const pagamento = await res.json().catch(() => ({} as any))
+  const criarPagamento = async (corpo: Record<string, unknown>) => {
+    const r = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': crypto.randomUUID(),
+      },
+      body: JSON.stringify(corpo),
+    })
+    return { r, body: await r.json().catch(() => ({} as any)) }
+  }
+
+  // O MP às vezes devolve 500 "internal_error" por causa de campos opcionais
+  // (notification_url / external_reference / description). Tentamos variações.
+  const { notification_url: _n, external_reference: _e, description: _d, ...minimo } = payload
+  const variantes: Array<[string, Record<string, unknown>]> = [
+    ['completo', payload],
+    ['sem notification_url', { ...payload, notification_url: undefined }],
+    ['mínimo', minimo],
+  ]
+
+  let res!: Response
+  let pagamento: any = {}
+  for (const [nome, corpo] of variantes) {
+    const limpo = JSON.parse(JSON.stringify(corpo))
+    const tentativa = await criarPagamento(limpo)
+    res = tentativa.r
+    pagamento = tentativa.body
+    if (res.ok) {
+      if (nome !== 'completo') console.log('Pagamento criado com variante:', nome)
+      break
+    }
+    console.error(`Falha variante "${nome}":`, res.status, JSON.stringify(pagamento), 'req-id:', res.headers.get('x-request-id'))
+    // Erros de negócio (4xx) não melhoram com nova tentativa.
+    if (res.status < 500) break
+  }
+
   if (!res.ok) {
     console.error('Erro MP payment:', res.status, JSON.stringify(pagamento), 'req-id:', res.headers.get('x-request-id'))
     console.error('Payload enviado:', JSON.stringify({ ...payload, token: payload.token ? 'REDACTED' : null }))
