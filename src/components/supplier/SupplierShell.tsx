@@ -5,10 +5,10 @@ import UserMenu from "@/components/UserMenu";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { label: "Painel", to: "/fornecedor?tab=painel", match: "painel", icon: LayoutDashboard },
-  { label: "Orçamentos", to: "/fornecedor?tab=orcamentos", match: "orcamentos", icon: MessageSquare },
-  { label: "Meu negócio", to: "/fornecedor?tab=negocio", match: "negocio", icon: Store },
-  { label: "Avaliações", to: "/fornecedor?tab=avaliacoes", match: "avaliacoes", icon: Star },
+  { label: "Painel", to: "/fornecedor/painel?tab=painel", match: "painel", icon: LayoutDashboard },
+  { label: "Orçamentos", to: "/fornecedor/painel?tab=orcamentos", match: "orcamentos", icon: MessageSquare },
+  { label: "Meu negócio", to: "/fornecedor/painel?tab=negocio", match: "negocio", icon: Store },
+  { label: "Avaliações", to: "/fornecedor/painel?tab=avaliacoes", match: "avaliacoes", icon: Star },
   { label: "Planos e destaques", to: "/fornecedor/planos", match: "/fornecedor/planos", icon: Sparkles },
   { label: "Faturas e pagamentos", to: "/fornecedor/faturas", match: "/fornecedor/faturas", icon: Receipt },
 ];
