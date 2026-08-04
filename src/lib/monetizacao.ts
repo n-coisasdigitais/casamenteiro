@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { PlanLimites, PlanRecursos } from "@/lib/planFeatures";
 
 export type Plano = {
   id: string;
@@ -8,7 +9,8 @@ export type Plano = {
   preco_mensal: number;
   preco_anual: number;
   beneficios: string[];
-  limites: Record<string, unknown>;
+  limites: PlanLimites;
+  recursos: PlanRecursos;
   destaque_busca: boolean;
   ordem: number;
 };
@@ -37,21 +39,41 @@ export const DESTAQUE_STATUS_LABEL: Record<string, string> = {
   cancelado: "Cancelado",
 };
 
+export type PacoteDestaque = {
+  id: string;
+  label: string;
+  dias: number;
+  valor: number;
+  ativo: boolean;
+  ordem: number;
+};
+
+/** Fallback usado apenas se o admin ainda não cadastrou pacotes. */
 export const PACOTES_DESTAQUE = [
   { dias: 7, valor: 89, label: "7 dias" },
   { dias: 15, valor: 159, label: "15 dias" },
   { dias: 30, valor: 279, label: "30 dias" },
 ];
 
+export async function listarPacotesDestaque(incluirInativos = false): Promise<PacoteDestaque[]> {
+  let q = (supabase.from("featured_packages" as any)
+    .select("id, label, dias, valor, ativo, ordem")
+    .order("ordem", { ascending: true }) as any);
+  if (!incluirInativos) q = q.eq("ativo", true);
+  const { data } = await q;
+  return ((data as any[]) ?? []).map((p) => ({ ...p, valor: Number(p.valor), dias: Number(p.dias) })) as PacoteDestaque[];
+}
+
 export async function listarPlanos(): Promise<Plano[]> {
   const { data } = await (supabase.from("subscription_plans" as any)
-    .select("id, slug, nome, descricao, preco_mensal, preco_anual, beneficios, limites, destaque_busca, ordem")
+    .select("id, slug, nome, descricao, preco_mensal, preco_anual, beneficios, limites, recursos, destaque_busca, ordem")
     .eq("ativo", true)
     .order("ordem", { ascending: true }) as any);
   return ((data as any[]) ?? []).map((p) => ({
     ...p,
     beneficios: Array.isArray(p.beneficios) ? p.beneficios : [],
     limites: p.limites ?? {},
+    recursos: p.recursos ?? {},
   })) as Plano[];
 }
 

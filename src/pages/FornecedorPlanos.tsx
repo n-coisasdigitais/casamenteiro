@@ -11,10 +11,11 @@ import SEO from "@/components/SEO";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { formatBRL } from "@/lib/platformPricing";
+import SupplierShell from "@/components/supplier/SupplierShell";
 import {
   listarPlanos, assinaturaAtual, criarAssinatura, criarCompraDestaque,
-  ASSINATURA_STATUS_LABEL, DESTAQUE_STATUS_LABEL, PACOTES_DESTAQUE,
-  type Plano, type Assinatura,
+  ASSINATURA_STATUS_LABEL, DESTAQUE_STATUS_LABEL, PACOTES_DESTAQUE, listarPacotesDestaque,
+  type Plano, type Assinatura, type PacoteDestaque,
 } from "@/lib/monetizacao";
 
 export default function FornecedorPlanos() {
@@ -26,6 +27,7 @@ export default function FornecedorPlanos() {
 
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [planos, setPlanos] = useState<Plano[]>([]);
+  const [pacotes, setPacotes] = useState<PacoteDestaque[]>([]);
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
   const [destaques, setDestaques] = useState<any[]>([]);
   const [ciclo, setCiclo] = useState<"mensal" | "anual">("mensal");
@@ -39,9 +41,14 @@ export default function FornecedorPlanos() {
         .from("suppliers").select("id").eq("user_id", user.id).maybeSingle();
       if (!fornecedor) { setCarregando(false); return; }
       setSupplierId(fornecedor.id);
-      const [ps, a] = await Promise.all([listarPlanos(), assinaturaAtual(fornecedor.id)]);
+      const [ps, a, pk] = await Promise.all([listarPlanos(), assinaturaAtual(fornecedor.id), listarPacotesDestaque()]);
       setPlanos(ps);
       setAssinatura(a);
+      setPacotes(
+        pk.length > 0
+          ? pk
+          : PACOTES_DESTAQUE.map((p) => ({ id: `fallback-${p.dias}`, label: p.label, dias: p.dias, valor: p.valor, ativo: true, ordem: p.dias }))
+      );
       const { data: fp } = await (supabase.from("featured_purchases" as any)
         .select("id, dias, valor, status, inicio, fim")
         .eq("supplier_id", fornecedor.id)
@@ -84,22 +91,27 @@ export default function FornecedorPlanos() {
 
   if (carregando) {
     return (
-      <div className="container mx-auto px-4 py-16 flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Carregando planos...
-      </div>
+      <SupplierShell>
+        <div className="container mx-auto px-4 py-16 flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando planos...
+        </div>
+      </SupplierShell>
     );
   }
 
   if (!supplierId) {
     return (
-      <div className="container mx-auto max-w-xl px-4 py-16 text-center space-y-4">
+      <SupplierShell>
+        <div className="container mx-auto max-w-xl px-4 py-16 text-center space-y-4">
         <p>Complete o cadastro do seu negócio para acessar os planos.</p>
-        <Button onClick={() => navigate("/fornecedor/cadastro")}>Completar cadastro</Button>
-      </div>
+          <Button onClick={() => navigate("/fornecedor/cadastro")}>Completar cadastro</Button>
+        </div>
+      </SupplierShell>
     );
   }
 
   return (
+    <SupplierShell>
     <div className="container mx-auto max-w-5xl px-4 py-10 space-y-10">
       <SEO title="Planos e destaques | Meu Grande Dia" description="Escolha seu plano e amplie a visibilidade do seu negócio." noIndex />
 
@@ -195,8 +207,8 @@ export default function FornecedorPlanos() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
-            {PACOTES_DESTAQUE.map((pac) => (
-              <Card key={pac.dias}>
+            {pacotes.map((pac) => (
+              <Card key={pac.id}>
                 <CardHeader><CardTitle className="text-base">{pac.label}</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-xl font-semibold">{formatBRL(pac.valor)}</p>
@@ -236,5 +248,6 @@ export default function FornecedorPlanos() {
         )}
       </section>
     </div>
+    </SupplierShell>
   );
 }

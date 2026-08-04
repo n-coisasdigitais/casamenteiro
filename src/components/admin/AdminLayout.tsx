@@ -50,6 +50,7 @@ const groups = [
       { title: "Transações", url: "/admin/transacoes", icon: Receipt },
       { title: "Simulações", url: "/admin/simulacoes", icon: Calculator },
       { title: "Tabela de preços", url: "/admin/tabela-precos", icon: Tag },
+      { title: "Planos e destaques", url: "/admin/planos", icon: Sparkles },
       { title: "Reservas", url: "/admin/reservas", icon: CalendarRange },
       { title: "Datas ociosas", url: "/admin/datas-ociosas", icon: Sparkles },
       { title: "Corretagem", url: "/admin/corretagem", icon: Tag },

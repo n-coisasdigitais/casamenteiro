@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ type Reserva = {
 export default function SupplierReservationsTab({ supplierId, categoriaSlug }: { supplierId: string; categoriaSlug?: string | null }) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<{ r: Reserva; taxa: number } | null>(null);
@@ -67,7 +69,12 @@ export default function SupplierReservationsTab({ supplierId, categoriaSlug }: {
       .eq("id", r.id);
     setConfirming(null);
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Reserva confirmada", description: `Taxa de ${formatBRL(taxa)} ficará como pendente até compensação.` });
+    if (taxa > 0) {
+      toast({ title: "Reserva confirmada", description: `Falta pagar a taxa de ${formatBRL(taxa)} para liberar a data.` });
+      navigate(`/pagamento?tipo=reserva&ref=${r.id}`);
+      return;
+    }
+    toast({ title: "Reserva confirmada" });
     load();
   };
 
@@ -105,7 +112,17 @@ export default function SupplierReservationsTab({ supplierId, categoriaSlug }: {
         <h3 className="font-semibold mb-2">Histórico</h3>
         {outras.length === 0 && <p className="text-sm text-muted-foreground italic">Sem histórico ainda.</p>}
         <div className="grid gap-3">
-          {outras.map(r => <ReservationCard key={r.id} r={r} />)}
+          {outras.map(r => (
+            <ReservationCard
+              key={r.id}
+              r={r}
+              onPay={
+                r.status === "confirmada" && r.taxa_status === "pendente" && (r.taxa_plataforma ?? 0) > 0
+                  ? () => navigate(`/pagamento?tipo=reserva&ref=${r.id}`)
+                  : undefined
+              }
+            />
+          ))}
         </div>
       </section>
 
@@ -128,7 +145,7 @@ export default function SupplierReservationsTab({ supplierId, categoriaSlug }: {
   );
 }
 
-function ReservationCard({ r, onConfirm, onDecline }: { r: Reserva; onConfirm?: () => void; onDecline?: () => void }) {
+function ReservationCard({ r, onConfirm, onDecline, onPay }: { r: Reserva; onConfirm?: () => void; onDecline?: () => void; onPay?: () => void }) {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -157,6 +174,11 @@ function ReservationCard({ r, onConfirm, onDecline }: { r: Reserva; onConfirm?: 
           <div className="flex gap-2 pt-2">
             <Button size="sm" onClick={onConfirm}><CheckCircle2 className="h-4 w-4 mr-1" /> Confirmar</Button>
             <Button size="sm" variant="outline" onClick={onDecline}><XCircle className="h-4 w-4 mr-1" /> Recusar</Button>
+          </div>
+        )}
+        {onPay && (
+          <div className="pt-2">
+            <Button size="sm" onClick={onPay}>Pagar taxa da plataforma</Button>
           </div>
         )}
       </CardContent>
