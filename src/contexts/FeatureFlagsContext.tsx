@@ -21,7 +21,10 @@ export type FeatureFlagKey =
   | "tabela_precos"
   | "corretagem_datas_ociosas"
   | "crm_fornecedor"
-  | "avaliacoes_plataforma";
+  | "avaliacoes_plataforma"
+  | "assinatura_fornecedor"
+  | "destaque_pago"
+  | "checkout_transparente";
 
 // Defaults espelham o seed da migration — evita flicker enquanto carrega.
 export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
@@ -40,11 +43,14 @@ export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
   indicacoes: false,
   avaliacao_bidirecional: false,
   vagas: false,
-  reserva_datas_ociosas: false,
+  reserva_datas_ociosas: true,
   tabela_precos: false,
-  corretagem_datas_ociosas: false,
+  corretagem_datas_ociosas: true,
   crm_fornecedor: true,
   avaliacoes_plataforma: false,
+  assinatura_fornecedor: false,
+  destaque_pago: false,
+  checkout_transparente: false,
 };
 
 type Ctx = {

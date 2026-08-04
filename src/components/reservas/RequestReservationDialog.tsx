@@ -109,12 +109,15 @@ export default function RequestReservationDialog({ supplierId, supplierName, pro
     }
 
     toast({
-      title: isCorretagem ? "Solicitação enviada — pagamento em breve" : "Solicitação enviada",
+      title: isCorretagem ? "Reserva criada — finalize o pagamento" : "Solicitação enviada",
       description: isCorretagem
-        ? "Pagamentos pela plataforma serão liberados em breve. A data só é garantida após pagamento confirmado."
+        ? "A data só é garantida após o pagamento confirmado."
         : "A data só é garantida após a confirmação do fornecedor. Você receberá uma notificação.",
     });
     onOpenChange(false);
+    if (isCorretagem && inserted?.id) {
+      navigate(`/pagamento?tipo=reserva&ref=${inserted.id}`);
+    }
   };
 
   return (
@@ -134,7 +137,7 @@ export default function RequestReservationDialog({ supplierId, supplierName, pro
             <div className="rounded-md bg-emerald-50 border border-emerald-200 p-3 text-emerald-900 text-xs space-y-1">
               <p>Valor total: <strong>{formatBRL(Number(valorOfertado))}</strong></p>
               <p>O pagamento é feito dentro da plataforma. A data só é garantida <strong>após o pagamento confirmado</strong>.</p>
-              <p className="italic">Pagamentos pela plataforma serão liberados em breve.</p>
+              <p>Ao continuar você vai direto para o pagamento seguro.</p>
             </div>
           ) : (
             <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-amber-900 text-xs">
@@ -154,7 +157,7 @@ export default function RequestReservationDialog({ supplierId, supplierName, pro
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={submit} disabled={saving}>
-            {saving ? "Enviando..." : isCorretagem ? "Reservar (pagamento em breve)" : "Enviar solicitação"}
+            {saving ? "Enviando..." : isCorretagem ? "Reservar e pagar" : "Enviar solicitação"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1379,6 +1379,69 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_purchases: {
+        Row: {
+          ambiente: string
+          created_at: string
+          dias: number
+          escopo_categoria_id: string | null
+          escopo_cidade: string | null
+          fim: string | null
+          id: string
+          inicio: string | null
+          mp_payment_id: string | null
+          status: string
+          supplier_id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ambiente?: string
+          created_at?: string
+          dias?: number
+          escopo_categoria_id?: string | null
+          escopo_cidade?: string | null
+          fim?: string | null
+          id?: string
+          inicio?: string | null
+          mp_payment_id?: string | null
+          status?: string
+          supplier_id: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ambiente?: string
+          created_at?: string
+          dias?: number
+          escopo_categoria_id?: string | null
+          escopo_cidade?: string | null
+          fim?: string | null
+          id?: string
+          inicio?: string | null
+          mp_payment_id?: string | null
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "featured_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fornecedor_aprovacoes: {
         Row: {
           acao: string
@@ -2018,6 +2081,60 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      payment_intents: {
+        Row: {
+          ambiente: string
+          comissao: number
+          couple_id: string | null
+          created_at: string
+          detalhes: Json
+          id: string
+          metodo: string | null
+          mp_payment_id: string | null
+          referencia_id: string | null
+          status: string
+          supplier_id: string | null
+          tipo: string
+          updated_at: string
+          user_id: string | null
+          valor: number
+        }
+        Insert: {
+          ambiente?: string
+          comissao?: number
+          couple_id?: string | null
+          created_at?: string
+          detalhes?: Json
+          id?: string
+          metodo?: string | null
+          mp_payment_id?: string | null
+          referencia_id?: string | null
+          status?: string
+          supplier_id?: string | null
+          tipo: string
+          updated_at?: string
+          user_id?: string | null
+          valor?: number
+        }
+        Update: {
+          ambiente?: string
+          comissao?: number
+          couple_id?: string | null
+          created_at?: string
+          detalhes?: Json
+          id?: string
+          metodo?: string | null
+          mp_payment_id?: string | null
+          referencia_id?: string | null
+          status?: string
+          supplier_id?: string | null
+          tipo?: string
+          updated_at?: string
+          user_id?: string | null
+          valor?: number
         }
         Relationships: []
       }
@@ -2999,6 +3116,121 @@ export type Database = {
           },
         ]
       }
+      subscription_invoices: {
+        Row: {
+          ambiente: string
+          created_at: string
+          id: string
+          mp_payment_id: string | null
+          pago_em: string | null
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          status: string
+          subscription_id: string
+          supplier_id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ambiente?: string
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          pago_em?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          status?: string
+          subscription_id: string
+          supplier_id: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ambiente?: string
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          pago_em?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          status?: string
+          subscription_id?: string
+          supplier_id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_invoices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_invoices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          ativo: boolean
+          beneficios: Json
+          created_at: string
+          descricao: string | null
+          destaque_busca: boolean
+          id: string
+          limites: Json
+          nome: string
+          ordem: number
+          preco_anual: number
+          preco_mensal: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          beneficios?: Json
+          created_at?: string
+          descricao?: string | null
+          destaque_busca?: boolean
+          id?: string
+          limites?: Json
+          nome: string
+          ordem?: number
+          preco_anual?: number
+          preco_mensal?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          beneficios?: Json
+          created_at?: string
+          descricao?: string | null
+          destaque_busca?: boolean
+          id?: string
+          limites?: Json
+          nome?: string
+          ordem?: number
+          preco_anual?: number
+          preco_mensal?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       supplier_attachments: {
         Row: {
           created_at: string
@@ -3695,6 +3927,76 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_subscriptions: {
+        Row: {
+          ambiente: string
+          cancelada_em: string | null
+          ciclo: string
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          mp_preapproval_id: string | null
+          plan_id: string
+          status: string
+          supplier_id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ambiente?: string
+          cancelada_em?: string | null
+          ciclo?: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          mp_preapproval_id?: string | null
+          plan_id: string
+          status?: string
+          supplier_id: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ambiente?: string
+          cancelada_em?: string | null
+          ciclo?: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          mp_preapproval_id?: string | null
+          plan_id?: string
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_subscriptions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_subscriptions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           accepts_idle_dates: boolean
@@ -3708,6 +4010,7 @@ export type Database = {
           description: string | null
           email: string | null
           featured: boolean
+          featured_until: string | null
           guest_max: number | null
           guest_min: number | null
           id: string
@@ -3747,6 +4050,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           featured?: boolean
+          featured_until?: string | null
           guest_max?: number | null
           guest_min?: number | null
           id?: string
@@ -3786,6 +4090,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           featured?: boolean
+          featured_until?: string | null
           guest_max?: number | null
           guest_min?: number | null
           id?: string
@@ -4205,6 +4510,7 @@ export type Database = {
         Args: { _couple_id: string }
         Returns: number
       }
+      expirar_monetizacao: { Args: never; Returns: undefined }
       expire_idle_reservations: { Args: never; Returns: number }
       generate_couple_profile_slug: {
         Args: { _nome: string; _wedding_date: string }
