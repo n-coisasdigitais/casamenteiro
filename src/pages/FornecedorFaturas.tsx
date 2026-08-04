@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2, Receipt } from "lucide-react";
 import SEO from "@/components/SEO";
 import { formatBRL } from "@/lib/platformPricing";
+import SupplierShell from "@/components/supplier/SupplierShell";
 import {
   ETAPA_LABEL, ETAPA_TONE, etapaDoStatus, formatarDataHora, TIPO_LABEL, PaymentIntent,
 } from "@/lib/pagamentos";
@@ -40,6 +41,7 @@ export default function FornecedorFaturas() {
   }, [user, navigate]);
 
   return (
+    <SupplierShell>
     <div className="container mx-auto max-w-5xl px-4 py-8 space-y-6">
       <SEO title="Faturas e pagamentos | Meu Grande Dia" description="Histórico de cobranças, assinaturas e destaques." noIndex />
       <div className="flex items-center gap-2">
@@ -136,5 +138,6 @@ export default function FornecedorFaturas() {
         </>
       )}
     </div>
+    </SupplierShell>
   );
 }
