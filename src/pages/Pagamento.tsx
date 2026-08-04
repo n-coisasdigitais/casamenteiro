@@ -72,7 +72,15 @@ export default function Pagamento() {
                 body: { tipo, referencia_id: ref, formData },
               });
               if (error) {
-                toast({ title: "Pagamento não aprovado", description: "Tente outro meio de pagamento.", variant: "destructive" });
+                let detalhe = "Tente outro meio de pagamento.";
+                try {
+                  const ctx = (error as any)?.context;
+                  if (ctx?.json) {
+                    const j = await ctx.json();
+                    if (j?.detalhe) detalhe = String(j.detalhe);
+                  }
+                } catch { /* ignora */ }
+                toast({ title: "Pagamento não aprovado", description: detalhe, variant: "destructive" });
                 throw error;
               }
               if (data?.status === "approved") toast({ title: "Pagamento aprovado!" });
