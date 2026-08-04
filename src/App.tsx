@@ -22,6 +22,8 @@ import WeddingGuests from "./pages/WeddingGuests";
 import WeddingPlan from "./pages/WeddingPlan";
 import SupplierProfile from "./pages/SupplierProfile";
 import SupplierDashboard from "./pages/SupplierDashboard";
+import FornecedorPlanos from "./pages/FornecedorPlanos";
+import Pagamento from "./pages/Pagamento";
 import SupplierLanding from "./pages/SupplierLanding";
 import SupplierOnboarding from "./pages/SupplierOnboarding";
 import AdminPanel from "./pages/AdminPanel";
@@ -124,6 +126,8 @@ const App = () => (
             <Route path="/i/:codigo" element={<FlagGate flag="indicacoes"><CapturarIndicacao /></FlagGate>} />
             <Route path="/fornecedor/:id" element={<SupplierProfile />} />
             <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
+            <Route path="/fornecedor/planos" element={<FornecedorPlanos />} />
+            <Route path="/pagamento" element={<Pagamento />} />
             <Route path="/fornecedor" element={<SupplierLanding />} />
             <Route path="/fornecedor/login" element={<Auth />} />
             <Route path="/fornecedor/cadastro" element={<SupplierOnboarding />} />
