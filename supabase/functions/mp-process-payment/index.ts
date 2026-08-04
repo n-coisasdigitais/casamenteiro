@@ -47,31 +47,52 @@ Deno.serve(async (req) => {
   if (!accessToken) return json({ error: `Credencial do Mercado Pago ausente (${ambiente}).` }, 503)
 
   const payload: Record<string, unknown> = {
-    transaction_amount: Number(intent.valor),
+    transaction_amount: Number(Number(intent.valor).toFixed(2)),
     description: `${tipo} ${referencia_id}`,
     external_reference: `${tipo}:${referencia_id}`,
     payment_method_id: formData.payment_method_id,
-    payer: formData.payer,
+    payer: {
+      email: formData?.payer?.email,
+      ...(formData?.payer?.identification?.number
+        ? { identification: {
+            type: formData.payer.identification.type ?? 'CPF',
+            number: String(formData.payer.identification.number).replace(/\D/g, ''),
+          } }
+        : {}),
+    },
     notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,
   }
   if (formData.token) payload.token = formData.token
   if (formData.installments) payload.installments = Number(formData.installments)
-  if (formData.issuer_id) payload.issuer_id = formData.issuer_id
-  if (Number(intent.comissao) > 0) payload.application_fee = Number(intent.comissao)
+  if (formData.issuer_id) payload.issuer_id = String(formData.issuer_id)
+  // application_fee só é aceito em pagamentos de marketplace (com conta do vendedor).
+  if (tipo === 'reserva' && Number(intent.comissao) > 0) payload.application_fee = Number(intent.comissao)
 
   const res = await fetch('https://api.mercadopago.com/v1/payments', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
-      'X-Idempotency-Key': `${tipo}-${referencia_id}-${Date.now()}`,
+      'X-Idempotency-Key': crypto.randomUUID(),
     },
     body: JSON.stringify(payload),
   })
   const pagamento = await res.json().catch(() => ({} as any))
   if (!res.ok) {
-    console.error('Erro MP payment:', res.status, pagamento)
-    return json({ error: 'Falha ao processar pagamento', detalhe: pagamento?.message ?? null }, res.status)
+    console.error('Erro MP payment:', res.status, JSON.stringify(pagamento), 'req-id:', res.headers.get('x-request-id'))
+    console.error('Payload enviado:', JSON.stringify({ ...payload, token: payload.token ? 'REDACTED' : null }))
+    // Diagnóstico: a credencial de acesso corresponde à conta que gerou o token do cartão?
+    try {
+      const me = await fetch('https://api.mercadopago.com/users/me', { headers: { Authorization: `Bearer ${accessToken}` } })
+      const meJson = await me.json().catch(() => ({}))
+      console.error('MP conta do access token:', me.status, JSON.stringify({ id: meJson?.id, site: meJson?.site_id, email: meJson?.email }))
+    } catch (_) { /* ignora */ }
+    return json({
+      error: 'Falha ao processar pagamento',
+      detalhe: pagamento?.message ?? null,
+      causa: pagamento?.cause ?? null,
+      ambiente,
+    }, res.status >= 500 ? 502 : res.status)
   }
 
   await admin.from('payment_intents').update({
