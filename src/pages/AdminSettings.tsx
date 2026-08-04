@@ -222,10 +222,6 @@ export default function AdminSettings() {
         </section>
 
         <section>
-        <h2 className="text-lg font-semibold mb-1">Distribuição padrão do orçamento</h2>
-        </section>
-
-        <section>
           <h2 className="text-lg font-semibold mb-1">Regras de reserva de datas ociosas</h2>
           <p className="text-sm text-muted-foreground mb-4">
             O valor da taxa de cancelamento fica na tabela de preços da plataforma. Cada fornecedor pode ter uma antecedência própria.
@@ -244,6 +240,7 @@ export default function AdminSettings() {
         </section>
 
         <section>
+        <h2 className="text-lg font-semibold mb-1">Distribuição padrão do orçamento</h2>
         <p className="text-sm text-muted-foreground mb-4">Percentuais aplicados quando o casal não personaliza. A soma precisa ser 100%.</p>
         <div className="space-y-3 border rounded-lg p-4">
           {Object.entries(dist).map(([k, v]) => (
