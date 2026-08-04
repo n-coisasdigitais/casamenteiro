@@ -50,7 +50,7 @@ export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
   avaliacoes_plataforma: false,
   assinatura_fornecedor: false,
   destaque_pago: false,
-  checkout_transparente: false,
+  checkout_transparente: true,
 };
 
 type Ctx = {
