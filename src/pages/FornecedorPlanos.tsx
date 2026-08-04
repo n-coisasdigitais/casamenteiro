@@ -91,22 +91,27 @@ export default function FornecedorPlanos() {
 
   if (carregando) {
     return (
-      <div className="container mx-auto px-4 py-16 flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Carregando planos...
-      </div>
+      <SupplierShell>
+        <div className="container mx-auto px-4 py-16 flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando planos...
+        </div>
+      </SupplierShell>
     );
   }
 
   if (!supplierId) {
     return (
-      <div className="container mx-auto max-w-xl px-4 py-16 text-center space-y-4">
+      <SupplierShell>
+        <div className="container mx-auto max-w-xl px-4 py-16 text-center space-y-4">
         <p>Complete o cadastro do seu negócio para acessar os planos.</p>
-        <Button onClick={() => navigate("/fornecedor/cadastro")}>Completar cadastro</Button>
-      </div>
+          <Button onClick={() => navigate("/fornecedor/cadastro")}>Completar cadastro</Button>
+        </div>
+      </SupplierShell>
     );
   }
 
   return (
+    <SupplierShell>
     <div className="container mx-auto max-w-5xl px-4 py-10 space-y-10">
       <SEO title="Planos e destaques | Meu Grande Dia" description="Escolha seu plano e amplie a visibilidade do seu negócio." noIndex />
 
@@ -202,8 +207,8 @@ export default function FornecedorPlanos() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
-            {PACOTES_DESTAQUE.map((pac) => (
-              <Card key={pac.dias}>
+            {pacotes.map((pac) => (
+              <Card key={pac.id}>
                 <CardHeader><CardTitle className="text-base">{pac.label}</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-xl font-semibold">{formatBRL(pac.valor)}</p>
@@ -243,5 +248,6 @@ export default function FornecedorPlanos() {
         )}
       </section>
     </div>
+    </SupplierShell>
   );
 }
