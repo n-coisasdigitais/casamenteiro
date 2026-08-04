@@ -75,6 +75,7 @@ export default function SupplierDashboard() {
   const [quotesInnerTab, setQuotesInnerTab] = useState<"kanban" | "leads">("kanban");
   const [quotesFilter, setQuotesFilter] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState<string | null>(null);
+  const [reservasPendentes, setReservasPendentes] = useState(0);
   const vagasEnabled = useFeatureFlag("vagas", false);
   const reservasEnabled = useFeatureFlag("reserva_datas_ociosas", false);
   const crmEnabled = useFeatureFlag("crm_fornecedor", true);
@@ -96,6 +97,16 @@ export default function SupplierDashboard() {
   useEffect(() => {
     if (supplier) loadQuotes();
   }, [supplier]);
+
+  // Solicitações de reserva aguardando resposta do fornecedor
+  useEffect(() => {
+    if (!supplier || !reservasEnabled) return;
+    (supabase.from("idle_date_reservations" as any)
+      .select("id", { count: "exact", head: true })
+      .eq("supplier_id", supplier.id)
+      .eq("status", "solicitada") as any)
+      .then(({ count }: any) => setReservasPendentes(count ?? 0));
+  }, [supplier, reservasEnabled]);
 
   // Sincroniza destino com URL (?tab=), aceitando chaves legadas
   useEffect(() => {
@@ -277,6 +288,7 @@ export default function SupplierDashboard() {
     quotesCount: quotes.length,
     overdueLeads: 0,
     vagasEnabled,
+    reservasPendentes,
   });
   const cat = categories.find((c) => c.id === supplier.category_id);
   const isEspaco = isEspacoCategory(cat?.slug ?? null, cat?.name ?? null);
