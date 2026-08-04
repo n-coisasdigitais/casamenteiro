@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { formatBRL } from "@/lib/platformPricing";
@@ -18,6 +19,7 @@ type Row = {
   comissao: number;
   status: string;
   mp_payment_id: string | null;
+  ambiente?: string | null;
   paid_at: string | null;
   created_at: string;
   suppliers?: { company_name?: string | null; city?: string | null } | null;
@@ -29,18 +31,24 @@ export default function AdminCommissionLedger() {
   const { toast } = useToast();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ambiente, setAmbiente] = useState("todos");
+  const [reservaId, setReservaId] = useState("");
 
   const load = async () => {
     setLoading(true);
-    const { data } = await (supabase.from("commission_ledger" as any)
-      .select("id, reservation_id, piso, valor_ofertado, comissao, status, mp_payment_id, paid_at, created_at, suppliers(company_name, city), couples(partner_name), idle_date_reservations(promo_date)")
+    let q = (supabase.from("commission_ledger" as any)
+      .select("id, reservation_id, piso, valor_ofertado, comissao, status, mp_payment_id, ambiente, paid_at, created_at, suppliers(company_name, city), couples(partner_name), idle_date_reservations(promo_date)")
       .order("created_at", { ascending: false })
       .limit(500) as any);
+    if (ambiente !== "todos") q = q.eq("ambiente", ambiente);
+    const termo = reservaId.trim();
+    if (/^[0-9a-f-]{36}$/i.test(termo)) q = q.eq("reservation_id", termo);
+    const { data } = await q;
     setRows((data as Row[]) || []);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [ambiente]);
 
   const marcarPago = async (r: Row) => {
     // Enquanto MP não integra, admin pode marcar manualmente. Também confirma a reserva.
@@ -81,6 +89,24 @@ export default function AdminCommissionLedger() {
         </p>
       </div>
 
+      <div className="flex flex-wrap gap-3 items-center">
+        <Select value={ambiente} onValueChange={setAmbiente}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="Ambiente" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos ambientes</SelectItem>
+            <SelectItem value="sandbox">Testes (sandbox)</SelectItem>
+            <SelectItem value="live">Produção (live)</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          className="w-80"
+          placeholder="Filtrar por ID da reserva"
+          value={reservaId}
+          onChange={(e) => setReservaId(e.target.value)}
+        />
+        <Button variant="outline" onClick={load}>Aplicar</Button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <KPI title="Comissão pendente" value={formatBRL(totais.pendente)} />
         <KPI title="Comissão paga" value={formatBRL(totais.pago)} />
@@ -105,7 +131,12 @@ export default function AdminCommissionLedger() {
                       {r.suppliers?.city ? ` (${r.suppliers.city})` : ""} · {r.couples?.partner_name || "Casal"}
                     </p>
                   </div>
-                  <Badge variant="secondary">{CORRETAGEM_STATUS_LEDGER[r.status] || r.status}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className={r.ambiente === "live" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}>
+                      {r.ambiente === "live" ? "Produção" : "Testes"}
+                    </Badge>
+                    <Badge variant="secondary">{CORRETAGEM_STATUS_LEDGER[r.status] || r.status}</Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="text-sm flex flex-wrap gap-4 items-center">
