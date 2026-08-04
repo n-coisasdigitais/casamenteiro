@@ -23,11 +23,6 @@ Deno.serve(async (req) => {
   const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const admin = createClient(SUPABASE_URL, SERVICE_KEY)
 
-  const { data: flag } = await admin.from('feature_flags').select('enabled').eq('key', 'corretagem_datas_ociosas').maybeSingle()
-  if (!flag?.enabled) {
-    return json({ ok: true, ignored: 'flag_off' })
-  }
-
   const payload = await req.json().catch(() => ({} as any))
   const paymentId = payload?.data?.id || payload?.payment_id
   if (!paymentId) {
@@ -81,11 +76,90 @@ Deno.serve(async (req) => {
   }
 
   const status = pagamento?.status
-  const reservationId = pagamento?.external_reference
+  const externalRef = String(pagamento?.external_reference ?? '')
+  const [refTipoRaw, refIdRaw] = externalRef.includes(':') ? externalRef.split(':') : ['reserva', externalRef]
+  const tipo = ['reserva', 'assinatura', 'destaque'].includes(refTipoRaw) ? refTipoRaw : 'reserva'
+  const referenciaId = refIdRaw || null
+  const aprovado = status === 'approved'
 
+  // Histórico unificado de pagamentos
+  if (referenciaId) {
+    const { data: intent } = await admin.from('payment_intents')
+      .select('id').eq('tipo', tipo).eq('referencia_id', referenciaId)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle()
+    if (intent) {
+      await admin.from('payment_intents')
+        .update({ status: aprovado ? 'pago' : status, mp_payment_id: String(paymentId), ambiente })
+        .eq('id', intent.id)
+    }
+  }
+
+  if (tipo === 'assinatura' && referenciaId) {
+    const { data: assinatura } = await admin.from('supplier_subscriptions').select('*').eq('id', referenciaId).maybeSingle()
+    if (!assinatura) return json({ ok: true, ignored: 'assinatura_nao_encontrada' })
+    if (aprovado) {
+      const inicio = new Date()
+      const fim = new Date(inicio)
+      if (assinatura.ciclo === 'anual') fim.setFullYear(fim.getFullYear() + 1)
+      else fim.setMonth(fim.getMonth() + 1)
+      await admin.from('supplier_subscriptions').update({
+        status: 'ativa',
+        ambiente,
+        current_period_start: inicio.toISOString(),
+        current_period_end: fim.toISOString(),
+      }).eq('id', assinatura.id)
+
+      const { data: jaFaturado } = await admin.from('subscription_invoices')
+        .select('id').eq('mp_payment_id', String(paymentId)).maybeSingle()
+      if (!jaFaturado) {
+        await admin.from('subscription_invoices').insert({
+          subscription_id: assinatura.id,
+          supplier_id: assinatura.supplier_id,
+          valor: assinatura.valor,
+          status: 'pago',
+          mp_payment_id: String(paymentId),
+          ambiente,
+          periodo_inicio: inicio.toISOString(),
+          periodo_fim: fim.toISOString(),
+          pago_em: new Date().toISOString(),
+        })
+      }
+
+      const { data: plano } = await admin.from('subscription_plans')
+        .select('destaque_busca').eq('id', assinatura.plan_id).maybeSingle()
+      if (plano?.destaque_busca) {
+        await admin.from('suppliers')
+          .update({ featured: true, featured_until: fim.toISOString() })
+          .eq('id', assinatura.supplier_id)
+      }
+    }
+    return json({ ok: true, tipo, ambiente, status })
+  }
+
+  if (tipo === 'destaque' && referenciaId) {
+    const { data: destaque } = await admin.from('featured_purchases').select('*').eq('id', referenciaId).maybeSingle()
+    if (!destaque) return json({ ok: true, ignored: 'destaque_nao_encontrado' })
+    if (aprovado) {
+      const inicio = new Date()
+      const fim = new Date(inicio.getTime() + Number(destaque.dias || 7) * 24 * 60 * 60 * 1000)
+      await admin.from('featured_purchases').update({
+        status: 'ativo',
+        mp_payment_id: String(paymentId),
+        ambiente,
+        inicio: inicio.toISOString(),
+        fim: fim.toISOString(),
+      }).eq('id', destaque.id)
+      await admin.from('suppliers')
+        .update({ featured: true, featured_until: fim.toISOString() })
+        .eq('id', destaque.supplier_id)
+    }
+    return json({ ok: true, tipo, ambiente, status })
+  }
+
+  // --- Reserva de data ociosa (com split) ---
   let reserva: any = null
-  if (reservationId) {
-    const { data } = await admin.from('idle_date_reservations').select('*').eq('id', reservationId).maybeSingle()
+  if (referenciaId) {
+    const { data } = await admin.from('idle_date_reservations').select('*').eq('id', referenciaId).maybeSingle()
     reserva = data
   }
   if (!reserva) {
@@ -101,24 +175,30 @@ Deno.serve(async (req) => {
     .update({ mp_payment_id: String(paymentId), mp_status: status, ambiente })
     .eq('id', reserva.id)
 
-  if (status === 'approved') {
+  if (aprovado) {
     await admin.from('idle_date_reservations').update({ status: 'confirmada' }).eq('id', reserva.id)
-    await admin.from('supplier_promo_dates').update({ disponivel: false }).eq('id', reserva.promo_date_id)
+    // A data deixa de ser ofertada como ociosa
+    await admin.from('supplier_promo_dates').delete()
+      .eq('supplier_id', reserva.supplier_id)
+      .eq('promo_date', reserva.promo_date)
 
     const { data: jaExiste } = await admin.from('commission_ledger')
       .select('id').eq('mp_payment_id', String(paymentId)).maybeSingle()
     if (!jaExiste) {
       await admin.from('commission_ledger').insert({
         reservation_id: reserva.id,
+        supplier_id: reserva.supplier_id,
+        couple_id: reserva.couple_id,
         piso: reserva.piso_fornecedor,
         valor_ofertado: reserva.valor_ofertado,
         comissao: reserva.comissao_plataforma,
         mp_payment_id: String(paymentId),
         status: 'pago',
+        paid_at: new Date().toISOString(),
         ambiente,
       })
     }
   }
 
-  return json({ ok: true, ambiente, status })
+  return json({ ok: true, tipo, ambiente, status })
 })
