@@ -515,6 +515,7 @@ export type Database = {
       }
       commission_ledger: {
         Row: {
+          ambiente: string
           comissao: number
           couple_id: string
           created_at: string
@@ -529,6 +530,7 @@ export type Database = {
           valor_ofertado: number
         }
         Insert: {
+          ambiente?: string
           comissao: number
           couple_id: string
           created_at?: string
@@ -543,6 +545,7 @@ export type Database = {
           valor_ofertado: number
         }
         Update: {
+          ambiente?: string
           comissao?: number
           couple_id?: string
           created_at?: string
@@ -1709,6 +1712,7 @@ export type Database = {
       }
       idle_date_reservations: {
         Row: {
+          ambiente: string
           comissao_plataforma: number | null
           contrato_id: string | null
           couple_id: string
@@ -1737,6 +1741,7 @@ export type Database = {
           valor_ofertado: number | null
         }
         Insert: {
+          ambiente?: string
           comissao_plataforma?: number | null
           contrato_id?: string | null
           couple_id: string
@@ -1765,6 +1770,7 @@ export type Database = {
           valor_ofertado?: number | null
         }
         Update: {
+          ambiente?: string
           comissao_plataforma?: number | null
           contrato_id?: string | null
           couple_id?: string
