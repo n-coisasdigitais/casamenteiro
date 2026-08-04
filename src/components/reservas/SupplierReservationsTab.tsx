@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ type Reserva = {
 export default function SupplierReservationsTab({ supplierId, categoriaSlug }: { supplierId: string; categoriaSlug?: string | null }) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<{ r: Reserva; taxa: number } | null>(null);
@@ -67,7 +69,12 @@ export default function SupplierReservationsTab({ supplierId, categoriaSlug }: {
       .eq("id", r.id);
     setConfirming(null);
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Reserva confirmada", description: `Taxa de ${formatBRL(taxa)} ficará como pendente até compensação.` });
+    if (taxa > 0) {
+      toast({ title: "Reserva confirmada", description: `Falta pagar a taxa de ${formatBRL(taxa)} para liberar a data.` });
+      navigate(`/pagamento?tipo=reserva&ref=${r.id}`);
+      return;
+    }
+    toast({ title: "Reserva confirmada" });
     load();
   };
 
