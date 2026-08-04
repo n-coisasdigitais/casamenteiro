@@ -11,10 +11,11 @@ import SEO from "@/components/SEO";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { formatBRL } from "@/lib/platformPricing";
+import SupplierShell from "@/components/supplier/SupplierShell";
 import {
   listarPlanos, assinaturaAtual, criarAssinatura, criarCompraDestaque,
-  ASSINATURA_STATUS_LABEL, DESTAQUE_STATUS_LABEL, PACOTES_DESTAQUE,
-  type Plano, type Assinatura,
+  ASSINATURA_STATUS_LABEL, DESTAQUE_STATUS_LABEL, PACOTES_DESTAQUE, listarPacotesDestaque,
+  type Plano, type Assinatura, type PacoteDestaque,
 } from "@/lib/monetizacao";
 
 export default function FornecedorPlanos() {
@@ -26,6 +27,7 @@ export default function FornecedorPlanos() {
 
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [planos, setPlanos] = useState<Plano[]>([]);
+  const [pacotes, setPacotes] = useState<PacoteDestaque[]>([]);
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
   const [destaques, setDestaques] = useState<any[]>([]);
   const [ciclo, setCiclo] = useState<"mensal" | "anual">("mensal");
@@ -39,9 +41,14 @@ export default function FornecedorPlanos() {
         .from("suppliers").select("id").eq("user_id", user.id).maybeSingle();
       if (!fornecedor) { setCarregando(false); return; }
       setSupplierId(fornecedor.id);
-      const [ps, a] = await Promise.all([listarPlanos(), assinaturaAtual(fornecedor.id)]);
+      const [ps, a, pk] = await Promise.all([listarPlanos(), assinaturaAtual(fornecedor.id), listarPacotesDestaque()]);
       setPlanos(ps);
       setAssinatura(a);
+      setPacotes(
+        pk.length > 0
+          ? pk
+          : PACOTES_DESTAQUE.map((p) => ({ id: `fallback-${p.dias}`, label: p.label, dias: p.dias, valor: p.valor, ativo: true, ordem: p.dias }))
+      );
       const { data: fp } = await (supabase.from("featured_purchases" as any)
         .select("id, dias, valor, status, inicio, fim")
         .eq("supplier_id", fornecedor.id)
