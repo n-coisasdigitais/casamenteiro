@@ -53,6 +53,7 @@ const groups = [
       { title: "Reservas", url: "/admin/reservas", icon: CalendarRange },
       { title: "Datas ociosas", url: "/admin/datas-ociosas", icon: Sparkles },
       { title: "Corretagem", url: "/admin/corretagem", icon: Tag },
+      { title: "Webhooks", url: "/admin/webhooks", icon: Receipt },
       { title: "Vagas", url: "/admin/vagas", icon: ClipboardCheck },
       { title: "Profissionais", url: "/admin/profissionais", icon: ClipboardCheck },
     ],

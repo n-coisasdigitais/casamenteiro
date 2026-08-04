@@ -25,7 +25,22 @@ Deno.serve(async (req) => {
 
   const payload = await req.json().catch(() => ({} as any))
   const paymentId = payload?.data?.id || payload?.payment_id
+
+  // Registro de todas as tentativas de webhook (inspecionável no admin)
+  const registro: Record<string, unknown> = {
+    provider: 'mercadopago',
+    evento: payload?.type ?? payload?.topic ?? payload?.action ?? null,
+    mp_payment_id: paymentId ? String(paymentId) : null,
+    payload,
+  }
+  const registrar = async (extra: Record<string, unknown>, httpStatus: number) => {
+    try {
+      await admin.from('webhook_events').insert({ ...registro, ...extra, http_status: httpStatus })
+    } catch (_e) { /* nunca derruba o webhook */ }
+  }
+
   if (!paymentId) {
+    await registrar({ resultado: 'payment_id_ausente', erro: 'payment_id ausente' }, 400)
     return json({ error: 'payment_id ausente' }, 400)
   }
 
@@ -59,9 +74,13 @@ Deno.serve(async (req) => {
 
   if (!ambiente) {
     console.warn('Assinatura do webhook inválida ou ausente')
+    await registrar({ resultado: 'assinatura_invalida', erro: 'assinatura inválida ou ausente' }, 401)
     return json({ error: 'assinatura inválida' }, 401)
   }
+  registro.ambiente = ambiente
+  registro.assinatura_valida = true
   if (!accessToken) {
+    await registrar({ resultado: 'token_ausente', erro: `access token ausente para ambiente ${ambiente}` }, 503)
     return json({ error: `access token ausente para ambiente ${ambiente}` }, 503)
   }
 
@@ -72,6 +91,7 @@ Deno.serve(async (req) => {
   const pagamento = await payRes.json().catch(() => ({} as any))
   if (!payRes.ok) {
     console.error('Erro ao consultar pagamento MP:', payRes.status, pagamento)
+    await registrar({ resultado: 'falha_consulta_pagamento', erro: String(pagamento?.message ?? payRes.status) }, 502)
     return json({ error: 'falha ao consultar pagamento' }, 502)
   }
 
@@ -81,6 +101,10 @@ Deno.serve(async (req) => {
   const tipo = ['reserva', 'assinatura', 'destaque'].includes(refTipoRaw) ? refTipoRaw : 'reserva'
   const referenciaId = refIdRaw || null
   const aprovado = status === 'approved'
+  registro.tipo = tipo
+  registro.referencia_id = referenciaId
+  registro.status_recebido = status ?? null
+  if (tipo === 'reserva') registro.reservation_id = referenciaId
 
   // Histórico unificado de pagamentos
   if (referenciaId) {
@@ -96,7 +120,7 @@ Deno.serve(async (req) => {
 
   if (tipo === 'assinatura' && referenciaId) {
     const { data: assinatura } = await admin.from('supplier_subscriptions').select('*').eq('id', referenciaId).maybeSingle()
-    if (!assinatura) return json({ ok: true, ignored: 'assinatura_nao_encontrada' })
+    if (!assinatura) { await registrar({ resultado: 'assinatura_nao_encontrada' }, 200); return json({ ok: true, ignored: 'assinatura_nao_encontrada' }) }
     if (aprovado) {
       const inicio = new Date()
       const fim = new Date(inicio)
@@ -133,12 +157,13 @@ Deno.serve(async (req) => {
           .eq('id', assinatura.supplier_id)
       }
     }
+    await registrar({ resultado: aprovado ? 'assinatura_ativada' : 'assinatura_atualizada' }, 200)
     return json({ ok: true, tipo, ambiente, status })
   }
 
   if (tipo === 'destaque' && referenciaId) {
     const { data: destaque } = await admin.from('featured_purchases').select('*').eq('id', referenciaId).maybeSingle()
-    if (!destaque) return json({ ok: true, ignored: 'destaque_nao_encontrado' })
+    if (!destaque) { await registrar({ resultado: 'destaque_nao_encontrado' }, 200); return json({ ok: true, ignored: 'destaque_nao_encontrado' }) }
     if (aprovado) {
       const inicio = new Date()
       const fim = new Date(inicio.getTime() + Number(destaque.dias || 7) * 24 * 60 * 60 * 1000)
@@ -153,6 +178,7 @@ Deno.serve(async (req) => {
         .update({ featured: true, featured_until: fim.toISOString() })
         .eq('id', destaque.supplier_id)
     }
+    await registrar({ resultado: aprovado ? 'destaque_ativado' : 'destaque_atualizado' }, 200)
     return json({ ok: true, tipo, ambiente, status })
   }
 
@@ -168,6 +194,7 @@ Deno.serve(async (req) => {
     reserva = data
   }
   if (!reserva) {
+    await registrar({ resultado: 'reserva_nao_encontrada' }, 200)
     return json({ ok: true, ignored: 'reserva_nao_encontrada' })
   }
 
@@ -200,5 +227,6 @@ Deno.serve(async (req) => {
     }
   }
 
+  await registrar({ resultado: aprovado ? 'reserva_confirmada' : 'reserva_atualizada', reservation_id: reserva.id }, 200)
   return json({ ok: true, tipo, ambiente, status })
 })

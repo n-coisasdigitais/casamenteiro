@@ -4194,6 +4194,60 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          ambiente: string | null
+          assinatura_valida: boolean
+          created_at: string
+          erro: string | null
+          evento: string | null
+          http_status: number | null
+          id: string
+          mp_payment_id: string | null
+          payload: Json
+          provider: string
+          referencia_id: string | null
+          reservation_id: string | null
+          resultado: string | null
+          status_recebido: string | null
+          tipo: string | null
+        }
+        Insert: {
+          ambiente?: string | null
+          assinatura_valida?: boolean
+          created_at?: string
+          erro?: string | null
+          evento?: string | null
+          http_status?: number | null
+          id?: string
+          mp_payment_id?: string | null
+          payload?: Json
+          provider?: string
+          referencia_id?: string | null
+          reservation_id?: string | null
+          resultado?: string | null
+          status_recebido?: string | null
+          tipo?: string | null
+        }
+        Update: {
+          ambiente?: string | null
+          assinatura_valida?: boolean
+          created_at?: string
+          erro?: string | null
+          evento?: string | null
+          http_status?: number | null
+          id?: string
+          mp_payment_id?: string | null
+          payload?: Json
+          provider?: string
+          referencia_id?: string | null
+          reservation_id?: string | null
+          resultado?: string | null
+          status_recebido?: string | null
+          tipo?: string | null
+        }
+        Relationships: []
+      }
       wedding_guests: {
         Row: {
           couple_id: string

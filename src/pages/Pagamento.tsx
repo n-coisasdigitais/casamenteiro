@@ -75,12 +75,8 @@ export default function Pagamento() {
                 toast({ title: "Pagamento não aprovado", description: "Tente outro meio de pagamento.", variant: "destructive" });
                 throw error;
               }
-              if (data?.status === "approved") {
-                toast({ title: "Pagamento aprovado!" });
-                navigate(tipo === "reserva" ? "/meu-casamento/plano?pagamento=sucesso" : "/fornecedor/planos?pagamento=sucesso");
-              } else {
-                toast({ title: "Pagamento em processamento", description: "Avisaremos assim que for confirmado." });
-              }
+              if (data?.status === "approved") toast({ title: "Pagamento aprovado!" });
+              navigate(`/pagamento/status?tipo=${tipo}&ref=${ref}`);
             },
           },
         });

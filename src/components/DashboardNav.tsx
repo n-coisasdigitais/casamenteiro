@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Heart, CheckSquare, Store, Users, DollarSign, User, Globe, MessageSquare, Share2 } from "lucide-react";
+import { Heart, CheckSquare, Store, Users, DollarSign, User, Globe, MessageSquare, Share2, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 
@@ -12,6 +12,7 @@ const allItems: { label: string; path: string; icon: any; flag?: string }[] = [
   { label: "Perfil público", path: "/meu-casamento/perfil", icon: Globe, flag: "perfil_social_casal" },
   { label: "Mensagens", path: "/mensagens", icon: MessageSquare, flag: "mensagens_casais" },
   { label: "Indicações", path: "/meu-casamento/indicacoes", icon: Share2, flag: "indicacoes" },
+  { label: "Reservas", path: "/meu-casamento/reservas", icon: CalendarRange, flag: "reserva_datas_ociosas" },
   { label: "Perfil", path: "/perfil", icon: User },
 ];
 
