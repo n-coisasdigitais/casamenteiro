@@ -6,7 +6,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-type Tipo = 'reserva' | 'assinatura' | 'destaque'
+type Tipo = 'reserva' | 'assinatura' | 'destaque' | 'cancelamento'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -28,14 +28,10 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({} as any))
   const tipo = body?.tipo as Tipo
   const referenciaId = body?.referencia_id as string | undefined
-  if (!tipo || !['reserva', 'assinatura', 'destaque'].includes(tipo)) {
+  if (!tipo || !['reserva', 'assinatura', 'destaque', 'cancelamento'].includes(tipo)) {
     return json({ error: 'tipo inválido' }, 400)
   }
   if (!referenciaId) return json({ error: 'referencia_id obrigatório' }, 400)
-
-  const flagKey = tipo === 'reserva' ? 'corretagem_datas_ociosas' : tipo === 'assinatura' ? 'assinatura_fornecedor' : 'destaque_pago'
-  const { data: flag } = await admin.from('feature_flags').select('enabled').eq('key', flagKey).maybeSingle()
-  if (!flag?.enabled) return json({ error: 'Este pagamento ainda não está liberado.' }, 403)
 
   const { data: perfil } = await admin.from('profiles').select('is_demo').eq('user_id', userId).maybeSingle()
   const ambiente: 'sandbox' | 'live' = perfil?.is_demo ? 'sandbox' : 'live'
@@ -56,22 +52,54 @@ Deno.serve(async (req) => {
   let coupleId: string | null = null
   let marketplaceAccount: string | null = null
 
-  if (tipo === 'reserva') {
+  const flagLiberada = async (key: string) => {
+    const { data: flag } = await admin.from('feature_flags').select('enabled').eq('key', key).maybeSingle()
+    return !!flag?.enabled
+  }
+
+  if (tipo === 'reserva' || tipo === 'cancelamento') {
     const { data: reserva } = await admin
       .from('idle_date_reservations')
       .select('*, supplier:suppliers(id, mp_account_id, company_name)')
       .eq('id', referenciaId)
       .maybeSingle()
     if (!reserva) return json({ error: 'Reserva não encontrada' }, 404)
-    if (reserva.modo_cobranca !== 'corretagem') return json({ error: 'Reserva não é do modo corretagem' }, 400)
-    valor = Number(reserva.valor_ofertado || 0)
-    comissao = Number(reserva.comissao_plataforma || 0)
     supplierId = reserva.supplier_id
     coupleId = reserva.couple_id
-    marketplaceAccount = (reserva as any).supplier?.mp_account_id ?? null
-    titulo = `Reserva de data — ${(reserva as any).supplier?.company_name ?? 'Fornecedor'}`
-    if (!marketplaceAccount) return json({ error: 'Fornecedor sem conta Mercado Pago vinculada' }, 400)
+    const nomeFornecedor = (reserva as any).supplier?.company_name ?? 'Fornecedor'
+
+    if (tipo === 'cancelamento') {
+      // Taxa de cancelamento paga pelo casal
+      const { data: couple } = await admin.from('couples').select('user_id').eq('id', reserva.couple_id).maybeSingle()
+      const { data: vinculo } = await admin.from('couple_links').select('linked_user_id')
+        .eq('couple_id', reserva.couple_id).eq('linked_user_id', userId).maybeSingle()
+      if (couple?.user_id !== userId && !vinculo) return json({ error: 'Não autorizado' }, 403)
+      if (reserva.taxa_cancelamento_status !== 'pendente') {
+        return json({ error: 'Não há taxa de cancelamento pendente para esta reserva.' }, 400)
+      }
+      valor = Number(reserva.taxa_cancelamento || 0)
+      titulo = `Taxa de cancelamento de reserva — ${nomeFornecedor}`
+    } else if (reserva.modo_cobranca === 'corretagem') {
+      if (!(await flagLiberada('corretagem_datas_ociosas'))) {
+        return json({ error: 'Este pagamento ainda não está liberado.' }, 403)
+      }
+      valor = Number(reserva.valor_ofertado || 0)
+      comissao = Number(reserva.comissao_plataforma || 0)
+      marketplaceAccount = (reserva as any).supplier?.mp_account_id ?? null
+      titulo = `Reserva de data — ${nomeFornecedor}`
+      if (!marketplaceAccount) return json({ error: 'Fornecedor sem conta Mercado Pago vinculada' }, 400)
+    } else {
+      // taxa_reserva: o fornecedor paga a taxa da plataforma (sem split)
+      const { data: fornecedor } = await admin.from('suppliers').select('user_id').eq('id', reserva.supplier_id).maybeSingle()
+      if (fornecedor?.user_id !== userId) {
+        return json({ error: 'Apenas o fornecedor responsável pode pagar a taxa desta reserva.' }, 403)
+      }
+      if (reserva.taxa_status === 'paga') return json({ error: 'Esta taxa já foi paga.' }, 400)
+      valor = Number(reserva.taxa_plataforma || 0)
+      titulo = `Taxa de reserva de data — ${new Date(reserva.promo_date + 'T00:00:00').toLocaleDateString('pt-BR')}`
+    }
   } else if (tipo === 'assinatura') {
+    if (!(await flagLiberada('assinatura_fornecedor'))) return json({ error: 'Este pagamento ainda não está liberado.' }, 403)
     const { data: assinatura } = await admin
       .from('supplier_subscriptions')
       .select('*, plan:subscription_plans(nome), supplier:suppliers(id, user_id)')
@@ -83,6 +111,7 @@ Deno.serve(async (req) => {
     supplierId = assinatura.supplier_id
     titulo = `Assinatura ${(assinatura as any).plan?.nome ?? ''} (${assinatura.ciclo})`
   } else {
+    if (!(await flagLiberada('destaque_pago'))) return json({ error: 'Este pagamento ainda não está liberado.' }, 403)
     const { data: destaque } = await admin
       .from('featured_purchases')
       .select('*, supplier:suppliers(id, user_id, company_name)')
@@ -99,7 +128,11 @@ Deno.serve(async (req) => {
 
   const externalReference = `${tipo}:${referenciaId}`
   const origin = req.headers.get('origin') || 'https://casamenteiro.lovable.app'
-  const retorno = tipo === 'reserva' ? '/meu-casamento/plano' : '/fornecedor/planos'
+  const retorno = tipo === 'cancelamento'
+    ? '/minhas-reservas'
+    : tipo === 'reserva'
+      ? '/fornecedor/painel?tab=reservas'
+      : '/fornecedor/planos'
 
   const prefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
     method: 'POST',
@@ -112,11 +145,14 @@ Deno.serve(async (req) => {
       items: [{ id: referenciaId, title: titulo, quantity: 1, currency_id: 'BRL', unit_price: valor }],
       ...(comissao > 0 ? { marketplace_fee: comissao } : {}),
       external_reference: externalReference,
-      back_urls: {
-        success: `${origin}${retorno}?pagamento=sucesso`,
-        pending: `${origin}${retorno}?pagamento=pendente`,
-        failure: `${origin}${retorno}?pagamento=falha`,
-      },
+      back_urls: (() => {
+        const sep = retorno.includes('?') ? '&' : '?'
+        return {
+          success: `${origin}${retorno}${sep}pagamento=sucesso`,
+          pending: `${origin}${retorno}${sep}pagamento=pendente`,
+          failure: `${origin}${retorno}${sep}pagamento=falha`,
+        }
+      })(),
       auto_return: 'approved',
       notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,
     }),
@@ -142,7 +178,7 @@ Deno.serve(async (req) => {
     detalhes: { preference_id: pref.id },
   })
 
-  if (tipo === 'reserva') {
+  if (tipo === 'reserva' && comissao > 0) {
     await admin.from('idle_date_reservations')
       .update({ mp_split_payment_id: String(pref.id), mp_status: 'pendente', ambiente })
       .eq('id', referenciaId)

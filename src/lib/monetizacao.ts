@@ -134,7 +134,10 @@ export type CheckoutResposta = {
   public_key: string | null;
 };
 
-export async function iniciarCheckout(tipo: "reserva" | "assinatura" | "destaque", referenciaId: string) {
+export async function iniciarCheckout(
+  tipo: "reserva" | "assinatura" | "destaque" | "cancelamento",
+  referenciaId: string,
+) {
   const { data, error } = await supabase.functions.invoke("mp-checkout", {
     body: { tipo, referencia_id: referenciaId },
   });

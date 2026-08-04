@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { calcularTaxa, formatBRL } from "@/lib/platformPricing";
-import { RESERVA_STATUS_LABEL, RESERVA_STATUS_TONE, TAXA_STATUS_LABEL, formatarData, type ReservaStatus } from "@/lib/reservas";
-import { Calendar, CheckCircle2, XCircle } from "lucide-react";
+import { RESERVA_STATUS_LABEL, RESERVA_STATUS_TONE, TAXA_STATUS_LABEL, formatarData, formatarDataHora, type ReservaStatus } from "@/lib/reservas";
+import { Calendar, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 
 type Reserva = {
   id: string;
@@ -24,6 +24,9 @@ type Reserva = {
   observacoes: string | null;
   expira_em: string | null;
   solicitada_em: string;
+  confirmada_em?: string | null;
+  cancelada_em?: string | null;
+  motivo_cancelamento?: string | null;
   couples?: { partner_name?: string | null; wedding_city?: string | null } | null;
 };
 
@@ -62,6 +65,7 @@ export default function SupplierReservationsTab({ supplierId, categoriaSlug }: {
       .update({
         status: "confirmada",
         respondida_em: new Date().toISOString(),
+        confirmada_em: new Date().toISOString(),
         taxa_plataforma: taxa,
         taxa_status: "pendente",
         taxa_memoria: { calculada_em: new Date().toISOString() },
@@ -91,12 +95,25 @@ export default function SupplierReservationsTab({ supplierId, categoriaSlug }: {
 
   const pendentes = rows.filter(r => r.status === "solicitada");
   const outras = rows.filter(r => r.status !== "solicitada");
+  const taxasAbertas = rows.filter(r => r.status === "confirmada" && r.taxa_status === "pendente" && (r.taxa_plataforma ?? 0) > 0);
 
   return (
     <div className="space-y-6">
       <div className="rounded-md bg-muted/50 border p-3 text-xs text-muted-foreground">
         Ao confirmar uma reserva, o casal recebe a garantia da data e a taxa da plataforma é cobrada de você. Você pode recusar sem custos.
       </div>
+
+      {taxasAbertas.length > 0 && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 flex flex-wrap items-center gap-3">
+          <AlertTriangle className="h-4 w-4" />
+          <span className="flex-1">
+            Você tem {taxasAbertas.length} taxa(s) de reserva em aberto. Quite para manter a data garantida.
+          </span>
+          <Button size="sm" onClick={() => navigate(`/pagamento?tipo=reserva&ref=${taxasAbertas[0].id}`)}>
+            Pagar {formatBRL(taxasAbertas[0].taxa_plataforma ?? 0)}
+          </Button>
+        </div>
+      )}
 
       <section>
         <h3 className="font-semibold mb-2">Pendentes de resposta ({pendentes.length})</h3>
@@ -170,6 +187,19 @@ function ReservationCard({ r, onConfirm, onDecline, onPay }: { r: Reserva; onCon
           {r.taxa_plataforma != null && <div>Taxa plataforma: <strong>{formatBRL(r.taxa_plataforma)}</strong> ({TAXA_STATUS_LABEL[r.taxa_status as keyof typeof TAXA_STATUS_LABEL] || r.taxa_status})</div>}
         </div>
         {r.observacoes && <p className="text-muted-foreground italic">"{r.observacoes}"</p>}
+        {r.status === "confirmada" && r.confirmada_em && (
+          <p className="text-xs rounded-md bg-emerald-50 border border-emerald-200 p-2 text-emerald-900">
+            Você confirmou esta data em <strong>{formatarDataHora(r.confirmada_em)}</strong>. A plataforma apenas intermedia:
+            combine os detalhes com o casal e formalizem um contrato entre vocês.
+          </p>
+        )}
+        {r.status === "cancelada" && (
+          <p className="text-xs rounded-md bg-muted p-2">
+            Cancelada pelo casal{r.cancelada_em ? ` em ${formatarDataHora(r.cancelada_em)}` : ""}.
+            {r.motivo_cancelamento ? ` Motivo: ${r.motivo_cancelamento}` : ""}
+            {r.taxa_status === "estornada" ? " A taxa paga será estornada." : ""}
+          </p>
+        )}
         {onConfirm && (
           <div className="flex gap-2 pt-2">
             <Button size="sm" onClick={onConfirm}><CheckCircle2 className="h-4 w-4 mr-1" /> Confirmar</Button>

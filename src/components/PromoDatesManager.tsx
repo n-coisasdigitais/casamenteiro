@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { calcularOferta } from "@/lib/corretagem";
 import { formatBRL } from "@/lib/platformPricing";
+import { antecedenciaDoFornecedor } from "@/lib/reservasConfig";
 
 type PromoDate = {
   id: string;
@@ -32,6 +33,8 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
   const [markup, setMarkup] = useState<string>("");
   const [previewOferta, setPreviewOferta] = useState<{ valor: number; comissao: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [antecedencia, setAntecedencia] = useState<number>(15);
+  const [salvandoAntecedencia, setSalvandoAntecedencia] = useState(false);
 
   const load = async () => {
     const { data } = await (supabase
@@ -44,6 +47,7 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
 
   useEffect(() => {
     load();
+    antecedenciaDoFornecedor(supplierId).then(setAntecedencia);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierId]);
 
@@ -99,6 +103,22 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
     load();
   };
 
+  const salvarAntecedencia = async () => {
+    const n = Number(antecedencia);
+    if (!Number.isFinite(n) || n < 0 || n > 365) {
+      toast({ title: "Valor inválido", description: "Informe entre 0 e 365 dias.", variant: "destructive" });
+      return;
+    }
+    setSalvandoAntecedencia(true);
+    const { error } = await (supabase.from("suppliers" as any) as any)
+      .update({ reserva_antecedencia_min_dias: n }).eq("id", supplierId);
+    setSalvandoAntecedencia(false);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Antecedência mínima atualizada" });
+  };
+
+  const minDataInput = new Date(Date.now() + antecedencia * 86400000).toISOString().slice(0, 10);
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -111,10 +131,27 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded-md border p-3 bg-muted/30">
+          <Label className="text-xs">Antecedência mínima para reserva (dias)</Label>
+          <div className="flex gap-2 items-center mt-1">
+            <Input
+              type="number" min={0} max={365} className="w-28"
+              value={antecedencia}
+              onChange={(e) => setAntecedencia(parseInt(e.target.value || "0", 10))}
+            />
+            <Button size="sm" variant="outline" onClick={salvarAntecedencia} disabled={salvandoAntecedencia}>
+              Salvar
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Casais só conseguem reservar datas com pelo menos esse prazo. Padrão: 15 dias.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <div className="md:col-span-1">
             <Label className="text-xs">Data</Label>
-            <Input type="date" value={date} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} />
+            <Input type="date" value={date} min={minDataInput} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="md:col-span-1">
             <Label className="text-xs">Desconto (%)</Label>
