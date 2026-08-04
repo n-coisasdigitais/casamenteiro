@@ -82,11 +82,12 @@ Deno.serve(async (req) => {
   }
 
   // O MP às vezes devolve 500 "internal_error" por causa de campos opcionais
-  // (notification_url / external_reference / description). Tentamos variações.
-  const { notification_url: _n, external_reference: _e, description: _d, ...minimo } = payload
+  // (issuer_id / notification_url / external_reference / description). Tentamos variações.
+  const { notification_url: _n, external_reference: _e, description: _d, issuer_id: _i, ...minimo } = payload
   const variantes: Array<[string, Record<string, unknown>]> = [
     ['completo', payload],
-    ['sem notification_url', { ...payload, notification_url: undefined }],
+    ['sem issuer_id', { ...payload, issuer_id: undefined }],
+    ['sem notification_url', { ...payload, issuer_id: undefined, notification_url: undefined }],
     ['mínimo', minimo],
   ]
 
@@ -115,9 +116,14 @@ Deno.serve(async (req) => {
       const meJson = await me.json().catch(() => ({}))
       console.error('MP conta do access token:', me.status, JSON.stringify({ id: meJson?.id, site: meJson?.site_id, email: meJson?.email }))
     } catch (_) { /* ignora */ }
+    const interno = res.status >= 500 || pagamento?.message === 'internal_error'
     return json({
       error: 'Falha ao processar pagamento',
-      detalhe: pagamento?.message ?? null,
+      detalhe: interno
+        ? (ambiente === 'sandbox'
+            ? 'O Mercado Pago recusou a cobrança de teste. Use um cartão de teste e um e-mail de comprador de teste (test_user_...@testuser.com) diferente da conta dona das credenciais.'
+            : 'O Mercado Pago não conseguiu processar o pagamento agora. Tente novamente em instantes ou use outro meio de pagamento.')
+        : (pagamento?.message ?? null),
       causa: pagamento?.cause ?? null,
       ambiente,
     }, res.status >= 500 ? 502 : res.status)
