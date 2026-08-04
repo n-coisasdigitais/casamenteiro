@@ -17,11 +17,12 @@ export function getSupplierDestinations(opts: {
   quotesCount: number;
   overdueLeads: number;
   vagasEnabled: boolean;
+  reservasPendentes?: number;
 }): Item[] {
   const items: Item[] = [
     { key: "painel", label: "Painel", icon: LayoutDashboard, alert: opts.overdueLeads > 0 },
     { key: "orcamentos", label: "Orçamentos", icon: MessageSquare, badge: opts.quotesCount || null },
-    { key: "negocio", label: "Meu negócio", icon: Store },
+    { key: "negocio", label: "Meu negócio", icon: Store, badge: opts.reservasPendentes || null },
   ];
   if (opts.vagasEnabled) items.push({ key: "vagas", label: "Equipe e vagas", icon: Users });
   items.push({ key: "avaliacoes", label: "Avaliações", icon: Star });
