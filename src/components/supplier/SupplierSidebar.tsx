@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Store, Users, Star, Sparkles } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Users, Star, Sparkles, Receipt } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
