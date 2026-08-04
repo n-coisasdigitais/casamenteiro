@@ -6,6 +6,7 @@ import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import RequestReservationDialog from "./RequestReservationDialog";
 import { formatarData } from "@/lib/reservas";
 import { formatBRL } from "@/lib/platformPricing";
+import { antecedenciaDoFornecedor, dataDentroDaAntecedencia } from "@/lib/reservasConfig";
 
 type PromoRow = {
   id: string;
@@ -25,14 +26,17 @@ export default function PromoDatesInline({ supplierId, supplierName, priceMin }:
   const corretagemOn = useFeatureFlag("corretagem_datas_ociosas", false);
   const [rows, setRows] = useState<PromoRow[]>([]);
   const [selected, setSelected] = useState<PromoRow | null>(null);
+  const [minDias, setMinDias] = useState<number>(15);
 
   useEffect(() => {
     if (!supplierId || !idleFlag) return;
     (async () => {
+      const min = await antecedenciaDoFornecedor(supplierId);
+      setMinDias(min);
       const { data } = await (supabase.from("supplier_promo_dates" as any)
         .select("id, promo_date, discount_pct, piso_fornecedor, markup_pct, valor_ofertado")
         .eq("supplier_id", supplierId)
-        .gte("promo_date", new Date().toISOString().slice(0, 10))
+        .gte("promo_date", new Date(Date.now() + min * 86400000).toISOString().slice(0, 10))
         .order("promo_date", { ascending: true })
         .limit(6) as any);
       const mapped = (data as any[] | null)?.map((r) => ({ ...r, date: r.promo_date })) ?? [];
@@ -54,7 +58,8 @@ export default function PromoDatesInline({ supplierId, supplierName, priceMin }:
         Datas com desconto
       </div>
       <p className="text-xs text-muted-foreground">
-        A data só é garantida após a confirmação do fornecedor. Você não paga nada para solicitar.
+        A data só é garantida após a confirmação do fornecedor. Solicitar é <strong>gratuito</strong> — o cancelamento após o prazo
+        de carência tem taxa. Reservas só a partir de {minDias} dias de antecedência.
       </p>
       <div className="space-y-2">
         {rows.map(p => {
@@ -70,7 +75,7 @@ export default function PromoDatesInline({ supplierId, supplierName, priceMin }:
                     : valor ? ` · a partir de ${formatBRL(valor)}` : ""}
                 </div>
               </div>
-              {(enabled || (corretagemOn && p.valor_ofertado != null)) ? (
+              {(enabled || (corretagemOn && p.valor_ofertado != null)) && dataDentroDaAntecedencia(p.date, minDias) ? (
                 <Button size="sm" variant="outline" onClick={() => setSelected(p)}>
                   <CalendarClock className="h-3 w-3 mr-1" /> Solicitar
                 </Button>

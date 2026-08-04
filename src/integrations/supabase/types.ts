@@ -1809,7 +1809,10 @@ export type Database = {
       idle_date_reservations: {
         Row: {
           ambiente: string
+          cancelada_em: string | null
+          cancelada_por: string | null
           comissao_plataforma: number | null
+          confirmada_em: string | null
           contrato_id: string | null
           couple_id: string
           created_at: string
@@ -1819,6 +1822,7 @@ export type Database = {
           id: string
           markup_pct: number | null
           modo_cobranca: string
+          motivo_cancelamento: string | null
           mp_payment_id: string | null
           mp_split_payment_id: string | null
           mp_status: string | null
@@ -1829,6 +1833,8 @@ export type Database = {
           solicitada_em: string
           status: string
           supplier_id: string
+          taxa_cancelamento: number | null
+          taxa_cancelamento_status: string
           taxa_memoria: Json | null
           taxa_plataforma: number | null
           taxa_status: string
@@ -1838,7 +1844,10 @@ export type Database = {
         }
         Insert: {
           ambiente?: string
+          cancelada_em?: string | null
+          cancelada_por?: string | null
           comissao_plataforma?: number | null
+          confirmada_em?: string | null
           contrato_id?: string | null
           couple_id: string
           created_at?: string
@@ -1848,6 +1857,7 @@ export type Database = {
           id?: string
           markup_pct?: number | null
           modo_cobranca?: string
+          motivo_cancelamento?: string | null
           mp_payment_id?: string | null
           mp_split_payment_id?: string | null
           mp_status?: string | null
@@ -1858,6 +1868,8 @@ export type Database = {
           solicitada_em?: string
           status?: string
           supplier_id: string
+          taxa_cancelamento?: number | null
+          taxa_cancelamento_status?: string
           taxa_memoria?: Json | null
           taxa_plataforma?: number | null
           taxa_status?: string
@@ -1867,7 +1879,10 @@ export type Database = {
         }
         Update: {
           ambiente?: string
+          cancelada_em?: string | null
+          cancelada_por?: string | null
           comissao_plataforma?: number | null
+          confirmada_em?: string | null
           contrato_id?: string | null
           couple_id?: string
           created_at?: string
@@ -1877,6 +1892,7 @@ export type Database = {
           id?: string
           markup_pct?: number | null
           modo_cobranca?: string
+          motivo_cancelamento?: string | null
           mp_payment_id?: string | null
           mp_split_payment_id?: string | null
           mp_status?: string | null
@@ -1887,6 +1903,8 @@ export type Database = {
           solicitada_em?: string
           status?: string
           supplier_id?: string
+          taxa_cancelamento?: number | null
+          taxa_cancelamento_status?: string
           taxa_memoria?: Json | null
           taxa_plataforma?: number | null
           taxa_status?: string
@@ -4066,6 +4084,7 @@ export type Database = {
           promo_percentage: number | null
           raio_atendimento_km: number
           rating: number | null
+          reserva_antecedencia_min_dias: number
           review_count: number | null
           state: string | null
           status: Database["public"]["Enums"]["supplier_status"]
@@ -4106,6 +4125,7 @@ export type Database = {
           promo_percentage?: number | null
           raio_atendimento_km?: number
           rating?: number | null
+          reserva_antecedencia_min_dias?: number
           review_count?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
@@ -4146,6 +4166,7 @@ export type Database = {
           promo_percentage?: number | null
           raio_atendimento_km?: number
           rating?: number | null
+          reserva_antecedencia_min_dias?: number
           review_count?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
@@ -4579,6 +4600,10 @@ export type Database = {
       }
       calc_platform_fee: {
         Args: { _categoria_slug?: string; _chave: string; _valor_base?: number }
+        Returns: Json
+      }
+      cancelar_reserva_casal: {
+        Args: { _motivo?: string; _reservation_id: string }
         Returns: Json
       }
       cidades_disponiveis: {

@@ -24,6 +24,18 @@ export const TAXA_STATUS_LABEL: Record<TaxaStatus, string> = {
   estornada: "Estornada",
 };
 
+export const TAXA_CANCEL_STATUS_LABEL: Record<string, string> = {
+  nao_aplicavel: "—",
+  isenta: "Sem custo",
+  pendente: "Pendente",
+  paga: "Paga",
+  cancelada: "Cancelada",
+};
+
+export function formatarDataHora(iso: string): string {
+  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
 export const RESERVA_STATUS_TONE: Record<ReservaStatus, string> = {
   solicitada: "bg-amber-100 text-amber-800",
   pre_reservada: "bg-blue-100 text-blue-800",

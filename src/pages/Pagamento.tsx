@@ -30,7 +30,7 @@ export default function Pagamento() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const transparente = useFeatureFlag("checkout_transparente", false);
-  const tipo = (params.get("tipo") ?? "") as "reserva" | "assinatura" | "destaque";
+  const tipo = (params.get("tipo") ?? "") as "reserva" | "assinatura" | "destaque" | "cancelamento";
   const ref = params.get("ref") ?? "";
 
   const [carregando, setCarregando] = useState(true);

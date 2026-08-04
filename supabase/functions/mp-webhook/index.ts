@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
   const status = pagamento?.status
   const externalRef = String(pagamento?.external_reference ?? '')
   const [refTipoRaw, refIdRaw] = externalRef.includes(':') ? externalRef.split(':') : ['reserva', externalRef]
-  const tipo = ['reserva', 'assinatura', 'destaque'].includes(refTipoRaw) ? refTipoRaw : 'reserva'
+  const tipo = ['reserva', 'assinatura', 'destaque', 'cancelamento'].includes(refTipoRaw) ? refTipoRaw : 'reserva'
   const referenciaId = refIdRaw || null
   const aprovado = status === 'approved'
   registro.tipo = tipo
@@ -182,7 +182,18 @@ Deno.serve(async (req) => {
     return json({ ok: true, tipo, ambiente, status })
   }
 
-  // --- Reserva de data ociosa (com split) ---
+  // --- Taxa de cancelamento paga pelo casal ---
+  if (tipo === 'cancelamento' && referenciaId) {
+    if (aprovado) {
+      await admin.from('idle_date_reservations')
+        .update({ taxa_cancelamento_status: 'paga' })
+        .eq('id', referenciaId)
+    }
+    await registrar({ resultado: aprovado ? 'cancelamento_pago' : 'cancelamento_atualizado', reservation_id: referenciaId }, 200)
+    return json({ ok: true, tipo, ambiente, status })
+  }
+
+  // --- Reserva de data ociosa ---
   let reserva: any = null
   if (referenciaId) {
     const { data } = await admin.from('idle_date_reservations').select('*').eq('id', referenciaId).maybeSingle()
@@ -203,7 +214,16 @@ Deno.serve(async (req) => {
     .eq('id', reserva.id)
 
   if (aprovado) {
-    await admin.from('idle_date_reservations').update({ status: 'confirmada' }).eq('id', reserva.id)
+    if (reserva.modo_cobranca === 'taxa_reserva') {
+      // Fornecedor quitou a taxa da plataforma; a data já está confirmada.
+      await admin.from('idle_date_reservations').update({ taxa_status: 'paga' }).eq('id', reserva.id)
+      await admin.from('supplier_promo_dates').delete()
+        .eq('supplier_id', reserva.supplier_id)
+        .eq('promo_date', reserva.promo_date)
+      await registrar({ resultado: 'taxa_reserva_paga', reservation_id: reserva.id }, 200)
+      return json({ ok: true, tipo, ambiente, status })
+    }
+    await admin.from('idle_date_reservations').update({ status: 'confirmada', confirmada_em: new Date().toISOString() }).eq('id', reserva.id)
     // A data deixa de ser ofertada como ociosa
     await admin.from('supplier_promo_dates').delete()
       .eq('supplier_id', reserva.supplier_id)

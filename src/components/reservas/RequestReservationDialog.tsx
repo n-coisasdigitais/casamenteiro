@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,7 @@ import { CalendarClock } from "lucide-react";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { formatBRL } from "@/lib/platformPricing";
 import { gerarCorpoContratoHtml } from "@/lib/contratos";
+import { carenciaCancelamentoDias, taxaCancelamento } from "@/lib/reservasConfig";
 
 type Props = {
   supplierId: string;
@@ -36,6 +37,14 @@ export default function RequestReservationDialog({ supplierId, supplierName, pro
   const [guests, setGuests] = useState<string>("");
   const [obs, setObs] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [carencia, setCarencia] = useState<number>(7);
+  const [taxaCancel, setTaxaCancel] = useState<number>(0);
+
+  useEffect(() => {
+    if (!open) return;
+    carenciaCancelamentoDias().then(setCarencia);
+    taxaCancelamento().then(setTaxaCancel);
+  }, [open]);
 
   const submit = async () => {
     if (!user) {
@@ -145,6 +154,10 @@ export default function RequestReservationDialog({ supplierId, supplierName, pro
               O fornecedor tem até 24h para responder. Você <strong>não paga nada</strong> — a taxa é cobrada do fornecedor.
             </div>
           )}
+          <div className="rounded-md bg-muted/50 border p-3 text-xs">
+            <strong>Reservar é gratuito.</strong> Você pode cancelar sem custo em até <strong>{carencia} dias</strong> após a solicitação.
+            {taxaCancel > 0 && <> Depois desse prazo, o cancelamento tem taxa de <strong>{formatBRL(taxaCancel)}</strong>.</>}
+          </div>
           <div>
             <Label>Número estimado de convidados</Label>
             <Input type="number" value={guests} onChange={e => setGuests(e.target.value)} placeholder="Opcional" />
