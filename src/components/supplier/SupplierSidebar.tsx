@@ -1,4 +1,5 @@
-import { LayoutDashboard, MessageSquare, Store, Users, Star } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Users, Star, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +62,13 @@ export default function SupplierSidebar({
             </button>
           );
         })}
+        <Link
+          to="/fornecedor/planos"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-muted text-foreground"
+        >
+          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+          <span className="flex-1 truncate">Planos e destaques</span>
+        </Link>
       </nav>
     </aside>
   );
