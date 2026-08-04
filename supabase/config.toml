@@ -15,3 +15,9 @@ project_id = "fglpzxtrvipizoymwteg"
     verify_jwt = false
   [functions.mp-webhook]
     verify_jwt = false
+  [functions.mp-checkout]
+    verify_jwt = false
+  [functions.mp-checkout-split]
+    verify_jwt = false
+  [functions.mp-process-payment]
+    verify_jwt = false
