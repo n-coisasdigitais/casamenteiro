@@ -3007,6 +3007,41 @@ export type Database = {
           },
         ]
       }
+      staff_messages: {
+        Row: {
+          application_id: string
+          body: string
+          created_at: string
+          id: string
+          sender_tipo: string
+          sender_user_id: string
+        }
+        Insert: {
+          application_id: string
+          body: string
+          created_at?: string
+          id?: string
+          sender_tipo: string
+          sender_user_id: string
+        }
+        Update: {
+          application_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          sender_tipo?: string
+          sender_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_messages_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "staff_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_profiles: {
         Row: {
           bio: string | null
@@ -4601,6 +4636,10 @@ export type Database = {
       calc_platform_fee: {
         Args: { _categoria_slug?: string; _chave: string; _valor_base?: number }
         Returns: Json
+      }
+      can_access_staff_application: {
+        Args: { _app_id: string }
+        Returns: boolean
       }
       cancelar_reserva_casal: {
         Args: { _motivo?: string; _reservation_id: string }

@@ -16,6 +16,7 @@ import { appStatusLabel, buildJobWhatsAppLink, fetchStaffContact } from "@/lib/s
 import { Heart, Calendar, Star, ShieldCheck } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import StaffDocumentsTab, { verificacaoLabel } from "@/components/staff/StaffDocumentsTab";
+import StaffChatDialog from "@/components/staff/StaffChatDialog";
 
 export default function StaffDashboard() {
   const { user, profile } = useAuth();
@@ -28,6 +29,7 @@ export default function StaffDashboard() {
   const [unav, setUnav] = useState<any[]>([]);
   const [reviewsGiven, setReviewsGiven] = useState<Record<string, boolean>>({});
   const [reviewApp, setReviewApp] = useState<any>(null);
+  const [chatApp, setChatApp] = useState<any>(null);
   const [blockDate, setBlockDate] = useState("");
   const [blockMotivo, setBlockMotivo] = useState("");
 
@@ -230,6 +232,7 @@ export default function StaffDashboard() {
                   </div>
                   <div className="flex gap-2 items-center">
                     <Badge variant="secondary">{appStatusLabel(a.status)}</Badge>
+                    <Button size="sm" variant="outline" onClick={() => setChatApp(a)}>Conversar</Button>
                     {a.status === "convidado" && (
                       <>
                         <Button size="sm" onClick={() => responder(a.id, "aceito")}>Aceitar</Button>
@@ -333,6 +336,17 @@ export default function StaffDashboard() {
           staffId={staff.id}
           supplierName={reviewApp.job?.supplier?.company_name}
           onSaved={() => { setReviewApp(null); load(); }}
+        />
+      )}
+
+      {chatApp && (
+        <StaffChatDialog
+          open={!!chatApp}
+          onOpenChange={(v) => { if (!v) setChatApp(null); }}
+          application={{ ...chatApp, staff_id: staff.id }}
+          job={chatApp.job}
+          currentUserId={user?.id || ""}
+          isSupplier={false}
         />
       )}
     </div>
