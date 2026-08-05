@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import PublishJobDialog from "./PublishJobDialog";
 import PaymentDisclaimer from "./PaymentDisclaimer";
+import StaffChatDialog from "./StaffChatDialog";
 import { appStatusLabel, jobStatusLabel, buildJobWhatsAppLink, fetchStaffContact, maskPhone } from "@/lib/staff";
 
 export default function SupplierStaffTab({ supplierId, companyName }: { supplierId: string; companyName?: string }) {
@@ -15,6 +16,12 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
   const [apps, setApps] = useState<Record<string, any[]>>({});
   const [staffs, setStaffs] = useState<any[]>([]);
   const [editJob, setEditJob] = useState<any | null>(null);
+  const [chat, setChat] = useState<{ app: any; job: any } | null>(null);
+  const [userId, setUserId] = useState<string>("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || ""));
+  }, []);
 
   const load = async () => {
     const { data: js } = await (supabase.from("staff_jobs" as any) as any)
@@ -137,6 +144,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
                     </div>
                     <div className="flex gap-2 items-center">
                       <Badge variant="outline">{appStatusLabel(a.status)}</Badge>
+                      <Button size="sm" variant="outline" onClick={() => setChat({ app: a, job: j })}>Conversar</Button>
                       {a.status === "candidato" && (
                         <>
                           <Button size="sm" onClick={() => responder(a.id, "aceito")}>Aceitar</Button>
