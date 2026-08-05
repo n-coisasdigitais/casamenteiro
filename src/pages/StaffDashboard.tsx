@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,10 +13,41 @@ import UserMenu from "@/components/UserMenu";
 import ReviewSupplierDialog from "@/components/staff/ReviewSupplierDialog";
 import { Input } from "@/components/ui/input";
 import { appStatusLabel, buildJobWhatsAppLink, fetchStaffContact } from "@/lib/staff";
-import { Heart, Calendar, Star, ShieldCheck } from "lucide-react";
+import { Heart, Calendar, Star, ShieldCheck, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import StaffDocumentsTab, { verificacaoLabel } from "@/components/staff/StaffDocumentsTab";
 import StaffChatDialog from "@/components/staff/StaffChatDialog";
+
+/**
+ * Deriva a tag exibida no card da candidatura.
+ * IMPORTANTE: leva em conta o status da VAGA (a.job?.status), não só o da candidatura.
+ * Se a vaga foi despublicada/cancelada, mostramos "Vaga encerrada" mesmo que a
+ * candidatura ainda esteja "concluido"/"aceito" — o histórico continua visível.
+ */
+function statusTag(a: any): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
+  const jobStatus = a.job?.status;
+  const appStatus = a.status;
+
+  if (appStatus === "concluido") return { label: "Concluída", variant: "default" };
+  if (appStatus === "retirada") return { label: "Candidatura retirada", variant: "outline" };
+  if (appStatus === "recusado") return { label: "Recusada", variant: "outline" };
+  if (appStatus === "no_show") return { label: "Não compareceu", variant: "destructive" };
+
+  // A vaga sumiu da vitrine mas a candidatura ainda está "viva"
+  if (jobStatus === "cancelada" || jobStatus === "encerrada") {
+    return { label: "Vaga encerrada", variant: "outline" };
+  }
+
+  // fallback: usa o label padrão do lib/staff
+  return { label: appStatusLabel(appStatus), variant: "secondary" };
+}
+
+/** Uma candidatura está "encerrada" (sem ações possíveis) quando a vaga saiu do ar
+ *  e ela não chegou a concluir. */
+function isEncerradaSemConclusao(a: any): boolean {
+  const jobStatus = a.job?.status;
+  return (jobStatus === "cancelada" || jobStatus === "encerrada") && a.status !== "concluido";
+}
 
 export default function StaffDashboard() {
   const { user, profile } = useAuth();
@@ -30,8 +61,16 @@ export default function StaffDashboard() {
   const [reviewsGiven, setReviewsGiven] = useState<Record<string, boolean>>({});
   const [reviewApp, setReviewApp] = useState<any>(null);
   const [chatApp, setChatApp] = useState<any>(null);
-  const [blockDate, setBlockDate] = useState("");
+
+  // Agenda: bloqueio por intervalo (início/fim)
+  const [blockStart, setBlockStart] = useState("");
+  const [blockEnd, setBlockEnd] = useState("");
   const [blockMotivo, setBlockMotivo] = useState("");
+
+  // Busca de vagas disponíveis (feed): nome, ordenação
+  const [feedBusca, setFeedBusca] = useState("");
+  const [feedFuncao, setFeedFuncao] = useState("todas");
+  const [feedOrder, setFeedOrder] = useState<"data" | "valor_desc" | "valor_asc">("data");
 
   useEffect(() => {
     if (!user) return;
@@ -49,6 +88,7 @@ export default function StaffDashboard() {
     if (!sp) return navigate("/profissional/onboarding");
     setStaff(sp);
 
+    // Candidaturas: traz a vaga em QUALQUER status (a policy is_job_applicant garante a leitura).
     const { data: apps } = await (supabase.from("staff_applications" as any) as any)
       .select("*, job:staff_jobs(*, supplier:suppliers(id, company_name, city))")
       .eq("staff_id", sp.id)
@@ -101,6 +141,15 @@ export default function StaffDashboard() {
     load();
   };
 
+  const retirarCandidatura = async (appId: string) => {
+    const { error } = await (supabase.from("staff_applications" as any) as any)
+      .update({ status: "retirada", respondido_em: new Date().toISOString() })
+      .eq("id", appId);
+    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    toast({ title: "Candidatura retirada" });
+    load();
+  };
+
   const candidatar = async (jobId: string) => {
     if (!staff) return;
     const { error } = await (supabase.from("staff_applications" as any) as any).upsert(
@@ -135,16 +184,40 @@ export default function StaffDashboard() {
     }
   };
 
-  const bloquearData = async () => {
-    if (!staff || !blockDate) return;
-    const { error } = await (supabase.from("staff_unavailability" as any) as any).insert({
-      staff_id: staff.id,
-      data: blockDate,
-      motivo: blockMotivo || null,
-    });
+  // Bloqueio por intervalo: expande o range em datas discretas e faz batch-insert.
+  const bloquearPeriodo = async () => {
+    if (!staff || !blockStart) return;
+    const start = new Date(blockStart + "T00:00:00");
+    const end = new Date((blockEnd || blockStart) + "T00:00:00");
+    if (end < start) {
+      return toast({
+        title: "Período inválido",
+        description: "A data final é anterior à inicial.",
+        variant: "destructive",
+      });
+    }
+
+    // gera todas as datas do intervalo
+    const dias: string[] = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dias.push(d.toISOString().slice(0, 10));
+    }
+
+    // evita duplicar datas já bloqueadas
+    const jaBloqueadas = new Set(unav.map((u) => u.data));
+    const novos = dias
+      .filter((data) => !jaBloqueadas.has(data))
+      .map((data) => ({ staff_id: staff.id, data, motivo: blockMotivo || null }));
+
+    if (novos.length === 0) {
+      return toast({ title: "Nada a bloquear", description: "Essas datas já estavam bloqueadas." });
+    }
+
+    const { error } = await (supabase.from("staff_unavailability" as any) as any).insert(novos);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
-    toast({ title: "Data bloqueada" });
-    setBlockDate("");
+    toast({ title: novos.length === 1 ? "Data bloqueada" : `${novos.length} datas bloqueadas` });
+    setBlockStart("");
+    setBlockEnd("");
     setBlockMotivo("");
     load();
   };
@@ -164,6 +237,27 @@ export default function StaffDashboard() {
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
     toast({ title: v ? "Você está disponível para vagas" : "Você não receberá novas vagas" });
   };
+
+  // Feed filtrado/ordenado (busca por nome, função, ordenação)
+  const feedView = useMemo(() => {
+    let list = [...feed];
+    const q = feedBusca.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (j) =>
+          (j.funcao || "").toLowerCase().includes(q) ||
+          (j.supplier?.company_name || "").toLowerCase().includes(q) ||
+          (j.cidade || j.local || "").toLowerCase().includes(q),
+      );
+    }
+    if (feedFuncao !== "todas") {
+      list = list.filter((j) => j.funcao === feedFuncao);
+    }
+    if (feedOrder === "valor_desc") list.sort((a, b) => (b.valor_turno ?? 0) - (a.valor_turno ?? 0));
+    else if (feedOrder === "valor_asc") list.sort((a, b) => (a.valor_turno ?? 0) - (b.valor_turno ?? 0));
+    else list.sort((a, b) => (a.data > b.data ? 1 : -1));
+    return list;
+  }, [feed, feedBusca, feedFuncao, feedOrder]);
 
   if (!staff) return null;
 
@@ -250,58 +344,110 @@ export default function StaffDashboard() {
 
           <TabsContent value="convites" className="space-y-3">
             {applications.length === 0 && <p className="text-sm text-muted-foreground">Nenhum convite ainda.</p>}
-            {applications.map((a) => (
-              <Card key={a.id}>
-                <CardContent className="p-4 flex flex-wrap items-center gap-3 justify-between">
-                  <div>
-                    <p className="font-medium">
-                      {a.job?.funcao} • {a.job?.supplier?.company_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {a.job?.data && new Date(a.job.data + "T00:00:00").toLocaleDateString("pt-BR")} •{" "}
-                      {a.job?.cidade || a.job?.local}
-                    </p>
-                    <p className="text-sm">
-                      R$ {Number(a.job?.valor_turno || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <Badge variant="secondary">{appStatusLabel(a.status)}</Badge>
-                    <Button size="sm" variant="outline" onClick={() => setChatApp(a)}>
-                      Conversar
-                    </Button>
-                    {a.status === "convidado" && (
-                      <>
-                        <Button size="sm" onClick={() => responder(a.id, "aceito")}>
-                          Aceitar
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => responder(a.id, "recusado")}>
-                          Recusar
-                        </Button>
-                      </>
-                    )}
-                    {(a.status === "aceito" || a.status === "concluido") && (
-                      <Button size="sm" variant="outline" onClick={() => abrirWhats(a)}>
-                        WhatsApp
+            {applications.map((a) => {
+              const tag = statusTag(a);
+              const encerrada = isEncerradaSemConclusao(a);
+              return (
+                <Card key={a.id} className={encerrada ? "opacity-70" : ""}>
+                  <CardContent className="p-4 flex flex-wrap items-center gap-3 justify-between">
+                    <div>
+                      <p className="font-medium">
+                        {a.job?.funcao || "Vaga"}{" "}
+                        {a.job?.supplier?.company_name ? `• ${a.job.supplier.company_name}` : ""}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {a.job?.data && new Date(a.job.data + "T00:00:00").toLocaleDateString("pt-BR")}
+                        {a.job?.cidade || a.job?.local ? ` • ${a.job?.cidade || a.job?.local}` : ""}
+                      </p>
+                      <p className="text-sm">
+                        R$ {Number(a.job?.valor_turno || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 items-center flex-wrap justify-end">
+                      <Badge variant={tag.variant}>{tag.label}</Badge>
+
+                      {/* Conversar continua disponível mesmo com a vaga encerrada:
+                          o histórico da conversa é preservado. */}
+                      <Button size="sm" variant="outline" onClick={() => setChatApp(a)}>
+                        Conversar
                       </Button>
-                    )}
-                    {a.status === "concluido" && !reviewsGiven[a.job_id] && (
-                      <Button size="sm" onClick={() => setReviewApp(a)}>
-                        Avaliar fornecedor
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+
+                      {a.status === "convidado" && (
+                        <>
+                          <Button size="sm" onClick={() => responder(a.id, "aceito")}>
+                            Aceitar
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => responder(a.id, "recusado")}>
+                            Recusar
+                          </Button>
+                        </>
+                      )}
+
+                      {/* Profissional pode retirar a própria candidatura enquanto pendente */}
+                      {a.status === "candidato" && (
+                        <Button size="sm" variant="ghost" onClick={() => retirarCandidatura(a.id)}>
+                          Retirar candidatura
+                        </Button>
+                      )}
+
+                      {(a.status === "aceito" || a.status === "concluido") && (
+                        <Button size="sm" variant="outline" onClick={() => abrirWhats(a)}>
+                          WhatsApp
+                        </Button>
+                      )}
+
+                      {a.status === "concluido" && !reviewsGiven[a.job_id] && (
+                        <Button size="sm" onClick={() => setReviewApp(a)}>
+                          Avaliar fornecedor
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </TabsContent>
 
           <TabsContent value="feed" className="space-y-3">
-            {feed.length === 0 && (
+            {/* Filtros: busca por nome, função e ordenação */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por função, fornecedor ou cidade"
+                  value={feedBusca}
+                  onChange={(e) => setFeedBusca(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <select
+                value={feedFuncao}
+                onChange={(e) => setFeedFuncao(e.target.value)}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="todas">Todas as funções</option>
+                {(staff.funcoes || []).map((f: string) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={feedOrder}
+                onChange={(e) => setFeedOrder(e.target.value as any)}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="data">Data (mais próxima)</option>
+                <option value="valor_desc">Maior valor</option>
+                <option value="valor_asc">Menor valor</option>
+              </select>
+            </div>
+
+            {feedView.length === 0 && (
               <p className="text-sm text-muted-foreground">Nenhuma vaga aberta compatível no momento.</p>
             )}
-            {feed.map((j) => {
-              const jaAplicou = applications.some((a) => a.job_id === j.id);
+            {feedView.map((j) => {
+              const jaAplicou = applications.some((a) => a.job_id === j.id && a.status !== "retirada");
               return (
                 <Card key={j.id}>
                   <CardContent className="p-4 flex flex-wrap items-center gap-3 justify-between">
@@ -333,23 +479,39 @@ export default function StaffDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <Input
-                    type="date"
-                    value={blockDate}
-                    onChange={(e) => setBlockDate(e.target.value)}
-                    className="max-w-40"
-                  />
+                <div className="flex flex-wrap gap-2 mb-1 items-end">
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Início</label>
+                    <Input
+                      type="date"
+                      value={blockStart}
+                      onChange={(e) => setBlockStart(e.target.value)}
+                      className="max-w-40"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Fim (opcional)</label>
+                    <Input
+                      type="date"
+                      value={blockEnd}
+                      min={blockStart || undefined}
+                      onChange={(e) => setBlockEnd(e.target.value)}
+                      className="max-w-40"
+                    />
+                  </div>
                   <Input
                     placeholder="Motivo (opcional)"
                     value={blockMotivo}
                     onChange={(e) => setBlockMotivo(e.target.value)}
                     className="max-w-xs"
                   />
-                  <Button size="sm" onClick={bloquearData} disabled={!blockDate}>
-                    Bloquear data
+                  <Button size="sm" onClick={bloquearPeriodo} disabled={!blockStart}>
+                    Bloquear período
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Deixe o "Fim" vazio para bloquear só um dia. Preencha para bloquear um intervalo inteiro.
+                </p>
                 {unav.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     Nenhum bloqueio. Aceitar vagas bloqueia a data automaticamente.
