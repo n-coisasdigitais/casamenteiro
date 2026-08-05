@@ -11,6 +11,7 @@ import {
 import {
   Heart, Search, Settings, LogOut, CheckSquare, Users, DollarSign, Store,
   LayoutDashboard, MessageSquareQuote, CalendarDays, ShieldCheck, UserCircle,
+  Briefcase, FileText,
 } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
@@ -24,8 +25,16 @@ export default function UserMenu() {
   };
 
   const isSupplier = profile?.account_type === "supplier";
+  const isStaff = profile?.account_type === "profissional";
 
-  const items = isSupplier
+  const items = isStaff
+    ? [
+        { to: "/profissional/painel", icon: LayoutDashboard, label: "Painel do Profissional" },
+        { to: "/profissional/painel?tab=vagas", icon: Briefcase, label: "Vagas disponíveis" },
+        { to: "/profissional/painel?tab=documentos", icon: FileText, label: "Meus documentos" },
+        { to: "/profissional/onboarding", icon: UserCircle, label: "Meu perfil profissional" },
+      ]
+    : isSupplier
     ? [
         { to: "/fornecedor/painel", icon: LayoutDashboard, label: "Painel do Fornecedor" },
         { to: "/fornecedor/painel?tab=quotes", icon: MessageSquareQuote, label: "Orçamentos recebidos" },
@@ -51,7 +60,10 @@ export default function UserMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
           <p className="text-sm font-medium leading-none">{profile?.full_name || "Minha conta"}</p>
-          <Link to="/perfil" className="text-xs text-primary hover:underline mt-1 inline-block">
+          <Link
+            to={isStaff ? "/profissional/onboarding" : "/perfil"}
+            className="text-xs text-primary hover:underline mt-1 inline-block"
+          >
             Ver perfil
           </Link>
         </DropdownMenuLabel>
@@ -77,7 +89,7 @@ export default function UserMenu() {
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/perfil" className="cursor-pointer">
+          <Link to={isStaff ? "/profissional/onboarding" : "/perfil"} className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
             Configurações
           </Link>
