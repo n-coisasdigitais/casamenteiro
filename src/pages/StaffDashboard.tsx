@@ -338,6 +338,17 @@ export default function StaffDashboard() {
           onSaved={() => { setReviewApp(null); load(); }}
         />
       )}
+
+      {chatApp && (
+        <StaffChatDialog
+          open={!!chatApp}
+          onOpenChange={(v) => { if (!v) setChatApp(null); }}
+          application={{ ...chatApp, staff_id: staff.id }}
+          job={chatApp.job}
+          currentUserId={user?.id || ""}
+          isSupplier={false}
+        />
+      )}
     </div>
   );
 }
