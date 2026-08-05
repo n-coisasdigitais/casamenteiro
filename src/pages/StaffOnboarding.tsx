@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { FUNCOES_STAFF, slugify } from "@/lib/staff";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
+import StaffPhotoUpload from "@/components/staff/StaffPhotoUpload";
 
 export default function StaffOnboarding() {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ export default function StaffOnboarding() {
   const [loading, setLoading] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [telefone, setTelefone] = useState("");
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
@@ -39,6 +41,7 @@ export default function StaffOnboarding() {
       if (data) {
         setProfileId(data.id);
         setNome(data.nome || "");
+        setFotoUrl(data.foto_url || null);
         setTelefone(data.telefone || "");
         setCidade(data.cidade || "");
         setEstado(data.estado || "");
@@ -68,6 +71,7 @@ export default function StaffOnboarding() {
       user_id: user.id,
       criado_por: user.id,
       nome: nome.trim(),
+      foto_url: fotoUrl,
       slug: slugify(nome) + "-" + user.id.slice(0, 6),
       telefone,
       cidade: cidade.trim(),
@@ -98,6 +102,7 @@ export default function StaffOnboarding() {
         <Card>
           <CardHeader><CardTitle>Complete seu perfil profissional</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            <StaffPhotoUpload fotoUrl={fotoUrl} nome={nome} onUploaded={setFotoUrl} />
             <div><Label>Nome completo</Label><Input value={nome} onChange={e => setNome(e.target.value)} /></div>
             <div><Label>Telefone / WhatsApp</Label>
               <Input value={telefone} onChange={e => setTelefone(formatPhoneBR(e.target.value))} placeholder="(11) 99999-9999" />
