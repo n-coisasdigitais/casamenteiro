@@ -4,14 +4,222 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import PublishJobDialog from "./PublishJobDialog";
 import PaymentDisclaimer from "./PaymentDisclaimer";
 import StaffChatDialog from "./StaffChatDialog";
-import StaffProfileDialog from "./StaffProfileDialog";
-import ReviewStaffDialog from "./ReviewStaffDialog";
+import { Star, MapPin, ShieldCheck } from "lucide-react";
 import { appStatusLabel, jobStatusLabel, buildJobWhatsAppLink, fetchStaffContact, maskPhone } from "@/lib/staff";
 
+/* ------------------------------------------------------------------ */
+/* Modal: perfil público do profissional (foto, dados, avaliações)     */
+/* ------------------------------------------------------------------ */
+type StaffReview = { id: string; estrelas: number; comentario: string | null; created_at: string };
+
+function StaffProfileDialog({
+  open,
+  onOpenChange,
+  staffId,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  staffId: string | null;
+}) {
+  const [staff, setStaff] = useState<any>(null);
+  const [reviews, setReviews] = useState<StaffReview[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || !staffId) return;
+    setLoading(true);
+    (async () => {
+      const { data: sp } = await (supabase.from("staff_profiles" as any) as any)
+        .select("id, nome, cidade, funcoes, rating, review_count, foto_url, bio, verificacao_status")
+        .eq("id", staffId)
+        .maybeSingle();
+      setStaff(sp);
+
+      const { data: rv } = await (supabase.from("staff_reviews" as any) as any)
+        .select("id, estrelas, comentario, created_at")
+        .eq("avaliado_id", staffId)
+        .eq("autor_tipo", "fornecedor")
+        .order("created_at", { ascending: false });
+      setReviews((rv || []) as StaffReview[]);
+      setLoading(false);
+    })();
+  }, [open, staffId]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Perfil do profissional</DialogTitle>
+        </DialogHeader>
+
+        {loading || !staff ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">Carregando...</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-16 w-16 rounded-full bg-muted overflow-hidden shrink-0">
+                {staff.foto_url ? (
+                  <img src={staff.foto_url} alt={staff.nome} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-lg font-bold text-muted-foreground">
+                    {(staff.nome || "?").charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="font-semibold">{staff.nome}</p>
+                {staff.cidade && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> {staff.cidade}
+                  </p>
+                )}
+                <div className="flex items-center gap-2 mt-1">
+                  {staff.rating ? (
+                    <span className="text-xs flex items-center gap-1">
+                      <Star className="h-3 w-3 fill-primary text-primary" />
+                      {staff.rating} ({staff.review_count})
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Sem avaliações</span>
+                  )}
+                  {staff.verificacao_status === "verificado" && (
+                    <Badge variant="default" className="gap-1 text-[10px]">
+                      <ShieldCheck className="h-3 w-3" /> Verificado
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {(staff.funcoes || []).length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {staff.funcoes.map((f: string) => (
+                  <Badge key={f} variant="secondary">
+                    {f}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {staff.bio && <p className="text-sm text-muted-foreground">{staff.bio}</p>}
+
+            <div>
+              <p className="text-sm font-medium mb-2">Avaliações de fornecedores</p>
+              {reviews.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Ainda não recebeu avaliações.</p>
+              ) : (
+                <div className="space-y-2 max-h-52 overflow-y-auto">
+                  {reviews.map((r) => (
+                    <div key={r.id} className="border rounded-md p-2">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            className={`h-3 w-3 ${n <= r.estrelas ? "fill-primary text-primary" : "text-muted-foreground"}`}
+                          />
+                        ))}
+                        <span className="ml-1 text-[10px] text-muted-foreground">
+                          {new Date(r.created_at).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                      {r.comentario && <p className="text-xs mt-1">{r.comentario}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Modal: fornecedor avalia o profissional (autor_tipo = fornecedor)   */
+/* ------------------------------------------------------------------ */
+function ReviewStaffDialog({
+  open,
+  onOpenChange,
+  jobId,
+  supplierId,
+  staffId,
+  staffName,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  jobId: string;
+  supplierId: string;
+  staffId: string;
+  staffName?: string;
+  onSaved?: () => void;
+}) {
+  const { toast } = useToast();
+  const [estrelas, setEstrelas] = useState(5);
+  const [comentario, setComentario] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const salvar = async () => {
+    if (!jobId || !supplierId || !staffId) {
+      return toast({ title: "Dados incompletos para avaliar", variant: "destructive" });
+    }
+    setLoading(true);
+    const { error } = await (supabase.from("staff_reviews" as any) as any).insert({
+      job_id: jobId,
+      avaliado_id: staffId,
+      autor_id: supplierId,
+      autor_tipo: "fornecedor",
+      estrelas,
+      comentario: comentario || null,
+    });
+    setLoading(false);
+    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    toast({ title: "Avaliação enviada. Obrigado!" });
+    onOpenChange(false);
+    setComentario("");
+    setEstrelas(5);
+    onSaved?.();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Avaliar {staffName || "profissional"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="flex justify-center gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button key={n} type="button" onClick={() => setEstrelas(n)} aria-label={`${n} estrelas`}>
+                <Star className={`h-8 w-8 ${n <= estrelas ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+              </button>
+            ))}
+          </div>
+          <Textarea
+            rows={4}
+            placeholder="Como foi o trabalho deste profissional? (opcional)"
+            value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+          />
+          <Button className="w-full" onClick={salvar} disabled={loading}>
+            {loading ? "Enviando..." : "Enviar avaliação"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Componente principal                                                */
+/* ------------------------------------------------------------------ */
 export default function SupplierStaffTab({ supplierId, companyName }: { supplierId: string; companyName?: string }) {
   const { toast } = useToast();
   const [jobs, setJobs] = useState<any[]>([]);
