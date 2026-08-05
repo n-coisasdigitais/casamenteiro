@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart } from "lucide-react";
+import { Heart, MailCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -216,6 +216,64 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-beige px-4">
       <SEO title="Entrar — Casamenteiro" noIndex />
+      {signupSent ? (
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Link to="/" className="flex items-center justify-center gap-2 mb-4">
+              <Heart className="h-6 w-6 text-primary fill-primary" />
+              <span className="text-xl font-bold">Casamenteiro</span>
+            </Link>
+            <div className="flex justify-center mb-3">
+              <MailCheck className="h-12 w-12 text-primary" strokeWidth={1.5} />
+            </div>
+            <CardTitle className="text-2xl">
+              {signupSent.jaExistia ? "Este e-mail já tem conta" : "Confirme seu e-mail"}
+            </CardTitle>
+            <CardDescription>
+              {signupSent.jaExistia
+                ? `Já existe uma conta com ${signupSent.email}. Entre com sua senha ou recupere o acesso.`
+                : `Enviamos um link de confirmação para ${signupSent.email}. Abra a caixa de entrada (e o spam) para ativar sua conta.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!signupSent.jaExistia && (
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={loading}
+                onClick={async () => {
+                  setLoading(true);
+                  const { error } = await supabase.auth.resend({
+                    type: "signup",
+                    email: signupSent.email,
+                    options: { emailRedirectTo: `${window.location.origin}/confirmado` },
+                  });
+                  setLoading(false);
+                  toast(
+                    error
+                      ? { title: "Não foi possível reenviar", description: traduzirErroAuth(error), variant: "destructive" }
+                      : { title: "E-mail reenviado", description: "Confira a caixa de entrada e o spam." }
+                  );
+                }}
+              >
+                Reenviar e-mail de confirmação
+              </Button>
+            )}
+            <Button
+              className="w-full"
+              onClick={() => {
+                setSignupSent(null);
+                setMode("login");
+              }}
+            >
+              Ir para o login
+            </Button>
+            <Link to="/esqueci-senha" className="block text-center text-sm text-muted-foreground hover:underline">
+              Esqueci minha senha
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link to="/" className="flex items-center justify-center gap-2 mb-4">
