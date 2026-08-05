@@ -103,12 +103,15 @@ export default function StaffDashboard() {
 
   const candidatar = async (jobId: string) => {
     if (!staff) return;
-    const { error } = await (supabase.from("staff_applications" as any) as any).insert({
-      job_id: jobId,
-      staff_id: staff.id,
-      origem: "candidatura",
-      status: "candidato",
-    });
+    const { error } = await (supabase.from("staff_applications" as any) as any).upsert(
+      {
+        job_id: jobId,
+        staff_id: staff.id,
+        origem: "candidatura",
+        status: "candidato",
+      },
+      { onConflict: "job_id,staff_id", ignoreDuplicates: true },
+    );
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
     toast({ title: "Candidatura enviada!" });
     load();
