@@ -38,6 +38,7 @@ export default function Auth() {
   const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [signupSent, setSignupSent] = useState<{ email: string; jaExistia: boolean } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { session, profile } = useAuth();
