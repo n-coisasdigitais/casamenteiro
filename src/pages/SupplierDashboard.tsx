@@ -34,7 +34,10 @@ import { isEspacoCategory } from "@/lib/categories";
 import SupplierStaffTab from "@/components/staff/SupplierStaffTab";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import SupplierReservationsTab from "@/components/reservas/SupplierReservationsTab";
-import SupplierSidebar, { getSupplierDestinations, type SupplierDestination } from "@/components/supplier/SupplierSidebar";
+import SupplierSidebar, {
+  getSupplierDestinations,
+  type SupplierDestination,
+} from "@/components/supplier/SupplierSidebar";
 import SupplierMobileTabBar from "@/components/supplier/SupplierMobileTabBar";
 import SupplierActionCards from "@/components/supplier/SupplierActionCards";
 import SupplierLeadsCRM from "@/components/supplier/SupplierLeadsCRM";
@@ -90,7 +93,10 @@ export default function SupplierDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("categories").select("*").then(({ data }) => setCategories(data || []));
+    supabase
+      .from("categories")
+      .select("*")
+      .then(({ data }) => setCategories(data || []));
     loadSupplier();
   }, [user]);
 
@@ -101,11 +107,13 @@ export default function SupplierDashboard() {
   // Solicitações de reserva aguardando resposta do fornecedor
   useEffect(() => {
     if (!supplier || !reservasEnabled) return;
-    (supabase.from("idle_date_reservations" as any)
-      .select("id", { count: "exact", head: true })
-      .eq("supplier_id", supplier.id)
-      .eq("status", "solicitada") as any)
-      .then(({ count }: any) => setReservasPendentes(count ?? 0));
+    (
+      supabase
+        .from("idle_date_reservations" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("supplier_id", supplier.id)
+        .eq("status", "solicitada") as any
+    ).then(({ count }: any) => setReservasPendentes(count ?? 0));
   }, [supplier, reservasEnabled]);
 
   // Sincroniza destino com URL (?tab=), aceitando chaves legadas
@@ -150,15 +158,20 @@ export default function SupplierDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quotes, searchParams]);
 
-  const goDest = (d: SupplierDestination, extra?: { sub?: BusinessSub; filter?: string | null; inner?: "kanban" | "leads" }) => {
+  const goDest = (
+    d: SupplierDestination,
+    extra?: { sub?: BusinessSub; filter?: string | null; inner?: "kanban" | "leads" },
+  ) => {
     setDest(d);
     if (extra?.sub) setBusinessSub(extra.sub);
     if (extra?.filter !== undefined) setQuotesFilter(extra.filter);
     if (extra?.inner) setQuotesInnerTab(extra.inner);
     const next = new URLSearchParams(searchParams);
     next.set("tab", d);
-    if (d === "negocio") next.set("sub", extra?.sub || businessSub); else next.delete("sub");
-    if (extra?.filter) next.set("filter", extra.filter); else next.delete("filter");
+    if (d === "negocio") next.set("sub", extra?.sub || businessSub);
+    else next.delete("sub");
+    if (extra?.filter) next.set("filter", extra.filter);
+    else next.delete("filter");
     next.delete("quote");
     setSearchParams(next, { replace: true });
   };
@@ -189,12 +202,21 @@ export default function SupplierDashboard() {
       setState(data.state || "");
       setPhone(formatPhoneBR(data.whatsapp || data.phone || ""));
       setEmail(data.email || "");
-      const { data: photoData } = await supabase.from("supplier_photos").select("*").eq("supplier_id", data.id).order("display_order");
+      const { data: photoData } = await supabase
+        .from("supplier_photos")
+        .select("*")
+        .eq("supplier_id", data.id)
+        .order("display_order");
       setPhotos(photoData || []);
       if (data.status === "rejected") {
-        const { data: ap } = await supabase.from("fornecedor_aprovacoes")
-          .select("motivo,created_at").eq("supplier_id", data.id).eq("acao", "rejected")
-          .order("created_at", { ascending: false }).limit(1).maybeSingle();
+        const { data: ap } = await supabase
+          .from("fornecedor_aprovacoes")
+          .select("motivo,created_at")
+          .eq("supplier_id", data.id)
+          .eq("acao", "rejected")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
         setRejectMotivo(ap?.motivo || null);
       } else {
         setRejectMotivo(null);
@@ -209,7 +231,34 @@ export default function SupplierDashboard() {
       .select("*")
       .eq("supplier_id", supplier.id)
       .order("created_at", { ascending: false });
-    setQuotes(data || []);
+
+    const quotes = data || [];
+
+    // Enriquece cada quote com o valor da última proposta (aceita tem prioridade)
+    // para exibir no card do Kanban. Uma query só para todos os quotes.
+    if (quotes.length) {
+      const ids = quotes.map((q: any) => q.id);
+      const { data: props } = await (supabase.from("quote_proposals" as any) as any)
+        .select("quote_id, amount, status, created_at")
+        .in("quote_id", ids)
+        .order("created_at", { ascending: true });
+
+      const byQuote: Record<string, any[]> = {};
+      (props || []).forEach((p: any) => {
+        (byQuote[p.quote_id] = byQuote[p.quote_id] || []).push(p);
+      });
+
+      quotes.forEach((q: any) => {
+        const list = byQuote[q.id] || [];
+        const aceita = [...list].reverse().find((p) => p.status === "accepted" && p.amount != null);
+        const ultima = [...list].reverse().find((p) => p.amount != null);
+        const escolhida = aceita || ultima;
+        q._valor = escolhida?.amount ?? null;
+        q._valor_status = escolhida?.status ?? null;
+      });
+    }
+
+    setQuotes(quotes);
   };
 
   const openThread = (quote: any) => {
@@ -217,28 +266,39 @@ export default function SupplierDashboard() {
     setThreadOpen(true);
     // Auto-mark as viewed
     if (quote.status === "pending") {
-      supabase.from("quotes").update({ status: "viewed" }).eq("id", quote.id).then(() => loadQuotes());
+      supabase
+        .from("quotes")
+        .update({ status: "viewed" })
+        .eq("id", quote.id)
+        .then(() => loadQuotes());
     }
   };
 
   const handleSave = async () => {
     if (!supplier) return;
     if (phone && !isValidPhoneBR(phone)) {
-      toast({ title: "WhatsApp inválido", description: "Use DDD + número (ex.: (11) 91234-5678).", variant: "destructive" });
+      toast({
+        title: "WhatsApp inválido",
+        description: "Use DDD + número (ex.: (11) 91234-5678).",
+        variant: "destructive",
+      });
       return;
     }
     setLoading(true);
     const phoneDigits = phone.replace(/\D/g, "") || null;
-    const { error } = await supabase.from("suppliers").update({
-      company_name: companyName,
-      description,
-      category_id: categoryId || null,
-      city: city || null,
-      state: state || null,
-      phone: phoneDigits,
-      whatsapp: phoneDigits,
-      email: email || null,
-    }).eq("id", supplier.id);
+    const { error } = await supabase
+      .from("suppliers")
+      .update({
+        company_name: companyName,
+        description,
+        category_id: categoryId || null,
+        city: city || null,
+        state: state || null,
+        phone: phoneDigits,
+        whatsapp: phoneDigits,
+        email: email || null,
+      })
+      .eq("id", supplier.id);
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     } else {
@@ -258,7 +318,9 @@ export default function SupplierDashboard() {
       setUploading(false);
       return;
     }
-    const { data: { publicUrl } } = supabase.storage.from("supplier-photos").getPublicUrl(filePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("supplier-photos").getPublicUrl(filePath);
     await supabase.from("supplier_photos").insert({
       supplier_id: supplier.id,
       photo_url: publicUrl,
@@ -281,7 +343,12 @@ export default function SupplierDashboard() {
 
   const statusInfo = supplier ? statusConfig[supplier.status as keyof typeof statusConfig] : null;
 
-  if (!supplier) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
+  if (!supplier)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
 
   const overdueLeadsCount = quotesFilter === "__" ? 0 : 0; // placeholder; ActionCards controla o próprio alerta
   const destinations = getSupplierDestinations({
@@ -296,8 +363,10 @@ export default function SupplierDashboard() {
   const filteredQuotes = (() => {
     if (!quotesFilter) return quotes;
     // filtro simples: "aguardando" = kanban_status enviado/visto; "sem_retorno" = respondido/negociando
-    if (quotesFilter === "aguardando") return quotes.filter((q) => ["enviado", "visto"].includes(q.kanban_status || "enviado"));
-    if (quotesFilter === "sem_retorno") return quotes.filter((q) => ["respondido", "negociando"].includes(q.kanban_status || ""));
+    if (quotesFilter === "aguardando")
+      return quotes.filter((q) => ["enviado", "visto"].includes(q.kanban_status || "enviado"));
+    if (quotesFilter === "sem_retorno")
+      return quotes.filter((q) => ["respondido", "negociando"].includes(q.kanban_status || ""));
     return quotes;
   })();
 
@@ -330,7 +399,10 @@ export default function SupplierDashboard() {
               <Badge variant="secondary">
                 Filtro: {quotesFilter === "aguardando" ? "aguardando resposta" : "sem retorno do casal"}
               </Badge>
-              <button className="underline text-muted-foreground" onClick={() => goDest("orcamentos", { filter: null })}>
+              <button
+                className="underline text-muted-foreground"
+                onClick={() => goDest("orcamentos", { filter: null })}
+              >
                 limpar
               </button>
             </div>
@@ -346,7 +418,9 @@ export default function SupplierDashboard() {
             <Card>
               <CardContent className="p-8 text-center">
                 <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">Nenhum pedido de orçamento {quotesFilter ? "para esse filtro" : "recebido ainda"}.</p>
+                <p className="text-muted-foreground">
+                  Nenhum pedido de orçamento {quotesFilter ? "para esse filtro" : "recebido ainda"}.
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -388,54 +462,100 @@ export default function SupplierDashboard() {
             }}
           >
             <TabsList className="flex-wrap">
-              {businessTabs.map((t) => <TabsTrigger key={t.key} value={t.key}>{t.label}</TabsTrigger>)}
+              {businessTabs.map((t) => (
+                <TabsTrigger key={t.key} value={t.key}>
+                  {t.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
           </Tabs>
 
           {businessSub === "perfil" && (
             <>
               <Card>
-                <CardHeader><CardTitle className="text-lg">Informações</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-lg">Informações</CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-4">
-                  <div><Label>Nome da empresa</Label><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></div>
-                  <div><Label>Descrição dos serviços</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
-                  <div><Label>Categoria</Label>
+                  <div>
+                    <Label>Nome da empresa</Label>
+                    <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Descrição dos serviços</Label>
+                    <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+                  </div>
+                  <div>
+                    <Label>Categoria</Label>
                     <Select value={categoryId} onValueChange={setCategoryId}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><Label>Cidade</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
-                    <div><Label>Estado</Label><Input value={state} onChange={(e) => setState(e.target.value)} /></div>
+                    <div>
+                      <Label>Cidade</Label>
+                      <Input value={city} onChange={(e) => setCity(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label>Estado</Label>
+                      <Input value={state} onChange={(e) => setState(e.target.value)} />
+                    </div>
                   </div>
                   <div>
                     <Label>WhatsApp (com DDD)</Label>
-                    <Input value={phone} onChange={(e) => setPhone(formatPhoneBR(e.target.value))} placeholder="(11) 91234-5678" inputMode="numeric" />
-                    {phone && !isValidPhoneBR(phone) && (<p className="text-xs text-destructive mt-1">Telefone inválido. Use DDD + número.</p>)}
+                    <Input
+                      value={phone}
+                      onChange={(e) => setPhone(formatPhoneBR(e.target.value))}
+                      placeholder="(11) 91234-5678"
+                      inputMode="numeric"
+                    />
+                    {phone && !isValidPhoneBR(phone) && (
+                      <p className="text-xs text-destructive mt-1">Telefone inválido. Use DDD + número.</p>
+                    )}
                   </div>
-                  <div><Label>E-mail de contato</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+                  <div>
+                    <Label>E-mail de contato</Label>
+                    <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+                  </div>
                   <Button onClick={handleSave} disabled={loading} className="w-full">
                     {loading ? "Salvando..." : "Salvar alterações"}
                   </Button>
                 </CardContent>
               </Card>
               <Card className="mt-4">
-                <CardHeader><CardTitle className="text-lg">Detalhes da categoria</CardTitle></CardHeader>
-                <CardContent><DynamicFieldsForm supplierId={supplier.id} categoryId={categoryId || null} /></CardContent>
+                <CardHeader>
+                  <CardTitle className="text-lg">Detalhes da categoria</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DynamicFieldsForm supplierId={supplier.id} categoryId={categoryId || null} />
+                </CardContent>
               </Card>
             </>
           )}
 
           {businessSub === "fotos" && (
             <Card>
-              <CardHeader><CardTitle className="text-lg">Portfólio ({photos.length}/10 fotos)</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-lg">Portfólio ({photos.length}/10 fotos)</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                   {photos.map((photo) => (
                     <div key={photo.id} className="relative group rounded-lg overflow-hidden aspect-square">
                       <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
-                      <button onClick={() => deletePhoto(photo.id)} className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => deletePhoto(photo.id)}
+                        className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -444,17 +564,23 @@ export default function SupplierDashboard() {
                 {photos.length < 10 && (
                   <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent transition-colors">
                     <Upload className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{uploading ? "Enviando..." : "Adicionar foto"}</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+                    <span className="text-sm text-muted-foreground">
+                      {uploading ? "Enviando..." : "Adicionar foto"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                      disabled={uploading}
+                    />
                   </label>
                 )}
               </CardContent>
             </Card>
           )}
 
-          {businessSub === "arquivos" && (
-            <SupplierFilesTab supplierId={supplier.id} isEspaco={isEspaco} />
-          )}
+          {businessSub === "arquivos" && <SupplierFilesTab supplierId={supplier.id} isEspaco={isEspaco} />}
 
           {businessSub === "disponibilidade" && (
             <div className="space-y-4">
@@ -464,9 +590,7 @@ export default function SupplierDashboard() {
             </div>
           )}
 
-          {businessSub === "atendimento" && (
-            <SupplierAreaEditor supplierId={supplier.id} />
-          )}
+          {businessSub === "atendimento" && <SupplierAreaEditor supplierId={supplier.id} />}
 
           {businessSub === "reservas" && reservasEnabled && (
             <SupplierReservationsTab supplierId={supplier.id} categoriaSlug={cat?.slug ?? null} />
@@ -509,8 +633,17 @@ export default function SupplierDashboard() {
           {supplier.status === "pending" && !bannerDismissed && (
             <Card className="mb-6 border-primary/30 bg-primary/5">
               <CardContent className="p-4 text-sm text-muted-foreground flex items-start gap-2">
-                <p className="flex-1"><strong>Seu perfil está em análise.</strong> Complete todas as informações e adicione fotos ao seu portfólio para agilizar a aprovação.</p>
-                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={dismissBanner} aria-label="Dispensar">
+                <p className="flex-1">
+                  <strong>Seu perfil está em análise.</strong> Complete todas as informações e adicione fotos ao seu
+                  portfólio para agilizar a aprovação.
+                </p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={dismissBanner}
+                  aria-label="Dispensar"
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </CardContent>
@@ -520,8 +653,17 @@ export default function SupplierDashboard() {
           {supplier.status === "approved" && !bannerDismissed && (
             <Card className="mb-6 border-green-500/40 bg-green-500/5">
               <CardContent className="p-4 text-sm flex items-start gap-2">
-                <p className="flex-1"><strong className="text-green-700">Perfil aprovado!</strong> Você já está visível para os casais na vitrine.</p>
-                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={dismissBanner} aria-label="Dispensar">
+                <p className="flex-1">
+                  <strong className="text-green-700">Perfil aprovado!</strong> Você já está visível para os casais na
+                  vitrine.
+                </p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={dismissBanner}
+                  aria-label="Dispensar"
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </CardContent>
@@ -531,15 +673,24 @@ export default function SupplierDashboard() {
           {supplier.status === "rejected" && (
             <Card className="mb-6 border-destructive/40 bg-destructive/5">
               <CardContent className="p-4 text-sm space-y-2">
-                <p><strong className="text-destructive">Seu perfil precisa de ajustes.</strong></p>
+                <p>
+                  <strong className="text-destructive">Seu perfil precisa de ajustes.</strong>
+                </p>
                 {rejectMotivo && <p className="text-muted-foreground">Motivo: {rejectMotivo}</p>}
                 <p className="text-muted-foreground">Atualize as informações abaixo e reenvie para nova análise.</p>
-                <Button size="sm" onClick={async () => {
-                  await supabase.from("suppliers").update({ status: "pending" }).eq("id", supplier.id);
-                  await supabase.from("fornecedor_aprovacoes").insert({ supplier_id: supplier.id, acao: "resubmitted" });
-                  toast({ title: "Reenviado para análise" });
-                  loadSupplier();
-                }}>Reenviar para análise</Button>
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    await supabase.from("suppliers").update({ status: "pending" }).eq("id", supplier.id);
+                    await supabase
+                      .from("fornecedor_aprovacoes")
+                      .insert({ supplier_id: supplier.id, acao: "resubmitted" });
+                    toast({ title: "Reenviado para análise" });
+                    loadSupplier();
+                  }}
+                >
+                  Reenviar para análise
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -572,46 +723,50 @@ export default function SupplierDashboard() {
         vagasEnabled={vagasEnabled}
       />
 
-        {/* Conversa de orçamento */}
-        {(() => {
-          const handleOpenChange = (v: boolean) => {
-            setThreadOpen(v);
-            if (!v && searchParams.get("quote")) {
-              const next = new URLSearchParams(searchParams);
-              next.delete("quote");
-              setSearchParams(next, { replace: true });
-            }
-          };
-          const body = selectedQuote && user && supplier ? (
+      {/* Conversa de orçamento */}
+      {(() => {
+        const handleOpenChange = (v: boolean) => {
+          setThreadOpen(v);
+          if (!v && searchParams.get("quote")) {
+            const next = new URLSearchParams(searchParams);
+            next.delete("quote");
+            setSearchParams(next, { replace: true });
+          }
+        };
+        const body =
+          selectedQuote && user && supplier ? (
             <QuoteConversation
               quoteId={selectedQuote.id}
               currentUserId={user.id}
               isSupplier={true}
               coupleId={selectedQuote.couple_id}
               supplierId={supplier.id}
-              onContracted={() => { loadQuotes(); setThreadOpen(false); }}
+              onContracted={() => {
+                loadQuotes();
+                setThreadOpen(false);
+              }}
             />
           ) : null;
-          return isMobile ? (
-            <Sheet open={threadOpen} onOpenChange={handleOpenChange}>
-              <SheetContent side="bottom" className="h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
-                <SheetHeader className="px-4 py-3 border-b border-border text-left">
-                  <SheetTitle className="text-base">Orçamento</SheetTitle>
-                </SheetHeader>
-                {body}
-              </SheetContent>
-            </Sheet>
-          ) : (
-            <Dialog open={threadOpen} onOpenChange={handleOpenChange}>
-              <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col p-0 gap-0">
-                <DialogHeader className="px-4 py-3 border-b border-border">
-                  <DialogTitle className="text-base">Orçamento</DialogTitle>
-                </DialogHeader>
-                {body}
-              </DialogContent>
-            </Dialog>
-          );
-        })()}
+        return isMobile ? (
+          <Sheet open={threadOpen} onOpenChange={handleOpenChange}>
+            <SheetContent side="bottom" className="h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
+              <SheetHeader className="px-4 py-3 border-b border-border text-left">
+                <SheetTitle className="text-base">Orçamento</SheetTitle>
+              </SheetHeader>
+              {body}
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Dialog open={threadOpen} onOpenChange={handleOpenChange}>
+            <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col p-0 gap-0">
+              <DialogHeader className="px-4 py-3 border-b border-border">
+                <DialogTitle className="text-base">Orçamento</DialogTitle>
+              </DialogHeader>
+              {body}
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }
