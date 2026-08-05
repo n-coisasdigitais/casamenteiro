@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, Calendar, Users as UsersIcon } from "lucide-react";
+import { Eye, Calendar, Users as UsersIcon, DollarSign } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -34,9 +34,7 @@ type Props = {
 export default function SupplierQuotesKanban({ quotes, onOpen, onChange }: Props) {
   const [items, setItems] = useState(quotes);
   useEffect(() => setItems(quotes), [quotes]);
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const move = async (id: string, status: KanbanStatus) => {
     setItems((prev) => prev.map((q) => (q.id === id ? { ...q, kanban_status: status } : q)));
@@ -55,89 +53,106 @@ export default function SupplierQuotesKanban({ quotes, onOpen, onChange }: Props
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-    <div className="overflow-x-auto pb-2">
-      <div className="grid grid-cols-5 gap-3 min-w-[900px]">
-        {COLUMNS.map((col) => {
-          const list = items.filter((q) => (q.kanban_status || "enviado") === col.key);
-          return (
-            <DroppableColumn key={col.key} id={col.key} className={`rounded-lg ${col.color} p-3`}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold">{col.label}</h3>
-                <Badge variant="secondary" className="h-5">{list.length}</Badge>
-              </div>
-              <div className="space-y-2">
-                {list.map((q) => (
-                  <DraggableCard key={q.id} id={q.id}>
-                    <Card className="p-3 space-y-2 hover:shadow-md transition" onClick={() => onOpen(q)}>
-                    <p className="text-xs text-muted-foreground">{new Date(q.created_at).toLocaleDateString("pt-BR")}</p>
-                    <p className="text-sm line-clamp-2">{q.message}</p>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                      {q.event_date && (
-                        <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(q.event_date).toLocaleDateString("pt-BR")}</span>
-                      )}
-                      {q.guest_count && (
-                        <span className="flex items-center gap-1"><UsersIcon className="h-3 w-3" />{q.guest_count}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                      <Select value={q.kanban_status || "enviado"} onValueChange={(v) => move(q.id, v as KanbanStatus)}>
-                        <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {COLUMNS.map((c) => <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onOpen(q)}>
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                    </Card>
-                  </DraggableCard>
-                ))}
-                {list.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-4">—</p>
-                )}
-              </div>
-            </DroppableColumn>
-          );
-        })}
+      <div className="overflow-x-auto pb-2">
+        <div className="grid grid-cols-5 gap-3 min-w-[900px]">
+          {COLUMNS.map((col) => {
+            const list = items.filter((q) => (q.kanban_status || "enviado") === col.key);
+            return (
+              <DroppableColumn key={col.key} id={col.key} className={`rounded-lg ${col.color} p-3`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold">{col.label}</h3>
+                  <Badge variant="secondary" className="h-5">
+                    {list.length}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {list.map((q) => (
+                    <DraggableCard key={q.id} id={q.id}>
+                      <Card className="p-3 space-y-2 hover:shadow-md transition" onClick={() => onOpen(q)}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(q.created_at).toLocaleDateString("pt-BR")}
+                          </p>
+                          {q._valor != null && (
+                            <span
+                              className={`text-xs font-semibold flex items-center gap-0.5 ${
+                                q._valor_status === "accepted" ? "text-emerald-700" : "text-foreground"
+                              }`}
+                              title={
+                                q._valor_status === "accepted"
+                                  ? "Valor fechado"
+                                  : q._valor_status === "rejected"
+                                    ? "Proposta recusada"
+                                    : "Última proposta"
+                              }
+                            >
+                              <DollarSign className="h-3 w-3" />
+                              {Number(q._valor).toLocaleString("pt-BR")}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm line-clamp-2">{q.message}</p>
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                          {q.event_date && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(q.event_date).toLocaleDateString("pt-BR")}
+                            </span>
+                          )}
+                          {q.guest_count && (
+                            <span className="flex items-center gap-1">
+                              <UsersIcon className="h-3 w-3" />
+                              {q.guest_count}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={q.kanban_status || "enviado"}
+                            onValueChange={(v) => move(q.id, v as KanbanStatus)}
+                          >
+                            <SelectTrigger className="h-7 text-xs flex-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {COLUMNS.map((c) => (
+                                <SelectItem key={c.key} value={c.key}>
+                                  {c.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onOpen(q)}>
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </Card>
+                    </DraggableCard>
+                  ))}
+                  {list.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">—</p>}
+                </div>
+              </DroppableColumn>
+            );
+          })}
+        </div>
       </div>
-    </div>
     </DndContext>
   );
 }
 
-function DroppableColumn({
-  id,
-  className,
-  children,
-}: {
-  id: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
+function DroppableColumn({ id, className, children }: { id: string; className?: string; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <div
-      ref={setNodeRef}
-      className={`${className || ""} ${isOver ? "ring-2 ring-primary" : ""}`}
-    >
+    <div ref={setNodeRef} className={`${className || ""} ${isOver ? "ring-2 ring-primary" : ""}`}>
       {children}
     </div>
   );
 }
 
-function DraggableCard({
-  id,
-  children,
-}: {
-  id: string;
-  children: React.ReactNode;
-}) {
+function DraggableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
   const style: React.CSSProperties = {
-    transform: transform
-      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-      : undefined,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     opacity: isDragging ? 0.5 : 1,
     cursor: "grab",
   };
