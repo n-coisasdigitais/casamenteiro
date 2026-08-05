@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import PublishJobDialog from "./PublishJobDialog";
 import PaymentDisclaimer from "./PaymentDisclaimer";
 import StaffChatDialog from "./StaffChatDialog";
-import { Star, MapPin, ShieldCheck } from "lucide-react";
+import { Star, MapPin, ShieldCheck, Search } from "lucide-react";
 import { appStatusLabel, jobStatusLabel, buildJobWhatsAppLink, fetchStaffContact, maskPhone } from "@/lib/staff";
 
 /* ------------------------------------------------------------------ */
@@ -235,6 +236,11 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
   const [reviewTarget, setReviewTarget] = useState<{ jobId: string; staffId: string; staffName?: string } | null>(null);
   const [reviewedStaff, setReviewedStaff] = useState<Record<string, boolean>>({});
 
+  // Busca de profissionais: nome, função, ordenação
+  const [staffBusca, setStaffBusca] = useState("");
+  const [staffFuncao, setStaffFuncao] = useState("todas");
+  const [staffOrder, setStaffOrder] = useState<"rating" | "nome">("rating");
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || ""));
   }, []);
@@ -336,6 +342,36 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
     });
     load();
   };
+
+  // funções disponíveis para o filtro (deriva das funções dos profissionais carregados)
+  const funcoesDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    staffs.forEach((s) => (s.funcoes || []).forEach((f: string) => set.add(f)));
+    return Array.from(set).sort();
+  }, [staffs]);
+
+  // lista filtrada/ordenada de profissionais
+  const staffsView = useMemo(() => {
+    let list = [...staffs];
+    const q = staffBusca.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (s) =>
+          (s.nome || "").toLowerCase().includes(q) ||
+          (s.cidade || "").toLowerCase().includes(q) ||
+          (s.funcoes || []).some((f: string) => f.toLowerCase().includes(q)),
+      );
+    }
+    if (staffFuncao !== "todas") {
+      list = list.filter((s) => (s.funcoes || []).includes(staffFuncao));
+    }
+    if (staffOrder === "nome") {
+      list.sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+    } else {
+      list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    }
+    return list;
+  }, [staffs, staffBusca, staffFuncao, staffOrder]);
 
   return (
     <div className="space-y-4">
@@ -468,7 +504,45 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
           {jobs.length === 0 && (
             <p className="text-sm text-muted-foreground">Publique uma vaga primeiro para convidar profissionais.</p>
           )}
-          {staffs.map((s) => (
+
+          {/* Filtros: busca por nome/função/cidade, filtro por função e ordenação */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, função ou cidade"
+                value={staffBusca}
+                onChange={(e) => setStaffBusca(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <select
+              value={staffFuncao}
+              onChange={(e) => setStaffFuncao(e.target.value)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="todas">Todas as funções</option>
+              {funcoesDisponiveis.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+            <select
+              value={staffOrder}
+              onChange={(e) => setStaffOrder(e.target.value as any)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="rating">Melhor avaliação</option>
+              <option value="nome">Nome (A-Z)</option>
+            </select>
+          </div>
+
+          {staffsView.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhum profissional encontrado com esses filtros.</p>
+          )}
+
+          {staffsView.map((s) => (
             <Card key={s.id}>
               <CardContent className="p-4 flex items-center justify-between flex-wrap gap-2">
                 <div>
