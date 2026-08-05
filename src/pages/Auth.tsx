@@ -176,7 +176,7 @@ export default function Auth() {
         if (accountType === "supplier") {
           metadata.company_name = companyName;
         }
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -185,9 +185,18 @@ export default function Auth() {
           },
         });
         if (error) throw error;
+        // Quando o e-mail já existe, o Supabase retorna um usuário sem identities.
+        const jaExistia = !!data.user && (data.user.identities?.length ?? 0) === 0;
+        setSignupSent({ email, jaExistia });
+        setPassword("");
+        setFullName("");
+        setCompanyName("");
+        setAcceptedTerms(false);
         toast({
-          title: "Cadastro realizado!",
-          description: "Enviamos um e-mail de confirmação. Abra a caixa de entrada para ativar sua conta.",
+          title: jaExistia ? "Este e-mail já tem conta" : "Cadastro realizado!",
+          description: jaExistia
+            ? "Faça login ou recupere sua senha."
+            : "Enviamos um e-mail de confirmação. Confira a caixa de entrada e o spam.",
         });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
