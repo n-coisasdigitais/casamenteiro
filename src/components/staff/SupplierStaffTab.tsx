@@ -204,6 +204,17 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
           onCreated={() => { setEditJob(null); load(); }}
         />
       )}
+
+      {chat && (
+        <StaffChatDialog
+          open={!!chat}
+          onOpenChange={(v) => { if (!v) setChat(null); }}
+          application={{ ...chat.app, staff_id: chat.app.staff_id || chat.app.staff?.id }}
+          job={chat.job}
+          currentUserId={userId}
+          isSupplier
+        />
+      )}
     </div>
   );
 }
