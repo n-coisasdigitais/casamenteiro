@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import PublishJobDialog from "./PublishJobDialog";
 import PaymentDisclaimer from "./PaymentDisclaimer";
 import StaffChatDialog from "./StaffChatDialog";
+import StaffProfileDialog from "./StaffProfileDialog";
+import ReviewStaffDialog from "./ReviewStaffDialog";
 import { appStatusLabel, jobStatusLabel, buildJobWhatsAppLink, fetchStaffContact, maskPhone } from "@/lib/staff";
 
 export default function SupplierStaffTab({ supplierId, companyName }: { supplierId: string; companyName?: string }) {
@@ -19,13 +21,21 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
   const [chat, setChat] = useState<{ app: any; job: any } | null>(null);
   const [userId, setUserId] = useState<string>("");
 
+  // #2 perfil clicável do profissional
+  const [profileStaffId, setProfileStaffId] = useState<string | null>(null);
+  // #6 avaliar profissional
+  const [reviewTarget, setReviewTarget] = useState<{ jobId: string; staffId: string; staffName?: string } | null>(null);
+  const [reviewedStaff, setReviewedStaff] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || ""));
   }, []);
 
   const load = async () => {
     const { data: js } = await (supabase.from("staff_jobs" as any) as any)
-      .select("*").eq("supplier_id", supplierId).order("data", { ascending: false });
+      .select("*")
+      .eq("supplier_id", supplierId)
+      .order("data", { ascending: false });
     setJobs(js || []);
     if (js && js.length) {
       const ids = js.map((j: any) => j.id);
@@ -41,16 +51,44 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
     }
     const { data: sp } = await (supabase.from("staff_profiles" as any) as any)
       .select("id, nome, cidade, funcoes, rating, review_count, is_public")
-      .eq("is_public", true).limit(30);
+      .eq("is_public", true)
+      .limit(30);
     setStaffs(sp || []);
+
+    // avaliações que ESTE fornecedor já deu (para esconder o botão de avaliar)
+    const { data: given } = await (supabase.from("staff_reviews" as any) as any)
+      .select("job_id, avaliado_id")
+      .eq("autor_id", supplierId)
+      .eq("autor_tipo", "fornecedor");
+    const gmap: Record<string, boolean> = {};
+    (given || []).forEach((r: any) => {
+      gmap[`${r.job_id}:${r.avaliado_id}`] = true;
+    });
+    setReviewedStaff(gmap);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [supplierId]);
+  useEffect(() => {
+    load(); /* eslint-disable-next-line */
+  }, [supplierId]);
+
+  // "clicou zera": ao abrir a conversa, marca as notificações de mensagem como lidas
+  const abrirChat = async (app: any, job: any) => {
+    setChat({ app, job });
+    if (userId) {
+      await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("user_id", userId)
+        .eq("type", "staff_mensagem")
+        .eq("read", false);
+    }
+  };
 
   const convidar = async (jobId: string, staffId: string) => {
-    const { error } = await (supabase.from("staff_applications" as any) as any).insert({
-      job_id: jobId, staff_id: staffId, origem: "convite", status: "convidado",
-    });
+    const { error } = await (supabase.from("staff_applications" as any) as any).upsert(
+      { job_id: jobId, staff_id: staffId, origem: "convite", status: "convidado" },
+      { onConflict: "job_id,staff_id", ignoreDuplicates: true },
+    );
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
     toast({ title: "Convite enviado!" });
     load();
@@ -58,7 +96,8 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
 
   const responder = async (appId: string, status: "aceito" | "recusado" | "concluido" | "no_show") => {
     const { error } = await (supabase.from("staff_applications" as any) as any)
-      .update({ status, respondido_em: new Date().toISOString() }).eq("id", appId);
+      .update({ status, respondido_em: new Date().toISOString() })
+      .eq("id", appId);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
     load();
   };
@@ -67,9 +106,13 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
     try {
       const contact = await fetchStaffContact(job.id, app.staff.id);
       const url = buildJobWhatsAppLink(contact.telefone || "", {
-        funcao: job.funcao, data: job.data,
-        horaInicio: job.hora_inicio, horaFim: job.hora_fim,
-        local: job.local, valor: job.valor_turno, empresa: companyName,
+        funcao: job.funcao,
+        data: job.data,
+        horaInicio: job.hora_inicio,
+        horaFim: job.hora_fim,
+        local: job.local,
+        valor: job.valor_turno,
+        empresa: companyName,
       });
       if (url) window.open(url, "_blank");
     } catch (e: any) {
@@ -109,21 +152,35 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
             <Card key={j.id}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex justify-between items-center flex-wrap gap-2">
-                  <span>{j.funcao} • {new Date(j.data + "T00:00:00").toLocaleDateString("pt-BR")}</span>
+                  <span>
+                    {j.funcao} • {new Date(j.data + "T00:00:00").toLocaleDateString("pt-BR")}
+                  </span>
                   <Badge variant="secondary">{jobStatusLabel(j.status)}</Badge>
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {j.cidade || j.local} • R$ {Number(j.valor_turno || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {j.cidade || j.local} • R${" "}
+                  {Number(j.valor_turno || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
                 <div className="flex gap-2 flex-wrap pt-1">
-                  <Button size="sm" variant="outline" onClick={() => setEditJob(j)}>Editar</Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditJob(j)}>
+                    Editar
+                  </Button>
                   {j.status === "aberta" ? (
-                    <Button size="sm" variant="outline" onClick={() => alterarStatusVaga(j, "pausada")}>Despublicar</Button>
+                    <Button size="sm" variant="outline" onClick={() => alterarStatusVaga(j, "pausada")}>
+                      Despublicar
+                    </Button>
                   ) : j.status === "pausada" ? (
-                    <Button size="sm" variant="outline" onClick={() => alterarStatusVaga(j, "aberta")}>Republicar</Button>
+                    <Button size="sm" variant="outline" onClick={() => alterarStatusVaga(j, "aberta")}>
+                      Republicar
+                    </Button>
                   ) : null}
                   {j.status !== "cancelada" && (
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => alterarStatusVaga(j, "cancelada")}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      onClick={() => alterarStatusVaga(j, "cancelada")}
+                    >
                       Cancelar vaga
                     </Button>
                   )}
@@ -133,34 +190,67 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
                 {(apps[j.id] || []).length === 0 && (
                   <p className="text-xs text-muted-foreground">Sem candidatos/convidados ainda.</p>
                 )}
-                {(apps[j.id] || []).map((a) => (
-                  <div key={a.id} className="flex items-center justify-between border rounded-md p-2 flex-wrap gap-2">
-                    <div className="text-sm">
-                      <p className="font-medium">{a.staff?.nome}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {a.staff?.cidade} • {a.staff?.rating ? `${a.staff.rating}★ (${a.staff.review_count})` : "sem avaliações"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{maskPhone(null)} — liberado após aceite</p>
+                {(apps[j.id] || []).map((a) => {
+                  const jaAvaliado = reviewedStaff[`${a.job_id}:${a.staff_id}`];
+                  return (
+                    <div key={a.id} className="flex items-center justify-between border rounded-md p-2 flex-wrap gap-2">
+                      <div className="text-sm">
+                        {/* #2: nome clicável abre o perfil do profissional */}
+                        <button
+                          className="font-medium text-left hover:text-primary hover:underline"
+                          onClick={() => setProfileStaffId(a.staff?.id || a.staff_id)}
+                        >
+                          {a.staff?.nome || "Profissional"}
+                        </button>
+                        <p className="text-xs text-muted-foreground">
+                          {a.staff?.cidade} •{" "}
+                          {a.staff?.rating ? `${a.staff.rating}★ (${a.staff.review_count})` : "sem avaliações"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{maskPhone(null)} — liberado após aceite</p>
+                      </div>
+                      <div className="flex gap-2 items-center flex-wrap justify-end">
+                        <Badge variant="outline">{appStatusLabel(a.status)}</Badge>
+                        <Button size="sm" variant="outline" onClick={() => abrirChat(a, j)}>
+                          Conversar
+                        </Button>
+                        {a.status === "candidato" && (
+                          <>
+                            <Button size="sm" onClick={() => responder(a.id, "aceito")}>
+                              Aceitar
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => responder(a.id, "recusado")}>
+                              Recusar
+                            </Button>
+                          </>
+                        )}
+                        {a.status === "aceito" && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => abrirWhats(j, a)}>
+                              WhatsApp
+                            </Button>
+                            <Button size="sm" onClick={() => responder(a.id, "concluido")}>
+                              Concluir
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => responder(a.id, "no_show")}>
+                              Não veio
+                            </Button>
+                          </>
+                        )}
+                        {/* #6: avaliar profissional em vaga concluída */}
+                        {a.status === "concluido" && !jaAvaliado && (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              setReviewTarget({ jobId: a.job_id, staffId: a.staff_id, staffName: a.staff?.nome })
+                            }
+                          >
+                            Avaliar profissional
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-2 items-center">
-                      <Badge variant="outline">{appStatusLabel(a.status)}</Badge>
-                      <Button size="sm" variant="outline" onClick={() => setChat({ app: a, job: j })}>Conversar</Button>
-                      {a.status === "candidato" && (
-                        <>
-                          <Button size="sm" onClick={() => responder(a.id, "aceito")}>Aceitar</Button>
-                          <Button size="sm" variant="outline" onClick={() => responder(a.id, "recusado")}>Recusar</Button>
-                        </>
-                      )}
-                      {a.status === "aceito" && (
-                        <>
-                          <Button size="sm" variant="outline" onClick={() => abrirWhats(j, a)}>WhatsApp</Button>
-                          <Button size="sm" onClick={() => responder(a.id, "concluido")}>Concluir</Button>
-                          <Button size="sm" variant="ghost" onClick={() => responder(a.id, "no_show")}>Não veio</Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           ))}
@@ -174,21 +264,35 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
             <Card key={s.id}>
               <CardContent className="p-4 flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <p className="font-medium">{s.nome}</p>
+                  {/* #2: nome clicável também na busca */}
+                  <button
+                    className="font-medium text-left hover:text-primary hover:underline"
+                    onClick={() => setProfileStaffId(s.id)}
+                  >
+                    {s.nome}
+                  </button>
                   <p className="text-xs text-muted-foreground">
                     {s.cidade} • {(s.funcoes || []).join(", ")}
                   </p>
-                  {s.rating && <p className="text-xs">{s.rating}★ ({s.review_count})</p>}
+                  {s.rating && (
+                    <p className="text-xs">
+                      {s.rating}★ ({s.review_count})
+                    </p>
+                  )}
                 </div>
-                {jobs.filter((j) => j.status === "aberta").length > 0 && (
-                  <div className="flex gap-2 flex-wrap">
-                    {jobs.filter((j) => j.status === "aberta").slice(0, 3).map((j) => (
+                <div className="flex gap-2 flex-wrap items-center">
+                  <Button size="sm" variant="ghost" onClick={() => setProfileStaffId(s.id)}>
+                    Ver perfil
+                  </Button>
+                  {jobs
+                    .filter((j) => j.status === "aberta")
+                    .slice(0, 3)
+                    .map((j) => (
                       <Button key={j.id} size="sm" variant="outline" onClick={() => convidar(j.id, s.id)}>
                         Convidar p/ {j.funcao}
                       </Button>
                     ))}
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -200,19 +304,51 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
           supplierId={supplierId}
           job={editJob}
           open={!!editJob}
-          onOpenChange={(v) => { if (!v) setEditJob(null); }}
-          onCreated={() => { setEditJob(null); load(); }}
+          onOpenChange={(v) => {
+            if (!v) setEditJob(null);
+          }}
+          onCreated={() => {
+            setEditJob(null);
+            load();
+          }}
         />
       )}
 
       {chat && (
         <StaffChatDialog
           open={!!chat}
-          onOpenChange={(v) => { if (!v) setChat(null); }}
+          onOpenChange={(v) => {
+            if (!v) setChat(null);
+          }}
           application={{ ...chat.app, staff_id: chat.app.staff_id || chat.app.staff?.id }}
           job={chat.job}
           currentUserId={userId}
           isSupplier
+        />
+      )}
+
+      <StaffProfileDialog
+        open={!!profileStaffId}
+        onOpenChange={(v) => {
+          if (!v) setProfileStaffId(null);
+        }}
+        staffId={profileStaffId}
+      />
+
+      {reviewTarget && (
+        <ReviewStaffDialog
+          open={!!reviewTarget}
+          onOpenChange={(v) => {
+            if (!v) setReviewTarget(null);
+          }}
+          jobId={reviewTarget.jobId}
+          supplierId={supplierId}
+          staffId={reviewTarget.staffId}
+          staffName={reviewTarget.staffName}
+          onSaved={() => {
+            setReviewTarget(null);
+            load();
+          }}
         />
       )}
     </div>
