@@ -26,6 +26,20 @@ export default function AdminHomeConfig() {
   const [novoBloco, setNovoBloco] = useState({ foto_url: "", frase: "", subtexto: "" });
   const [uploadingNew, setUploadingNew] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [exploreHero, setExploreHero] = useState<any | null>(null);
+  const [exploreForm, setExploreForm] = useState({ foto_url: "", frase: "", subtexto: "" });
+  const [savingExplore, setSavingExplore] = useState(false);
+  const [uploadingExplore, setUploadingExplore] = useState(false);
+
+  useEffect(() => {
+    if (exploreHero) {
+      setExploreForm({
+        foto_url: exploreHero.foto_url || "",
+        frase: exploreHero.frase || "",
+        subtexto: exploreHero.subtexto || "",
+      });
+    }
+  }, [exploreHero]);
 
   const uploadPhoto = async (file: File): Promise<string | null> => {
     const ext = file.name.split(".").pop() || "jpg";
@@ -51,6 +65,31 @@ export default function AdminHomeConfig() {
     const b = await (supabase.from("secoes_home" as any).select("*").order("ordem") as any);
     setFrases((f.data as any) || []);
     setBlocos((b.data as any) || []);
+    // hero institucional da Explore (escopo='explore')
+    const ex = await (supabase.from("secoes_home" as any).select("*").eq("escopo", "explore").order("ordem").limit(1).maybeSingle() as any);
+    setExploreHero((ex.data as any) || null);
+  };
+
+  const salvarExploreHero = async () => {
+    setSavingExplore(true);
+    const payload = {
+      escopo: "explore",
+      foto_url: exploreForm.foto_url,
+      frase: exploreForm.frase,
+      subtexto: exploreForm.subtexto || null,
+      ativo: true,
+      ordem: 0,
+    };
+    let error;
+    if (exploreHero?.id) {
+      ({ error } = await (supabase.from("secoes_home" as any) as any).update(payload).eq("id", exploreHero.id));
+    } else {
+      ({ error } = await (supabase.from("secoes_home" as any) as any).insert(payload));
+    }
+    setSavingExplore(false);
+    if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Hero da Explore salvo!" });
+    load();
   };
 
   const grupos = Array.from(new Set(frases.map(f => f.grupo)));
@@ -155,6 +194,7 @@ export default function AdminHomeConfig() {
           <TabsList>
             <TabsTrigger value="frases">Frases</TabsTrigger>
             <TabsTrigger value="blocos">Blocos da Home</TabsTrigger>
+            <TabsTrigger value="explore">Hero da Explore</TabsTrigger>
           </TabsList>
 
           <TabsContent value="frases" className="mt-6 space-y-4">
@@ -233,7 +273,66 @@ export default function AdminHomeConfig() {
               <Button onClick={addBloco}><Plus className="h-4 w-4 mr-1" />Adicionar bloco</Button>
             </div>
           </TabsContent>
-        </Tabs>
+
+          <TabsContent value="explore" className="mt-6 space-y-4">
+            <div className="rounded-lg border p-5 space-y-4 max-w-2xl">
+              <div>
+                <h3 className="font-semibold">Imagem de destaque da Explore</h3>
+                <p className="text-sm text-muted-foreground">
+                  Aparece no topo da página de fornecedores quando não há destaque pago vigente.
+                  Recomendado: 1600×685px (proporção larga), até 2MB.
+                </p>
+              </div>
+
+              {exploreForm.foto_url && (
+                <div className="relative rounded-xl overflow-hidden aspect-[21/9] bg-muted">
+                  <img src={exploreForm.foto_url} alt="Prévia" className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <label className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-secondary">
+                  {uploadingExplore ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  Enviar imagem
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 2 * 1024 * 1024) { toast({ title: "Imagem muito grande", description: "Máximo 2MB.", variant: "destructive" }); return; }
+                      setUploadingExplore(true);
+                      const url = await uploadPhoto(file);
+                      setUploadingExplore(false);
+                      if (url) setExploreForm((f) => ({ ...f, foto_url: url }));
+                    }}
+                  />
+                </label>
+                <Input
+                  placeholder="ou cole a URL da imagem"
+                  value={exploreForm.foto_url}
+                  onChange={(e) => setExploreForm({ ...exploreForm, foto_url: e.target.value })}
+                />
+              </div>
+
+              <Input
+                placeholder="Título (ex: Os melhores fornecedores para o seu casamento)"
+                value={exploreForm.frase}
+                onChange={(e) => setExploreForm({ ...exploreForm, frase: e.target.value })}
+              />
+              <Textarea
+                placeholder="Subtítulo (ex: Explore por categoria e peça orçamentos sem compromisso)"
+                value={exploreForm.subtexto}
+                onChange={(e) => setExploreForm({ ...exploreForm, subtexto: e.target.value })}
+              />
+
+              <Button onClick={salvarExploreHero} disabled={savingExplore || !exploreForm.foto_url || !exploreForm.frase}>
+                {savingExplore ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Salvar hero da Explore
+              </Button>
+            </div>
+          </TabsContent>
       </main>
     </div>
   );
