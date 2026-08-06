@@ -3,8 +3,13 @@ import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-const FALLBACK_HERO = "https://images.unsplash.com/photo-1519741497674-611481863552?w=1600&q=80&auto=format&fit=crop";
+const FALLBACK_HERO = "https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=85&auto=format&fit=crop";
 
+/**
+ * Hero full-bleed: a imagem toma a tela inteira, com texto e botões sobre ela.
+ * A imagem vem de `heroImage` (linha ordem=0 de secoes_home) — é o espaço de
+ * destaque monetizável: um fornecedor de plano premium pode ocupar essa imagem.
+ */
 export default function HomeHero({ heroImage }: { heroImage?: string | null }) {
   const [count, setCount] = useState<number | null>(null);
 
@@ -28,92 +33,112 @@ export default function HomeHero({ heroImage }: { heroImage?: string | null }) {
   const image = heroImage || FALLBACK_HERO;
 
   return (
-    <section
-      className="relative"
-      style={{ background: "hsl(var(--color-bg))" }}
-    >
-      <div className="container pt-24 pb-16 md:pt-32 md:pb-24 md:min-h-[calc(100svh-56px)] flex items-center">
-        <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-center w-full">
-          {/* Texto */}
-          <div className="max-w-xl">
-            <p className="label-ui mb-5">
-              Marketplace de casamentos · Belo Horizonte e região metropolitana
-            </p>
-            <h1
-              className="font-serif mb-5"
+    <section className="relative h-[100svh] min-h-[600px] w-full overflow-hidden">
+      {/* Imagem de fundo full-bleed (destaque monetizável) */}
+      <img
+        src={image}
+        alt="Casamento dos sonhos"
+        loading="eager"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+
+      {/* Gradiente para legibilidade do texto sobre a imagem */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, hsl(0 0% 0% / 0.45) 0%, hsl(0 0% 0% / 0.25) 35%, hsl(0 0% 0% / 0.55) 100%)",
+        }}
+      />
+
+      {/* Conteúdo sobre a imagem */}
+      <div className="relative z-10 h-full container flex items-center">
+        <div className="max-w-2xl pt-16">
+          <p
+            className="label-ui mb-5"
+            style={{ color: "hsl(48, 27%, 98%)", textShadow: "0 2px 10px hsl(0 0% 0% / 0.6)" }}
+          >
+            Marketplace de casamentos · Belo Horizonte e região
+          </p>
+          <h1
+            className="font-serif mb-5 text-white"
+            style={{
+              fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+              lineHeight: 1.03,
+              fontWeight: 500,
+              letterSpacing: "-0.025em",
+              textShadow: "0 2px 24px hsl(0 0% 0% / 0.5), 0 1px 4px hsl(0 0% 0% / 0.4)",
+            }}
+          >
+            Descubra quanto custa o seu casamento — e economize casando em datas com desconto.
+          </h1>
+          <p
+            className="text-lg md:text-xl mb-8 max-w-xl"
+            style={{
+              color: "hsl(48, 30%, 96%)",
+              lineHeight: 1.55,
+              fontWeight: 400,
+              textShadow: "0 1px 10px hsl(0 0% 0% / 0.5)",
+            }}
+          >
+            Simule em 1 minuto e receba fornecedores avaliados dentro do seu orçamento.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-7">
+            <Link
+              to="/simulador"
+              className="inline-flex items-center justify-center rounded-full font-medium transition hover:opacity-90 w-full sm:w-auto"
               style={{
-                fontSize: "clamp(2.5rem, 5.5vw, 4rem)",
-                lineHeight: 1.05,
-                fontWeight: 500,
-                letterSpacing: "-0.025em",
-                color: "hsl(var(--color-dark))",
+                background: "hsl(var(--color-primary))",
+                color: "hsl(var(--color-bg))",
+                height: "56px",
+                padding: "0 32px",
+                fontSize: "16px",
               }}
             >
-              Descubra quanto custa o seu casamento — e economize casando em datas com desconto.
-            </h1>
-            <p
-              className="text-lg md:text-xl mb-8 max-w-xl"
-              style={{ color: "hsl(var(--color-text-muted))", lineHeight: 1.55, fontWeight: 400 }}
+              Simular meu casamento
+            </Link>
+            <Link
+              to="/explorar"
+              className="inline-flex items-center justify-center rounded-full font-medium transition w-full sm:w-auto"
+              style={{
+                border: "1px solid hsl(48, 27%, 96% / 0.5)",
+                color: "hsl(48, 27%, 98%)",
+                background: "hsl(48, 27%, 96% / 0.1)",
+                backdropFilter: "blur(6px)",
+                height: "56px",
+                padding: "0 28px",
+                fontSize: "15px",
+              }}
             >
-              Simule em 1 minuto e receba fornecedores avaliados dentro do seu orçamento.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-7">
-              <Link
-                to="/simulador"
-                className="inline-flex items-center justify-center rounded-full font-medium transition hover:opacity-90 w-full sm:w-auto"
-                style={{
-                  background: "hsl(var(--color-primary))",
-                  color: "hsl(var(--color-bg))",
-                  height: "56px",
-                  padding: "0 32px",
-                  fontSize: "16px",
-                }}
-              >
-                Simular meu casamento
-              </Link>
-              <Link
-                to="/explorar"
-                className="inline-flex items-center justify-center rounded-full font-medium transition hover:bg-black/[.03] w-full sm:w-auto"
-                style={{
-                  border: "1px solid hsl(var(--color-border))",
-                  color: "hsl(var(--color-dark))",
-                  height: "56px",
-                  padding: "0 28px",
-                  fontSize: "15px",
-                }}
-              >
-                Explorar fornecedores
-              </Link>
-            </div>
-
-            <div
-              className="flex items-center gap-2 text-sm min-h-[24px]"
-              style={{ color: "hsl(var(--color-text-muted))" }}
-            >
-              <span className="flex items-center gap-0.5">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <Star
-                    key={i}
-                    className="w-4 h-4"
-                    style={{ color: "hsl(var(--color-primary))", fill: "hsl(var(--color-primary))" }}
-                  />
-                ))}
-              </span>
-              {proof && <span>{proof}</span>}
-            </div>
+              Explorar fornecedores
+            </Link>
           </div>
 
-          {/* Imagem */}
-          <div className="relative">
-            <img
-              src={image}
-              alt="Casal em ensaio luminoso de casamento"
-              loading="eager"
-              className="w-full object-cover rounded-3xl aspect-[4/3] md:aspect-[4/5] shadow-[0_20px_60px_-30px_hsl(30_10%_12%/0.35)]"
-            />
+          <div
+            className="flex items-center gap-2 text-sm min-h-[24px]"
+            style={{ color: "hsl(48, 30%, 96%)", textShadow: "0 1px 8px hsl(0 0% 0% / 0.5)" }}
+          >
+            <span className="flex items-center gap-0.5">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Star
+                  key={i}
+                  className="w-4 h-4"
+                  style={{ color: "hsl(var(--color-primary))", fill: "hsl(var(--color-primary))" }}
+                />
+              ))}
+            </span>
+            {proof && <span>{proof}</span>}
           </div>
         </div>
+      </div>
+
+      {/* Dica de scroll */}
+      <div className="absolute bottom-8 left-0 right-0 z-10 flex flex-col items-center gap-2 pointer-events-none">
+        <span className="label-ui" style={{ color: "hsl(48, 27%, 97% / 0.85)" }}>
+          role para descobrir
+        </span>
+        <div className="w-[1px] h-10" style={{ background: "hsl(48 27% 97% / 0.6)" }} />
       </div>
     </section>
   );
