@@ -8,6 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -49,6 +53,8 @@ export default function CoupleDashboard() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [threadOpen, setThreadOpen] = useState(false);
+  const [simToDelete, setSimToDelete] = useState<any | null>(null);
+  const [deletingSim, setDeletingSim] = useState(false);
   const [taskSummary, setTaskSummary] = useState<TaskSummary>({ total: 0, completed: 0 });
   const [guestSummary, setGuestSummary] = useState<GuestSummary>({ total: 0, confirmed: 0, pending: 0, declined: 0 });
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary>({ estimated: 0, final: 0 });
