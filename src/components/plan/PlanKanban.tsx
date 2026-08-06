@@ -41,7 +41,6 @@ const COLUMNS: { key: KanbanStatus; label: string; tone: string }[] = [
   { key: "negociando", label: "Negociando", tone: "bg-blue-50 dark:bg-blue-950/30" },
   { key: "contratado", label: "Contratado", tone: "bg-emerald-50 dark:bg-emerald-950/30" },
   { key: "descartado", label: "Descartado", tone: "bg-rose-50 dark:bg-rose-950/30" },
-  { key: "fora_da_plataforma", label: "Fora da plataforma", tone: "bg-slate-100 dark:bg-slate-900/40" },
 ];
 
 const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
@@ -70,7 +69,10 @@ export default function PlanKanban({
     const map: Record<KanbanStatus, PlanSupplier[]> = {
       nao_iniciado: [], em_orcamento: [], negociando: [], contratado: [], descartado: [], fora_da_plataforma: [],
     };
-    for (const it of items) map[it.kanban_status]?.push(it);
+    for (const it of items) {
+      const key = it.kanban_status === "fora_da_plataforma" ? "nao_iniciado" : it.kanban_status;
+      map[key]?.push(it);
+    }
     return map;
   }, [items]);
 
@@ -239,7 +241,7 @@ export default function PlanKanban({
         onDragCancel={() => setActiveId(null)}
       >
         <div className="overflow-x-auto pb-2 -mx-4 px-4">
-          <div className="grid grid-cols-6 gap-3 min-w-[1100px]">
+          <div className="grid grid-cols-5 gap-3 min-w-[920px]">
             {COLUMNS.map((col) => (
               <Column
                 key={col.key}

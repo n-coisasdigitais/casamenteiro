@@ -26,7 +26,7 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
   const [categoria, setCategoria] = useState("");
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [valorEstimado, setValorEstimado] = useState("");
-  const [statusInicial, setStatusInicial] = useState<string>("fora_da_plataforma");
+  const [statusInicial, setStatusInicial] = useState<string>("nao_iniciado");
   const [saving, setSaving] = useState(false);
   const [categorias, setCategorias] = useState<Array<{ id: string; name: string; slug: string }>>([]);
 
@@ -39,7 +39,7 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
 
   const reset = () => {
     setNome(""); setTelefone(""); setCategoria(""); setCategoriaId(null); setValorEstimado("");
-    setStatusInicial("fora_da_plataforma");
+    setStatusInicial("nao_iniciado");
   };
 
   const salvar = async () => {
@@ -119,7 +119,7 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
             <Select value={statusInicial} onValueChange={setStatusInicial}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="fora_da_plataforma">Fora da plataforma</SelectItem>
+                <SelectItem value="nao_iniciado">No plano</SelectItem>
                 <SelectItem value="negociando">Negociando</SelectItem>
                 <SelectItem value="contratado">Já contratado</SelectItem>
               </SelectContent>
