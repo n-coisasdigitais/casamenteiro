@@ -10,9 +10,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Heart, MapPin, Phone, Mail, Building, Star, Users,
-  DollarSign, Tag, ChevronLeft, ChevronRight, Calendar,
-  Sparkles, TreePine, Car as CarIcon, ChefHat, Image, Send, Eye, MessageCircle
+  Heart,
+  MapPin,
+  Phone,
+  Mail,
+  Building,
+  Star,
+  Users,
+  DollarSign,
+  Tag,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Sparkles,
+  TreePine,
+  Car as CarIcon,
+  ChefHat,
+  Image,
+  Send,
+  Eye,
+  MessageCircle,
+  CheckCircle2,
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
 import PromoDatesInline from "@/components/reservas/PromoDatesInline";
@@ -56,6 +74,7 @@ export default function SupplierProfile() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [userHasReview, setUserHasReview] = useState(false);
   const [phoneUnlocked, setPhoneUnlocked] = useState(false);
+  const [relStatus, setRelStatus] = useState<"nenhum" | "orcamento" | "contratado">("nenhum");
 
   // Recommendations
   const [recommendations, setRecommendations] = useState<any[]>([]);
@@ -65,47 +84,95 @@ export default function SupplierProfile() {
 
   useEffect(() => {
     if (!id) return;
-    
-    supabase.from("suppliers").select("*, categories(name, slug)").eq("id", id).maybeSingle().then(({ data }) => {
-      setSupplier(data);
-      setLoading(false);
-      if (data?.category_id) {
-        supabase
-          .from("suppliers")
-          .select("*, categories(name), supplier_photos(photo_url)")
-          .eq("status", "approved")
-          .eq("category_id", data.category_id)
-          .neq("id", id)
-          .order("rating", { ascending: false, nullsFirst: false })
-          .limit(4)
-          .then(({ data: recs }) => setRecommendations(recs || []));
-      }
-    });
-    
-    supabase.from("supplier_photos").select("*").eq("supplier_id", id).order("display_order").then(({ data }) => setPhotos(data || []));
+
+    supabase
+      .from("suppliers")
+      .select("*, categories(name, slug)")
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setSupplier(data);
+        setLoading(false);
+        if (data?.category_id) {
+          supabase
+            .from("suppliers")
+            .select("*, categories(name), supplier_photos(photo_url)")
+            .eq("status", "approved")
+            .eq("category_id", data.category_id)
+            .neq("id", id)
+            .order("rating", { ascending: false, nullsFirst: false })
+            .limit(4)
+            .then(({ data: recs }) => setRecommendations(recs || []));
+        }
+      });
+
+    supabase
+      .from("supplier_photos")
+      .select("*")
+      .eq("supplier_id", id)
+      .order("display_order")
+      .then(({ data }) => setPhotos(data || []));
     loadReviews();
 
     // Registra visita ao perfil (1x por carregamento)
-    (supabase.from("supplier_profile_views") as any).insert({
-      supplier_id: id,
-      viewer_id: user?.id ?? null,
-    }).then(() => { /* fire-and-forget */ });
+    (supabase.from("supplier_profile_views") as any)
+      .insert({
+        supplier_id: id,
+        viewer_id: user?.id ?? null,
+      })
+      .then(() => {
+        /* fire-and-forget */
+      });
 
     if (user) {
-      supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle().then(({ data }) => {
-        if (data) {
-          setCoupleId(data.id);
-          supabase.from("couple_favorites").select("id").eq("couple_id", data.id).eq("supplier_id", id).maybeSingle().then(({ data: fav }) => {
-            setIsFavorited(!!fav);
-          });
-          supabase.from("reviews").select("id").eq("couple_id", data.id).eq("supplier_id", id).maybeSingle().then(({ data: rev }) => {
-            setUserHasReview(!!rev);
-          });
-          supabase.from("quotes").select("id").eq("couple_id", data.id).eq("supplier_id", id).limit(1).then(({ data: q }) => {
-            setPhoneUnlocked(!!(q && q.length > 0));
-          });
-        }
-      });
+      supabase
+        .from("couples")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setCoupleId(data.id);
+            supabase
+              .from("couple_favorites")
+              .select("id")
+              .eq("couple_id", data.id)
+              .eq("supplier_id", id)
+              .maybeSingle()
+              .then(({ data: fav }) => {
+                setIsFavorited(!!fav);
+              });
+            supabase
+              .from("reviews")
+              .select("id")
+              .eq("couple_id", data.id)
+              .eq("supplier_id", id)
+              .maybeSingle()
+              .then(({ data: rev }) => {
+                setUserHasReview(!!rev);
+              });
+            supabase
+              .from("quotes")
+              .select("id")
+              .eq("couple_id", data.id)
+              .eq("supplier_id", id)
+              .limit(1)
+              .then(({ data: q }) => {
+                const temQuote = !!(q && q.length > 0);
+                setPhoneUnlocked(temQuote);
+                if (temQuote) setRelStatus((s) => (s === "contratado" ? s : "orcamento"));
+              });
+            supabase
+              .from("couple_suppliers")
+              .select("id, status")
+              .eq("couple_id", data.id)
+              .eq("supplier_id", id)
+              .maybeSingle()
+              .then(({ data: cs }) => {
+                if (cs && (cs as any).status === "contracted") setRelStatus("contratado");
+              });
+          }
+        });
     }
   }, [id, user]);
 
@@ -143,14 +210,22 @@ export default function SupplierProfile() {
       setReviewRating(5);
       setUserHasReview(true);
       loadReviews();
-      supabase.from("suppliers").select("*, categories(name)").eq("id", id).maybeSingle().then(({ data }) => setSupplier(data));
+      supabase
+        .from("suppliers")
+        .select("*, categories(name)")
+        .eq("id", id)
+        .maybeSingle()
+        .then(({ data }) => setSupplier(data));
     }
   };
 
   const toggleFavorite = async () => {
     if (!coupleId || !id) {
       if (!user) {
-        toast({ title: "Faça login para favoritar", description: "Crie uma conta ou entre para salvar seus favoritos." });
+        toast({
+          title: "Faça login para favoritar",
+          description: "Crie uma conta ou entre para salvar seus favoritos.",
+        });
         return;
       }
       return;
@@ -170,22 +245,34 @@ export default function SupplierProfile() {
     quoteFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
-  if (!supplier) return (
-    <div className="min-h-screen flex items-center justify-center flex-col gap-4">
-      <Building className="h-16 w-16 text-muted-foreground" />
-      <p className="text-muted-foreground">Fornecedor não encontrado.</p>
-      <Button asChild><Link to="/buscar">Voltar à busca</Link></Button>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
+  if (!supplier)
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+        <Building className="h-16 w-16 text-muted-foreground" />
+        <p className="text-muted-foreground">Fornecedor não encontrado.</p>
+        <Button asChild>
+          <Link to="/buscar">Voltar à busca</Link>
+        </Button>
+      </div>
+    );
 
   const categoryName = (supplier.categories as any)?.name || "Fornecedor";
-  const ratingLabel = supplier.rating >= 4.8 ? "Fantástico" : supplier.rating >= 4.5 ? "Excelente" : supplier.rating >= 4.0 ? "Muito bom" : "Bom";
+  const ratingLabel =
+    supplier.rating >= 4.8
+      ? "Fantástico"
+      : supplier.rating >= 4.5
+        ? "Excelente"
+        : supplier.rating >= 4.0
+          ? "Muito bom"
+          : "Bom";
 
-  const seoImages = [
-    supplier.profile_photo_url,
-    ...photos.slice(0, 4).map((p: any) => p.photo_url),
-  ].filter(Boolean);
+  const seoImages = [supplier.profile_photo_url, ...photos.slice(0, 4).map((p: any) => p.photo_url)].filter(Boolean);
   const localBusinessJsonLd: Record<string, any> = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -227,7 +314,7 @@ export default function SupplierProfile() {
         title={`${supplier.company_name} — Casamenteiro`}
         description={truncate(
           supplier.description ||
-            `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`
+            `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`,
         )}
         canonical={absoluteUrl(`/fornecedor/${id}`)}
         ogImage={supplier.profile_photo_url || undefined}
@@ -241,8 +328,14 @@ export default function SupplierProfile() {
             <span className="text-lg font-bold hidden sm:inline">Casamenteiro</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm ml-6">
-            <Link to="/explorar" className="text-muted-foreground hover:text-foreground transition-colors">Fornecedores</Link>
-            {user && <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">Meu Casamento</Link>}
+            <Link to="/explorar" className="text-muted-foreground hover:text-foreground transition-colors">
+              Fornecedores
+            </Link>
+            {user && (
+              <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                Meu Casamento
+              </Link>
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-2">
             {user ? (
@@ -267,9 +360,13 @@ export default function SupplierProfile() {
       {/* Breadcrumb */}
       <div className="border-b border-border">
         <div className="container py-2 text-xs text-muted-foreground flex items-center gap-1.5">
-          <Link to="/" className="hover:text-foreground">Casamentos</Link>
+          <Link to="/" className="hover:text-foreground">
+            Casamentos
+          </Link>
           <span>/</span>
-          <Link to="/buscar" className="hover:text-foreground">{categoryName}</Link>
+          <Link to="/buscar" className="hover:text-foreground">
+            {categoryName}
+          </Link>
           <span>/</span>
           <span className="text-foreground">{supplier.company_name}</span>
         </div>
@@ -285,22 +382,50 @@ export default function SupplierProfile() {
           <div className="border border-border rounded-lg px-3 py-2 text-sm text-muted-foreground w-40">
             {[supplier.city, supplier.state].filter(Boolean).join(", ") || "Brasil"}
           </div>
-          <Button variant="outline" className="text-primary border-primary hover:bg-primary hover:text-primary-foreground" asChild>
+          <Button
+            variant="outline"
+            className="text-primary border-primary hover:bg-primary hover:text-primary-foreground"
+            asChild
+          >
             <Link to="/buscar">Pesquisar</Link>
           </Button>
         </div>
       </div>
 
-      {/* Interest banner with social proof */}
-      <div className="bg-blue-50 border-b border-blue-100">
-        <div className="container py-3 text-sm text-blue-700 flex items-center gap-2">
-          <Eye className="h-4 w-4" />
-          <span className="font-medium">{viewerCount} {viewerCount === 1 ? "pessoa está" : "pessoas estão"} olhando este fornecedor.</span>
-          <button onClick={scrollToQuoteForm} className="underline font-medium hover:text-blue-900 transition-colors">
-            Solicite um orçamento!
-          </button>
+      {/* Banner de status para o casal (já no orçamento / contratado) OU social proof */}
+      {relStatus === "contratado" ? (
+        <div className="bg-emerald-50 border-b border-emerald-100">
+          <div className="container py-3 text-sm text-emerald-800 flex items-center gap-2 flex-wrap">
+            <CheckCircle2 className="h-4 w-4" />
+            <span className="font-medium">Você já contratou este fornecedor.</span>
+            <Link to="/meu-casamento/plano" className="underline font-medium hover:text-emerald-900">
+              Ver no meu plano
+            </Link>
+          </div>
         </div>
-      </div>
+      ) : relStatus === "orcamento" ? (
+        <div className="bg-primary/10 border-b border-primary/20">
+          <div className="container py-3 text-sm text-foreground flex items-center gap-2 flex-wrap">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <span className="font-medium">Este fornecedor já está no seu orçamento.</span>
+            <Link to="/meu-casamento/plano" className="underline font-medium text-primary hover:opacity-80">
+              Ver conversa e proposta
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-blue-50 border-b border-blue-100">
+          <div className="container py-3 text-sm text-blue-700 flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            <span className="font-medium">
+              {viewerCount} {viewerCount === 1 ? "pessoa está" : "pessoas estão"} olhando este fornecedor.
+            </span>
+            <button onClick={scrollToQuoteForm} className="underline font-medium hover:text-blue-900 transition-colors">
+              Solicite um orçamento!
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="container py-6">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -309,12 +434,26 @@ export default function SupplierProfile() {
             {/* Photo gallery - mosaic */}
             {photos.length > 0 ? (
               <div className="relative mb-6">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 rounded-xl overflow-hidden" style={{ height: "400px" }}>
-                  <div className="col-span-2 row-span-2 relative bg-muted cursor-pointer" onClick={() => setSelectedPhoto(0)}>
-                    <img src={photos[0]?.photo_url} alt={supplier.company_name} className="w-full h-full object-cover" />
+                <div
+                  className="grid grid-cols-2 sm:grid-cols-3 gap-1 rounded-xl overflow-hidden"
+                  style={{ height: "400px" }}
+                >
+                  <div
+                    className="col-span-2 row-span-2 relative bg-muted cursor-pointer"
+                    onClick={() => setSelectedPhoto(0)}
+                  >
+                    <img
+                      src={photos[0]?.photo_url}
+                      alt={supplier.company_name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   {photos.slice(1, 5).map((photo, i) => (
-                    <div key={photo.id} className="relative bg-muted cursor-pointer" onClick={() => setSelectedPhoto(i + 1)}>
+                    <div
+                      key={photo.id}
+                      className="relative bg-muted cursor-pointer"
+                      onClick={() => setSelectedPhoto(i + 1)}
+                    >
                       <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
                       {i === 3 && photos.length > 5 && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-medium">
@@ -352,8 +491,11 @@ export default function SupplierProfile() {
                   {supplier.rating && (
                     <div className="flex items-center gap-2 mb-2">
                       <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map(s => (
-                          <Star key={s} className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
+                          />
                         ))}
                       </div>
                       <span className="font-semibold text-sm">{supplier.rating.toFixed(1)}</span>
@@ -376,27 +518,33 @@ export default function SupplierProfile() {
                   )}
 
                   <div className="flex gap-2">
-                    <QuoteRequestForm
-                      supplierId={supplier.id}
-                      supplierName={supplier.company_name}
-                    />
-                    {phoneUnlocked && buildWhatsAppLink(supplier.whatsapp || supplier.phone || "", "Olá! Vim pelo Casamenteiro, gostaria de conversar sobre o casamento.") && (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-12 w-12 shrink-0 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
-                        asChild
-                      >
-                        <a
-                          href={buildWhatsAppLink(supplier.whatsapp || supplier.phone || "", "Olá! Vim pelo Casamenteiro, gostaria de conversar sobre o casamento.")!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label="Conversar no WhatsApp"
+                    <QuoteRequestForm supplierId={supplier.id} supplierName={supplier.company_name} />
+                    {phoneUnlocked &&
+                      buildWhatsAppLink(
+                        supplier.whatsapp || supplier.phone || "",
+                        "Olá! Vim pelo Casamenteiro, gostaria de conversar sobre o casamento.",
+                      ) && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-12 w-12 shrink-0 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                          asChild
                         >
-                          <MessageCircle className="h-5 w-5" />
-                        </a>
-                      </Button>
-                    )}
+                          <a
+                            href={
+                              buildWhatsAppLink(
+                                supplier.whatsapp || supplier.phone || "",
+                                "Olá! Vim pelo Casamenteiro, gostaria de conversar sobre o casamento.",
+                              )!
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Conversar no WhatsApp"
+                          >
+                            <MessageCircle className="h-5 w-5" />
+                          </a>
+                        </Button>
+                      )}
                   </div>
                   {(supplier.whatsapp || supplier.phone) && !phoneUnlocked && (
                     <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
@@ -416,7 +564,7 @@ export default function SupplierProfile() {
                   { value: "faqs", label: "FAQs" },
                   { value: "opinions", label: `Opiniões ${reviews.length > 0 ? `(${reviews.length})` : ""}` },
                   { value: "map", label: "Mapa" },
-                ].map(tab => (
+                ].map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
@@ -467,10 +615,7 @@ export default function SupplierProfile() {
                 {supplier.category_id && (
                   <div className="mb-8">
                     <h2 className="font-bold text-lg mb-4">Detalhes da categoria</h2>
-                    <DynamicFieldsView
-                      supplierId={supplier.id}
-                      categoryId={supplier.category_id}
-                    />
+                    <DynamicFieldsView supplierId={supplier.id} categoryId={supplier.category_id} />
                   </div>
                 )}
 
@@ -489,7 +634,9 @@ export default function SupplierProfile() {
                       {supplier.description}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Ainda não há informações detalhadas sobre este fornecedor.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Ainda não há informações detalhadas sobre este fornecedor.
+                    </p>
                   )}
                 </div>
               </TabsContent>
@@ -501,17 +648,22 @@ export default function SupplierProfile() {
 
               <TabsContent value="opinions" className="mt-6">
                 <h2 className="font-bold text-lg mb-4">Opiniões</h2>
-                
+
                 {supplier.rating ? (
                   <div className="flex items-center gap-3 mb-6 p-4 bg-secondary rounded-lg">
                     <div className="text-3xl font-bold text-primary">{supplier.rating.toFixed(1)}</div>
                     <div>
                       <div className="flex gap-0.5 mb-1">
-                        {[1, 2, 3, 4, 5].map(s => (
-                          <Star key={s} className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
+                          />
                         ))}
                       </div>
-                      <p className="text-sm text-muted-foreground">{ratingLabel} · {reviews.length} opiniões</p>
+                      <p className="text-sm text-muted-foreground">
+                        {ratingLabel} · {reviews.length} opiniões
+                      </p>
                     </div>
                   </div>
                 ) : null}
@@ -520,9 +672,11 @@ export default function SupplierProfile() {
                   <div className="border border-border rounded-lg p-4 mb-6">
                     <h3 className="font-semibold text-sm mb-3">Deixe sua avaliação</h3>
                     <div className="flex gap-1 mb-3">
-                      {[1, 2, 3, 4, 5].map(s => (
+                      {[1, 2, 3, 4, 5].map((s) => (
                         <button key={s} onClick={() => setReviewRating(s)}>
-                          <Star className={`h-6 w-6 transition-colors ${s <= reviewRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground hover:text-amber-300"}`} />
+                          <Star
+                            className={`h-6 w-6 transition-colors ${s <= reviewRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground hover:text-amber-300"}`}
+                          />
                         </button>
                       ))}
                     </div>
@@ -549,7 +703,10 @@ export default function SupplierProfile() {
 
                 {!user && (
                   <p className="text-sm text-muted-foreground mb-4">
-                    <Link to="/login" className="text-primary underline">Faça login</Link> para deixar sua avaliação.
+                    <Link to="/login" className="text-primary underline">
+                      Faça login
+                    </Link>{" "}
+                    para deixar sua avaliação.
                   </p>
                 )}
 
@@ -559,8 +716,11 @@ export default function SupplierProfile() {
                       <div key={rev.id} className="border border-border rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map(s => (
-                              <Star key={s} className={`h-3.5 w-3.5 ${s <= rev.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                className={`h-3.5 w-3.5 ${s <= rev.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
+                              />
                             ))}
                           </div>
                           <span className="text-xs text-muted-foreground">
@@ -579,11 +739,7 @@ export default function SupplierProfile() {
 
               <TabsContent value="map" className="mt-6" forceMount>
                 <h2 className="font-bold text-lg mb-4">Localização</h2>
-                <SupplierMap
-                  city={supplier.city}
-                  state={supplier.state}
-                  supplierName={supplier.company_name}
-                />
+                <SupplierMap city={supplier.city} state={supplier.state} supplierName={supplier.company_name} />
               </TabsContent>
             </Tabs>
 
@@ -599,13 +755,22 @@ export default function SupplierProfile() {
                         <div className="rounded-lg overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
                           <div className="relative h-36 bg-muted">
                             {photo ? (
-                              <img src={photo} alt={rec.company_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                              <img
+                                src={photo}
+                                alt={rec.company_name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                              />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center"><Building className="h-8 w-8 text-muted-foreground" /></div>
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Building className="h-8 w-8 text-muted-foreground" />
+                              </div>
                             )}
                           </div>
                           <div className="p-3">
-                            <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">{rec.company_name}</h3>
+                            <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">
+                              {rec.company_name}
+                            </h3>
                             {rec.rating && (
                               <div className="flex items-center gap-1 text-xs mb-1">
                                 <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
@@ -638,14 +803,19 @@ export default function SupplierProfile() {
                   {supplier.rating && (
                     <div className="flex items-center gap-2 mb-2">
                       <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map(s => (
-                          <Star key={s} className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
+                          />
                         ))}
                       </div>
                       <span className="font-semibold text-sm">{supplier.rating.toFixed(1)}</span>
                       <span className="text-sm text-muted-foreground">{ratingLabel}</span>
                       {reviews.length > 0 && (
-                        <span className="text-sm text-primary underline cursor-pointer">· {reviews.length} opiniões</span>
+                        <span className="text-sm text-primary underline cursor-pointer">
+                          · {reviews.length} opiniões
+                        </span>
                       )}
                     </div>
                   )}
@@ -671,7 +841,8 @@ export default function SupplierProfile() {
                         <DollarSign className="h-5 w-5 text-muted-foreground" />
                         <div>
                           <p className="text-sm font-medium">
-                            {categoryName === "Espaços e Buffet" ? "Aluguel" : "Preço"} desde R${supplier.price_min.toLocaleString("pt-BR")}
+                            {categoryName === "Espaços e Buffet" ? "Aluguel" : "Preço"} desde R$
+                            {supplier.price_min.toLocaleString("pt-BR")}
                           </p>
                         </div>
                       </div>
@@ -698,10 +869,7 @@ export default function SupplierProfile() {
                   </div>
 
                   <div className="flex gap-2">
-                    <QuoteRequestForm
-                      supplierId={supplier.id}
-                      supplierName={supplier.company_name}
-                    />
+                    <QuoteRequestForm supplierId={supplier.id} supplierName={supplier.company_name} />
                     {supplier.phone && phoneUnlocked && (
                       <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" asChild>
                         <a href={`tel:${supplier.phone}`}>
@@ -730,12 +898,14 @@ export default function SupplierProfile() {
                     <h3 className="font-semibold text-sm">Contato</h3>
                     {supplier.phone && phoneUnlocked && (
                       <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="h-4 w-4 text-primary" />{supplier.phone}
+                        <Phone className="h-4 w-4 text-primary" />
+                        {supplier.phone}
                       </p>
                     )}
                     {supplier.email && (
                       <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Mail className="h-4 w-4 text-primary" />{supplier.email}
+                        <Mail className="h-4 w-4 text-primary" />
+                        {supplier.email}
                       </p>
                     )}
                   </CardContent>
