@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Heart, MapPin, Calendar, Star, MessageCircle } from "lucide-react";
+import { Heart, MapPin, Calendar, Star, MessageCircle, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { youtubeEmbedUrl, youtubeThumbnail } from "@/lib/coupleProfile";
@@ -28,7 +28,18 @@ export default function CasalPerfilPublico() {
   const [avaliacoes, setAvaliacoes] = useState<any[]>([]);
   const [comentarios, setComentarios] = useState<any[]>([]);
   const [novoComentario, setNovoComentario] = useState("");
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (lightbox === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(null);
+      else if (e.key === "ArrowRight") setLightbox((i) => (i === null ? null : (i + 1) % fotos.length));
+      else if (e.key === "ArrowLeft") setLightbox((i) => (i === null ? null : (i - 1 + fotos.length) % fotos.length));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, fotos.length]);
   const [msgOpen, setMsgOpen] = useState(false);
   const [msgTexto, setMsgTexto] = useState("");
   const [msgEnviando, setMsgEnviando] = useState(false);
@@ -43,12 +54,19 @@ export default function CasalPerfilPublico() {
         .eq("slug", slug!)
         .eq("publico", true)
         .maybeSingle();
-      if (!p) { setLoading(false); return; }
+      if (!p) {
+        setLoading(false);
+        return;
+      }
       setPerfil(p);
       const { data: c } = await supabase.from("couples").select("*").eq("id", p.couple_id).maybeSingle();
       setCouple(c);
       if (p.exibir_fotos) {
-        const { data: f } = await supabase.from("couple_photos").select("*").eq("couple_id", p.couple_id).order("ordem");
+        const { data: f } = await supabase
+          .from("couple_photos")
+          .select("*")
+          .eq("couple_id", p.couple_id)
+          .order("ordem");
         setFotos(f || []);
       }
       if (p.exibir_videos) {
@@ -87,31 +105,49 @@ export default function CasalPerfilPublico() {
   }, [slug]);
 
   const enviarComentario = async () => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     if (novoComentario.trim().length < 3) return;
     const { error } = await supabase.from("couple_profile_comments").insert({
-      perfil_id: perfil.id, autor_id: user.id, texto: novoComentario.trim(),
+      perfil_id: perfil.id,
+      autor_id: user.id,
+      texto: novoComentario.trim(),
     });
-    if (error) { toast.error("Erro ao enviar comentário"); return; }
+    if (error) {
+      toast.error("Erro ao enviar comentário");
+      return;
+    }
     toast.success("Comentário enviado! Aguardando moderação.");
     setNovoComentario("");
   };
 
   const abrirMensagem = async () => {
-    if (!user) { navigate("/login"); return; }
-    const { data: myCouple } = await supabase
-      .from("couples").select("id").eq("user_id", user.id).maybeSingle();
-    if (!myCouple) { toast.error("Apenas casais podem enviar mensagens."); return; }
-    if (myCouple.id === perfil.couple_id) { toast.info("Este é o seu próprio perfil."); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    const { data: myCouple } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
+    if (!myCouple) {
+      toast.error("Apenas casais podem enviar mensagens.");
+      return;
+    }
+    if (myCouple.id === perfil.couple_id) {
+      toast.info("Este é o seu próprio perfil.");
+      return;
+    }
     setMsgOpen(true);
   };
 
   const enviarMensagem = async () => {
     if (msgTexto.trim().length < 2 || !user) return;
     setMsgEnviando(true);
-    const { data: myCouple } = await supabase
-      .from("couples").select("id").eq("user_id", user.id).maybeSingle();
-    if (!myCouple) { setMsgEnviando(false); return; }
+    const { data: myCouple } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
+    if (!myCouple) {
+      setMsgEnviando(false);
+      return;
+    }
     const { error } = await supabase.from("couple_messages").insert({
       remetente_couple_id: myCouple.id,
       destinatario_couple_id: perfil.couple_id,
@@ -123,8 +159,7 @@ export default function CasalPerfilPublico() {
       return;
     }
     // Notificação in-app para o casal destinatário
-    const { data: dest } = await supabase
-      .from("couples").select("user_id").eq("id", perfil.couple_id).maybeSingle();
+    const { data: dest } = await supabase.from("couples").select("user_id").eq("id", perfil.couple_id).maybeSingle();
     if (dest?.user_id) {
       await supabase.from("notifications").insert({
         user_id: dest.user_id,
@@ -141,22 +176,30 @@ export default function CasalPerfilPublico() {
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Carregando…</div>;
-  if (!perfil) return (
-    <div className="min-h-screen flex items-center justify-center flex-col gap-4">
-      <p className="text-muted-foreground">Perfil não encontrado.</p>
-      <Link to="/casais"><Button variant="outline">Ver outros casais</Button></Link>
-    </div>
-  );
+  if (!perfil)
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+        <p className="text-muted-foreground">Perfil não encontrado.</p>
+        <Link to="/casais">
+          <Button variant="outline">Ver outros casais</Button>
+        </Link>
+      </div>
+    );
 
   const wedding = couple?.wedding_date ? parseISO(couple.wedding_date) : null;
   const isPast = wedding && wedding < new Date();
-  const ratingAvg = avaliacoes.length ? (avaliacoes.reduce((s: number, r: any) => s + r.rating, 0) / avaliacoes.length).toFixed(1) : null;
+  const ratingAvg = avaliacoes.length
+    ? (avaliacoes.reduce((s: number, r: any) => s + r.rating, 0) / avaliacoes.length).toFixed(1)
+    : null;
 
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
       <SEO
         title={`${perfil.nome_casal} | Casamenteiro`}
-        description={perfil.bio || `Conheça o casamento de ${perfil.nome_casal}${couple?.wedding_city ? ` em ${couple.wedding_city}` : ""}.`}
+        description={
+          perfil.bio ||
+          `Conheça o casamento de ${perfil.nome_casal}${couple?.wedding_city ? ` em ${couple.wedding_city}` : ""}.`
+        }
         canonical={`/casais/${perfil.slug}`}
         ogImage={perfil.foto_capa_url || perfil.foto_perfil_url || undefined}
         jsonLd={{
@@ -186,36 +229,54 @@ export default function CasalPerfilPublico() {
               {perfil.foto_perfil_url ? (
                 <img src={perfil.foto_perfil_url} alt="" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-primary/10"><Heart className="h-10 w-10 text-primary" /></div>
+                <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                  <Heart className="h-10 w-10 text-primary" />
+                </div>
               )}
             </div>
             <div className="flex-1">
               <h1 className="font-serif text-3xl md:text-4xl">{perfil.nome_casal}</h1>
               <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-sm text-muted-foreground">
                 {perfil.exibir_data && wedding && (
-                  <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{format(wedding, "dd 'de' MMMM yyyy", { locale: ptBR })}</span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {format(wedding, "dd 'de' MMMM yyyy", { locale: ptBR })}
+                  </span>
                 )}
                 {couple?.wedding_city && (
-                  <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{couple.wedding_city}</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    {couple.wedding_city}
+                  </span>
                 )}
-                {perfil.estilo && <Badge variant="outline" className="capitalize">{perfil.estilo}</Badge>}
+                {perfil.estilo && (
+                  <Badge variant="outline" className="capitalize">
+                    {perfil.estilo}
+                  </Badge>
+                )}
                 {isPast && <Badge className="bg-primary/20 text-primary">💍 Já casou</Badge>}
               </div>
               {ratingAvg && (
                 <div className="flex items-center gap-2 mt-3">
                   <div className="flex">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`h-4 w-4 ${i < Math.round(Number(ratingAvg)) ? "fill-primary text-primary" : "text-muted"}`} />
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${i < Math.round(Number(ratingAvg)) ? "fill-primary text-primary" : "text-muted"}`}
+                      />
                     ))}
                   </div>
-                  <span className="text-sm">{ratingAvg} · {avaliacoes.length} avaliações</span>
+                  <span className="text-sm">
+                    {ratingAvg} · {avaliacoes.length} avaliações
+                  </span>
                 </div>
               )}
               {perfil.bio && <p className="mt-4 text-foreground/80 leading-relaxed">{perfil.bio}</p>}
               {perfil.mensagens_casais && (
                 <div className="mt-4">
                   <Button variant="outline" size="sm" onClick={abrirMensagem}>
-                    <MessageCircle className="h-4 w-4 mr-2" />Enviar mensagem
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Enviar mensagem
                   </Button>
                 </div>
               )}
@@ -251,10 +312,10 @@ export default function CasalPerfilPublico() {
             <h2 className="font-serif text-2xl mb-4">{isPast ? "Fotos do casamento" : "Prévia do casamento"}</h2>
             <Carousel opts={{ align: "start", loop: fotos.length > 2 }} className="w-full">
               <CarouselContent className="-ml-3">
-                {fotos.map((f: any) => (
+                {fotos.map((f: any, idx: number) => (
                   <CarouselItem key={f.id} className="pl-3 basis-2/3 sm:basis-1/2 lg:basis-1/3">
                     <button
-                      onClick={() => setLightbox(f.url)}
+                      onClick={() => setLightbox(idx)}
                       className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-muted hover:opacity-90"
                     >
                       <img
@@ -307,12 +368,17 @@ export default function CasalPerfilPublico() {
               {avaliacoes.map((a: any) => (
                 <Card key={a.id} className="p-4">
                   <div className="flex items-center gap-3 mb-2">
-                    {a.suppliers?.logo_url && <img src={a.suppliers.logo_url} alt="" className="w-10 h-10 rounded-full object-cover" />}
+                    {a.suppliers?.logo_url && (
+                      <img src={a.suppliers.logo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    )}
                     <div>
                       <p className="font-medium">{a.suppliers?.company_name}</p>
                       <div className="flex">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-3 w-3 ${i < a.rating ? "fill-primary text-primary" : "text-muted"}`} />
+                          <Star
+                            key={i}
+                            className={`h-3 w-3 ${i < a.rating ? "fill-primary text-primary" : "text-muted"}`}
+                          />
                         ))}
                       </div>
                     </div>
@@ -324,42 +390,106 @@ export default function CasalPerfilPublico() {
           </section>
         )}
 
-        {/* COMENTÁRIOS */}
-        <section className="mb-10">
-          <h2 className="font-serif text-2xl mb-4">Comentários da comunidade</h2>
-          {user ? (
-            <div className="mb-4">
-              <Textarea
-                placeholder="Deixe seu recado para o casal…"
-                value={novoComentario}
-                onChange={(e) => setNovoComentario(e.target.value)}
-                maxLength={500}
-              />
-              <Button onClick={enviarComentario} className="mt-2">Enviar comentário</Button>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground mb-4">
-              <Link to="/login" className="text-primary underline">Faça login</Link> para deixar um comentário.
-            </p>
-          )}
-          {comentarios.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Ainda não há comentários.</p>
-          ) : (
-            <div className="space-y-3">
-              {comentarios.map((c: any) => (
-                <Card key={c.id} className="p-3">
-                  <p className="text-sm">{c.texto}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{format(parseISO(c.created_at), "dd/MM/yyyy")}</p>
-                </Card>
-              ))}
-            </div>
-          )}
-        </section>
+        {/* COMENTÁRIOS — ocultado: não há moderação no admin ainda.
+            Reativar quando existir a tela de aprovação de comentários. */}
+        {false && (
+          <section className="mb-10">
+            <h2 className="font-serif text-2xl mb-4">Comentários da comunidade</h2>
+            {user ? (
+              <div className="mb-4">
+                <Textarea
+                  placeholder="Deixe seu recado para o casal…"
+                  value={novoComentario}
+                  onChange={(e) => setNovoComentario(e.target.value)}
+                  maxLength={500}
+                />
+                <Button onClick={enviarComentario} className="mt-2">
+                  Enviar comentário
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground mb-4">
+                <Link to="/login" className="text-primary underline">
+                  Faça login
+                </Link>{" "}
+                para deixar um comentário.
+              </p>
+            )}
+            {comentarios.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Ainda não há comentários.</p>
+            ) : (
+              <div className="space-y-3">
+                {comentarios.map((c: any) => (
+                  <Card key={c.id} className="p-3">
+                    <p className="text-sm">{c.texto}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{format(parseISO(c.created_at), "dd/MM/yyyy")}</p>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
-      {lightbox && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <img src={lightbox} alt="" className="max-w-full max-h-full object-contain" />
+      {lightbox !== null && fotos[lightbox] && (
+        <div
+          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center"
+          onClick={() => setLightbox(null)}
+        >
+          {/* Fechar */}
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox(null);
+            }}
+            aria-label="Fechar"
+          >
+            <X className="h-7 w-7" />
+          </button>
+
+          {/* Anterior */}
+          {fotos.length > 1 && (
+            <button
+              className="absolute left-3 md:left-6 text-white/80 hover:text-white z-10 p-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightbox((i) => (i! - 1 + fotos.length) % fotos.length);
+              }}
+              aria-label="Anterior"
+            >
+              <ChevronLeft className="h-9 w-9" />
+            </button>
+          )}
+
+          {/* Imagem */}
+          <figure className="max-w-[90vw] max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={fotos[lightbox].url}
+              alt={fotos[lightbox].legenda || ""}
+              className="max-w-full max-h-[82vh] object-contain rounded"
+            />
+            <figcaption className="text-white/70 text-sm mt-3 flex items-center gap-3">
+              {fotos[lightbox].legenda && <span>{fotos[lightbox].legenda}</span>}
+              <span className="text-white/50">
+                {lightbox + 1} / {fotos.length}
+              </span>
+            </figcaption>
+          </figure>
+
+          {/* Próxima */}
+          {fotos.length > 1 && (
+            <button
+              className="absolute right-3 md:right-6 text-white/80 hover:text-white z-10 p-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightbox((i) => (i! + 1) % fotos.length);
+              }}
+              aria-label="Próxima"
+            >
+              <ChevronRight className="h-9 w-9" />
+            </button>
+          )}
         </div>
       )}
 
@@ -376,7 +506,9 @@ export default function CasalPerfilPublico() {
             rows={5}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMsgOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setMsgOpen(false)}>
+              Cancelar
+            </Button>
             <Button onClick={enviarMensagem} disabled={msgEnviando || msgTexto.trim().length < 2}>
               {msgEnviando ? "Enviando…" : "Enviar"}
             </Button>
