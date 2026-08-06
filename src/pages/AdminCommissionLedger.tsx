@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,13 +33,18 @@ export default function AdminCommissionLedger() {
   const [loading, setLoading] = useState(true);
   const [ambiente, setAmbiente] = useState("todos");
   const [reservaId, setReservaId] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState("todos");
+  const [buscaTexto, setBuscaTexto] = useState("");
 
   const load = async () => {
     setLoading(true);
-    let q = (supabase.from("commission_ledger" as any)
-      .select("id, reservation_id, piso, valor_ofertado, comissao, status, mp_payment_id, ambiente, paid_at, created_at, suppliers(company_name, city), couples(partner_name), idle_date_reservations(promo_date)")
+    let q = supabase
+      .from("commission_ledger" as any)
+      .select(
+        "id, reservation_id, piso, valor_ofertado, comissao, status, mp_payment_id, ambiente, paid_at, created_at, suppliers(company_name, city), couples(partner_name), idle_date_reservations(promo_date)",
+      )
       .order("created_at", { ascending: false })
-      .limit(500) as any);
+      .limit(500) as any;
     if (ambiente !== "todos") q = q.eq("ambiente", ambiente);
     const termo = reservaId.trim();
     if (/^[0-9a-f-]{36}$/i.test(termo)) q = q.eq("reservation_id", termo);
@@ -48,14 +53,19 @@ export default function AdminCommissionLedger() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [ambiente]);
+  useEffect(() => {
+    load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [ambiente]);
 
   const marcarPago = async (r: Row) => {
     // Enquanto MP não integra, admin pode marcar manualmente. Também confirma a reserva.
     const { error: e1 } = await (supabase.from("commission_ledger" as any) as any)
       .update({ status: "pago", paid_at: new Date().toISOString() })
       .eq("id", r.id);
-    if (e1) { toast({ title: "Erro", description: e1.message, variant: "destructive" }); return; }
+    if (e1) {
+      toast({ title: "Erro", description: e1.message, variant: "destructive" });
+      return;
+    }
     await (supabase.from("idle_date_reservations" as any) as any)
       .update({ status: "confirmada", respondida_em: new Date().toISOString() })
       .eq("id", r.reservation_id);
@@ -67,31 +77,49 @@ export default function AdminCommissionLedger() {
   };
 
   const setStatus = async (r: Row, status: string) => {
-    const { error } = await (supabase.from("commission_ledger" as any) as any)
-      .update({ status })
-      .eq("id", r.id);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    const { error } = await (supabase.from("commission_ledger" as any) as any).update({ status }).eq("id", r.id);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      return;
+    }
     load();
   };
 
   const totais = {
-    pendente: rows.filter(r => r.status === "pendente").reduce((a, r) => a + Number(r.comissao || 0), 0),
-    pago: rows.filter(r => r.status === "pago").reduce((a, r) => a + Number(r.comissao || 0), 0),
-    estornado: rows.filter(r => r.status === "estornado").reduce((a, r) => a + Number(r.comissao || 0), 0),
+    pendente: rows.filter((r) => r.status === "pendente").reduce((a, r) => a + Number(r.comissao || 0), 0),
+    pago: rows.filter((r) => r.status === "pago").reduce((a, r) => a + Number(r.comissao || 0), 0),
+    estornado: rows.filter((r) => r.status === "estornado").reduce((a, r) => a + Number(r.comissao || 0), 0),
   };
+
+  const view = useMemo(() => {
+    let list = [...rows];
+    if (statusFiltro !== "todos") list = list.filter((r) => r.status === statusFiltro);
+    const q = buscaTexto.trim().toLowerCase();
+    if (q)
+      list = list.filter(
+        (r) =>
+          (r.suppliers?.company_name || "").toLowerCase().includes(q) ||
+          (r.couples?.partner_name || "").toLowerCase().includes(q) ||
+          (r.suppliers?.city || "").toLowerCase().includes(q),
+      );
+    return list;
+  }, [rows, statusFiltro, buscaTexto]);
 
   return (
     <div className="container py-6 max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Corretagem — Ledger de comissões</h1>
         <p className="text-sm text-muted-foreground">
-          Registro de todas as ofertas de corretagem geradas pela plataforma. Enquanto a integração Mercado Pago não é liberada, use "Marcar pago manualmente" para testes.
+          Registro de todas as ofertas de corretagem geradas pela plataforma. Enquanto a integração Mercado Pago não é
+          liberada, use "Marcar pago manualmente" para testes.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
         <Select value={ambiente} onValueChange={setAmbiente}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Ambiente" /></SelectTrigger>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Ambiente" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos ambientes</SelectItem>
             <SelectItem value="sandbox">Testes (sandbox)</SelectItem>
@@ -104,7 +132,26 @@ export default function AdminCommissionLedger() {
           value={reservaId}
           onChange={(e) => setReservaId(e.target.value)}
         />
-        <Button variant="outline" onClick={load}>Aplicar</Button>
+        <Button variant="outline" onClick={load}>
+          Aplicar
+        </Button>
+        <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os status</SelectItem>
+            <SelectItem value="pendente">Pendente</SelectItem>
+            <SelectItem value="pago">Pago</SelectItem>
+            <SelectItem value="estornado">Estornado</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          className="w-64"
+          placeholder="Buscar fornecedor ou casal"
+          value={buscaTexto}
+          onChange={(e) => setBuscaTexto(e.target.value)}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -113,11 +160,15 @@ export default function AdminCommissionLedger() {
         <KPI title="Comissão estornada" value={formatBRL(totais.estornado)} />
       </div>
 
-      {loading ? <p>Carregando...</p> : rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic">Nenhum registro ainda.</p>
+      {loading ? (
+        <p>Carregando...</p>
+      ) : view.length === 0 ? (
+        <p className="text-sm text-muted-foreground italic">
+          {rows.length === 0 ? "Nenhum registro ainda." : "Nenhum registro com esses filtros."}
+        </p>
       ) : (
         <div className="space-y-3">
-          {rows.map(r => (
+          {view.map((r) => (
             <Card key={r.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
@@ -132,7 +183,12 @@ export default function AdminCommissionLedger() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className={r.ambiente === "live" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}>
+                    <Badge
+                      variant="secondary"
+                      className={
+                        r.ambiente === "live" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"
+                      }
+                    >
                       {r.ambiente === "live" ? "Produção" : "Testes"}
                     </Badge>
                     <Badge variant="secondary">{CORRETAGEM_STATUS_LEDGER[r.status] || r.status}</Badge>
@@ -140,9 +196,15 @@ export default function AdminCommissionLedger() {
                 </div>
               </CardHeader>
               <CardContent className="text-sm flex flex-wrap gap-4 items-center">
-                <span>Piso: <strong>{formatBRL(r.piso)}</strong></span>
-                <span>Ofertado: <strong>{formatBRL(r.valor_ofertado)}</strong></span>
-                <span>Comissão: <strong>{formatBRL(r.comissao)}</strong></span>
+                <span>
+                  Piso: <strong>{formatBRL(r.piso)}</strong>
+                </span>
+                <span>
+                  Ofertado: <strong>{formatBRL(r.valor_ofertado)}</strong>
+                </span>
+                <span>
+                  Comissão: <strong>{formatBRL(r.comissao)}</strong>
+                </span>
                 {r.status === "pendente" && (
                   <Button size="sm" variant="outline" onClick={() => marcarPago(r)}>
                     Marcar pago manualmente
@@ -150,7 +212,9 @@ export default function AdminCommissionLedger() {
                 )}
                 {r.status !== "pendente" && (
                   <Select value={r.status} onValueChange={(v) => setStatus(r, v)}>
-                    <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-8 w-40">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pendente">Pendente</SelectItem>
                       <SelectItem value="pago">Pago</SelectItem>
