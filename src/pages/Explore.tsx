@@ -8,15 +8,42 @@ import UserMenu from "@/components/UserMenu";
 import SEO from "@/components/SEO";
 import { absoluteUrl, itemListJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import {
-  Heart, Search, Building, Camera, Music, Utensils,
-  Flower2, Mail, Shirt, Sparkles, Cake, ClipboardList, Car, Video,
-  ChevronLeft, ChevronRight, Star, User, Menu
+  Heart,
+  Search,
+  Building,
+  Camera,
+  Music,
+  Utensils,
+  Flower2,
+  Mail,
+  Shirt,
+  Sparkles,
+  Cake,
+  ClipboardList,
+  Car,
+  Video,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  User,
+  Menu,
+  MapPin,
+  Award,
 } from "lucide-react";
 
 const categoryIcons: Record<string, any> = {
-  "building": Building, "camera": Camera, "video": Video, "music": Music,
-  "flower": Flower2, "mail": Mail, "shirt": Shirt, "sparkles": Sparkles,
-  "cake": Cake, "clipboard": ClipboardList, "car": Car, "utensils": Utensils,
+  building: Building,
+  camera: Camera,
+  video: Video,
+  music: Music,
+  flower: Flower2,
+  mail: Mail,
+  shirt: Shirt,
+  sparkles: Sparkles,
+  cake: Cake,
+  clipboard: ClipboardList,
+  car: Car,
+  utensils: Utensils,
 };
 
 type Category = { id: string; name: string; slug: string; icon: string | null };
@@ -41,15 +68,13 @@ const formatPrice = (n: number | null) => {
   return `R$ ${n}`;
 };
 
+// Card GRANDE vertical (estilo Airbnb ampliado): foto larga 4:3 + infos.
 function ExploreCard({ s }: { s: Supplier }) {
   const photo = s.supplier_photos?.[0]?.photo_url;
-  const badge = s.featured ? "Destaque" : (s.rating && s.rating >= 4.7 ? "Preferido" : null);
+  const badge = s.featured ? "Destaque" : s.rating && s.rating >= 4.7 ? "Preferido" : null;
   return (
-    <Link
-      to={`/fornecedor/${s.id}`}
-      className="group flex-shrink-0 w-[180px] md:w-[210px] snap-start"
-    >
-      <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted">
+    <Link to={`/fornecedor/${s.id}`} className="group flex-shrink-0 w-[280px] md:w-[320px] snap-start">
+      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted">
         {photo ? (
           <img
             src={photo}
@@ -59,48 +84,171 @@ function ExploreCard({ s }: { s: Supplier }) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            <Building className="h-8 w-8" />
+            <Building className="h-10 w-10" />
           </div>
         )}
         {badge && (
-          <span className="absolute top-2 left-2 bg-background/95 text-foreground text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
+          <span className="absolute top-3 left-3 bg-background/95 text-foreground text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
             {badge}
           </span>
         )}
         <button
           type="button"
-          onClick={(e) => { e.preventDefault(); }}
+          onClick={(e) => {
+            e.preventDefault();
+          }}
           aria-label="Favoritar"
-          className="absolute top-2 right-2 text-white/90 hover:text-primary transition-colors"
+          className="absolute top-3 right-3 text-white/90 hover:text-primary transition-colors"
         >
           <Heart className="h-5 w-5 drop-shadow-md" strokeWidth={2.2} />
         </button>
       </div>
-      <div className="pt-2 px-0.5">
+      <div className="pt-3 px-0.5">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-foreground truncate">{s.company_name}</p>
+          <p className="text-base font-semibold text-foreground truncate">{s.company_name}</p>
           {s.rating != null && s.rating > 0 && (
-            <span className="flex items-center gap-0.5 text-xs text-foreground shrink-0">
-              <Star className="h-3 w-3 fill-foreground" /> {Number(s.rating).toFixed(1)}
+            <span className="flex items-center gap-0.5 text-sm text-foreground shrink-0">
+              <Star className="h-3.5 w-3.5 fill-foreground" /> {Number(s.rating).toFixed(1)}
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground truncate">
-          {s.categories?.name || "Fornecedor"}{s.city ? ` · ${s.city}` : ""}
+        <p className="text-sm text-muted-foreground truncate">
+          {s.categories?.name || "Fornecedor"}
+          {s.city ? ` · ${s.city}` : ""}
         </p>
         {s.guest_min && (
-          <p className="text-xs text-muted-foreground">
-            {s.guest_min}{s.guest_max ? `–${s.guest_max}` : "+"} convidados
+          <p className="text-sm text-muted-foreground">
+            {s.guest_min}
+            {s.guest_max ? `–${s.guest_max}` : "+"} convidados
           </p>
         )}
         {s.price_min && (
-          <p className="text-xs text-foreground mt-0.5">
+          <p className="text-sm text-foreground mt-0.5">
             <span className="font-semibold">{formatPrice(s.price_min)}</span>
             <span className="text-muted-foreground"> · a partir de</span>
           </p>
         )}
       </div>
     </Link>
+  );
+}
+
+type Destaque = {
+  supplier_id: string | null;
+  imagem_url: string | null;
+  company_name: string;
+  profile_photo_url: string | null;
+  category_name: string | null;
+  category_icon: string | null;
+  city: string | null;
+  institucional?: boolean;
+};
+
+// Fallback institucional do site — usado quando não há destaque pago nem fornecedor featured.
+// Troque a imagem/textos aqui (ou depois puxe de secoes_home, como a home faz).
+const HERO_INSTITUCIONAL: Destaque = {
+  supplier_id: null,
+  imagem_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=85&auto=format&fit=crop",
+  company_name: "Os melhores fornecedores para o seu casamento",
+  profile_photo_url: null,
+  category_name: "Explore por categoria e peça orçamentos sem compromisso",
+  category_icon: null,
+  city: null,
+  institucional: true,
+};
+
+// Hero de destaque (pago). Recebe o destaque vigente já resolvido; se não houver,
+// cai no fornecedor featured ou, por fim, no hero institucional do site.
+function FeaturedHero({ d, categoryLabel }: { d: Destaque | null; categoryLabel?: string }) {
+  if (!d) return null;
+  const Icon = categoryIcons[d.category_icon || "building"] || Building;
+  const img = d.imagem_url || d.profile_photo_url;
+  const inst = d.institucional;
+  const href = inst || !d.supplier_id ? "/buscar" : `/fornecedor/${d.supplier_id}`;
+  return (
+    <section className="container pt-4">
+      <Link
+        to={href}
+        className="group relative block rounded-3xl overflow-hidden aspect-[16/9] md:aspect-[21/9] bg-muted"
+      >
+        {img ? (
+          <img
+            src={img}
+            alt={d.company_name}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Building className="h-16 w-16 text-muted-foreground" />
+          </div>
+        )}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, hsl(0 0% 0% / 0.15) 0%, hsl(0 0% 0% / 0.15) 45%, hsl(0 0% 0% / 0.75) 100%)",
+          }}
+        />
+
+        {/* selo destaque — só quando é destaque de fornecedor, não no institucional */}
+        {!inst && (
+          <span className="absolute top-4 left-4 flex items-center gap-1.5 bg-background/95 text-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow">
+            <Award className="h-3.5 w-3.5 text-primary" /> {categoryLabel ? `Destaque em ${categoryLabel}` : "Destaque"}
+          </span>
+        )}
+
+        <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-3">
+          {inst ? (
+            // Institucional: mensagem do site, sem tag de fornecedor
+            <div className="text-white max-w-2xl">
+              <p
+                className="text-2xl md:text-4xl font-semibold leading-tight"
+                style={{ textShadow: "0 2px 14px hsl(0 0% 0% / 0.55)" }}
+              >
+                {d.company_name}
+              </p>
+              {d.category_name && (
+                <p
+                  className="text-sm md:text-base text-white/85 mt-1"
+                  style={{ textShadow: "0 1px 8px hsl(0 0% 0% / 0.5)" }}
+                >
+                  {d.category_name}
+                </p>
+              )}
+            </div>
+          ) : (
+            // Destaque de fornecedor: tag com ícone da categoria + nome
+            <div className="flex items-center gap-2.5 text-white">
+              <span className="flex items-center justify-center h-10 w-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/25">
+                <Icon className="h-5 w-5" />
+              </span>
+              <div>
+                <p
+                  className="text-xl md:text-2xl font-semibold leading-tight"
+                  style={{ textShadow: "0 2px 12px hsl(0 0% 0% / 0.5)" }}
+                >
+                  {d.company_name}
+                </p>
+                <p
+                  className="text-sm text-white/85 flex items-center gap-1"
+                  style={{ textShadow: "0 1px 8px hsl(0 0% 0% / 0.5)" }}
+                >
+                  {d.category_name}
+                  {d.city ? (
+                    <>
+                      · <MapPin className="h-3 w-3" /> {d.city}
+                    </>
+                  ) : null}
+                </p>
+              </div>
+            </div>
+          )}
+          <span className="hidden sm:inline-flex items-center rounded-full bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 shadow-lg group-hover:opacity-90 transition">
+            {inst ? "Explorar fornecedores" : "Ver fornecedor"}
+          </span>
+        </div>
+      </Link>
+    </section>
   );
 }
 
@@ -129,7 +277,9 @@ function CarouselRow({
               <Link to={href} className="hover:underline inline-flex items-center gap-1">
                 {title} <ChevronRight className="h-5 w-5" />
               </Link>
-            ) : title}
+            ) : (
+              title
+            )}
           </h2>
           {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
@@ -152,11 +302,10 @@ function CarouselRow({
           </button>
         </div>
       </div>
-      <div
-        ref={ref}
-        className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4"
-      >
-        {items.map((s) => <ExploreCard key={s.id} s={s} />)}
+      <div ref={ref} className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4">
+        {items.map((s) => (
+          <ExploreCard key={s.id} s={s} />
+        ))}
       </div>
     </section>
   );
@@ -171,8 +320,82 @@ const Explore = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Supplier[]>([]);
   const [byCategory, setByCategory] = useState<Record<string, Supplier[]>>({});
+  const [heroDestaque, setHeroDestaque] = useState<Destaque | null>(HERO_INSTITUCIONAL);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
+
+  // Carrega o DESTAQUE PAGO vigente para o hero.
+  // Escopo: com categoria filtrada -> destaque daquela categoria; sem filtro -> destaque 'home'/geral.
+  // Rotaciona aleatoriamente entre os vigentes. Fallback: fornecedor featured melhor avaliado.
+  useEffect(() => {
+    (async () => {
+      const cats = categories;
+      const catId = catParam ? cats.find((c) => c.slug === catParam)?.id : null;
+      const hoje = new Date().toISOString();
+
+      let q = (supabase.from("featured_purchases" as any) as any)
+        .select("supplier_id, imagem_url, escopo, escopo_categoria_id, inicio, fim, status")
+        .eq("status", "pago")
+        .lte("inicio", hoje)
+        .gte("fim", hoje);
+
+      q = catId ? q.eq("escopo", "categoria").eq("escopo_categoria_id", catId) : q.in("escopo", ["home", "categoria"]);
+
+      const { data: compras } = await q;
+      let escolhido: any = null;
+      if (compras && compras.length) {
+        escolhido = compras[Math.floor(Math.random() * compras.length)];
+      }
+
+      const resolveSupplier = async (supplierId: string, imagemUrl: string | null) => {
+        const { data: sup } = await supabase
+          .from("suppliers")
+          .select("id, company_name, city, profile_photo_url, categories(name, icon)")
+          .eq("id", supplierId)
+          .eq("status", "approved")
+          .maybeSingle();
+        if (!sup) return null;
+        return {
+          supplier_id: sup.id,
+          imagem_url: imagemUrl,
+          company_name: (sup as any).company_name,
+          profile_photo_url: (sup as any).profile_photo_url ?? null,
+          category_name: (sup as any).categories?.name ?? null,
+          category_icon: (sup as any).categories?.icon ?? null,
+          city: (sup as any).city ?? null,
+        } as Destaque;
+      };
+
+      if (escolhido) {
+        setHeroDestaque(await resolveSupplier(escolhido.supplier_id, escolhido.imagem_url));
+      } else {
+        // Fallback: melhor fornecedor featured (ou da categoria filtrada), sem arte própria
+        let fq = supabase
+          .from("suppliers")
+          .select("id, company_name, city, profile_photo_url, categories(name, icon)")
+          .eq("status", "approved")
+          .eq("featured", true)
+          .order("rating", { ascending: false, nullsFirst: false })
+          .limit(1);
+        if (catId) fq = fq.eq("category_id", catId);
+        const { data: fb } = await fq;
+        const sup = fb?.[0] as any;
+        setHeroDestaque(
+          sup
+            ? {
+                supplier_id: sup.id,
+                imagem_url: null,
+                company_name: sup.company_name,
+                profile_photo_url: sup.profile_photo_url ?? null,
+                category_name: sup.categories?.name ?? null,
+                category_icon: sup.categories?.icon ?? null,
+                city: sup.city ?? null,
+              }
+            : HERO_INSTITUCIONAL,
+        );
+      }
+    })();
+  }, [categories, catParam]);
 
   useEffect(() => {
     (async () => {
@@ -181,7 +404,9 @@ const Explore = () => {
 
       const { data: feat } = await supabase
         .from("suppliers")
-        .select("id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url)")
+        .select(
+          "id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url)",
+        )
         .eq("status", "approved")
         .order("featured", { ascending: false })
         .order("created_at", { ascending: false })
@@ -191,17 +416,21 @@ const Explore = () => {
       // load up to 5 categories with items
       const slugs = (cats || []).slice(0, 6);
       const results: Record<string, Supplier[]> = {};
-      await Promise.all(slugs.map(async (c) => {
-        const { data } = await supabase
-          .from("suppliers")
-          .select("id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url)")
-          .eq("status", "approved")
-          .eq("category_id", c.id)
-          .order("featured", { ascending: false })
-          .order("created_at", { ascending: false })
-          .limit(12);
-        if (data && data.length) results[c.slug] = data as any;
-      }));
+      await Promise.all(
+        slugs.map(async (c) => {
+          const { data } = await supabase
+            .from("suppliers")
+            .select(
+              "id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url)",
+            )
+            .eq("status", "approved")
+            .eq("category_id", c.id)
+            .order("featured", { ascending: false })
+            .order("created_at", { ascending: false })
+            .limit(12);
+          if (data && data.length) results[c.slug] = data as any;
+        }),
+      );
       setByCategory(results);
     })();
   }, []);
@@ -240,12 +469,7 @@ const Explore = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEO
-        title={seoTitle}
-        description={seoDescription}
-        canonical={absoluteUrl(canonicalPath)}
-        jsonLd={seoJsonLd}
-      />
+      <SEO title={seoTitle} description={seoDescription} canonical={absoluteUrl(canonicalPath)} jsonLd={seoJsonLd} />
       {/* Header — Airbnb-style */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="container py-3 flex items-center justify-between gap-4">
@@ -255,11 +479,17 @@ const Explore = () => {
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm">
-            <Link to="/explorar" className="font-semibold border-b-2 border-foreground pb-3 -mb-3">Fornecedores</Link>
+            <Link to="/explorar" className="font-semibold border-b-2 border-foreground pb-3 -mb-3">
+              Fornecedores
+            </Link>
             {user && (
               <>
-                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition">Meu Casamento</Link>
-                <Link to="/perfil" className="text-muted-foreground hover:text-foreground transition">Perfil</Link>
+                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition">
+                  Meu Casamento
+                </Link>
+                <Link to="/perfil" className="text-muted-foreground hover:text-foreground transition">
+                  Perfil
+                </Link>
               </>
             )}
           </nav>
@@ -328,7 +558,10 @@ const Explore = () => {
             </div>
             <div className="flex items-center pr-2">
               <Button asChild size="icon" className="rounded-full h-11 w-11 bg-primary hover:bg-primary/90">
-                <Link to={`/buscar?q=${encodeURIComponent(searchQuery)}&loc=${encodeURIComponent(searchLocation)}`} aria-label="Pesquisar">
+                <Link
+                  to={`/buscar?q=${encodeURIComponent(searchQuery)}&loc=${encodeURIComponent(searchLocation)}`}
+                  aria-label="Pesquisar"
+                >
                   <Search className="h-4 w-4" />
                 </Link>
               </Button>
@@ -358,23 +591,27 @@ const Explore = () => {
         </div>
       </header>
 
-      {/* Carousels */}
+      {/* Hero de destaque (pago) + Carousels */}
       <main className="pb-12">
+        <FeaturedHero d={heroDestaque} categoryLabel={catNice || undefined} />
         <CarouselRow
           title="Fornecedores em destaque"
           subtitle="Os mais bem avaliados da plataforma"
           items={featured}
           href="/buscar"
         />
-        {categories.map((c) => byCategory[c.slug] && (
-          <CarouselRow
-            key={c.id}
-            title={c.name}
-            subtitle={`Os mais procurados em ${c.name.toLowerCase()}`}
-            items={byCategory[c.slug]}
-            href={`/categoria/${c.slug}`}
-          />
-        ))}
+        {categories.map(
+          (c) =>
+            byCategory[c.slug] && (
+              <CarouselRow
+                key={c.id}
+                title={c.name}
+                subtitle={`Os mais procurados em ${c.name.toLowerCase()}`}
+                items={byCategory[c.slug]}
+                href={`/categoria/${c.slug}`}
+              />
+            ),
+        )}
       </main>
 
       {/* Footer */}
@@ -393,26 +630,46 @@ const Explore = () => {
             <div>
               <h4 className="font-semibold mb-3 text-sm">Para casais</h4>
               <nav className="flex flex-col gap-2 text-sm text-background/60">
-                <Link to="/cadastro?tipo=couple" className="hover:text-background">Criar conta grátis</Link>
-                <Link to="/buscar" className="hover:text-background">Buscar fornecedores</Link>
-                <Link to="/dashboard" className="hover:text-background">Meu casamento</Link>
-                <Link to="/tarefas" className="hover:text-background">Agenda de tarefas</Link>
+                <Link to="/cadastro?tipo=couple" className="hover:text-background">
+                  Criar conta grátis
+                </Link>
+                <Link to="/buscar" className="hover:text-background">
+                  Buscar fornecedores
+                </Link>
+                <Link to="/dashboard" className="hover:text-background">
+                  Meu casamento
+                </Link>
+                <Link to="/tarefas" className="hover:text-background">
+                  Agenda de tarefas
+                </Link>
               </nav>
             </div>
             <div>
               <h4 className="font-semibold mb-3 text-sm">Ferramentas</h4>
               <nav className="flex flex-col gap-2 text-sm text-background/60">
-                <Link to="/orcamento" className="hover:text-background">Orçamento</Link>
-                <Link to="/convidados" className="hover:text-background">Lista de convidados</Link>
-                <Link to="/meus-fornecedores" className="hover:text-background">Meus fornecedores</Link>
-                <Link to="/perfil" className="hover:text-background">Meu perfil</Link>
+                <Link to="/orcamento" className="hover:text-background">
+                  Orçamento
+                </Link>
+                <Link to="/convidados" className="hover:text-background">
+                  Lista de convidados
+                </Link>
+                <Link to="/meus-fornecedores" className="hover:text-background">
+                  Meus fornecedores
+                </Link>
+                <Link to="/perfil" className="hover:text-background">
+                  Meu perfil
+                </Link>
               </nav>
             </div>
             <div>
               <h4 className="font-semibold mb-3 text-sm">Para fornecedores</h4>
               <nav className="flex flex-col gap-2 text-sm text-background/60">
-                <Link to="/cadastro?tipo=supplier" className="hover:text-background">Cadastrar empresa</Link>
-                <Link to="/fornecedor/painel" className="hover:text-background">Painel do fornecedor</Link>
+                <Link to="/cadastro?tipo=supplier" className="hover:text-background">
+                  Cadastrar empresa
+                </Link>
+                <Link to="/fornecedor/painel" className="hover:text-background">
+                  Painel do fornecedor
+                </Link>
               </nav>
             </div>
           </div>
@@ -420,13 +677,24 @@ const Explore = () => {
             <div className="flex flex-col md:flex-row items-center gap-3 text-xs text-background/40">
               <p>© 2026 Casamenteiro. Todos os direitos reservados.</p>
               <div className="flex items-center gap-3">
-                <Link to="/termos" className="hover:text-background">Termos de Uso</Link>
-                <Link to="/privacidade" className="hover:text-background">Privacidade</Link>
+                <Link to="/termos" className="hover:text-background">
+                  Termos de Uso
+                </Link>
+                <Link to="/privacidade" className="hover:text-background">
+                  Privacidade
+                </Link>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-background/60">
               <span>Desenvolvido com carinho pela</span>
-              <a href="https://ncoisas.digital/" target="_blank" rel="noopener noreferrer" className="font-semibold text-background/80 hover:text-background transition-colors">N Coisas Digitais</a>
+              <a
+                href="https://ncoisas.digital/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-background/80 hover:text-background transition-colors"
+              >
+                N Coisas Digitais
+              </a>
               <Heart className="h-3.5 w-3.5 fill-primary text-primary" />
             </div>
           </div>
