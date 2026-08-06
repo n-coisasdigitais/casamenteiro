@@ -144,9 +144,10 @@ type Destaque = {
   institucional?: boolean;
 };
 
-// Fallback institucional do site — usado quando não há destaque pago nem fornecedor featured.
-// Troque a imagem/textos aqui (ou depois puxe de secoes_home, como a home faz).
-const HERO_INSTITUCIONAL: Destaque = {
+// Fallback institucional do site. A imagem/textos podem ser editados pelo admin
+// (tabela secoes_home, escopo='explore'); esta constante é só o default de segurança
+// caso o admin ainda não tenha configurado nada.
+const HERO_INSTITUCIONAL_DEFAULT: Destaque = {
   supplier_id: null,
   imagem_url: "https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=85&auto=format&fit=crop",
   company_name: "Os melhores fornecedores para o seu casamento",
@@ -186,21 +187,21 @@ function FeaturedHero({ d, categoryLabel }: { d: Destaque | null; categoryLabel?
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(180deg, hsl(0 0% 0% / 0.15) 0%, hsl(0 0% 0% / 0.15) 45%, hsl(0 0% 0% / 0.75) 100%)",
+              "linear-gradient(180deg, hsl(0 0% 0% / 0.7) 0%, hsl(0 0% 0% / 0.35) 40%, hsl(0 0% 0% / 0.15) 70%, hsl(0 0% 0% / 0.4) 100%)",
           }}
         />
 
-        {/* selo destaque — só quando é destaque de fornecedor, não no institucional */}
+        {/* selo destaque — canto superior direito quando é fornecedor */}
         {!inst && (
-          <span className="absolute top-4 left-4 flex items-center gap-1.5 bg-background/95 text-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow">
+          <span className="absolute top-4 right-4 flex items-center gap-1.5 bg-background/95 text-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow">
             <Award className="h-3.5 w-3.5 text-primary" /> {categoryLabel ? `Destaque em ${categoryLabel}` : "Destaque"}
           </span>
         )}
 
-        <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-3">
+        {/* Texto no TOPO */}
+        <div className="absolute top-6 md:top-9 left-5 md:left-9 right-5 max-w-2xl">
           {inst ? (
-            // Institucional: mensagem do site, sem tag de fornecedor
-            <div className="text-white max-w-2xl">
+            <div className="text-white">
               <p
                 className="text-2xl md:text-4xl font-semibold leading-tight"
                 style={{ textShadow: "0 2px 14px hsl(0 0% 0% / 0.55)" }}
@@ -209,7 +210,7 @@ function FeaturedHero({ d, categoryLabel }: { d: Destaque | null; categoryLabel?
               </p>
               {d.category_name && (
                 <p
-                  className="text-sm md:text-base text-white/85 mt-1"
+                  className="text-sm md:text-base text-white/85 mt-1.5"
                   style={{ textShadow: "0 1px 8px hsl(0 0% 0% / 0.5)" }}
                 >
                   {d.category_name}
@@ -217,9 +218,8 @@ function FeaturedHero({ d, categoryLabel }: { d: Destaque | null; categoryLabel?
               )}
             </div>
           ) : (
-            // Destaque de fornecedor: tag com ícone da categoria + nome
             <div className="flex items-center gap-2.5 text-white">
-              <span className="flex items-center justify-center h-10 w-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/25">
+              <span className="flex items-center justify-center h-10 w-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 shrink-0">
                 <Icon className="h-5 w-5" />
               </span>
               <div>
@@ -243,7 +243,11 @@ function FeaturedHero({ d, categoryLabel }: { d: Destaque | null; categoryLabel?
               </div>
             </div>
           )}
-          <span className="hidden sm:inline-flex items-center rounded-full bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 shadow-lg group-hover:opacity-90 transition">
+        </div>
+
+        {/* CTA no rodapé direito */}
+        <div className="absolute bottom-5 right-5">
+          <span className="inline-flex items-center rounded-full bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 shadow-lg group-hover:opacity-90 transition">
             {inst ? "Explorar fornecedores" : "Ver fornecedor"}
           </span>
         </div>
@@ -320,7 +324,7 @@ const Explore = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Supplier[]>([]);
   const [byCategory, setByCategory] = useState<Record<string, Supplier[]>>({});
-  const [heroDestaque, setHeroDestaque] = useState<Destaque | null>(HERO_INSTITUCIONAL);
+  const [heroDestaque, setHeroDestaque] = useState<Destaque | null>(HERO_INSTITUCIONAL_DEFAULT);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
 
@@ -380,19 +384,40 @@ const Explore = () => {
         if (catId) fq = fq.eq("category_id", catId);
         const { data: fb } = await fq;
         const sup = fb?.[0] as any;
-        setHeroDestaque(
-          sup
-            ? {
-                supplier_id: sup.id,
-                imagem_url: null,
-                company_name: sup.company_name,
-                profile_photo_url: sup.profile_photo_url ?? null,
-                category_name: sup.categories?.name ?? null,
-                category_icon: sup.categories?.icon ?? null,
-                city: sup.city ?? null,
-              }
-            : HERO_INSTITUCIONAL,
-        );
+        if (sup) {
+          setHeroDestaque({
+            supplier_id: sup.id,
+            imagem_url: null,
+            company_name: sup.company_name,
+            profile_photo_url: sup.profile_photo_url ?? null,
+            category_name: sup.categories?.name ?? null,
+            category_icon: sup.categories?.icon ?? null,
+            city: sup.city ?? null,
+          });
+        } else {
+          // institucional configurável pelo admin (secoes_home escopo='explore')
+          const { data: inst } = await (supabase.from("secoes_home" as any) as any)
+            .select("foto_url, frase, subtexto")
+            .eq("escopo", "explore")
+            .eq("ativo", true)
+            .order("ordem")
+            .limit(1)
+            .maybeSingle();
+          setHeroDestaque(
+            inst
+              ? {
+                  supplier_id: null,
+                  imagem_url: inst.foto_url,
+                  company_name: inst.frase,
+                  profile_photo_url: null,
+                  category_name: inst.subtexto ?? null,
+                  category_icon: null,
+                  city: null,
+                  institucional: true,
+                }
+              : HERO_INSTITUCIONAL_DEFAULT,
+          );
+        }
       }
     })();
   }, [categories, catParam]);
