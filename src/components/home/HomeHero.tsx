@@ -70,7 +70,7 @@ export default function HomeHero({ heroImage }: { heroImage?: string | null }) {
               textShadow: "0 2px 24px hsl(0 0% 0% / 0.5), 0 1px 4px hsl(0 0% 0% / 0.4)",
             }}
           >
-            Descubra quanto custa o seu casamento — e economize casando em datas com desconto.
+            Descubra quanto custa o seu casamento, e economize casando em datas com desconto.
           </h1>
           <p
             className="text-base md:text-lg mb-8 max-w-md"
