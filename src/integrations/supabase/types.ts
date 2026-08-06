@@ -3139,6 +3139,8 @@ export type Database = {
           estrelas: number
           id: string
           job_id: string
+          respondido_em: string | null
+          resposta: string | null
         }
         Insert: {
           autor_id: string
@@ -3149,6 +3151,8 @@ export type Database = {
           estrelas: number
           id?: string
           job_id: string
+          respondido_em?: string | null
+          resposta?: string | null
         }
         Update: {
           autor_id?: string
@@ -3159,6 +3163,8 @@ export type Database = {
           estrelas?: number
           id?: string
           job_id?: string
+          respondido_em?: string | null
+          resposta?: string | null
         }
         Relationships: [
           {
@@ -4016,6 +4022,46 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_staff_favorites: {
+        Row: {
+          created_at: string
+          staff_id: string
+          supplier_id: string
+        }
+        Insert: {
+          created_at?: string
+          staff_id: string
+          supplier_id: string
+        }
+        Update: {
+          created_at?: string
+          staff_id?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_staff_favorites_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_staff_favorites_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_staff_favorites_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_subscriptions: {
         Row: {
           ambiente: string
@@ -4724,6 +4770,11 @@ export type Database = {
         Returns: boolean
       }
       is_demo_user: { Args: { _user_id: string }; Returns: boolean }
+      is_job_applicant: { Args: { _job_id: string }; Returns: boolean }
+      is_supplier_of_my_job: {
+        Args: { _supplier_id: string }
+        Returns: boolean
+      }
       link_partner_by_invite_code: { Args: { _code: string }; Returns: Json }
       move_to_dlq: {
         Args: {
@@ -4733,6 +4784,10 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      pode_avaliar_review: {
+        Args: { _autor_id: string; _autor_tipo: string; _job_id: string }
+        Returns: boolean
       }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
