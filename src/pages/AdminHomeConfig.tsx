@@ -11,7 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Heart, Trash2, Plus, ArrowUp, ArrowDown, ExternalLink, Upload, Loader2 } from "lucide-react";
 
 type Frase = { id: string; grupo: string; texto: string; ordem: number; ativo: boolean };
-type Bloco = { id: string; foto_url: string; frase: string; subtexto: string | null; ordem: number; ativo: boolean; supplier_id: string | null };
+type Bloco = {
+  id: string;
+  foto_url: string;
+  frase: string;
+  subtexto: string | null;
+  ordem: number;
+  ativo: boolean;
+  supplier_id: string | null;
+};
 
 export default function AdminHomeConfig() {
   const { user, loading: authLoading } = useAuth();
@@ -43,30 +51,54 @@ export default function AdminHomeConfig() {
 
   const uploadPhoto = async (file: File): Promise<string | null> => {
     const ext = file.name.split(".").pop() || "jpg";
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-    const { error } = await supabase.storage.from("home-photos").upload(path, file, { upsert: false, contentType: file.type });
-    if (error) { toast({ title: "Erro no upload", description: error.message, variant: "destructive" }); return null; }
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage
+      .from("home-photos")
+      .upload(path, file, { upsert: false, contentType: file.type });
+    if (error) {
+      toast({ title: "Erro no upload", description: error.message, variant: "destructive" });
+      return null;
+    }
     const { data } = supabase.storage.from("home-photos").getPublicUrl(path);
     return data.publicUrl;
   };
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate("/login"); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }) => {
-      if (!data) { navigate("/"); return; }
+      if (!data) {
+        navigate("/");
+        return;
+      }
       setIsAdmin(true);
       load();
     });
   }, [user, authLoading, navigate]);
 
   const load = async () => {
-    const f = await (supabase.from("frases_home" as any).select("*").order("grupo").order("ordem") as any);
-    const b = await (supabase.from("secoes_home" as any).select("*").order("ordem") as any);
+    const f = await (supabase
+      .from("frases_home" as any)
+      .select("*")
+      .order("grupo")
+      .order("ordem") as any);
+    const b = await (supabase
+      .from("secoes_home" as any)
+      .select("*")
+      .order("ordem") as any);
     setFrases((f.data as any) || []);
     setBlocos((b.data as any) || []);
     // hero institucional da Explore (escopo='explore')
-    const ex = await (supabase.from("secoes_home" as any).select("*").eq("escopo", "explore").order("ordem").limit(1).maybeSingle() as any);
+    const ex = await (supabase
+      .from("secoes_home" as any)
+      .select("*")
+      .eq("escopo", "explore")
+      .order("ordem")
+      .limit(1)
+      .maybeSingle() as any);
     setExploreHero((ex.data as any) || null);
   };
 
@@ -87,13 +119,16 @@ export default function AdminHomeConfig() {
       ({ error } = await (supabase.from("secoes_home" as any) as any).insert(payload));
     }
     setSavingExplore(false);
-    if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); return; }
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      return;
+    }
     toast({ title: "Hero da Explore salvo!" });
     load();
   };
 
-  const grupos = Array.from(new Set(frases.map(f => f.grupo)));
-  const frasesGrupo = frases.filter(f => f.grupo === grupoAtual).sort((a, b) => a.ordem - b.ordem);
+  const grupos = Array.from(new Set(frases.map((f) => f.grupo)));
+  const frasesGrupo = frases.filter((f) => f.grupo === grupoAtual).sort((a, b) => a.ordem - b.ordem);
 
   const addFrase = async () => {
     if (!novaFrase.trim()) return;
@@ -123,7 +158,7 @@ export default function AdminHomeConfig() {
 
   const moveFrase = async (id: string, dir: -1 | 1) => {
     const list = [...frasesGrupo];
-    const idx = list.findIndex(f => f.id === id);
+    const idx = list.findIndex((f) => f.id === id);
     const swap = idx + dir;
     if (swap < 0 || swap >= list.length) return;
     await Promise.all([
@@ -155,7 +190,7 @@ export default function AdminHomeConfig() {
     setUploadingNew(true);
     const url = await uploadPhoto(file);
     setUploadingNew(false);
-    if (url) setNovoBloco(b => ({ ...b, foto_url: url }));
+    if (url) setNovoBloco((b) => ({ ...b, foto_url: url }));
   };
   const delBloco = async (id: string) => {
     if (!confirm("Excluir bloco?")) return;
@@ -164,7 +199,7 @@ export default function AdminHomeConfig() {
   };
   const moveBloco = async (id: string, dir: -1 | 1) => {
     const list = [...blocos].sort((a, b) => a.ordem - b.ordem);
-    const idx = list.findIndex(b => b.id === id);
+    const idx = list.findIndex((b) => b.id === id);
     const swap = idx + dir;
     if (swap < 0 || swap >= list.length) return;
     await Promise.all([
@@ -185,7 +220,10 @@ export default function AdminHomeConfig() {
             <span className="font-bold">Admin · Home</span>
           </Link>
           <Button variant="outline" size="sm" asChild>
-            <a href="/?preview=1" target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3 w-3 mr-1" />Ver como ficará</a>
+            <a href="/?preview=1" target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Ver como ficará
+            </a>
           </Button>
         </div>
       </header>
@@ -200,12 +238,27 @@ export default function AdminHomeConfig() {
           <TabsContent value="frases" className="mt-6 space-y-4">
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-sm text-muted-foreground">Grupo:</span>
-              {grupos.map(g => (
-                <Button key={g} size="sm" variant={g === grupoAtual ? "default" : "outline"} onClick={() => setGrupoAtual(g)}>{g}</Button>
+              {grupos.map((g) => (
+                <Button
+                  key={g}
+                  size="sm"
+                  variant={g === grupoAtual ? "default" : "outline"}
+                  onClick={() => setGrupoAtual(g)}
+                >
+                  {g}
+                </Button>
               ))}
               <div className="flex gap-2 ml-auto">
-                <Input placeholder="novo grupo" value={novoGrupo} onChange={e => setNovoGrupo(e.target.value)} className="w-40 h-9" />
-                <Button size="sm" onClick={criarGrupo}><Plus className="h-3 w-3 mr-1" />Criar</Button>
+                <Input
+                  placeholder="novo grupo"
+                  value={novoGrupo}
+                  onChange={(e) => setNovoGrupo(e.target.value)}
+                  className="w-40 h-9"
+                />
+                <Button size="sm" onClick={criarGrupo}>
+                  <Plus className="h-3 w-3 mr-1" />
+                  Criar
+                </Button>
               </div>
             </div>
 
@@ -213,64 +266,148 @@ export default function AdminHomeConfig() {
               {frasesGrupo.map((f, i) => (
                 <div key={f.id} className="p-3 flex items-center gap-2">
                   <div className="flex flex-col">
-                    <button onClick={() => moveFrase(f.id, -1)} disabled={i === 0} className="disabled:opacity-30"><ArrowUp className="h-3 w-3" /></button>
-                    <button onClick={() => moveFrase(f.id, 1)} disabled={i === frasesGrupo.length - 1} className="disabled:opacity-30"><ArrowDown className="h-3 w-3" /></button>
+                    <button onClick={() => moveFrase(f.id, -1)} disabled={i === 0} className="disabled:opacity-30">
+                      <ArrowUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => moveFrase(f.id, 1)}
+                      disabled={i === frasesGrupo.length - 1}
+                      className="disabled:opacity-30"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </button>
                   </div>
-                  <Input defaultValue={f.texto} onBlur={e => e.target.value !== f.texto && updateFrase(f.id, { texto: e.target.value })} className="flex-1" />
-                  <Switch checked={f.ativo} onCheckedChange={v => updateFrase(f.id, { ativo: v })} />
-                  <Button size="icon" variant="ghost" onClick={() => delFrase(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Input
+                    defaultValue={f.texto}
+                    onBlur={(e) => e.target.value !== f.texto && updateFrase(f.id, { texto: e.target.value })}
+                    className="flex-1"
+                  />
+                  <Switch checked={f.ativo} onCheckedChange={(v) => updateFrase(f.id, { ativo: v })} />
+                  <Button size="icon" variant="ghost" onClick={() => delFrase(f.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
               ))}
               <div className="p-3 flex gap-2">
-                <Input placeholder="Nova frase" value={novaFrase} onChange={e => setNovaFrase(e.target.value)} />
-                <Button onClick={addFrase}><Plus className="h-4 w-4 mr-1" />Adicionar</Button>
+                <Input placeholder="Nova frase" value={novaFrase} onChange={(e) => setNovaFrase(e.target.value)} />
+                <Button onClick={addFrase}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adicionar
+                </Button>
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="blocos" className="mt-6 space-y-4">
             <div className="border rounded-lg divide-y">
-              {[...blocos].sort((a, b) => a.ordem - b.ordem).map((b, i, arr) => (
-                <div key={b.id} className="p-3 flex gap-3 items-start">
-                  <div className="flex flex-col pt-2">
-                    <button onClick={() => moveBloco(b.id, -1)} disabled={i === 0} className="disabled:opacity-30"><ArrowUp className="h-3 w-3" /></button>
-                    <button onClick={() => moveBloco(b.id, 1)} disabled={i === arr.length - 1} className="disabled:opacity-30"><ArrowDown className="h-3 w-3" /></button>
+              {[...blocos]
+                .sort((a, b) => a.ordem - b.ordem)
+                .map((b, i, arr) => (
+                  <div key={b.id} className="p-3 flex gap-3 items-start">
+                    <div className="flex flex-col pt-2">
+                      <button onClick={() => moveBloco(b.id, -1)} disabled={i === 0} className="disabled:opacity-30">
+                        <ArrowUp className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => moveBloco(b.id, 1)}
+                        disabled={i === arr.length - 1}
+                        className="disabled:opacity-30"
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <img src={b.foto_url} alt="" className="w-20 h-20 object-cover rounded" />
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-xs opacity-0 hover:opacity-100 cursor-pointer rounded">
+                        {uploadingId === b.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => e.target.files?.[0] && onUploadExisting(b.id, e.target.files[0])}
+                        />
+                      </label>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        defaultValue={b.frase}
+                        onBlur={(e) => e.target.value !== b.frase && updBloco(b.id, { frase: e.target.value })}
+                        placeholder="Frase"
+                      />
+                      <Input
+                        defaultValue={b.subtexto || ""}
+                        onBlur={(e) =>
+                          e.target.value !== (b.subtexto || "") && updBloco(b.id, { subtexto: e.target.value })
+                        }
+                        placeholder="Subtexto"
+                      />
+                      <Input
+                        defaultValue={b.foto_url}
+                        onBlur={(e) => e.target.value !== b.foto_url && updBloco(b.id, { foto_url: e.target.value })}
+                        placeholder="URL da foto"
+                        className="text-xs"
+                      />
+                    </div>
+                    <div className="flex flex-col items-center gap-2 pt-2">
+                      <Switch checked={b.ativo} onCheckedChange={(v) => updBloco(b.id, { ativo: v })} />
+                      <Button size="icon" variant="ghost" onClick={() => delBloco(b.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="relative">
-                    <img src={b.foto_url} alt="" className="w-20 h-20 object-cover rounded" />
-                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-xs opacity-0 hover:opacity-100 cursor-pointer rounded">
-                      {uploadingId === b.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && onUploadExisting(b.id, e.target.files[0])} />
-                    </label>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Input defaultValue={b.frase} onBlur={e => e.target.value !== b.frase && updBloco(b.id, { frase: e.target.value })} placeholder="Frase" />
-                    <Input defaultValue={b.subtexto || ""} onBlur={e => e.target.value !== (b.subtexto || "") && updBloco(b.id, { subtexto: e.target.value })} placeholder="Subtexto" />
-                    <Input defaultValue={b.foto_url} onBlur={e => e.target.value !== b.foto_url && updBloco(b.id, { foto_url: e.target.value })} placeholder="URL da foto" className="text-xs" />
-                  </div>
-                  <div className="flex flex-col items-center gap-2 pt-2">
-                    <Switch checked={b.ativo} onCheckedChange={v => updBloco(b.id, { ativo: v })} />
-                    <Button size="icon" variant="ghost" onClick={() => delBloco(b.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
 
             <div className="border rounded-lg p-4 space-y-2">
               <h3 className="font-medium">Adicionar bloco</h3>
               <div className="flex gap-2 items-center">
-                <Input placeholder="URL da foto" value={novoBloco.foto_url} onChange={e => setNovoBloco({ ...novoBloco, foto_url: e.target.value })} />
+                <Input
+                  placeholder="URL da foto"
+                  value={novoBloco.foto_url}
+                  onChange={(e) => setNovoBloco({ ...novoBloco, foto_url: e.target.value })}
+                />
                 <label className="cursor-pointer">
                   <Button type="button" variant="outline" size="sm" asChild>
-                    <span>{uploadingNew ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-1" />Enviar</>}</span>
+                    <span>
+                      {uploadingNew ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-1" />
+                          Enviar
+                        </>
+                      )}
+                    </span>
                   </Button>
-                  <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && onUploadNew(e.target.files[0])} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && onUploadNew(e.target.files[0])}
+                  />
                 </label>
               </div>
-              {novoBloco.foto_url && <img src={novoBloco.foto_url} alt="prévia" className="w-32 h-32 object-cover rounded" />}
-              <Input placeholder="Frase" value={novoBloco.frase} onChange={e => setNovoBloco({ ...novoBloco, frase: e.target.value })} />
-              <Textarea placeholder="Subtexto (opcional)" value={novoBloco.subtexto} onChange={e => setNovoBloco({ ...novoBloco, subtexto: e.target.value })} />
-              <Button onClick={addBloco}><Plus className="h-4 w-4 mr-1" />Adicionar bloco</Button>
+              {novoBloco.foto_url && (
+                <img src={novoBloco.foto_url} alt="prévia" className="w-32 h-32 object-cover rounded" />
+              )}
+              <Input
+                placeholder="Frase"
+                value={novoBloco.frase}
+                onChange={(e) => setNovoBloco({ ...novoBloco, frase: e.target.value })}
+              />
+              <Textarea
+                placeholder="Subtexto (opcional)"
+                value={novoBloco.subtexto}
+                onChange={(e) => setNovoBloco({ ...novoBloco, subtexto: e.target.value })}
+              />
+              <Button onClick={addBloco}>
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar bloco
+              </Button>
             </div>
           </TabsContent>
 
@@ -279,8 +416,8 @@ export default function AdminHomeConfig() {
               <div>
                 <h3 className="font-semibold">Imagem de destaque da Explore</h3>
                 <p className="text-sm text-muted-foreground">
-                  Aparece no topo da página de fornecedores quando não há destaque pago vigente.
-                  Recomendado: 1600×685px (proporção larga), até 2MB.
+                  Aparece no topo da página de fornecedores quando não há destaque pago vigente. Recomendado: 1600×685px
+                  (proporção larga), até 2MB.
                 </p>
               </div>
 
@@ -301,7 +438,10 @@ export default function AdminHomeConfig() {
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      if (file.size > 2 * 1024 * 1024) { toast({ title: "Imagem muito grande", description: "Máximo 2MB.", variant: "destructive" }); return; }
+                      if (file.size > 2 * 1024 * 1024) {
+                        toast({ title: "Imagem muito grande", description: "Máximo 2MB.", variant: "destructive" });
+                        return;
+                      }
                       setUploadingExplore(true);
                       const url = await uploadPhoto(file);
                       setUploadingExplore(false);
@@ -327,12 +467,16 @@ export default function AdminHomeConfig() {
                 onChange={(e) => setExploreForm({ ...exploreForm, subtexto: e.target.value })}
               />
 
-              <Button onClick={salvarExploreHero} disabled={savingExplore || !exploreForm.foto_url || !exploreForm.frase}>
+              <Button
+                onClick={salvarExploreHero}
+                disabled={savingExplore || !exploreForm.foto_url || !exploreForm.frase}
+              >
                 {savingExplore ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
                 Salvar hero da Explore
               </Button>
             </div>
           </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
