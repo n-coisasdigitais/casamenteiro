@@ -86,7 +86,7 @@ export default function WeddingPlan() {
       // se status legado é 'contracted' mas kanban ainda nao_iniciado, normaliza
       let ks: KanbanStatus = (r.kanban_status as KanbanStatus) || "nao_iniciado";
       if (r.status === "contracted" && ks === "nao_iniciado") ks = "contratado";
-      if (r.is_external) ks = (r.kanban_status as KanbanStatus) || "fora_da_plataforma";
+      if (ks === "fora_da_plataforma") ks = "nao_iniciado";
       return {
         id: r.id,
         supplier_id: r.supplier_id,
