@@ -53,7 +53,7 @@ export default function HomeHero({ heroImage }: { heroImage?: string | null }) {
 
       {/* Conteúdo sobre a imagem */}
       <div className="relative z-10 h-full container flex items-center">
-        <div className="max-w-2xl pt-16">
+        <div className="max-w-xl">
           <p
             className="label-ui mb-5"
             style={{ color: "hsl(48, 27%, 98%)", textShadow: "0 2px 10px hsl(0 0% 0% / 0.6)" }}
@@ -63,17 +63,17 @@ export default function HomeHero({ heroImage }: { heroImage?: string | null }) {
           <h1
             className="font-serif mb-5 text-white"
             style={{
-              fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
-              lineHeight: 1.03,
+              fontSize: "clamp(2rem, 3.6vw, 3.25rem)",
+              lineHeight: 1.08,
               fontWeight: 500,
-              letterSpacing: "-0.025em",
+              letterSpacing: "-0.02em",
               textShadow: "0 2px 24px hsl(0 0% 0% / 0.5), 0 1px 4px hsl(0 0% 0% / 0.4)",
             }}
           >
             Descubra quanto custa o seu casamento — e economize casando em datas com desconto.
           </h1>
           <p
-            className="text-lg md:text-xl mb-8 max-w-xl"
+            className="text-base md:text-lg mb-8 max-w-md"
             style={{
               color: "hsl(48, 30%, 96%)",
               lineHeight: 1.55,
