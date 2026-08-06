@@ -158,100 +158,119 @@ const HERO_INSTITUCIONAL_DEFAULT: Destaque = {
   institucional: true,
 };
 
-// Hero de destaque (pago). Recebe o destaque vigente já resolvido; se não houver,
-// cai no fornecedor featured ou, por fim, no hero institucional do site.
-function FeaturedHero({ d, categoryLabel }: { d: Destaque | null; categoryLabel?: string }) {
+// Hero full-width estilo Figma: imagem grande, texto centralizado, busca embutida,
+// base curva. Alterna conteúdo: institucional (site) OU arte do fornecedor pago.
+// A busca fica sempre dentro (é função da página, não do anunciante).
+function FeaturedHero({
+  d,
+  categoryLabel,
+  searchQuery,
+  setSearchQuery,
+  searchLocation,
+  setSearchLocation,
+}: {
+  d: Destaque | null;
+  categoryLabel?: string;
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
+  searchLocation: string;
+  setSearchLocation: (v: string) => void;
+}) {
   if (!d) return null;
   const Icon = categoryIcons[d.category_icon || "building"] || Building;
-  const img = d.imagem_url || d.profile_photo_url;
+  const img =
+    d.imagem_url ||
+    d.profile_photo_url ||
+    "https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=85&auto=format&fit=crop";
   const inst = d.institucional;
-  const href = inst || !d.supplier_id ? "/buscar" : `/fornecedor/${d.supplier_id}`;
+
   return (
-    <section className="container pt-4">
-      <Link
-        to={href}
-        className="group relative block rounded-3xl overflow-hidden aspect-[16/9] md:aspect-[21/9] bg-muted"
+    <section className="relative">
+      {/* Imagem full-bleed com base curva */}
+      <div
+        className="relative h-[62vh] min-h-[440px] w-full overflow-hidden"
+        style={{ borderBottomLeftRadius: "50% 12%", borderBottomRightRadius: "50% 12%" }}
       >
-        {img ? (
-          <img
-            src={img}
-            alt={d.company_name}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Building className="h-16 w-16 text-muted-foreground" />
-          </div>
-        )}
+        <img src={img} alt={d.company_name} className="absolute inset-0 w-full h-full object-cover" />
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(180deg, hsl(0 0% 0% / 0.7) 0%, hsl(0 0% 0% / 0.35) 40%, hsl(0 0% 0% / 0.15) 70%, hsl(0 0% 0% / 0.4) 100%)",
+              "linear-gradient(180deg, hsl(0 0% 0% / 0.35) 0%, hsl(0 0% 0% / 0.25) 45%, hsl(0 0% 0% / 0.45) 100%)",
           }}
         />
 
-        {/* selo destaque — canto superior direito quando é fornecedor */}
-        {!inst && (
-          <span className="absolute top-4 right-4 flex items-center gap-1.5 bg-background/95 text-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow">
-            <Award className="h-3.5 w-3.5 text-primary" /> {categoryLabel ? `Destaque em ${categoryLabel}` : "Destaque"}
-          </span>
+        {/* selo/tag do fornecedor pago (canto sup. direito) */}
+        {!inst && d.supplier_id && (
+          <Link
+            to={`/fornecedor/${d.supplier_id}`}
+            className="absolute top-5 right-5 flex items-center gap-2 bg-background/95 hover:bg-background text-foreground text-sm font-semibold pl-2.5 pr-4 py-1.5 rounded-full shadow transition"
+          >
+            <span className="flex items-center justify-center h-7 w-7 rounded-full bg-secondary">
+              <Icon className="h-4 w-4 text-primary" />
+            </span>
+            <span className="max-w-[180px] truncate">{d.company_name}</span>
+            <Award className="h-3.5 w-3.5 text-primary" />
+          </Link>
         )}
 
-        {/* Texto no TOPO */}
-        <div className="absolute top-6 md:top-9 left-5 md:left-9 right-5 max-w-2xl">
-          {inst ? (
-            <div className="text-white">
-              <p
-                className="text-2xl md:text-4xl font-semibold leading-tight"
-                style={{ textShadow: "0 2px 14px hsl(0 0% 0% / 0.55)" }}
-              >
-                {d.company_name}
-              </p>
-              {d.category_name && (
-                <p
-                  className="text-sm md:text-base text-white/85 mt-1.5"
-                  style={{ textShadow: "0 1px 8px hsl(0 0% 0% / 0.5)" }}
-                >
-                  {d.category_name}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2.5 text-white">
-              <span className="flex items-center justify-center h-10 w-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 shrink-0">
-                <Icon className="h-5 w-5" />
-              </span>
-              <div>
-                <p
-                  className="text-xl md:text-2xl font-semibold leading-tight"
-                  style={{ textShadow: "0 2px 12px hsl(0 0% 0% / 0.5)" }}
-                >
-                  {d.company_name}
-                </p>
-                <p
-                  className="text-sm text-white/85 flex items-center gap-1"
-                  style={{ textShadow: "0 1px 8px hsl(0 0% 0% / 0.5)" }}
-                >
-                  {d.category_name}
-                  {d.city ? (
-                    <>
-                      · <MapPin className="h-3 w-3" /> {d.city}
-                    </>
-                  ) : null}
-                </p>
-              </div>
-            </div>
+        {/* Conteúdo central: título + subtítulo + busca */}
+        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6 pb-16">
+          <h1
+            className="font-serif text-white max-w-3xl"
+            style={{
+              fontSize: "clamp(1.9rem, 4.5vw, 3.25rem)",
+              lineHeight: 1.08,
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
+              textShadow: "0 2px 18px hsl(0 0% 0% / 0.5)",
+            }}
+          >
+            {inst ? d.company_name : `Destaque em ${categoryLabel || d.category_name || "casamentos"}`}
+          </h1>
+          {(inst ? d.category_name : d.company_name) && (
+            <p
+              className="text-white/90 mt-2 mb-6 max-w-xl"
+              style={{ fontSize: "clamp(0.95rem, 1.6vw, 1.15rem)", textShadow: "0 1px 10px hsl(0 0% 0% / 0.5)" }}
+            >
+              {inst ? d.category_name : `${d.company_name}${d.city ? ` · ${d.city}` : ""}`}
+            </p>
           )}
-        </div>
 
-        {/* CTA no rodapé direito */}
-        <div className="absolute bottom-5 right-5">
-          <span className="inline-flex items-center rounded-full bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 shadow-lg group-hover:opacity-90 transition">
-            {inst ? "Explorar fornecedores" : "Ver fornecedor"}
-          </span>
+          {/* Busca embutida (ilha própria — não navega pro perfil) */}
+          <div className="w-full max-w-2xl bg-background rounded-full shadow-xl flex items-stretch overflow-hidden">
+            <div className="flex-1 px-5 py-2.5 text-left hidden sm:block">
+              <p className="text-[11px] font-semibold text-foreground">Onde</p>
+              <Input
+                placeholder="Cidade"
+                className="border-0 shadow-none focus-visible:ring-0 px-0 h-5 text-sm"
+                value={searchLocation}
+                onChange={(e) => setSearchLocation(e.target.value)}
+              />
+            </div>
+            <div className="w-px bg-border my-2 hidden sm:block" />
+            <div className="flex-1 px-5 py-2.5 text-left">
+              <p className="text-[11px] font-semibold text-foreground hidden sm:block">O que</p>
+              <Input
+                placeholder="Buscar por nome ou categoria"
+                className="border-0 shadow-none focus-visible:ring-0 px-0 h-5 text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center pr-2">
+              <Button asChild size="icon" className="rounded-full h-11 w-11 bg-primary hover:bg-primary/90">
+                <Link
+                  to={`/buscar?q=${encodeURIComponent(searchQuery)}&loc=${encodeURIComponent(searchLocation)}`}
+                  aria-label="Pesquisar"
+                >
+                  <Search className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
-      </Link>
+      </div>
     </section>
   );
 }
@@ -545,55 +564,6 @@ const Explore = () => {
           </div>
         </div>
 
-        {/* Search pill */}
-        <div className="container pb-4">
-          {/* Mobile: compact single search */}
-          <Link
-            to={`/buscar`}
-            className="sm:hidden flex items-center gap-3 bg-background border border-border shadow-sm rounded-full px-4 py-3 active:scale-[0.99] transition"
-            aria-label="Pesquisar"
-          >
-            <Search className="h-4 w-4 text-foreground shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground leading-tight">Comece sua busca</p>
-              <p className="text-xs text-muted-foreground leading-tight truncate">Local · Categoria · Fornecedor</p>
-            </div>
-          </Link>
-
-          {/* Desktop: full pill with inputs */}
-          <div className="hidden sm:flex mx-auto max-w-2xl items-stretch bg-background border border-border shadow-sm hover:shadow-md transition-shadow rounded-full overflow-hidden">
-            <div className="flex-1 px-5 py-2.5">
-              <p className="text-[11px] font-semibold text-foreground">Onde</p>
-              <Input
-                placeholder="Buscar destinos"
-                className="border-0 shadow-none focus-visible:ring-0 px-0 h-5 text-sm placeholder:text-muted-foreground"
-                value={searchLocation}
-                onChange={(e) => setSearchLocation(e.target.value)}
-              />
-            </div>
-            <div className="w-px bg-border my-2" />
-            <div className="flex-1 px-5 py-2.5">
-              <p className="text-[11px] font-semibold text-foreground">O que</p>
-              <Input
-                placeholder="Categoria ou fornecedor"
-                className="border-0 shadow-none focus-visible:ring-0 px-0 h-5 text-sm placeholder:text-muted-foreground"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center pr-2">
-              <Button asChild size="icon" className="rounded-full h-11 w-11 bg-primary hover:bg-primary/90">
-                <Link
-                  to={`/buscar?q=${encodeURIComponent(searchQuery)}&loc=${encodeURIComponent(searchLocation)}`}
-                  aria-label="Pesquisar"
-                >
-                  <Search className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-
         {/* Category chips strip */}
         <div className="border-t border-border">
           <div className="container">
@@ -618,7 +588,14 @@ const Explore = () => {
 
       {/* Hero de destaque (pago) + Carousels */}
       <main className="pb-12">
-        <FeaturedHero d={heroDestaque} categoryLabel={catNice || undefined} />
+        <FeaturedHero
+          d={heroDestaque}
+          categoryLabel={catNice || undefined}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          searchLocation={searchLocation}
+          setSearchLocation={setSearchLocation}
+        />
         <CarouselRow
           title="Fornecedores em destaque"
           subtitle="Os mais bem avaliados da plataforma"
