@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,10 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Heart, ArrowLeft, CalendarRange, History } from "lucide-react";
+import { Heart, ArrowLeft, CalendarRange, History, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import { RESERVA_STATUS_LABEL, RESERVA_STATUS_TONE, TAXA_STATUS_LABEL, formatarData, type ReservaStatus, type TaxaStatus } from "@/lib/reservas";
+import {
+  RESERVA_STATUS_LABEL,
+  RESERVA_STATUS_TONE,
+  TAXA_STATUS_LABEL,
+  formatarData,
+  type ReservaStatus,
+  type TaxaStatus,
+} from "@/lib/reservas";
 import { formatBRL } from "@/lib/platformPricing";
 
 type Row = {
@@ -37,14 +45,20 @@ export default function AdminReservations() {
 
   const abrirTimeline = async (r: Row) => {
     setTimelineFor(r);
-    const { data } = await (supabase.from("reservation_events" as any)
-      .select("*").eq("reservation_id", r.id).order("created_at", { ascending: true }) as any);
+    const { data } = await (supabase
+      .from("reservation_events" as any)
+      .select("*")
+      .eq("reservation_id", r.id)
+      .order("created_at", { ascending: true }) as any);
     setEvents((data as any[]) || []);
   };
 
   const load = async () => {
-    const { data } = await (supabase.from("idle_date_reservations" as any)
-      .select("id, promo_date, status, taxa_plataforma, taxa_status, solicitada_em, supplier_id, suppliers(company_name, city), couples(partner_name, wedding_city)")
+    const { data } = await (supabase
+      .from("idle_date_reservations" as any)
+      .select(
+        "id, promo_date, status, taxa_plataforma, taxa_status, solicitada_em, supplier_id, suppliers(company_name, city), couples(partner_name, wedding_city)",
+      )
       .order("solicitada_em", { ascending: false })
       .limit(500) as any);
     setRows((data as Row[]) || []);
@@ -52,30 +66,64 @@ export default function AdminReservations() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate("/login"); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }) => {
-      if (!data) { navigate("/"); return; }
+      if (!data) {
+        navigate("/");
+        return;
+      }
       setChecked(true);
       load();
     });
   }, [user, authLoading, navigate]);
 
-  const filtered = tab === "todas" ? rows : rows.filter(r => r.status === tab);
+  const [busca, setBusca] = useState("");
+  const [periodo, setPeriodo] = useState<"tudo" | "30" | "90" | "futuras">("tudo");
+
+  const filtered = useMemo(() => {
+    let list = tab === "todas" ? rows : rows.filter((r) => r.status === tab);
+    const q = busca.trim().toLowerCase();
+    if (q)
+      list = list.filter(
+        (r) =>
+          (r.suppliers?.company_name || "").toLowerCase().includes(q) ||
+          (r.couples?.partner_name || "").toLowerCase().includes(q) ||
+          (r.suppliers?.city || "").toLowerCase().includes(q),
+      );
+    if (periodo === "futuras") {
+      const hoje = new Date().toISOString().slice(0, 10);
+      list = list.filter((r) => r.promo_date >= hoje);
+    } else if (periodo !== "tudo") {
+      const limite = Date.now() - Number(periodo) * 864e5;
+      list = list.filter((r) => new Date(r.solicitada_em).getTime() >= limite);
+    }
+    return list;
+  }, [rows, tab, busca, periodo]);
 
   const total = rows.length || 1;
   const kpis = {
-    solicitada: rows.filter(r => r.status === "solicitada").length,
-    confirmada: rows.filter(r => r.status === "confirmada").length,
-    recusada: rows.filter(r => r.status === "recusada").length,
-    expirada: rows.filter(r => r.status === "expirada").length,
-    conversao: Math.round((rows.filter(r => r.status === "confirmada").length / total) * 100),
-    receitaPendente: rows.filter(r => r.taxa_status === "pendente").reduce((a, r) => a + Number(r.taxa_plataforma || 0), 0),
-    receitaPaga: rows.filter(r => r.taxa_status === "paga").reduce((a, r) => a + Number(r.taxa_plataforma || 0), 0),
+    solicitada: rows.filter((r) => r.status === "solicitada").length,
+    confirmada: rows.filter((r) => r.status === "confirmada").length,
+    recusada: rows.filter((r) => r.status === "recusada").length,
+    expirada: rows.filter((r) => r.status === "expirada").length,
+    conversao: Math.round((rows.filter((r) => r.status === "confirmada").length / total) * 100),
+    receitaPendente: rows
+      .filter((r) => r.taxa_status === "pendente")
+      .reduce((a, r) => a + Number(r.taxa_plataforma || 0), 0),
+    receitaPaga: rows.filter((r) => r.taxa_status === "paga").reduce((a, r) => a + Number(r.taxa_plataforma || 0), 0),
   };
 
   const marcarTaxa = async (id: string, novo: TaxaStatus) => {
-    const { error } = await (supabase.from("idle_date_reservations" as any) as any).update({ taxa_status: novo }).eq("id", id);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    const { error } = await (supabase.from("idle_date_reservations" as any) as any)
+      .update({ taxa_status: novo })
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      return;
+    }
     toast({ title: "Status da taxa atualizado" });
     load();
   };
@@ -87,7 +135,11 @@ export default function AdminReservations() {
       <header className="bg-card border-b sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" asChild><Link to="/admin"><ArrowLeft className="h-4 w-4" /></Link></Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/admin">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
             <Heart className="h-5 w-5 text-primary fill-primary" />
             <span className="font-bold">Reservas de datas ociosas</span>
           </div>
@@ -113,8 +165,31 @@ export default function AdminReservations() {
             <TabsTrigger value="expirada">Expiradas</TabsTrigger>
           </TabsList>
           <TabsContent value={tab} className="space-y-3 mt-4">
-            {filtered.length === 0 && <p className="text-sm text-muted-foreground italic">Nenhuma reserva.</p>}
-            {filtered.map(r => (
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por fornecedor, casal ou cidade"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <select
+                value={periodo}
+                onChange={(e) => setPeriodo(e.target.value as any)}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="tudo">Todas as datas</option>
+                <option value="futuras">Datas futuras</option>
+                <option value="30">Solicitadas ≤ 30 dias</option>
+                <option value="90">Solicitadas ≤ 90 dias</option>
+              </select>
+            </div>
+            {filtered.length === 0 && (
+              <p className="text-sm text-muted-foreground italic">Nenhuma reserva com esses filtros.</p>
+            )}
+            {filtered.map((r) => (
               <Card key={r.id}>
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
@@ -137,11 +212,17 @@ export default function AdminReservations() {
                 <CardContent className="text-sm flex flex-wrap gap-4 items-center">
                   {r.taxa_plataforma != null && (
                     <>
-                      <span>Taxa: <strong>{formatBRL(r.taxa_plataforma)}</strong></span>
-                      <span className="text-xs">Status taxa: <Badge variant="secondary">{TAXA_STATUS_LABEL[r.taxa_status]}</Badge></span>
+                      <span>
+                        Taxa: <strong>{formatBRL(r.taxa_plataforma)}</strong>
+                      </span>
+                      <span className="text-xs">
+                        Status taxa: <Badge variant="secondary">{TAXA_STATUS_LABEL[r.taxa_status]}</Badge>
+                      </span>
                       {r.status === "confirmada" && (
                         <Select value={r.taxa_status} onValueChange={(v) => marcarTaxa(r.id, v as TaxaStatus)}>
-                          <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-8 w-40">
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="pendente">Pendente</SelectItem>
                             <SelectItem value="faturada">Faturada</SelectItem>
@@ -161,7 +242,15 @@ export default function AdminReservations() {
           </TabsContent>
         </Tabs>
 
-        <Sheet open={!!timelineFor} onOpenChange={(v) => { if (!v) { setTimelineFor(null); setEvents([]); } }}>
+        <Sheet
+          open={!!timelineFor}
+          onOpenChange={(v) => {
+            if (!v) {
+              setTimelineFor(null);
+              setEvents([]);
+            }
+          }}
+        >
           <SheetContent className="sm:max-w-md overflow-auto">
             <SheetHeader>
               <SheetTitle>Timeline da reserva</SheetTitle>
@@ -169,16 +258,26 @@ export default function AdminReservations() {
             {timelineFor && (
               <div className="mt-4 space-y-3">
                 <p className="text-sm">
-                  <strong>{formatarData(timelineFor.promo_date)}</strong> · {timelineFor.suppliers?.company_name || "Fornecedor"}
+                  <strong>{formatarData(timelineFor.promo_date)}</strong> ·{" "}
+                  {timelineFor.suppliers?.company_name || "Fornecedor"}
                 </p>
                 <ol className="relative border-l pl-4 space-y-3">
-                  {events.length === 0 && <li className="text-xs text-muted-foreground italic">Sem eventos registrados.</li>}
+                  {events.length === 0 && (
+                    <li className="text-xs text-muted-foreground italic">Sem eventos registrados.</li>
+                  )}
                   {events.map((e) => (
                     <li key={e.id} className="text-xs">
                       <div className="absolute -left-1.5 h-3 w-3 rounded-full bg-primary" />
-                      <p className="font-medium capitalize">{String(e.tipo).replace(/_/g, " ")}
-                        {e.from_status && <span className="ml-1 text-muted-foreground">({e.from_status} → {e.to_status})</span>}
-                        {!e.from_status && e.to_status && <span className="ml-1 text-muted-foreground">→ {e.to_status}</span>}
+                      <p className="font-medium capitalize">
+                        {String(e.tipo).replace(/_/g, " ")}
+                        {e.from_status && (
+                          <span className="ml-1 text-muted-foreground">
+                            ({e.from_status} → {e.to_status})
+                          </span>
+                        )}
+                        {!e.from_status && e.to_status && (
+                          <span className="ml-1 text-muted-foreground">→ {e.to_status}</span>
+                        )}
                       </p>
                       <p className="text-muted-foreground">{new Date(e.created_at).toLocaleString("pt-BR")}</p>
                     </li>
