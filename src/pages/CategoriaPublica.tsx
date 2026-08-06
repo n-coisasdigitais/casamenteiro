@@ -6,7 +6,144 @@ import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { absoluteUrl, breadcrumbJsonLd, itemListJsonLd, truncate } from "@/lib/seo";
-import { Heart, Star, Building, MapPin, ChevronRight, Loader2 } from "lucide-react";
+import {
+  Heart,
+  Star,
+  Building,
+  MapPin,
+  ChevronRight,
+  Loader2,
+  Award,
+  Camera,
+  Music,
+  Utensils,
+  Flower2,
+  Mail,
+  Shirt,
+  Sparkles,
+  Cake,
+  ClipboardList,
+  Car,
+  Video,
+} from "lucide-react";
+
+const categoryIcons: Record<string, any> = {
+  building: Building,
+  camera: Camera,
+  video: Video,
+  music: Music,
+  flower: Flower2,
+  mail: Mail,
+  shirt: Shirt,
+  sparkles: Sparkles,
+  cake: Cake,
+  clipboard: ClipboardList,
+  car: Car,
+  utensils: Utensils,
+};
+
+type HeroDestaque = {
+  supplier_id: string | null;
+  imagem_url: string | null;
+  company_name: string;
+  profile_photo_url: string | null;
+  category_name: string | null;
+  category_icon: string | null;
+  city: string | null;
+  institucional?: boolean;
+};
+
+function CategoriaHero({ d, categoryLabel }: { d: HeroDestaque | null; categoryLabel?: string }) {
+  if (!d) return null;
+  const Icon = categoryIcons[d.category_icon || "building"] || Building;
+  const img = d.imagem_url || d.profile_photo_url;
+  const inst = d.institucional;
+  const href = inst || !d.supplier_id ? "#" : `/fornecedor/${d.supplier_id}`;
+  return (
+    <div className="container pt-4">
+      <a
+        href={href}
+        className="group relative block rounded-3xl overflow-hidden aspect-[16/9] md:aspect-[21/9] bg-muted"
+      >
+        {img ? (
+          <img
+            src={img}
+            alt={d.company_name}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Building className="h-16 w-16 text-muted-foreground" />
+          </div>
+        )}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, hsl(0 0% 0% / 0.7) 0%, hsl(0 0% 0% / 0.35) 40%, hsl(0 0% 0% / 0.15) 70%, hsl(0 0% 0% / 0.4) 100%)",
+          }}
+        />
+        {!inst && (
+          <span className="absolute top-4 right-4 flex items-center gap-1.5 bg-background/95 text-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow">
+            <Award className="h-3.5 w-3.5 text-primary" /> {categoryLabel ? `Destaque em ${categoryLabel}` : "Destaque"}
+          </span>
+        )}
+        <div className="absolute top-6 md:top-9 left-5 md:left-9 right-5 max-w-2xl">
+          {inst ? (
+            <div className="text-white">
+              <p
+                className="text-2xl md:text-4xl font-semibold leading-tight"
+                style={{ textShadow: "0 2px 14px hsl(0 0% 0% / 0.55)" }}
+              >
+                {d.company_name}
+              </p>
+              {d.category_name && (
+                <p
+                  className="text-sm md:text-base text-white/85 mt-1.5"
+                  style={{ textShadow: "0 1px 8px hsl(0 0% 0% / 0.5)" }}
+                >
+                  {d.category_name}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5 text-white">
+              <span className="flex items-center justify-center h-10 w-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 shrink-0">
+                <Icon className="h-5 w-5" />
+              </span>
+              <div>
+                <p
+                  className="text-xl md:text-2xl font-semibold leading-tight"
+                  style={{ textShadow: "0 2px 12px hsl(0 0% 0% / 0.5)" }}
+                >
+                  {d.company_name}
+                </p>
+                <p
+                  className="text-sm text-white/85 flex items-center gap-1"
+                  style={{ textShadow: "0 1px 8px hsl(0 0% 0% / 0.5)" }}
+                >
+                  {d.category_name}
+                  {d.city ? (
+                    <>
+                      · <MapPin className="h-3 w-3" /> {d.city}
+                    </>
+                  ) : null}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+        {!inst && d.supplier_id && (
+          <div className="absolute bottom-5 right-5">
+            <span className="inline-flex items-center rounded-full bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 shadow-lg group-hover:opacity-90 transition">
+              Ver fornecedor
+            </span>
+          </div>
+        )}
+      </a>
+    </div>
+  );
+}
 
 type Category = { id: string; name: string; slug: string; icon: string | null };
 type Supplier = {
@@ -70,7 +207,8 @@ function SupplierCardItem({ s, inPlan }: { s: Supplier; inPlan?: boolean }) {
         </div>
         {s.city && (
           <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-            <MapPin className="h-3 w-3" /> {s.city}{s.state ? ` · ${s.state}` : ""}
+            <MapPin className="h-3 w-3" /> {s.city}
+            {s.state ? ` · ${s.state}` : ""}
           </p>
         )}
         {s.price_min && (
@@ -96,6 +234,7 @@ export default function CategoriaPublica() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [heroDestaque, setHeroDestaque] = useState<HeroDestaque | null>(null);
   const [notFound, setNotFound] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -128,7 +267,9 @@ export default function CategoriaPublica() {
         .limit(12);
       if (!cancelled) setOtherCategories((others as Category[]) || []);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   // 2. Loader incremental
@@ -137,7 +278,10 @@ export default function CategoriaPublica() {
     const to = from + PAGE_SIZE - 1;
     const { data, count } = await supabase
       .from("suppliers")
-      .select("id, company_name, description, city, state, rating, review_count, price_min, featured, supplier_photos(photo_url)", { count: "exact" })
+      .select(
+        "id, company_name, description, city, state, rating, review_count, price_min, featured, supplier_photos(photo_url)",
+        { count: "exact" },
+      )
       .eq("status", "approved")
       .eq("category_id", cat.id)
       .order("featured", { ascending: false })
@@ -174,7 +318,7 @@ export default function CategoriaPublica() {
           setLoadingMore(false);
         }
       },
-      { rootMargin: "300px" }
+      { rootMargin: "300px" },
     );
     observer.observe(node);
     return () => observer.disconnect();
@@ -182,12 +326,94 @@ export default function CategoriaPublica() {
 
   if (notFound) return <Navigate to="/explorar" replace />;
 
-  const seoTitle = category
-    ? `${category.name} para casamento — Casamenteiro`
-    : "Categoria — Casamenteiro";
+  // Hero da categoria: destaque pago dela -> featured dela -> institucional (secoes_home escopo=explore)
+  useEffect(() => {
+    if (!category) return;
+    (async () => {
+      const hoje = new Date().toISOString();
+      const { data: compras } = await (supabase.from("featured_purchases" as any) as any)
+        .select("supplier_id, imagem_url, status, inicio, fim")
+        .eq("status", "pago")
+        .eq("escopo", "categoria")
+        .eq("escopo_categoria_id", category.id)
+        .lte("inicio", hoje)
+        .gte("fim", hoje);
+      const pick = compras && compras.length ? compras[Math.floor(Math.random() * compras.length)] : null;
+
+      const buildFromSupplier = (sup: any, imagem: string | null): HeroDestaque => ({
+        supplier_id: sup.id,
+        imagem_url: imagem,
+        company_name: sup.company_name,
+        profile_photo_url: sup.profile_photo_url ?? null,
+        category_name: sup.categories?.name ?? category.name,
+        category_icon: sup.categories?.icon ?? category.icon,
+        city: sup.city ?? null,
+      });
+
+      if (pick) {
+        const { data: sup } = await supabase
+          .from("suppliers")
+          .select("id, company_name, city, profile_photo_url, categories(name, icon)")
+          .eq("id", pick.supplier_id)
+          .eq("status", "approved")
+          .maybeSingle();
+        if (sup) {
+          setHeroDestaque(buildFromSupplier(sup, pick.imagem_url));
+          return;
+        }
+      }
+      // fallback: featured da categoria
+      const { data: fb } = await supabase
+        .from("suppliers")
+        .select("id, company_name, city, profile_photo_url, categories(name, icon)")
+        .eq("status", "approved")
+        .eq("featured", true)
+        .eq("category_id", category.id)
+        .order("rating", { ascending: false, nullsFirst: false })
+        .limit(1);
+      if (fb && fb[0]) {
+        setHeroDestaque(buildFromSupplier(fb[0] as any, null));
+        return;
+      }
+      // fallback institucional configurável
+      const { data: inst } = await (supabase.from("secoes_home" as any) as any)
+        .select("foto_url, frase, subtexto")
+        .eq("escopo", "explore")
+        .eq("ativo", true)
+        .order("ordem")
+        .limit(1)
+        .maybeSingle();
+      setHeroDestaque(
+        inst
+          ? {
+              supplier_id: null,
+              imagem_url: inst.foto_url,
+              company_name: inst.frase,
+              profile_photo_url: null,
+              category_name: inst.subtexto ?? `Os melhores em ${category.name.toLowerCase()}`,
+              category_icon: null,
+              city: null,
+              institucional: true,
+            }
+          : {
+              supplier_id: null,
+              imagem_url:
+                "https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=85&auto=format&fit=crop",
+              company_name: `Os melhores em ${category.name.toLowerCase()} para o seu casamento`,
+              profile_photo_url: null,
+              category_name: "Explore e peça orçamentos sem compromisso",
+              category_icon: null,
+              city: null,
+              institucional: true,
+            },
+      );
+    })();
+  }, [category]);
+
+  const seoTitle = category ? `${category.name} para casamento — Casamenteiro` : "Categoria — Casamenteiro";
   const seoDescription = category
     ? truncate(
-        `Encontre os melhores ${category.name.toLowerCase()} para casamento no Casamenteiro. Compare orçamentos, fotos e avaliações reais de ${total || "diversos"} fornecedores aprovados.`
+        `Encontre os melhores ${category.name.toLowerCase()} para casamento no Casamenteiro. Compare orçamentos, fotos e avaliações reais de ${total || "diversos"} fornecedores aprovados.`,
       )
     : "";
   const canonical = absoluteUrl(`/categoria/${slug}`);
@@ -211,7 +437,7 @@ export default function CategoriaPublica() {
           suppliers.slice(0, 20).map((s) => ({
             name: s.company_name,
             path: `/fornecedor/${s.id}`,
-          }))
+          })),
         ),
       ]
     : undefined;
@@ -228,8 +454,14 @@ export default function CategoriaPublica() {
             <span className="text-lg font-semibold tracking-tight hidden sm:inline">Casamenteiro</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm">
-            <Link to="/explorar" className="text-muted-foreground hover:text-foreground transition">Fornecedores</Link>
-            {user && <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition">Meu Casamento</Link>}
+            <Link to="/explorar" className="text-muted-foreground hover:text-foreground transition">
+              Fornecedores
+            </Link>
+            {user && (
+              <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition">
+                Meu Casamento
+              </Link>
+            )}
           </nav>
           <div className="flex items-center gap-2">
             {user ? (
@@ -253,12 +485,18 @@ export default function CategoriaPublica() {
         </div>
       </header>
 
+      <CategoriaHero d={heroDestaque} categoryLabel={category?.name} />
+
       <main className="container py-6 md:py-10">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground flex items-center gap-1.5 mb-4">
-          <Link to="/" className="hover:text-foreground">Início</Link>
+          <Link to="/" className="hover:text-foreground">
+            Início
+          </Link>
           <ChevronRight className="h-3 w-3" />
-          <Link to="/explorar" className="hover:text-foreground">Fornecedores</Link>
+          <Link to="/explorar" className="hover:text-foreground">
+            Fornecedores
+          </Link>
           <ChevronRight className="h-3 w-3" />
           <span className="text-foreground">{category?.name || "Categoria"}</span>
         </nav>
@@ -298,14 +536,14 @@ export default function CategoriaPublica() {
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-7">
-              {suppliers.map((s) => <SupplierCardItem key={s.id} s={s} inPlan={planIds.has(s.id)} />)}
+              {suppliers.map((s) => (
+                <SupplierCardItem key={s.id} s={s} inPlan={planIds.has(s.id)} />
+              ))}
             </div>
 
             {/* Sentinel + fallback "carregar mais" */}
             <div ref={sentinelRef} className="h-10 mt-8 flex items-center justify-center">
-              {loadingMore && (
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              )}
+              {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
             </div>
             {hasMore && !loadingMore && (
               <div className="flex justify-center mt-2">
@@ -349,7 +587,11 @@ export default function CategoriaPublica() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-6">
-              Ou veja <Link to="/explorar" className="underline hover:text-foreground">todos os fornecedores em destaque</Link>.
+              Ou veja{" "}
+              <Link to="/explorar" className="underline hover:text-foreground">
+                todos os fornecedores em destaque
+              </Link>
+              .
             </p>
           </section>
         )}
