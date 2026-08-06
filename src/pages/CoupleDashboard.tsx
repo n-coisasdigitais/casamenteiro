@@ -6,17 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Heart, Search, Calendar, Users, DollarSign, Copy, Share2,
-  MessageSquare, Eye, CheckSquare, Store, ArrowRight, Calculator, Image as ImageIcon, Trash2
+  Heart,
+  Search,
+  Calendar,
+  Users,
+  DollarSign,
+  Copy,
+  Share2,
+  MessageSquare,
+  Eye,
+  CheckSquare,
+  Store,
+  ArrowRight,
+  Calculator,
+  Image as ImageIcon,
+  Trash2,
 } from "lucide-react";
 import { Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -53,12 +62,36 @@ export default function CoupleDashboard() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [threadOpen, setThreadOpen] = useState(false);
-  const [simToDelete, setSimToDelete] = useState<any | null>(null);
-  const [deletingSim, setDeletingSim] = useState(false);
   const [taskSummary, setTaskSummary] = useState<TaskSummary>({ total: 0, completed: 0 });
   const [guestSummary, setGuestSummary] = useState<GuestSummary>({ total: 0, confirmed: 0, pending: 0, declined: 0 });
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary>({ estimated: 0, final: 0 });
   const [supplierCount, setSupplierCount] = useState(0);
+  const [avOpen, setAvOpen] = useState(false);
+  const [avRating, setAvRating] = useState(5);
+  const [avComentario, setAvComentario] = useState("");
+  const [avSalvando, setAvSalvando] = useState(false);
+  const [avEnviada, setAvEnviada] = useState(false);
+
+  const enviarAvaliacaoPlataforma = async () => {
+    if (!user) return;
+    setAvSalvando(true);
+    const { error } = await (supabase.from("platform_reviews" as any).insert({
+      user_id: user.id,
+      couple_id: couple?.id ?? null,
+      autor_nome: profile?.full_name ?? null,
+      rating: avRating,
+      comentario: avComentario.trim() || null,
+    }) as any);
+    setAvSalvando(false);
+    if (error) {
+      toast({ title: "Erro", description: "Não foi possível enviar sua avaliação.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Obrigado!", description: "Sua avaliação será publicada após revisão." });
+    setAvOpen(false);
+    setAvEnviada(true);
+    setAvComentario("");
+  };
   const [urgentTasks, setUrgentTasks] = useState<any[]>([]);
   const [simulacoes, setSimulacoes] = useState<any[]>([]);
   const [coverOpen, setCoverOpen] = useState(false);
@@ -68,14 +101,22 @@ export default function CoupleDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("couples").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
-      if (!data) return;
-      if (!data.onboarding_completed) { navigate("/onboarding"); return; }
-      setCouple(data);
-      setCoverPhoto(data.header_photo_url || null);
-      setCoverQuote(data.header_quote || "");
-      loadDashboardData(data.id);
-    });
+    supabase
+      .from("couples")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        if (!data.onboarding_completed) {
+          navigate("/onboarding");
+          return;
+        }
+        setCouple(data);
+        setCoverPhoto(data.header_photo_url || null);
+        setCoverQuote(data.header_quote || "");
+        loadDashboardData(data.id);
+      });
   }, [user, navigate]);
 
   const loadDashboardData = async (coupleId: string) => {
@@ -86,14 +127,27 @@ export default function CoupleDashboard() {
       supabase.from("wedding_tasks").select("id, is_completed").eq("couple_id", coupleId),
       supabase.from("wedding_guests").select("id, rsvp_status").eq("couple_id", coupleId),
       supabase.from("budget_items").select("estimated_cost, final_cost").eq("couple_id", coupleId),
-      supabase.from("couple_suppliers").select("id", { count: "exact", head: true }).eq("couple_id", coupleId).eq("status", "contracted"),
-      supabase.from("wedding_tasks").select("id, title, category, is_completed").eq("couple_id", coupleId).eq("is_completed", false).order("sort_order", { ascending: true }).limit(3),
-      (supabase.from("home_simulacoes" as any) as any).select("*").or(`couple_id.eq.${coupleId},user_id.eq.${user?.id}`).order("criado_em", { ascending: false }),
+      supabase
+        .from("couple_suppliers")
+        .select("id", { count: "exact", head: true })
+        .eq("couple_id", coupleId)
+        .eq("status", "contracted"),
+      supabase
+        .from("wedding_tasks")
+        .select("id, title, category, is_completed")
+        .eq("couple_id", coupleId)
+        .eq("is_completed", false)
+        .order("sort_order", { ascending: true })
+        .limit(3),
+      (supabase.from("home_simulacoes" as any) as any)
+        .select("*")
+        .or(`couple_id.eq.${coupleId},user_id.eq.${user?.id}`)
+        .order("criado_em", { ascending: false }),
     ]);
 
     setFavCount(favRes.count || 0);
     setQuotes(quotesRes.data || []);
-    
+
     const allTasks = tasksRes.data || [];
     setTaskSummary({ total: allTasks.length, completed: allTasks.filter((t) => t.is_completed).length });
 
@@ -119,7 +173,10 @@ export default function CoupleDashboard() {
   const toggleUrgentTask = async (id: string) => {
     setUrgentTasks((prev) => prev.filter((t) => t.id !== id));
     setTaskSummary((prev) => ({ ...prev, completed: prev.completed + 1 }));
-    await supabase.from("wedding_tasks").update({ is_completed: true, completed_at: new Date().toISOString() }).eq("id", id);
+    await supabase
+      .from("wedding_tasks")
+      .update({ is_completed: true, completed_at: new Date().toISOString() })
+      .eq("id", id);
   };
 
   const daysUntilWedding = couple?.wedding_date
@@ -133,7 +190,12 @@ export default function CoupleDashboard() {
     }
   };
 
-  if (!couple) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
+  if (!couple)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
 
   const saveCover = async (overrides?: { photo?: string | null; quote?: string | null }) => {
     if (!couple) return;
@@ -155,12 +217,14 @@ export default function CoupleDashboard() {
   };
 
   const taskPct = taskSummary.total > 0 ? Math.round((taskSummary.completed / taskSummary.total) * 100) : 0;
-  const budgetPct = couple.estimated_budget && couple.estimated_budget > 0
-    ? Math.round((budgetSummary.final / couple.estimated_budget) * 100)
-    : 0;
-  const guestPct = couple.estimated_guests && couple.estimated_guests > 0
-    ? Math.round((guestSummary.confirmed / couple.estimated_guests) * 100)
-    : 0;
+  const budgetPct =
+    couple.estimated_budget && couple.estimated_budget > 0
+      ? Math.round((budgetSummary.final / couple.estimated_budget) * 100)
+      : 0;
+  const guestPct =
+    couple.estimated_guests && couple.estimated_guests > 0
+      ? Math.round((guestSummary.confirmed / couple.estimated_guests) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -172,7 +236,11 @@ export default function CoupleDashboard() {
         <div className="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-primary/15 to-secondary/40 min-h-[180px] md:min-h-[240px]">
           {couple.header_photo_url ? (
             <>
-              <img src={couple.header_photo_url} alt="Capa do casal" className="absolute inset-0 w-full h-full object-cover" />
+              <img
+                src={couple.header_photo_url}
+                alt="Capa do casal"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
             </>
           ) : (
@@ -202,7 +270,11 @@ export default function CoupleDashboard() {
               </div>
             )}
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button onClick={() => setCoverOpen(true)} variant={couple.header_photo_url ? "secondary" : "outline"} size="sm">
+              <Button
+                onClick={() => setCoverOpen(true)}
+                variant={couple.header_photo_url ? "secondary" : "outline"}
+                size="sm"
+              >
                 <ImageIcon className="h-4 w-4 mr-1.5" />
                 Personalizar capa
               </Button>
@@ -230,7 +302,9 @@ export default function CoupleDashboard() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Foto de capa</label>
-                <p className="text-xs text-muted-foreground mb-2">Use uma foto do casal ou um ambiente que represente vocês.</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Use uma foto do casal ou um ambiente que represente vocês.
+                </p>
                 <CouplePhotoUpload
                   url={coverPhoto}
                   fileName="header"
@@ -239,14 +313,24 @@ export default function CoupleDashboard() {
                   onUploaded={(u) => setCoverPhoto(u)}
                 />
                 {coverPhoto && (
-                  <Button variant="ghost" size="sm" className="mt-1 text-destructive" onClick={() => setCoverPhoto(null)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 text-destructive"
+                    onClick={() => setCoverPhoto(null)}
+                  >
                     <Trash2 className="h-3.5 w-3.5 mr-1" /> Remover foto
                   </Button>
                 )}
               </div>
               <div>
                 <label className="text-sm font-medium">Frase do casal</label>
-                <Textarea value={coverQuote} onChange={(e) => setCoverQuote(e.target.value)} placeholder="Ex.: 'Onde você for, irei contigo'" rows={2} />
+                <Textarea
+                  value={coverQuote}
+                  onChange={(e) => setCoverQuote(e.target.value)}
+                  placeholder="Ex.: 'Onde você for, irei contigo'"
+                  rows={2}
+                />
                 {coverQuote && (
                   <Button variant="ghost" size="sm" className="mt-1 text-destructive" onClick={() => setCoverQuote("")}>
                     Limpar frase
@@ -254,8 +338,16 @@ export default function CoupleDashboard() {
                 )}
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <Button variant="ghost" onClick={() => setCoverOpen(false)}>Cancelar</Button>
-                <Button disabled={savingCover} onClick={async () => { await saveCover(); setCoverOpen(false); }}>
+                <Button variant="ghost" onClick={() => setCoverOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  disabled={savingCover}
+                  onClick={async () => {
+                    await saveCover();
+                    setCoverOpen(false);
+                  }}
+                >
                   Salvar capa
                 </Button>
               </div>
@@ -271,7 +363,9 @@ export default function CoupleDashboard() {
                 <CheckSquare className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Tarefas</span>
               </div>
-              <p className="text-2xl font-bold">{taskSummary.completed}/{taskSummary.total}</p>
+              <p className="text-2xl font-bold">
+                {taskSummary.completed}/{taskSummary.total}
+              </p>
               <Progress value={taskPct} className="mt-2 h-1.5" />
             </CardContent>
           </Card>
@@ -281,12 +375,11 @@ export default function CoupleDashboard() {
                 <DollarSign className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Orçamento</span>
               </div>
-              <p className="text-2xl font-bold">
-                {budgetPct}%
-              </p>
+              <p className="text-2xl font-bold">{budgetPct}%</p>
               <Progress value={budgetPct} className="mt-2 h-1.5" />
               <p className="text-xs text-muted-foreground mt-1">
-                R$ {budgetSummary.final.toLocaleString("pt-BR")} / {couple.estimated_budget ? `R$ ${couple.estimated_budget.toLocaleString("pt-BR")}` : "-"}
+                R$ {budgetSummary.final.toLocaleString("pt-BR")} /{" "}
+                {couple.estimated_budget ? `R$ ${couple.estimated_budget.toLocaleString("pt-BR")}` : "-"}
               </p>
             </CardContent>
           </Card>
@@ -296,7 +389,9 @@ export default function CoupleDashboard() {
                 <Users className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Convidados</span>
               </div>
-              <p className="text-2xl font-bold">{guestSummary.confirmed}/{guestSummary.total || couple.estimated_guests || 0}</p>
+              <p className="text-2xl font-bold">
+                {guestSummary.confirmed}/{guestSummary.total || couple.estimated_guests || 0}
+              </p>
               <Progress value={guestPct} className="mt-2 h-1.5" />
               <p className="text-xs text-muted-foreground mt-1">confirmados</p>
             </CardContent>
@@ -435,17 +530,18 @@ export default function CoupleDashboard() {
               Minhas simulações ({simulacoes.length})
             </h2>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/simulador">Nova simulação</Link>
+              <Link to="/#simulador">Nova simulação</Link>
             </Button>
           </div>
           {simulacoes.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Você ainda não fez nenhuma simulação. Faça uma para descobrir os melhores fornecedores para seu orçamento.
+                  Você ainda não fez nenhuma simulação. Faça uma para descobrir os melhores fornecedores para seu
+                  orçamento.
                 </p>
                 <Button asChild>
-                  <Link to="/simulador">Simular meu casamento</Link>
+                  <Link to="/#simulador">Simular meu casamento</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -455,10 +551,15 @@ export default function CoupleDashboard() {
                 <Card key={s.id} className="hover:shadow-md transition-shadow relative">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0 cursor-pointer flex-1" onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}>
+                      <div
+                        className="min-w-0 cursor-pointer flex-1"
+                        onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}
+                      >
                         <p className="font-semibold text-sm truncate flex items-center gap-2">
                           {s.is_active_plan && (
-                            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] h-5"><Star className="h-3 w-3 mr-0.5" /> Plano ativo</Badge>
+                            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] h-5">
+                              <Star className="h-3 w-3 mr-0.5" /> Plano ativo
+                            </Badge>
                           )}
                           {s.cidade || "Sua cidade"} · {s.num_convidados} convidados
                         </p>
@@ -467,7 +568,8 @@ export default function CoupleDashboard() {
                         </p>
                         <p className="text-[11px] text-muted-foreground mt-1">
                           {new Date(s.criado_em).toLocaleDateString("pt-BR")}
-                          {s.data_evento && ` · evento em ${new Date(s.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}`}
+                          {s.data_evento &&
+                            ` · evento em ${new Date(s.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}`}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
@@ -481,7 +583,12 @@ export default function CoupleDashboard() {
                             onClick={async (e) => {
                               e.stopPropagation();
                               if (!couple?.id) return;
-                              if (!window.confirm("Tornar esta simulação o seu plano ativo? A anterior deixará de ser marcada como ativa, mas seus fornecedores em andamento permanecem no Kanban e devem ser descartados manualmente, se desejar.")) return;
+                              if (
+                                !window.confirm(
+                                  "Tornar esta simulação o seu plano ativo? A anterior deixará de ser marcada como ativa, mas seus fornecedores em andamento permanecem no Kanban e devem ser descartados manualmente, se desejar.",
+                                )
+                              )
+                                return;
                               await (supabase.from("home_simulacoes" as any) as any)
                                 .update({ is_active_plan: false })
                                 .or(`couple_id.eq.${couple.id},user_id.eq.${user?.id}`);
@@ -490,7 +597,11 @@ export default function CoupleDashboard() {
                                 .eq("id", s.id)
                                 .select();
                               if (error || !upd || upd.length === 0) {
-                                toast({ title: "Erro", description: error?.message || "Não foi possível atualizar (verifique permissões).", variant: "destructive" });
+                                toast({
+                                  title: "Erro",
+                                  description: error?.message || "Não foi possível atualizar (verifique permissões).",
+                                  variant: "destructive",
+                                });
                                 return;
                               }
                               setSimulacoes((prev) => prev.map((x) => ({ ...x, is_active_plan: x.id === s.id })));
@@ -504,9 +615,21 @@ export default function CoupleDashboard() {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            setSimToDelete(s);
+                            const msg = s.is_active_plan
+                              ? "Esta é a simulação que virou seu PLANO ATIVO. Ao excluir, apenas a simulação será removida — seus fornecedores em orçamento, negociação ou contratados continuam no Kanban e devem ser descartados manualmente lá. Continuar?"
+                              : "Excluir esta simulação? Esta ação não pode ser desfeita.";
+                            if (!window.confirm(msg)) return;
+                            const { error } = await (supabase.from("home_simulacoes" as any) as any)
+                              .delete()
+                              .eq("id", s.id);
+                            if (error) {
+                              toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+                              return;
+                            }
+                            setSimulacoes((prev) => prev.filter((x) => x.id !== s.id));
+                            toast({ title: "Simulação excluída" });
                           }}
                           title="Excluir simulação"
                         >
@@ -530,7 +653,10 @@ export default function CoupleDashboard() {
             </h2>
             <div className="space-y-3">
               {quotes.map((q) => {
-                const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+                const statusMap: Record<
+                  string,
+                  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+                > = {
                   pending: { label: "Enviado", variant: "secondary" },
                   viewed: { label: "Visualizado", variant: "outline" },
                   answered: { label: "Respondido", variant: "default" },
@@ -540,13 +666,24 @@ export default function CoupleDashboard() {
                 };
                 const st = statusMap[q.status] || statusMap.pending;
                 return (
-                  <Card key={q.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setSelectedQuote(q); setThreadOpen(true); }}>
+                  <Card
+                    key={q.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => {
+                      setSelectedQuote(q);
+                      setThreadOpen(true);
+                    }}
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
-                            <span className="text-xs text-muted-foreground">{new Date(q.created_at).toLocaleDateString("pt-BR")}</span>
+                            <Badge variant={st.variant} className="text-xs">
+                              {st.label}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(q.created_at).toLocaleDateString("pt-BR")}
+                            </span>
                           </div>
                           <p className="text-sm line-clamp-2">{q.message}</p>
                         </div>
@@ -623,42 +760,59 @@ export default function CoupleDashboard() {
             </CardContent>
           </Card>
         )}
-
-        <AlertDialog open={!!simToDelete} onOpenChange={(v) => { if (!v) setSimToDelete(null); }}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir simulação?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {simToDelete?.is_active_plan
-                  ? "Esta é a simulação que virou seu plano ativo. Ao excluir, apenas a simulação será removida — seus fornecedores em orçamento, negociação ou contratados continuam no Kanban e devem ser descartados manualmente lá."
-                  : "Esta ação não pode ser desfeita."}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deletingSim}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                disabled={deletingSim}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  if (!simToDelete) return;
-                  setDeletingSim(true);
-                  const { error } = await (supabase.from("home_simulacoes" as any) as any)
-                    .delete().eq("id", simToDelete.id);
-                  setDeletingSim(false);
-                  if (error) {
-                    toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-                    return;
-                  }
-                  setSimulacoes((prev) => prev.filter((x) => x.id !== simToDelete.id));
-                  setSimToDelete(null);
-                  toast({ title: "Simulação excluída" });
-                }}
-              >
-                {deletingSim ? "Excluindo..." : "Excluir"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {!avEnviada && (
+          <Card className="mt-6 border-primary/20 bg-primary/5">
+            <CardContent className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-0.5">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Está gostando do Casamenteiro?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sua avaliação ajuda outros casais a confiarem na plataforma.
+                  </p>
+                </div>
+              </div>
+              <Dialog open={avOpen} onOpenChange={setAvOpen}>
+                <Button variant="outline" size="sm" onClick={() => setAvOpen(true)}>
+                  Avaliar o Casamenteiro
+                </Button>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Como foi sua experiência?</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <button key={i} type="button" onClick={() => setAvRating(i + 1)} aria-label={`${i + 1} estrelas`}>
+                        <Star
+                          className={`h-7 w-7 ${i < avRating ? "fill-primary text-primary" : "text-muted-foreground"}`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <Textarea
+                    placeholder="Conte o que mais te ajudou no planejamento…"
+                    value={avComentario}
+                    onChange={(e) => setAvComentario(e.target.value)}
+                    maxLength={600}
+                    rows={4}
+                  />
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setAvOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={enviarAvaliacaoPlataforma} disabled={avSalvando}>
+                      {avSalvando ? "Enviando…" : "Enviar avaliação"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
