@@ -1417,10 +1417,12 @@ export type Database = {
           ambiente: string
           created_at: string
           dias: number
+          escopo: string
           escopo_categoria_id: string | null
           escopo_cidade: string | null
           fim: string | null
           id: string
+          imagem_url: string | null
           inicio: string | null
           mp_payment_id: string | null
           status: string
@@ -1432,10 +1434,12 @@ export type Database = {
           ambiente?: string
           created_at?: string
           dias?: number
+          escopo?: string
           escopo_categoria_id?: string | null
           escopo_cidade?: string | null
           fim?: string | null
           id?: string
+          imagem_url?: string | null
           inicio?: string | null
           mp_payment_id?: string | null
           status?: string
@@ -1447,10 +1451,12 @@ export type Database = {
           ambiente?: string
           created_at?: string
           dias?: number
+          escopo?: string
           escopo_categoria_id?: string | null
           escopo_cidade?: string | null
           fim?: string | null
           id?: string
+          imagem_url?: string | null
           inicio?: string | null
           mp_payment_id?: string | null
           status?: string
@@ -2763,6 +2769,7 @@ export type Database = {
         Row: {
           ativo: boolean
           criado_em: string
+          escopo: string
           foto_url: string
           frase: string
           id: string
@@ -2773,6 +2780,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           criado_em?: string
+          escopo?: string
           foto_url: string
           frase: string
           id?: string
@@ -2783,6 +2791,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           criado_em?: string
+          escopo?: string
           foto_url?: string
           frase?: string
           id?: string

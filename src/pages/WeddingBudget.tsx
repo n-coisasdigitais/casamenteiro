@@ -321,7 +321,7 @@ export default function WeddingBudget() {
                 <h3 className="font-semibold mb-1">Fazer simulação</h3>
                 <p className="text-sm text-muted-foreground mb-4">Responda algumas perguntas e receba uma sugestão completa por categoria.</p>
                 <Button asChild className="w-full">
-                  <Link to="/#simulador">Começar simulação</Link>
+                  <Link to="/simulador">Começar simulação</Link>
                 </Button>
               </Card>
               <Card className="p-6 text-left hover:shadow-md transition-shadow">
@@ -454,7 +454,7 @@ export default function WeddingBudget() {
                 <p className="text-sm text-muted-foreground mt-1">Planos simulados que você pode revisar e transformar em orçamento.</p>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <Link to="/#simulador">Nova simulação</Link>
+                <Link to="/simulador">Nova simulação</Link>
               </Button>
             </CardHeader>
             <CardContent>

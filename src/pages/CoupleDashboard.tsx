@@ -429,7 +429,7 @@ export default function CoupleDashboard() {
               Minhas simulações ({simulacoes.length})
             </h2>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/#simulador">Nova simulação</Link>
+              <Link to="/simulador">Nova simulação</Link>
             </Button>
           </div>
           {simulacoes.length === 0 ? (
@@ -439,7 +439,7 @@ export default function CoupleDashboard() {
                   Você ainda não fez nenhuma simulação. Faça uma para descobrir os melhores fornecedores para seu orçamento.
                 </p>
                 <Button asChild>
-                  <Link to="/#simulador">Simular meu casamento</Link>
+                  <Link to="/simulador">Simular meu casamento</Link>
                 </Button>
               </CardContent>
             </Card>
