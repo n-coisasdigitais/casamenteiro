@@ -623,6 +623,42 @@ export default function CoupleDashboard() {
             </CardContent>
           </Card>
         )}
+
+        <AlertDialog open={!!simToDelete} onOpenChange={(v) => { if (!v) setSimToDelete(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir simulação?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {simToDelete?.is_active_plan
+                  ? "Esta é a simulação que virou seu plano ativo. Ao excluir, apenas a simulação será removida — seus fornecedores em orçamento, negociação ou contratados continuam no Kanban e devem ser descartados manualmente lá."
+                  : "Esta ação não pode ser desfeita."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingSim}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={deletingSim}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!simToDelete) return;
+                  setDeletingSim(true);
+                  const { error } = await (supabase.from("home_simulacoes" as any) as any)
+                    .delete().eq("id", simToDelete.id);
+                  setDeletingSim(false);
+                  if (error) {
+                    toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+                    return;
+                  }
+                  setSimulacoes((prev) => prev.filter((x) => x.id !== simToDelete.id));
+                  setSimToDelete(null);
+                  toast({ title: "Simulação excluída" });
+                }}
+              >
+                {deletingSim ? "Excluindo..." : "Excluir"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
