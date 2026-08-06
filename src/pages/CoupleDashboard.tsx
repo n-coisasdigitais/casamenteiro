@@ -8,6 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -49,6 +53,8 @@ export default function CoupleDashboard() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [threadOpen, setThreadOpen] = useState(false);
+  const [simToDelete, setSimToDelete] = useState<any | null>(null);
+  const [deletingSim, setDeletingSim] = useState(false);
   const [taskSummary, setTaskSummary] = useState<TaskSummary>({ total: 0, completed: 0 });
   const [guestSummary, setGuestSummary] = useState<GuestSummary>({ total: 0, confirmed: 0, pending: 0, declined: 0 });
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary>({ estimated: 0, final: 0 });
@@ -498,19 +504,9 @@ export default function CoupleDashboard() {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            const msg = s.is_active_plan
-                              ? "Esta é a simulação que virou seu PLANO ATIVO. Ao excluir, apenas a simulação será removida — seus fornecedores em orçamento, negociação ou contratados continuam no Kanban e devem ser descartados manualmente lá. Continuar?"
-                              : "Excluir esta simulação? Esta ação não pode ser desfeita.";
-                            if (!window.confirm(msg)) return;
-                            const { error } = await (supabase.from("home_simulacoes" as any) as any).delete().eq("id", s.id);
-                            if (error) {
-                              toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-                              return;
-                            }
-                            setSimulacoes((prev) => prev.filter((x) => x.id !== s.id));
-                            toast({ title: "Simulação excluída" });
+                            setSimToDelete(s);
                           }}
                           title="Excluir simulação"
                         >
@@ -627,6 +623,42 @@ export default function CoupleDashboard() {
             </CardContent>
           </Card>
         )}
+
+        <AlertDialog open={!!simToDelete} onOpenChange={(v) => { if (!v) setSimToDelete(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir simulação?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {simToDelete?.is_active_plan
+                  ? "Esta é a simulação que virou seu plano ativo. Ao excluir, apenas a simulação será removida — seus fornecedores em orçamento, negociação ou contratados continuam no Kanban e devem ser descartados manualmente lá."
+                  : "Esta ação não pode ser desfeita."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingSim}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={deletingSim}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!simToDelete) return;
+                  setDeletingSim(true);
+                  const { error } = await (supabase.from("home_simulacoes" as any) as any)
+                    .delete().eq("id", simToDelete.id);
+                  setDeletingSim(false);
+                  if (error) {
+                    toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+                    return;
+                  }
+                  setSimulacoes((prev) => prev.filter((x) => x.id !== simToDelete.id));
+                  setSimToDelete(null);
+                  toast({ title: "Simulação excluída" });
+                }}
+              >
+                {deletingSim ? "Excluindo..." : "Excluir"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
