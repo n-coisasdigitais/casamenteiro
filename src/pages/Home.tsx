@@ -148,7 +148,18 @@ function FeatureGrid({ items }: { items: { icon: any; title: string; desc: strin
 export default function Home() {
   const [blocos, setBlocos] = useState(FALLBACK_BLOCOS);
   const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [planos, setPlanos] = useState<any[]>([]);
   const ctaRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase
+        .from("subscription_plans" as any)
+        .select("slug, nome, descricao, preco_mensal, beneficios, destaque_busca, ordem")
+        .order("ordem") as any);
+      if (data && data.length) setPlanos(data as any[]);
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -289,7 +300,105 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Dobra 4 — Prova social */}
+        {/* Dobra 4 — Planos para o fornecedor */}
+        {planos.length > 0 && (
+          <section className="py-24 px-4" style={{ background: "hsl(var(--color-secondary) / 0.4)" }} id="planos">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <span className="label-ui" style={{ color: "hsl(var(--color-text-muted))" }}>
+                  Para fornecedores
+                </span>
+                <h2 className="font-serif text-3xl md:text-4xl mt-3 mb-4" style={{ color: "hsl(var(--color-dark))" }}>
+                  Planos que crescem com o seu negócio
+                </h2>
+                <p className="text-base max-w-2xl mx-auto" style={{ color: "hsl(var(--color-text-body))" }}>
+                  Comece de graça e evolua conforme fecha mais casamentos.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-5">
+                {planos.map((p) => {
+                  const destaque = p.destaque_busca;
+                  const beneficios: string[] = Array.isArray(p.beneficios) ? p.beneficios : [];
+                  return (
+                    <div
+                      key={p.slug}
+                      className="rounded-2xl p-6 border flex flex-col"
+                      style={{
+                        background: "hsl(var(--color-bg))",
+                        borderColor: destaque ? "hsl(var(--color-primary))" : "hsl(var(--color-border))",
+                        borderWidth: destaque ? 2 : 1,
+                        boxShadow: destaque ? "0 8px 30px hsl(var(--color-primary) / 0.12)" : undefined,
+                      }}
+                    >
+                      {destaque && (
+                        <span
+                          className="self-start mb-3 text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full"
+                          style={{ background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }}
+                        >
+                          Mais completo
+                        </span>
+                      )}
+                      <h3 className="font-serif text-xl" style={{ color: "hsl(var(--color-dark))" }}>
+                        {p.nome}
+                      </h3>
+                      <p className="text-sm mt-1 mb-4" style={{ color: "hsl(var(--color-text-muted))" }}>
+                        {p.descricao}
+                      </p>
+                      <div className="mb-5">
+                        {Number(p.preco_mensal) === 0 ? (
+                          <span className="text-3xl font-bold" style={{ color: "hsl(var(--color-dark))" }}>
+                            Grátis
+                          </span>
+                        ) : (
+                          <>
+                            <span className="text-3xl font-bold" style={{ color: "hsl(var(--color-dark))" }}>
+                              R$ {Number(p.preco_mensal).toLocaleString("pt-BR")}
+                            </span>
+                            <span className="text-sm" style={{ color: "hsl(var(--color-text-muted))" }}>
+                              /mês
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <ul className="space-y-2 mb-6 flex-1">
+                        {beneficios.map((b, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-sm"
+                            style={{ color: "hsl(var(--color-text-body))" }}
+                          >
+                            <Star
+                              className="h-4 w-4 mt-0.5 shrink-0"
+                              style={{ color: "hsl(var(--color-primary))", fill: "hsl(var(--color-primary))" }}
+                            />
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                      <Link
+                        to="/fornecedor"
+                        className="rounded-full py-2.5 text-center font-medium text-sm transition hover:opacity-90"
+                        style={
+                          destaque
+                            ? { background: "hsl(var(--color-primary))", color: "hsl(var(--color-bg))" }
+                            : { border: "1px solid hsl(var(--color-border))", color: "hsl(var(--color-dark))" }
+                        }
+                      >
+                        {Number(p.preco_mensal) === 0 ? "Começar grátis" : "Assinar " + p.nome}
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-center text-sm mt-8" style={{ color: "hsl(var(--color-text-muted))" }}>
+                Ou destaque seu perfil na busca e na home com os pacotes de destaque.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {/* Dobra 5 — Prova social */}
         <PlatformReviews />
 
         {/* Dobra 5 — Simulador (CTA principal do casal) */}
