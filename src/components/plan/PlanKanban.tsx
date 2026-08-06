@@ -241,7 +241,7 @@ export default function PlanKanban({
         onDragCancel={() => setActiveId(null)}
       >
         <div className="overflow-x-auto pb-2 -mx-4 px-4">
-          <div className="grid grid-cols-6 gap-3 min-w-[1100px]">
+          <div className="grid grid-cols-5 gap-3 min-w-[920px]">
             {COLUMNS.map((col) => (
               <Column
                 key={col.key}
