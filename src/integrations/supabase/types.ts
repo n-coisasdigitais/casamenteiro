@@ -4184,6 +4184,7 @@ export type Database = {
           review_count: number | null
           state: string | null
           status: Database["public"]["Enums"]["supplier_status"]
+          trial_ends_at: string | null
           updated_at: string
           user_id: string
           website: string | null
@@ -4225,6 +4226,7 @@ export type Database = {
           review_count?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
+          trial_ends_at?: string | null
           updated_at?: string
           user_id: string
           website?: string | null
@@ -4266,6 +4268,7 @@ export type Database = {
           review_count?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
+          trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
           website?: string | null
@@ -4841,6 +4844,7 @@ export type Database = {
         Args: { _couple_id: string; _wedding_date?: string }
         Returns: undefined
       }
+      supplier_tem_acesso: { Args: { _supplier_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
