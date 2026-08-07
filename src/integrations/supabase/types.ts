@@ -1384,6 +1384,7 @@ export type Database = {
           ativo: boolean
           created_at: string
           dias: number
+          escopo: string
           id: string
           label: string
           ordem: number
@@ -1394,6 +1395,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           dias?: number
+          escopo?: string
           id?: string
           label: string
           ordem?: number
@@ -1404,6 +1406,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           dias?: number
+          escopo?: string
           id?: string
           label?: string
           ordem?: number
@@ -3925,6 +3928,7 @@ export type Database = {
           created_at: string
           display_order: number
           id: string
+          is_principal: boolean
           photo_url: string
           supplier_id: string
         }
@@ -3932,6 +3936,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          is_principal?: boolean
           photo_url: string
           supplier_id: string
         }
@@ -3939,6 +3944,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          is_principal?: boolean
           photo_url?: string
           supplier_id?: string
         }
