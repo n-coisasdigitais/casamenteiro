@@ -30,7 +30,6 @@ import {
   Send,
   Eye,
   MessageCircle,
-  CheckCircle2,
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
 import PromoDatesInline from "@/components/reservas/PromoDatesInline";
@@ -74,7 +73,6 @@ export default function SupplierProfile() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [userHasReview, setUserHasReview] = useState(false);
   const [phoneUnlocked, setPhoneUnlocked] = useState(false);
-  const [relStatus, setRelStatus] = useState<"nenhum" | "orcamento" | "contratado">("nenhum");
 
   // Recommendations
   const [recommendations, setRecommendations] = useState<any[]>([]);
@@ -96,7 +94,7 @@ export default function SupplierProfile() {
         if (data?.category_id) {
           supabase
             .from("suppliers")
-            .select("*, categories(name), supplier_photos(photo_url)")
+            .select("*, categories(name), supplier_photos(photo_url, is_principal)")
             .eq("status", "approved")
             .eq("category_id", data.category_id)
             .neq("id", id)
@@ -158,18 +156,7 @@ export default function SupplierProfile() {
               .eq("supplier_id", id)
               .limit(1)
               .then(({ data: q }) => {
-                const temQuote = !!(q && q.length > 0);
-                setPhoneUnlocked(temQuote);
-                if (temQuote) setRelStatus((s) => (s === "contratado" ? s : "orcamento"));
-              });
-            supabase
-              .from("couple_suppliers")
-              .select("id, status")
-              .eq("couple_id", data.id)
-              .eq("supplier_id", id)
-              .maybeSingle()
-              .then(({ data: cs }) => {
-                if (cs && (cs as any).status === "contracted") setRelStatus("contratado");
+                setPhoneUnlocked(!!(q && q.length > 0));
               });
           }
         });
@@ -392,40 +379,18 @@ export default function SupplierProfile() {
         </div>
       </div>
 
-      {/* Banner de status para o casal (já no orçamento / contratado) OU social proof */}
-      {relStatus === "contratado" ? (
-        <div className="bg-emerald-50 border-b border-emerald-100">
-          <div className="container py-3 text-sm text-emerald-800 flex items-center gap-2 flex-wrap">
-            <CheckCircle2 className="h-4 w-4" />
-            <span className="font-medium">Você já contratou este fornecedor.</span>
-            <Link to="/meu-casamento/plano" className="underline font-medium hover:text-emerald-900">
-              Ver no meu plano
-            </Link>
-          </div>
+      {/* Interest banner with social proof */}
+      <div className="bg-blue-50 border-b border-blue-100">
+        <div className="container py-3 text-sm text-blue-700 flex items-center gap-2">
+          <Eye className="h-4 w-4" />
+          <span className="font-medium">
+            {viewerCount} {viewerCount === 1 ? "pessoa está" : "pessoas estão"} olhando este fornecedor.
+          </span>
+          <button onClick={scrollToQuoteForm} className="underline font-medium hover:text-blue-900 transition-colors">
+            Solicite um orçamento!
+          </button>
         </div>
-      ) : relStatus === "orcamento" ? (
-        <div className="bg-primary/10 border-b border-primary/20">
-          <div className="container py-3 text-sm text-foreground flex items-center gap-2 flex-wrap">
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-            <span className="font-medium">Este fornecedor já está no seu orçamento.</span>
-            <Link to="/meu-casamento/plano" className="underline font-medium text-primary hover:opacity-80">
-              Ver conversa e proposta
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-blue-50 border-b border-blue-100">
-          <div className="container py-3 text-sm text-blue-700 flex items-center gap-2">
-            <Eye className="h-4 w-4" />
-            <span className="font-medium">
-              {viewerCount} {viewerCount === 1 ? "pessoa está" : "pessoas estão"} olhando este fornecedor.
-            </span>
-            <button onClick={scrollToQuoteForm} className="underline font-medium hover:text-blue-900 transition-colors">
-              Solicite um orçamento!
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
 
       <main className="container py-6">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -749,7 +714,8 @@ export default function SupplierProfile() {
                 <h2 className="font-bold text-lg mb-4">Fornecedores similares que você pode gostar</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {recommendations.map((rec) => {
-                    const photo = rec.supplier_photos?.[0]?.photo_url;
+                    const _fotos = rec.supplier_photos || [];
+                    const photo = (_fotos.find((p: any) => p.is_principal) || _fotos[0])?.photo_url;
                     return (
                       <Link key={rec.id} to={`/fornecedor/${rec.id}`} className="group">
                         <div className="rounded-lg overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
