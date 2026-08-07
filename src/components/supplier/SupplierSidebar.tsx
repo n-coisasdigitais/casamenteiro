@@ -1,9 +1,9 @@
-import { LayoutDashboard, MessageSquare, Store, Users, Star, Sparkles, Receipt } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Users, Star, Sparkles, Receipt, CalendarRange } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-export type SupplierDestination = "painel" | "orcamentos" | "negocio" | "vagas" | "avaliacoes";
+export type SupplierDestination = "painel" | "orcamentos" | "negocio" | "reservas" | "vagas" | "avaliacoes";
 
 type Item = {
   key: SupplierDestination;
@@ -17,13 +17,16 @@ export function getSupplierDestinations(opts: {
   quotesCount: number;
   overdueLeads: number;
   vagasEnabled: boolean;
+  reservasEnabled?: boolean;
   reservasPendentes?: number;
 }): Item[] {
   const items: Item[] = [
     { key: "painel", label: "Painel", icon: LayoutDashboard, alert: opts.overdueLeads > 0 },
     { key: "orcamentos", label: "Orçamentos", icon: MessageSquare, badge: opts.quotesCount || null },
-    { key: "negocio", label: "Meu negócio", icon: Store, badge: opts.reservasPendentes || null },
+    { key: "negocio", label: "Meu negócio", icon: Store },
   ];
+  if (opts.reservasEnabled)
+    items.push({ key: "reservas", label: "Reservas", icon: CalendarRange, badge: opts.reservasPendentes || null });
   if (opts.vagasEnabled) items.push({ key: "vagas", label: "Equipe e vagas", icon: Users });
   items.push({ key: "avaliacoes", label: "Avaliações", icon: Star });
   return items;
@@ -50,13 +53,15 @@ export default function SupplierSidebar({
               onClick={() => onChange(it.key)}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left transition-colors",
-                isActive ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-foreground"
+                isActive ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-foreground",
               )}
             >
               <Icon className={cn("h-4 w-4 shrink-0", it.alert && "text-destructive")} />
               <span className="flex-1 truncate">{it.label}</span>
               {it.badge ? (
-                <Badge variant="secondary" className="h-5 px-1.5 text-xs">{it.badge}</Badge>
+                <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                  {it.badge}
+                </Badge>
               ) : it.alert ? (
                 <span className="h-2 w-2 rounded-full bg-destructive" aria-label="Requer atenção" />
               ) : null}
