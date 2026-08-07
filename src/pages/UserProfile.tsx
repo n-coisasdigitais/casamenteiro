@@ -23,6 +23,7 @@ export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isCouple = profile?.account_type === "couple";
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -38,7 +39,9 @@ export default function UserProfile() {
   // Vínculo de parceiro
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [linkedPartners, setLinkedPartners] = useState<{ id: string; user_id: string; name: string; email?: string | null }[]>([]);
+  const [linkedPartners, setLinkedPartners] = useState<
+    { id: string; user_id: string; name: string; email?: string | null }[]
+  >([]);
   const [partnerCodeInput, setPartnerCodeInput] = useState("");
   const [linking, setLinking] = useState(false);
 
@@ -79,7 +82,10 @@ export default function UserProfile() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate("/login"); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
 
     if (profile) {
       setFullName(profile.full_name || "");
@@ -87,80 +93,95 @@ export default function UserProfile() {
     }
     setEmail(user.email || "");
 
-    supabase.from("couples").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
-      if (data) {
-        setCoupleId(data.id);
-        setInviteCode((data as any).invite_code || null);
-        setIsOwner(true);
-        setPartnerName(data.partner_name || "");
-        setCoupleRole(data.couple_role || "");
-        setWeddingDate(data.wedding_date || "");
-        setEstimatedGuests(data.estimated_guests?.toString() || "");
-        setEstimatedBudget(data.estimated_budget?.toString() || "");
-        setInviteMessage((data as any).invite_message || "");
-        setInvitePhotoUrl((data as any).invite_photo_url || "");
-        setCeremonyTime((data as any).ceremony_time || "");
-        setCeremonyAddress((data as any).ceremony_address || "");
-        setReceptionAddress((data as any).reception_address || "");
-        setContactPhone((data as any).contact_phone || "");
-        setDressCode((data as any).dress_code || "");
-        setHeaderPhotoUrl((data as any).header_photo_url || "");
-        setHeaderQuote((data as any).header_quote || "");
-        setTargetBudget((data as any).target_budget?.toString() || "");
-        setBudgetMode((data as any).budget_mode || "fixed");
-        setQuerDatasOciosas(!!(data as any).quer_datas_ociosas);
-        setDataPretendida((data as any).data_pretendida || "");
-        setCeremonyCep((data as any).ceremony_cep || "");
-        setCeremonyLat((data as any).ceremony_lat ?? null);
-        setCeremonyLng((data as any).ceremony_lng ?? null);
-        setCeremonyLocalNome((data as any).ceremony_local_nome || "");
-        setReceptionCep((data as any).reception_cep || "");
-        setReceptionLat((data as any).reception_lat ?? null);
-        setReceptionLng((data as any).reception_lng ?? null);
-        setReceptionLocalNome((data as any).reception_local_nome || "");
-        setInviteVideoUrl((data as any).invite_video_url || "");
-        setInviteAlbum(Array.isArray((data as any).invite_album) ? (data as any).invite_album : []);
-        loadLinks(data.id);
-      } else {
-        // Não é dono — pode estar vinculado como parceiro
-        setIsOwner(false);
-        supabase.from("couple_links").select("couple_id").eq("linked_user_id", user.id).maybeSingle().then(({ data: lk }) => {
-          if (lk?.couple_id) {
-            setCoupleId(lk.couple_id);
-            supabase.from("couples").select("invite_code").eq("id", lk.couple_id).maybeSingle().then(({ data: c }) => {
-              if (c) setInviteCode((c as any).invite_code || null);
+    supabase
+      .from("couples")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setCoupleId(data.id);
+          setInviteCode((data as any).invite_code || null);
+          setIsOwner(true);
+          setPartnerName(data.partner_name || "");
+          setCoupleRole(data.couple_role || "");
+          setWeddingDate(data.wedding_date || "");
+          setEstimatedGuests(data.estimated_guests?.toString() || "");
+          setEstimatedBudget(data.estimated_budget?.toString() || "");
+          setInviteMessage((data as any).invite_message || "");
+          setInvitePhotoUrl((data as any).invite_photo_url || "");
+          setCeremonyTime((data as any).ceremony_time || "");
+          setCeremonyAddress((data as any).ceremony_address || "");
+          setReceptionAddress((data as any).reception_address || "");
+          setContactPhone((data as any).contact_phone || "");
+          setDressCode((data as any).dress_code || "");
+          setHeaderPhotoUrl((data as any).header_photo_url || "");
+          setHeaderQuote((data as any).header_quote || "");
+          setTargetBudget((data as any).target_budget?.toString() || "");
+          setBudgetMode((data as any).budget_mode || "fixed");
+          setQuerDatasOciosas(!!(data as any).quer_datas_ociosas);
+          setDataPretendida((data as any).data_pretendida || "");
+          setCeremonyCep((data as any).ceremony_cep || "");
+          setCeremonyLat((data as any).ceremony_lat ?? null);
+          setCeremonyLng((data as any).ceremony_lng ?? null);
+          setCeremonyLocalNome((data as any).ceremony_local_nome || "");
+          setReceptionCep((data as any).reception_cep || "");
+          setReceptionLat((data as any).reception_lat ?? null);
+          setReceptionLng((data as any).reception_lng ?? null);
+          setReceptionLocalNome((data as any).reception_local_nome || "");
+          setInviteVideoUrl((data as any).invite_video_url || "");
+          setInviteAlbum(Array.isArray((data as any).invite_album) ? (data as any).invite_album : []);
+          loadLinks(data.id);
+        } else {
+          // Não é dono — pode estar vinculado como parceiro
+          setIsOwner(false);
+          supabase
+            .from("couple_links")
+            .select("couple_id")
+            .eq("linked_user_id", user.id)
+            .maybeSingle()
+            .then(({ data: lk }) => {
+              if (lk?.couple_id) {
+                setCoupleId(lk.couple_id);
+                supabase
+                  .from("couples")
+                  .select("invite_code")
+                  .eq("id", lk.couple_id)
+                  .maybeSingle()
+                  .then(({ data: c }) => {
+                    if (c) setInviteCode((c as any).invite_code || null);
+                  });
+                loadLinks(lk.couple_id);
+              }
             });
-            loadLinks(lk.couple_id);
-          }
-        });
-      }
-    });
+        }
+      });
   }, [user, profile, authLoading, navigate]);
 
   const loadLinks = async (cId: string) => {
-    const { data: links } = await supabase
-      .from("couple_links")
-      .select("id, linked_user_id")
-      .eq("couple_id", cId);
-    if (!links || links.length === 0) { setLinkedPartners([]); return; }
+    const { data: links } = await supabase.from("couple_links").select("id, linked_user_id").eq("couple_id", cId);
+    if (!links || links.length === 0) {
+      setLinkedPartners([]);
+      return;
+    }
     const userIds = links.map((l: any) => l.linked_user_id);
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("user_id, full_name")
-      .in("user_id", userIds);
+    const { data: profs } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
     setLinkedPartners(
       links.map((l: any) => ({
         id: l.id,
         user_id: l.linked_user_id,
         name: profs?.find((p: any) => p.user_id === l.linked_user_id)?.full_name || "Parceiro(a)",
-      }))
+      })),
     );
   };
 
   const copyInvite = () => {
     if (!inviteCode) return;
     navigator.clipboard.writeText(inviteCode);
-    toast({ title: "Código copiado!", description: "Envie para seu(sua) parceiro(a) colar na tela de perfil dele(a)." });
+    toast({
+      title: "Código copiado!",
+      description: "Envie para seu(sua) parceiro(a) colar na tela de perfil dele(a).",
+    });
   };
 
   const handleLinkPartner = async () => {
@@ -194,10 +215,7 @@ export default function UserProfile() {
     if (!user) return;
     setSaving(true);
 
-    const profileUpdate = supabase
-      .from("profiles")
-      .update({ full_name: fullName })
-      .eq("user_id", user.id);
+    const profileUpdate = supabase.from("profiles").update({ full_name: fullName }).eq("user_id", user.id);
 
     const coupleUpdate = coupleId
       ? supabase
@@ -282,21 +300,22 @@ export default function UserProfile() {
     setSavingEmail(false);
   };
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center"><p>Carregando...</p></div>;
+  if (authLoading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />
-      <DashboardNav />
+      {isCouple && <DashboardNav />}
 
       <main className="container px-4 py-8 max-w-2xl">
         {/* Avatar + name header */}
         <div className="flex items-center gap-4 mb-8">
-          <AvatarUpload
-            avatarUrl={avatarUrl}
-            fullName={fullName}
-            onUploaded={(url) => setAvatarUrl(url)}
-          />
+          <AvatarUpload avatarUrl={avatarUrl} fullName={fullName} onUploaded={(url) => setAvatarUrl(url)} />
           <div>
             <h1 className="text-2xl font-bold">{fullName || "Meu Perfil"}</h1>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
@@ -305,338 +324,452 @@ export default function UserProfile() {
 
         <Tabs defaultValue="conta" className="w-full">
           <div className="-mx-4 px-4 mb-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <TabsList className="inline-flex w-max min-w-full sm:grid sm:grid-cols-4">
+            <TabsList
+              className={`inline-flex w-max min-w-full ${isCouple ? "sm:grid sm:grid-cols-4" : "sm:grid sm:grid-cols-1"}`}
+            >
               <TabsTrigger value="conta">Conta</TabsTrigger>
-              <TabsTrigger value="casamento">Casamento</TabsTrigger>
-              <TabsTrigger value="casal">Casal</TabsTrigger>
-              <TabsTrigger value="convite">Convite</TabsTrigger>
+              {isCouple && <TabsTrigger value="casamento">Casamento</TabsTrigger>}
+              {isCouple && <TabsTrigger value="casal">Casal</TabsTrigger>}
+              {isCouple && <TabsTrigger value="convite">Convite</TabsTrigger>}
             </TabsList>
           </div>
 
           {/* ==================== CONTA ==================== */}
           <TabsContent value="conta" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Dados pessoais</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="fullName">Nome completo</Label>
-              <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <div className="flex gap-2">
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                <Button onClick={handleChangeEmail} disabled={savingEmail || email === user?.email} variant="outline">
-                  {savingEmail ? "Salvando..." : "Alterar"}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Dados pessoais</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="fullName">Nome completo</Label>
+                  <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <div className="flex gap-2">
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <Button
+                      onClick={handleChangeEmail}
+                      disabled={savingEmail || email === user?.email}
+                      variant="outline"
+                    >
+                      {savingEmail ? "Salvando..." : "Alterar"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ao alterar, você precisará confirmar pelo link enviado ao novo email.
+                  </p>
+                </div>
+                <div>
+                  <Label>Eu sou</Label>
+                  <Select value={coupleRole} onValueChange={setCoupleRole}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="noivo">Noivo</SelectItem>
+                      <SelectItem value="noiva">Noiva</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+                  <Save className="mr-2 h-4 w-4" />
+                  {saving ? "Salvando..." : "Salvar dados pessoais"}
                 </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Ao alterar, você precisará confirmar pelo link enviado ao novo email.</p>
-            </div>
-            <div>
-              <Label>Eu sou</Label>
-              <Select value={coupleRole} onValueChange={setCoupleRole}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="noivo">Noivo</SelectItem>
-                  <SelectItem value="noiva">Noiva</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? "Salvando..." : "Salvar dados pessoais"}
-            </Button>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* Alterar senha */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Alterar senha
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="newPassword">Nova senha</Label>
-              <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
-              <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </div>
-            <Button onClick={handleChangePassword} disabled={savingPassword} variant="outline" className="w-full">
-              {savingPassword ? "Alterando..." : "Alterar senha"}
-            </Button>
-          </CardContent>
-        </Card>
+            {/* Alterar senha */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  Alterar senha
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="newPassword">Nova senha</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleChangePassword} disabled={savingPassword} variant="outline" className="w-full">
+                  {savingPassword ? "Alterando..." : "Alterar senha"}
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* ==================== CASAMENTO ==================== */}
-          <TabsContent value="casamento" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Dados do casamento</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="weddingDate">Data do casamento</Label>
-              <Input id="weddingDate" type="date" value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="guests">Número estimado de convidados</Label>
-              <Input id="guests" type="number" value={estimatedGuests} onChange={(e) => setEstimatedGuests(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="budget">Orçamento estimado (R$)</Label>
-              <Input id="budget" type="number" value={estimatedBudget} onChange={(e) => setEstimatedBudget(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="target">Meta de orçamento (R$)</Label>
-              <Input id="target" type="number" value={targetBudget} onChange={(e) => setTargetBudget(e.target.value)} />
-              <p className="text-xs text-muted-foreground mt-1">Esse será o teto que você quer respeitar nos gastos.</p>
-            </div>
-            <div>
-              <Label>Modo do orçamento</Label>
-              <Select value={budgetMode} onValueChange={setBudgetMode}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixed">Fixo (meta acima)</SelectItem>
-                  <SelectItem value="simulation">Pela última simulação</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="border-t pt-4 space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <Label htmlFor="quer-datas-ociosas" className="cursor-pointer">Aceito receber datas com desconto</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Avisamos você quando um fornecedor abrir uma data ociosa que combina com seu casamento.
-                  </p>
-                </div>
-                <Switch id="quer-datas-ociosas" checked={querDatasOciosas} onCheckedChange={setQuerDatasOciosas} />
-              </div>
-              {querDatasOciosas && (
-                <div>
-                  <Label htmlFor="data-pretendida">Tenho preferência por essa data (opcional)</Label>
-                  <Input id="data-pretendida" type="date" value={dataPretendida} onChange={(e) => setDataPretendida(e.target.value)} />
-                </div>
-              )}
-            </div>
-            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? "Salvando..." : "Salvar dados do casamento"}
-            </Button>
-          </CardContent>
-        </Card>
-          </TabsContent>
-
-          {/* ==================== CASAL ==================== */}
-          <TabsContent value="casal" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Sobre o casal</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="partnerName">Nome do(a) parceiro(a)</Label>
-              <Input id="partnerName" value={partnerName} onChange={(e) => setPartnerName(e.target.value)} />
-            </div>
-            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? "Salvando..." : "Salvar"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Link2 className="h-4 w-4" />
-              Vínculo do casal
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Compartilhe o mesmo casamento com seu(sua) parceiro(a). Cada um mantém seu login, mas tarefas, convidados, orçamento e fornecedores ficam compartilhados.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {isOwner && inviteCode && (
-              <div>
-                <Label>Seu código de convite</Label>
-                <div className="flex gap-2">
-                  <Input value={inviteCode} readOnly className="font-mono uppercase tracking-wider" />
-                  <Button onClick={copyInvite} variant="outline" type="button">
-                    <Copy className="h-4 w-4 mr-1.5" /> Copiar
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Envie esse código para seu(sua) parceiro(a). No perfil dele(a), basta colar aqui embaixo para se vincular.
-                </p>
-              </div>
-            )}
-
-            {!linkedPartners.some((p) => p.user_id === user?.id) && (
-              <div>
-                <Label htmlFor="partnerCode">Vincular usando o código do(a) parceiro(a)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="partnerCode"
-                    value={partnerCodeInput}
-                    onChange={(e) => setPartnerCodeInput(e.target.value)}
-                    placeholder="Cole o código aqui"
-                    className="font-mono uppercase"
-                  />
-                  <Button onClick={handleLinkPartner} disabled={linking || !partnerCodeInput.trim()} type="button">
-                    <UserPlus className="h-4 w-4 mr-1.5" />
-                    {linking ? "Vinculando..." : "Vincular"}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Sua conta será unida ao casamento da pessoa que gerou o código. Suas simulações antigas continuam no histórico, sem virar um casamento separado.
-                </p>
-              </div>
-            )}
-
-            {linkedPartners.length > 0 && (
-              <div>
-                <Label>Pessoas com acesso ao casamento</Label>
-                <ul className="mt-2 space-y-2">
-                  {linkedPartners.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between rounded-md border border-border p-2">
-                      <span className="text-sm">{p.name}{p.user_id === user?.id ? " (você)" : ""}</span>
-                      {(isOwner || p.user_id === user?.id) && (
-                        <Button variant="ghost" size="sm" onClick={() => handleUnlink(p.id)}>
-                          <UserMinus className="h-4 w-4 mr-1" /> Desvincular
-                        </Button>
+          {isCouple && (
+            <>
+              <TabsContent value="casamento" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Dados do casamento</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="weddingDate">Data do casamento</Label>
+                      <Input
+                        id="weddingDate"
+                        type="date"
+                        value={weddingDate}
+                        onChange={(e) => setWeddingDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="guests">Número estimado de convidados</Label>
+                      <Input
+                        id="guests"
+                        type="number"
+                        value={estimatedGuests}
+                        onChange={(e) => setEstimatedGuests(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="budget">Orçamento estimado (R$)</Label>
+                      <Input
+                        id="budget"
+                        type="number"
+                        value={estimatedBudget}
+                        onChange={(e) => setEstimatedBudget(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="target">Meta de orçamento (R$)</Label>
+                      <Input
+                        id="target"
+                        type="number"
+                        value={targetBudget}
+                        onChange={(e) => setTargetBudget(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Esse será o teto que você quer respeitar nos gastos.
+                      </p>
+                    </div>
+                    <div>
+                      <Label>Modo do orçamento</Label>
+                      <Select value={budgetMode} onValueChange={setBudgetMode}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fixed">Fixo (meta acima)</SelectItem>
+                          <SelectItem value="simulation">Pela última simulação</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="border-t pt-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <Label htmlFor="quer-datas-ociosas" className="cursor-pointer">
+                            Aceito receber datas com desconto
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Avisamos você quando um fornecedor abrir uma data ociosa que combina com seu casamento.
+                          </p>
+                        </div>
+                        <Switch
+                          id="quer-datas-ociosas"
+                          checked={querDatasOciosas}
+                          onCheckedChange={setQuerDatasOciosas}
+                        />
+                      </div>
+                      {querDatasOciosas && (
+                        <div>
+                          <Label htmlFor="data-pretendida">Tenho preferência por essa data (opcional)</Label>
+                          <Input
+                            id="data-pretendida"
+                            type="date"
+                            value={dataPretendida}
+                            onChange={(e) => setDataPretendida(e.target.value)}
+                          />
+                        </div>
                       )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </div>
+                    <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+                      <Save className="mr-2 h-4 w-4" />
+                      {saving ? "Salvando..." : "Salvar dados do casamento"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-        {/* Personalização do painel */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Personalize seu painel</CardTitle>
-            <p className="text-sm text-muted-foreground">Foto e frase que aparecem no topo da página de orçamento.</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Foto de capa</Label>
-              <CouplePhotoUpload url={headerPhotoUrl || null} onUploaded={setHeaderPhotoUrl} fileName="header" />
-            </div>
-            <div>
-              <Label htmlFor="headerQuote">Sua frase</Label>
-              <Textarea id="headerQuote" rows={2} value={headerQuote} onChange={(e) => setHeaderQuote(e.target.value)} placeholder="Ex.: Construindo o nosso grande dia, juntos." />
-            </div>
-            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
-              <Save className="mr-2 h-4 w-4" />Salvar personalização
-            </Button>
-          </CardContent>
-        </Card>
-          </TabsContent>
+              {/* ==================== CASAL ==================== */}
+              <TabsContent value="casal" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Sobre o casal</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="partnerName">Nome do(a) parceiro(a)</Label>
+                      <Input id="partnerName" value={partnerName} onChange={(e) => setPartnerName(e.target.value)} />
+                    </div>
+                    <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+                      <Save className="mr-2 h-4 w-4" />
+                      {saving ? "Salvando..." : "Salvar"}
+                    </Button>
+                  </CardContent>
+                </Card>
 
-          {/* ==================== CONVITE ==================== */}
-          <TabsContent value="convite" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Dados do convite</CardTitle>
-            <p className="text-sm text-muted-foreground">Esses dados aparecerão no convite enviado por email aos convidados.</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Foto do convite</Label>
-              <CouplePhotoUpload url={invitePhotoUrl || null} onUploaded={setInvitePhotoUrl} fileName="invite" />
-            </div>
-            <div>
-              <Label htmlFor="inviteMessage">Mensagem para os convidados</Label>
-              <Textarea id="inviteMessage" rows={4} value={inviteMessage} onChange={(e) => setInviteMessage(e.target.value)} placeholder="Ex.: É com muita alegria que convidamos vocês para celebrar conosco este momento tão especial..." />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="ceremonyTime">Horário da cerimônia</Label>
-                <Input id="ceremonyTime" placeholder="Ex.: 16h" value={ceremonyTime} onChange={(e) => setCeremonyTime(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="dressCode">Traje</Label>
-                <Input id="dressCode" placeholder="Ex.: Esporte fino" value={dressCode} onChange={(e) => setDressCode(e.target.value)} />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="ceremonyAddress">Endereço da cerimônia</Label>
-              <Input
-                id="ceremonyLocalNome"
-                placeholder="Nome do local (Ex.: Igreja N. S. de Lourdes)"
-                value={ceremonyLocalNome}
-                onChange={(e) => setCeremonyLocalNome(e.target.value)}
-              />
-              <div className="mt-3">
-                <CepInput
-                  cep={ceremonyCep}
-                  endereco={ceremonyAddress}
-                  label="Cerimônia"
-                  onChange={({ cep, endereco, lat, lng }) => {
-                    setCeremonyCep(cep);
-                    setCeremonyAddress(endereco);
-                    if (lat !== undefined) setCeremonyLat(lat);
-                    if (lng !== undefined) setCeremonyLng(lng);
-                  }}
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="receptionAddress">Endereço da recepção</Label>
-              <Input
-                id="receptionLocalNome"
-                placeholder="Nome do local (Ex.: Espaço Villa)"
-                value={receptionLocalNome}
-                onChange={(e) => setReceptionLocalNome(e.target.value)}
-              />
-              <div className="mt-3">
-                <CepInput
-                  cep={receptionCep}
-                  endereco={receptionAddress}
-                  label="Recepção"
-                  onChange={({ cep, endereco, lat, lng }) => {
-                    setReceptionCep(cep);
-                    setReceptionAddress(endereco);
-                    if (lat !== undefined) setReceptionLat(lat);
-                    if (lng !== undefined) setReceptionLng(lng);
-                  }}
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="contactPhone">Telefone de contato</Label>
-              <Input id="contactPhone" placeholder="(11) 99999-9999" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="inviteVideoUrl">Vídeo do convite (YouTube)</Label>
-              <Input
-                id="inviteVideoUrl"
-                placeholder="https://youtu.be/... ou https://www.youtube.com/watch?v=..."
-                value={inviteVideoUrl}
-                onChange={(e) => setInviteVideoUrl(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Cole o link do YouTube. Aparecerá como vídeo no convite.</p>
-            </div>
-            <div>
-              <Label>Álbum de fotos (até 10)</Label>
-              <AlbumUpload album={inviteAlbum} onChange={setInviteAlbum} max={10} />
-            </div>
-            <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
-              <Save className="mr-2 h-4 w-4" />
-              Salvar dados do convite
-            </Button>
-          </CardContent>
-        </Card>
-          </TabsContent>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Link2 className="h-4 w-4" />
+                      Vínculo do casal
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Compartilhe o mesmo casamento com seu(sua) parceiro(a). Cada um mantém seu login, mas tarefas,
+                      convidados, orçamento e fornecedores ficam compartilhados.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    {isOwner && inviteCode && (
+                      <div>
+                        <Label>Seu código de convite</Label>
+                        <div className="flex gap-2">
+                          <Input value={inviteCode} readOnly className="font-mono uppercase tracking-wider" />
+                          <Button onClick={copyInvite} variant="outline" type="button">
+                            <Copy className="h-4 w-4 mr-1.5" /> Copiar
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Envie esse código para seu(sua) parceiro(a). No perfil dele(a), basta colar aqui embaixo para
+                          se vincular.
+                        </p>
+                      </div>
+                    )}
+
+                    {!linkedPartners.some((p) => p.user_id === user?.id) && (
+                      <div>
+                        <Label htmlFor="partnerCode">Vincular usando o código do(a) parceiro(a)</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="partnerCode"
+                            value={partnerCodeInput}
+                            onChange={(e) => setPartnerCodeInput(e.target.value)}
+                            placeholder="Cole o código aqui"
+                            className="font-mono uppercase"
+                          />
+                          <Button
+                            onClick={handleLinkPartner}
+                            disabled={linking || !partnerCodeInput.trim()}
+                            type="button"
+                          >
+                            <UserPlus className="h-4 w-4 mr-1.5" />
+                            {linking ? "Vinculando..." : "Vincular"}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Sua conta será unida ao casamento da pessoa que gerou o código. Suas simulações antigas
+                          continuam no histórico, sem virar um casamento separado.
+                        </p>
+                      </div>
+                    )}
+
+                    {linkedPartners.length > 0 && (
+                      <div>
+                        <Label>Pessoas com acesso ao casamento</Label>
+                        <ul className="mt-2 space-y-2">
+                          {linkedPartners.map((p) => (
+                            <li
+                              key={p.id}
+                              className="flex items-center justify-between rounded-md border border-border p-2"
+                            >
+                              <span className="text-sm">
+                                {p.name}
+                                {p.user_id === user?.id ? " (você)" : ""}
+                              </span>
+                              {(isOwner || p.user_id === user?.id) && (
+                                <Button variant="ghost" size="sm" onClick={() => handleUnlink(p.id)}>
+                                  <UserMinus className="h-4 w-4 mr-1" /> Desvincular
+                                </Button>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Personalização do painel */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Personalize seu painel</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Foto e frase que aparecem no topo da página de orçamento.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Foto de capa</Label>
+                      <CouplePhotoUpload
+                        url={headerPhotoUrl || null}
+                        onUploaded={setHeaderPhotoUrl}
+                        fileName="header"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="headerQuote">Sua frase</Label>
+                      <Textarea
+                        id="headerQuote"
+                        rows={2}
+                        value={headerQuote}
+                        onChange={(e) => setHeaderQuote(e.target.value)}
+                        placeholder="Ex.: Construindo o nosso grande dia, juntos."
+                      />
+                    </div>
+                    <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+                      <Save className="mr-2 h-4 w-4" />
+                      Salvar personalização
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ==================== CONVITE ==================== */}
+              <TabsContent value="convite" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Dados do convite</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Esses dados aparecerão no convite enviado por email aos convidados.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Foto do convite</Label>
+                      <CouplePhotoUpload
+                        url={invitePhotoUrl || null}
+                        onUploaded={setInvitePhotoUrl}
+                        fileName="invite"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="inviteMessage">Mensagem para os convidados</Label>
+                      <Textarea
+                        id="inviteMessage"
+                        rows={4}
+                        value={inviteMessage}
+                        onChange={(e) => setInviteMessage(e.target.value)}
+                        placeholder="Ex.: É com muita alegria que convidamos vocês para celebrar conosco este momento tão especial..."
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="ceremonyTime">Horário da cerimônia</Label>
+                        <Input
+                          id="ceremonyTime"
+                          placeholder="Ex.: 16h"
+                          value={ceremonyTime}
+                          onChange={(e) => setCeremonyTime(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dressCode">Traje</Label>
+                        <Input
+                          id="dressCode"
+                          placeholder="Ex.: Esporte fino"
+                          value={dressCode}
+                          onChange={(e) => setDressCode(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="ceremonyAddress">Endereço da cerimônia</Label>
+                      <Input
+                        id="ceremonyLocalNome"
+                        placeholder="Nome do local (Ex.: Igreja N. S. de Lourdes)"
+                        value={ceremonyLocalNome}
+                        onChange={(e) => setCeremonyLocalNome(e.target.value)}
+                      />
+                      <div className="mt-3">
+                        <CepInput
+                          cep={ceremonyCep}
+                          endereco={ceremonyAddress}
+                          label="Cerimônia"
+                          onChange={({ cep, endereco, lat, lng }) => {
+                            setCeremonyCep(cep);
+                            setCeremonyAddress(endereco);
+                            if (lat !== undefined) setCeremonyLat(lat);
+                            if (lng !== undefined) setCeremonyLng(lng);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="receptionAddress">Endereço da recepção</Label>
+                      <Input
+                        id="receptionLocalNome"
+                        placeholder="Nome do local (Ex.: Espaço Villa)"
+                        value={receptionLocalNome}
+                        onChange={(e) => setReceptionLocalNome(e.target.value)}
+                      />
+                      <div className="mt-3">
+                        <CepInput
+                          cep={receptionCep}
+                          endereco={receptionAddress}
+                          label="Recepção"
+                          onChange={({ cep, endereco, lat, lng }) => {
+                            setReceptionCep(cep);
+                            setReceptionAddress(endereco);
+                            if (lat !== undefined) setReceptionLat(lat);
+                            if (lng !== undefined) setReceptionLng(lng);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="contactPhone">Telefone de contato</Label>
+                      <Input
+                        id="contactPhone"
+                        placeholder="(11) 99999-9999"
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="inviteVideoUrl">Vídeo do convite (YouTube)</Label>
+                      <Input
+                        id="inviteVideoUrl"
+                        placeholder="https://youtu.be/... ou https://www.youtube.com/watch?v=..."
+                        value={inviteVideoUrl}
+                        onChange={(e) => setInviteVideoUrl(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Cole o link do YouTube. Aparecerá como vídeo no convite.
+                      </p>
+                    </div>
+                    <div>
+                      <Label>Álbum de fotos (até 10)</Label>
+                      <AlbumUpload album={inviteAlbum} onChange={setInviteAlbum} max={10} />
+                    </div>
+                    <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+                      <Save className="mr-2 h-4 w-4" />
+                      Salvar dados do convite
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </main>
     </div>
