@@ -142,7 +142,8 @@ const formatPrice = (n: number | null) => {
 };
 
 function SupplierCardItem({ s, inPlan }: { s: Supplier; inPlan?: boolean }) {
-  const photo = s.supplier_photos?.[0]?.photo_url;
+  const _fotos = s.supplier_photos || [];
+  const photo = (_fotos.find((p: any) => p.is_principal) || _fotos[0])?.photo_url;
   return (
     <Link to={`/fornecedor/${s.id}`} className="group block">
       <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted">
@@ -252,7 +253,7 @@ export default function CategoriaPublica() {
     const { data, count } = await supabase
       .from("suppliers")
       .select(
-        "id, company_name, description, city, state, rating, review_count, price_min, featured, supplier_photos(photo_url)",
+        "id, company_name, description, city, state, rating, review_count, price_min, featured, supplier_photos(photo_url, is_principal)",
         { count: "exact" },
       )
       .eq("status", "approved")
