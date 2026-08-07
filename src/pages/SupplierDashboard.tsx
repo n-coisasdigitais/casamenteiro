@@ -321,21 +321,30 @@ export default function SupplierDashboard() {
   };
 
   const marcarPrincipal = async (photoId: string) => {
-    // zera as outras e marca esta (o índice único no banco garante 1 só)
+    const atual = photos.find((p) => p.id === photoId);
+    const novoValor = !atual?.is_principal;
+    // zera todas e, se estiver marcando, marca só esta (índice único garante 1)
     await supabase
       .from("supplier_photos")
       .update({ is_principal: false } as any)
       .eq("supplier_id", supplier.id);
-    const { error } = await supabase
-      .from("supplier_photos")
-      .update({ is_principal: true } as any)
-      .eq("id", photoId);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-      return;
+    if (novoValor) {
+      const { error } = await supabase
+        .from("supplier_photos")
+        .update({ is_principal: true } as any)
+        .eq("id", photoId);
+      if (error) {
+        toast({ title: "Erro", description: error.message, variant: "destructive" });
+        return;
+      }
     }
-    setPhotos(photos.map((p) => ({ ...p, is_principal: p.id === photoId })));
-    toast({ title: "Foto de destaque definida", description: "Ela será a capa do seu perfil e dos cards." });
+    setPhotos(photos.map((p) => ({ ...p, is_principal: novoValor && p.id === photoId })));
+    toast({
+      title: novoValor ? "Foto de destaque definida" : "Destaque removido",
+      description: novoValor
+        ? "Ela será a capa do seu perfil e dos cards."
+        : "Nenhuma foto está marcada como destaque.",
+    });
   };
 
   const statusConfig = {
@@ -574,20 +583,18 @@ export default function SupplierDashboard() {
                           <Star className="h-3 w-3 fill-current" /> Destaque
                         </span>
                       )}
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {!photo.is_principal && (
-                          <button
-                            onClick={() => marcarPrincipal(photo.id)}
-                            title="Definir como destaque"
-                            className="bg-background/90 text-foreground rounded-full p-1 hover:text-primary"
-                          >
-                            <Star className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        <button
+                          onClick={() => marcarPrincipal(photo.id)}
+                          title={photo.is_principal ? "Remover destaque" : "Definir como destaque"}
+                          className={`rounded-full p-1 transition-opacity ${photo.is_principal ? "bg-primary text-primary-foreground opacity-100" : "bg-background/90 text-foreground opacity-0 group-hover:opacity-100 hover:text-primary"}`}
+                        >
+                          <Star className={`h-3.5 w-3.5 ${photo.is_principal ? "fill-current" : ""}`} />
+                        </button>
                         <button
                           onClick={() => deletePhoto(photo.id)}
                           title="Remover"
-                          className="bg-destructive text-destructive-foreground rounded-full p-1"
+                          className="bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <X className="h-3 w-3" />
                         </button>
