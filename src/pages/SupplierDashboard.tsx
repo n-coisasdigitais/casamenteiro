@@ -329,12 +329,21 @@ export default function SupplierDashboard() {
       .update({ is_principal: false } as any)
       .eq("supplier_id", supplier.id);
     if (novoValor) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("supplier_photos")
         .update({ is_principal: true } as any)
-        .eq("id", photoId);
+        .eq("id", photoId)
+        .select("id");
       if (error) {
         toast({ title: "Erro", description: error.message, variant: "destructive" });
+        return;
+      }
+      if (!data || data.length === 0) {
+        toast({
+          title: "Não foi possível salvar",
+          description: "Sem permissão para atualizar a foto. Verifique as regras de acesso.",
+          variant: "destructive",
+        });
         return;
       }
     }
