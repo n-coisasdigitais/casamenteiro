@@ -70,7 +70,8 @@ const formatPrice = (n: number | null) => {
 
 // Card GRANDE vertical (estilo Airbnb ampliado): foto larga 4:3 + infos.
 function ExploreCard({ s }: { s: Supplier }) {
-  const photo = s.supplier_photos?.[0]?.photo_url;
+  const _fotos = s.supplier_photos || [];
+  const photo = (_fotos.find((p: any) => p.is_principal) || _fotos[0])?.photo_url;
   const badge = s.featured ? "Destaque" : s.rating && s.rating >= 4.7 ? "Preferido" : null;
   return (
     <Link to={`/fornecedor/${s.id}`} className="group flex-shrink-0 w-[280px] md:w-[320px] snap-start">
@@ -449,7 +450,7 @@ const Explore = () => {
       const { data: feat } = await supabase
         .from("suppliers")
         .select(
-          "id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url)",
+          "id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url, is_principal)",
         )
         .eq("status", "approved")
         .order("featured", { ascending: false })
@@ -465,7 +466,7 @@ const Explore = () => {
           const { data } = await supabase
             .from("suppliers")
             .select(
-              "id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url)",
+              "id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url, is_principal)",
             )
             .eq("status", "approved")
             .eq("category_id", c.id)
