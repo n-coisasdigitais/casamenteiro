@@ -52,6 +52,8 @@ import SupplierSidebar, {
 import SupplierMobileTabBar from "@/components/supplier/SupplierMobileTabBar";
 import SupplierActionCards from "@/components/supplier/SupplierActionCards";
 import SupplierLeadsCRM from "@/components/supplier/SupplierLeadsCRM";
+import PlanGate, { TrialBanner } from "@/components/plan/PlanGate";
+import MinhaAssinaturaCard from "@/components/plan/MinhaAssinaturaCard";
 
 type Category = { id: string; name: string; slug?: string | null };
 
@@ -402,6 +404,9 @@ export default function SupplierDashboard() {
             onGoToQuotes={(filter) => goDest("orcamentos", { filter: filter || null, inner: "kanban" })}
           />
           <SupplierMetrics supplierId={supplier.id} />
+          <div className="mt-4">
+            <MinhaAssinaturaCard supplierId={supplier.id} />
+          </div>
         </div>
       );
     }
@@ -430,12 +435,19 @@ export default function SupplierDashboard() {
             </div>
           )}
           {quotesInnerTab === "leads" && crmEnabled ? (
-            <SupplierLeadsCRM
+            <PlanGate
               supplierId={supplier.id}
-              supplierUserId={user!.id}
-              companyName={supplier.company_name}
-              onOpenQuote={openThread}
-            />
+              feature="crm_leads"
+              titulo="CRM de leads"
+              descricao="Veja quem te procurou, com histórico e anotações. Disponível nos planos pagos."
+            >
+              <SupplierLeadsCRM
+                supplierId={supplier.id}
+                supplierUserId={user!.id}
+                companyName={supplier.company_name}
+                onOpenQuote={openThread}
+              />
+            </PlanGate>
           ) : filteredQuotes.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
@@ -674,6 +686,9 @@ export default function SupplierDashboard() {
         <SupplierSidebar active={dest} onChange={(d) => goDest(d)} items={destinations} />
 
         <main className="flex-1 min-w-0 px-4 py-8 pb-24 md:pb-8 max-w-4xl mx-auto w-full">
+          <div className="mb-4">
+            <TrialBanner supplierId={supplier.id} />
+          </div>
           <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
             <h1 className="text-2xl font-bold">Painel do Fornecedor</h1>
             {statusInfo && (
