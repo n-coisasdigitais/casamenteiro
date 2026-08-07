@@ -13,7 +13,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Heart, Upload, X, AlertCircle, CheckCircle, Clock, MessageSquare, CalendarDays, MapPin } from "lucide-react";
+import {
+  Heart,
+  Upload,
+  X,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  MessageSquare,
+  CalendarDays,
+  MapPin,
+  Star,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteConversation from "@/components/QuoteConversation";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
@@ -206,6 +217,7 @@ export default function SupplierDashboard() {
         .from("supplier_photos")
         .select("*")
         .eq("supplier_id", data.id)
+        .order("is_principal", { ascending: false })
         .order("display_order");
       setPhotos(photoData || []);
       if (data.status === "rejected") {
@@ -231,34 +243,7 @@ export default function SupplierDashboard() {
       .select("*")
       .eq("supplier_id", supplier.id)
       .order("created_at", { ascending: false });
-
-    const quotes = data || [];
-
-    // Enriquece cada quote com o valor da última proposta (aceita tem prioridade)
-    // para exibir no card do Kanban. Uma query só para todos os quotes.
-    if (quotes.length) {
-      const ids = quotes.map((q: any) => q.id);
-      const { data: props } = await (supabase.from("quote_proposals" as any) as any)
-        .select("quote_id, amount, status, created_at")
-        .in("quote_id", ids)
-        .order("created_at", { ascending: true });
-
-      const byQuote: Record<string, any[]> = {};
-      (props || []).forEach((p: any) => {
-        (byQuote[p.quote_id] = byQuote[p.quote_id] || []).push(p);
-      });
-
-      quotes.forEach((q: any) => {
-        const list = byQuote[q.id] || [];
-        const aceita = [...list].reverse().find((p) => p.status === "accepted" && p.amount != null);
-        const ultima = [...list].reverse().find((p) => p.amount != null);
-        const escolhida = aceita || ultima;
-        q._valor = escolhida?.amount ?? null;
-        q._valor_status = escolhida?.status ?? null;
-      });
-    }
-
-    setQuotes(quotes);
+    setQuotes(data || []);
   };
 
   const openThread = (quote: any) => {
@@ -335,6 +320,24 @@ export default function SupplierDashboard() {
     setPhotos(photos.filter((p) => p.id !== photoId));
   };
 
+  const marcarPrincipal = async (photoId: string) => {
+    // zera as outras e marca esta (o índice único no banco garante 1 só)
+    await supabase
+      .from("supplier_photos")
+      .update({ is_principal: false } as any)
+      .eq("supplier_id", supplier.id);
+    const { error } = await supabase
+      .from("supplier_photos")
+      .update({ is_principal: true } as any)
+      .eq("id", photoId);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      return;
+    }
+    setPhotos(photos.map((p) => ({ ...p, is_principal: p.id === photoId })));
+    toast({ title: "Foto de destaque definida", description: "Ela será a capa do seu perfil e dos cards." });
+  };
+
   const statusConfig = {
     pending: { label: "Pendente de Aprovação", icon: Clock, variant: "secondary" as const },
     approved: { label: "Aprovado", icon: CheckCircle, variant: "default" as const },
@@ -355,6 +358,7 @@ export default function SupplierDashboard() {
     quotesCount: quotes.length,
     overdueLeads: 0,
     vagasEnabled,
+    reservasEnabled,
     reservasPendentes,
   });
   const cat = categories.find((c) => c.id === supplier.category_id);
@@ -439,6 +443,19 @@ export default function SupplierDashboard() {
     }
     if (dest === "vagas" && vagasEnabled) {
       return <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />;
+    }
+    if (dest === "reservas" && reservasEnabled) {
+      return (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold">Reservas de datas ociosas</h2>
+            <p className="text-sm text-muted-foreground">
+              Solicitações de casais para datas com desconto que você ofereceu.
+            </p>
+          </div>
+          <SupplierReservationsTab supplierId={supplier.id} />
+        </div>
+      );
     }
     if (dest === "negocio") {
       const businessTabs: { key: BusinessSub; label: string }[] = [
@@ -552,15 +569,36 @@ export default function SupplierDashboard() {
                   {photos.map((photo) => (
                     <div key={photo.id} className="relative group rounded-lg overflow-hidden aspect-square">
                       <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => deletePhoto(photo.id)}
-                        className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      {photo.is_principal && (
+                        <span className="absolute top-2 left-2 flex items-center gap-1 bg-primary text-primary-foreground text-[11px] font-semibold px-2 py-0.5 rounded-full">
+                          <Star className="h-3 w-3 fill-current" /> Destaque
+                        </span>
+                      )}
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {!photo.is_principal && (
+                          <button
+                            onClick={() => marcarPrincipal(photo.id)}
+                            title="Definir como destaque"
+                            className="bg-background/90 text-foreground rounded-full p-1 hover:text-primary"
+                          >
+                            <Star className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deletePhoto(photo.id)}
+                          title="Remover"
+                          className="bg-destructive text-destructive-foreground rounded-full p-1"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Passe o mouse e clique na estrela para definir a foto de <strong>destaque</strong> — ela vira a capa
+                  do seu perfil e o thumbnail nos resultados.
+                </p>
                 {photos.length < 10 && (
                   <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent transition-colors">
                     <Upload className="h-5 w-5 text-muted-foreground" />
