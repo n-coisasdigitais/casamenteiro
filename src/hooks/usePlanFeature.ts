@@ -7,21 +7,25 @@ export type AccessState = "trial" | "assinante" | "bloqueado";
 
 export type PlanoAtivo = {
   planId: string | null;
-  nome: string | null;
+  nome: string | null; // nome do plano assinado (se houver), independente do trial
   recursos: PlanRecursos;
   limites: PlanLimites;
-  ativo: boolean;
-  estado: AccessState;
+  ativo: boolean; // tem acesso premium agora (trial OU assinatura)
+  estado: AccessState; // trial | assinante | bloqueado
   trialEndsAt: string | null;
+  emTrial: boolean; // está dentro do trial?
+  temAssinatura: boolean; // tem assinatura vigente por baixo?
   periodEnd: string | null;
   cancelada: boolean;
+  cobrancaComecaEm: string | null; // quando a 1ª cobrança começa (fim do trial, se assinou no trial)
 };
 
 /**
- * Carrega o estado de acesso do fornecedor. Três estados:
- * - "trial": dentro dos 2 meses grátis -> acesso TOTAL a tudo.
- * - "assinante": assinatura ativa (ou cancelada dentro do período pago) -> recursos do plano.
- * - "bloqueado": trial expirou e sem assinatura -> tudo bloqueado (blur).
+ * Estado de acesso do fornecedor. Trial e assinatura são INDEPENDENTES e podem coexistir:
+ * - Em trial + assinou: acesso total, selo do plano aparece, cobrança começa no fim do trial.
+ * - Em trial sem assinar: acesso total, sem selo de plano.
+ * - Fora do trial + assina vigente: recursos do plano.
+ * - Fora do trial sem assinatura: bloqueado (blur).
  */
 export function useSupplierPlan(supplierId: string | null | undefined) {
   const [plano, setPlano] = useState<PlanoAtivo | null>(null);
@@ -34,7 +38,6 @@ export function useSupplierPlan(supplierId: string | null | undefined) {
       return;
     }
     (async () => {
-      // 1) trial do fornecedor
       const { data: sup } = await (supabase
         .from("suppliers" as any)
         .select("trial_ends_at")
@@ -43,7 +46,6 @@ export function useSupplierPlan(supplierId: string | null | undefined) {
       const trialEndsAt: string | null = sup?.trial_ends_at ?? null;
       const emTrial = !!trialEndsAt && new Date(trialEndsAt) > new Date();
 
-      // 2) assinatura (ativa ou cancelada mas ainda vigente)
       const { data: sub } = await (supabase
         .from("supplier_subscriptions" as any)
         .select("plan_id, status, current_period_end, cancelada_em")
@@ -57,6 +59,7 @@ export function useSupplierPlan(supplierId: string | null | undefined) {
       const cancelada = sub?.status === "cancelada";
       const assinaturaVigente =
         sub?.status === "ativa" || (sub?.status === "cancelada" && periodEnd && new Date(periodEnd) > new Date());
+      const temAssinatura = !!assinaturaVigente;
 
       let recursos: PlanRecursos = {};
       let limites: PlanLimites = {};
@@ -72,19 +75,26 @@ export function useSupplierPlan(supplierId: string | null | undefined) {
         nome = p?.nome ?? null;
       }
 
-      const estado: AccessState = emTrial ? "trial" : assinaturaVigente ? "assinante" : "bloqueado";
+      // Estado principal: trial tem prioridade de EXIBIÇÃO, mas a assinatura coexiste.
+      const estado: AccessState = emTrial ? "trial" : temAssinatura ? "assinante" : "bloqueado";
+
+      // Se assinou durante o trial, a cobrança começa no fim do trial.
+      const cobrancaComecaEm = emTrial && temAssinatura ? trialEndsAt : null;
 
       if (!cancelado) {
         setPlano({
           planId: sub?.plan_id ?? null,
-          nome: emTrial ? "Período de teste" : nome,
+          nome, // selo do plano aparece mesmo em trial
           recursos,
           limites,
-          ativo: !!assinaturaVigente || emTrial,
+          ativo: emTrial || temAssinatura,
           estado,
           trialEndsAt,
+          emTrial,
+          temAssinatura,
           periodEnd,
           cancelada: !!cancelada,
+          cobrancaComecaEm,
         });
         setCarregando(false);
       }
@@ -99,10 +109,10 @@ export function useSupplierPlan(supplierId: string | null | undefined) {
 
 /**
  * Verifica se um recurso está liberado.
- * Durante o TRIAL, tudo é liberado. Depois, depende do plano.
+ * Durante o TRIAL, tudo é liberado. Depois, depende do plano assinado.
  */
 export function usePlanFeature(supplierId: string | null | undefined, key: PlanFeatureKey) {
   const { plano, carregando } = useSupplierPlan(supplierId);
-  const liberado = plano?.estado === "trial" ? true : temRecurso(plano?.recursos, key);
+  const liberado = plano?.emTrial ? true : temRecurso(plano?.recursos, key);
   return { liberado, carregando, plano, estado: plano?.estado ?? "bloqueado" };
 }
