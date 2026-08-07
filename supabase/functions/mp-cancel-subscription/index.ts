@@ -49,23 +49,24 @@ Deno.serve(async (req) => {
 
   if (!sub) return json({ error: "Nenhuma assinatura ativa para cancelar" }, 404);
 
-  // 3) Cancela no Mercado Pago (se houver preapproval)
+  // 3) Cancela no Mercado Pago SE houver preapproval (recorrência real).
+  //    No Caminho 2 (cobrança manual) não há preapproval — apenas marca no banco.
   if (sub.mp_preapproval_id) {
     const accessToken =
       sub.ambiente === "sandbox" ? Deno.env.get("MP_ACCESS_TOKEN_TEST") : Deno.env.get("MP_ACCESS_TOKEN_PROD");
-    if (!accessToken) {
-      return json({ error: `Credencial do Mercado Pago ausente para ${sub.ambiente}.` }, 503);
-    }
-    const mpResp = await fetch(`https://api.mercadopago.com/preapproval/${sub.mp_preapproval_id}`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "cancelled" }),
-    });
-    if (!mpResp.ok) {
-      const txt = await mpResp.text().catch(() => "");
-      return json({ error: "Falha ao cancelar no Mercado Pago", detalhe: txt.slice(0, 300) }, 502);
+    if (accessToken) {
+      const mpResp = await fetch(`https://api.mercadopago.com/preapproval/${sub.mp_preapproval_id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+      if (!mpResp.ok) {
+        const txt = await mpResp.text().catch(() => "");
+        return json({ error: "Falha ao cancelar no Mercado Pago", detalhe: txt.slice(0, 300) }, 502);
+      }
     }
   }
+  // Sem preapproval: nada a cancelar no MP (cobrança é manual). Segue para marcar no banco.
 
   // 4) Marca cancelada no banco — MANTÉM current_period_end (acesso até o fim do ciclo)
   const { error: upErr } = await admin
