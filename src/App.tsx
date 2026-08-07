@@ -80,7 +80,6 @@ import StaffLanding from "./pages/StaffLanding";
 import StaffOnboarding from "./pages/StaffOnboarding";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffPublicProfile from "./pages/StaffPublicProfile";
-import Vagas from "./pages/Vagas";
 import AdminPlatformPrices from "./pages/AdminPlatformPrices";
 import AdminPlanos from "./pages/AdminPlanos";
 import AdminReservations from "./pages/AdminReservations";
@@ -228,7 +227,14 @@ const App = () => (
               <Route path="/pagamento/status" element={<PagamentoStatus />} />
               <Route path="/comprovante/:id" element={<Comprovante />} />
               <Route path="/fornecedor/faturas" element={<FornecedorFaturas />} />
-              <Route path="/meu-casamento/reservas" element={<MinhasReservas />} />
+              <Route
+                path="/meu-casamento/reservas"
+                element={
+                  <Casal>
+                    <MinhasReservas />
+                  </Casal>
+                }
+              />
               <Route path="/fornecedor" element={<SupplierLanding />} />
               <Route path="/fornecedor/login" element={<Auth />} />
               <Route path="/fornecedor/cadastro" element={<SupplierOnboarding />} />
@@ -237,14 +243,6 @@ const App = () => (
                 element={
                   <FlagGate flag="vagas">
                     <StaffLanding />
-                  </FlagGate>
-                }
-              />
-              <Route
-                path="/vagas"
-                element={
-                  <FlagGate flag="vagas">
-                    <Vagas />
                   </FlagGate>
                 }
               />
