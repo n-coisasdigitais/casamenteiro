@@ -31,11 +31,29 @@ type PlanoRow = {
   ordem: number;
 };
 
-type PacoteRow = { id: string; label: string; dias: number; valor: number; ativo: boolean; ordem: number };
+type PacoteRow = {
+  id: string;
+  label: string;
+  dias: number;
+  valor: number;
+  ativo: boolean;
+  ordem: number;
+  escopo: string;
+};
 
 const planoVazio = (): PlanoRow => ({
-  id: "", slug: "", nome: "", descricao: "", preco_mensal: 0, preco_anual: 0,
-  beneficios: [], limites: {}, recursos: {}, destaque_busca: false, ativo: true, ordem: 0,
+  id: "",
+  slug: "",
+  nome: "",
+  descricao: "",
+  preco_mensal: 0,
+  preco_anual: 0,
+  beneficios: [],
+  limites: {},
+  recursos: {},
+  destaque_busca: false,
+  ativo: true,
+  ordem: 0,
 });
 
 export default function AdminPlanos() {
@@ -49,19 +67,43 @@ export default function AdminPlanos() {
   const [novo, setNovo] = useState(false);
 
   const load = async () => {
-    const { data } = await (supabase.from("subscription_plans" as any).select("*").order("ordem") as any);
-    setPlanos(((data as any[]) ?? []).map((p) => ({
-      ...p, beneficios: Array.isArray(p.beneficios) ? p.beneficios : [], limites: p.limites ?? {}, recursos: p.recursos ?? {},
-    })) as PlanoRow[]);
-    const { data: pk } = await (supabase.from("featured_packages" as any).select("*").order("ordem") as any);
-    setPacotes(((pk as any[]) ?? []).map((p) => ({ ...p, valor: Number(p.valor), dias: Number(p.dias) })) as PacoteRow[]);
+    const { data } = await (supabase
+      .from("subscription_plans" as any)
+      .select("*")
+      .order("ordem") as any);
+    setPlanos(
+      ((data as any[]) ?? []).map((p) => ({
+        ...p,
+        beneficios: Array.isArray(p.beneficios) ? p.beneficios : [],
+        limites: p.limites ?? {},
+        recursos: p.recursos ?? {},
+      })) as PlanoRow[],
+    );
+    const { data: pk } = await (supabase
+      .from("featured_packages" as any)
+      .select("*")
+      .order("ordem") as any);
+    setPacotes(
+      ((pk as any[]) ?? []).map((p) => ({
+        ...p,
+        valor: Number(p.valor),
+        dias: Number(p.dias),
+        escopo: p.escopo ?? "categoria",
+      })) as PacoteRow[],
+    );
   };
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate("/login"); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }) => {
-      if (!data) { navigate("/"); return; }
+      if (!data) {
+        navigate("/");
+        return;
+      }
       setChecked(true);
       load();
     });
@@ -69,10 +111,17 @@ export default function AdminPlanos() {
 
   const salvarPlano = async (p: PlanoRow, isNew: boolean) => {
     const payload: any = {
-      slug: p.slug.trim(), nome: p.nome.trim(), descricao: p.descricao,
-      preco_mensal: Number(p.preco_mensal || 0), preco_anual: Number(p.preco_anual || 0),
-      beneficios: p.beneficios, limites: p.limites, recursos: p.recursos,
-      destaque_busca: p.destaque_busca, ativo: p.ativo, ordem: Number(p.ordem || 0),
+      slug: p.slug.trim(),
+      nome: p.nome.trim(),
+      descricao: p.descricao,
+      preco_mensal: Number(p.preco_mensal || 0),
+      preco_anual: Number(p.preco_anual || 0),
+      beneficios: p.beneficios,
+      limites: p.limites,
+      recursos: p.recursos,
+      destaque_busca: p.destaque_busca,
+      ativo: p.ativo,
+      ordem: Number(p.ordem || 0),
     };
     if (!payload.slug || !payload.nome) {
       toast({ title: "Preencha nome e chave do plano", variant: "destructive" });
@@ -81,24 +130,42 @@ export default function AdminPlanos() {
     const q = isNew
       ? await (supabase.from("subscription_plans" as any) as any).insert(payload)
       : await (supabase.from("subscription_plans" as any) as any).update(payload).eq("id", p.id);
-    if (q.error) { toast({ title: "Erro", description: q.error.message, variant: "destructive" }); return; }
+    if (q.error) {
+      toast({ title: "Erro", description: q.error.message, variant: "destructive" });
+      return;
+    }
     toast({ title: "Plano salvo" });
-    setEditando(null); setNovo(false); load();
+    setEditando(null);
+    setNovo(false);
+    load();
   };
 
   const salvarPacote = async (pac: PacoteRow) => {
-    const payload = { label: pac.label, dias: Number(pac.dias || 0), valor: Number(pac.valor || 0), ativo: pac.ativo, ordem: Number(pac.ordem || 0) };
+    const payload = {
+      label: pac.label,
+      dias: Number(pac.dias || 0),
+      valor: Number(pac.valor || 0),
+      ativo: pac.ativo,
+      ordem: Number(pac.ordem || 0),
+      escopo: pac.escopo || "categoria",
+    };
     const q = pac.id
       ? await (supabase.from("featured_packages" as any) as any).update(payload).eq("id", pac.id)
       : await (supabase.from("featured_packages" as any) as any).insert(payload);
-    if (q.error) { toast({ title: "Erro", description: q.error.message, variant: "destructive" }); return; }
+    if (q.error) {
+      toast({ title: "Erro", description: q.error.message, variant: "destructive" });
+      return;
+    }
     toast({ title: "Pacote salvo" });
     load();
   };
 
   const excluirPacote = async (id: string) => {
     const { error } = await (supabase.from("featured_packages" as any) as any).delete().eq("id", id);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      return;
+    }
     toast({ title: "Pacote removido" });
     load();
   };
@@ -122,7 +189,12 @@ export default function AdminPlanos() {
 
         <TabsContent value="planos" className="space-y-3 pt-4">
           <div className="flex justify-end">
-            <Button onClick={() => { setNovo(true); setEditando(planoVazio()); }}>
+            <Button
+              onClick={() => {
+                setNovo(true);
+                setEditando(planoVazio());
+              }}
+            >
               <Plus className="h-4 w-4 mr-1" /> Novo plano
             </Button>
           </div>
@@ -139,17 +211,33 @@ export default function AdminPlanos() {
                       {!p.ativo && <Badge variant="secondary">inativo</Badge>}
                     </CardTitle>
                     <p className="text-xs text-muted-foreground mt-1">
-                      <code className="bg-muted px-1 rounded">{p.slug}</code> · {formatBRL(p.preco_mensal)}/mês · {formatBRL(p.preco_anual)}/ano
+                      <code className="bg-muted px-1 rounded">{p.slug}</code> · {formatBRL(p.preco_mensal)}/mês ·{" "}
+                      {formatBRL(p.preco_anual)}/ano
                     </p>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => { setNovo(false); setEditando(p); }}>Editar</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setNovo(false);
+                      setEditando(p);
+                    }}
+                  >
+                    Editar
+                  </Button>
                 </CardHeader>
                 <CardContent className="text-sm space-y-2">
                   {p.descricao && <p className="text-muted-foreground">{p.descricao}</p>}
                   <div className="flex flex-wrap gap-1">
-                    {ativos.length === 0
-                      ? <span className="text-xs text-muted-foreground italic">Nenhuma funcionalidade liberada.</span>
-                      : ativos.map((f) => <Badge key={f.key} variant="secondary">{f.label}</Badge>)}
+                    {ativos.length === 0 ? (
+                      <span className="text-xs text-muted-foreground italic">Nenhuma funcionalidade liberada.</span>
+                    ) : (
+                      ativos.map((f) => (
+                        <Badge key={f.key} variant="secondary">
+                          {f.label}
+                        </Badge>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -159,14 +247,25 @@ export default function AdminPlanos() {
 
         <TabsContent value="destaques" className="space-y-3 pt-4">
           <p className="text-sm text-muted-foreground">
-            Pacotes que o fornecedor compra para aparecer no topo da busca.
+            Pacotes que o fornecedor compra para se destacar. Defina o escopo: <strong>topo da categoria</strong> (mais
+            barato),
+            <strong> header da home</strong> (premium, mais caro) ou <strong>por cidade</strong>. O sistema ativa e
+            expira sozinho conforme os dias pagos.
           </p>
           {pacotes.map((pac) => (
             <PacoteEditor key={pac.id} inicial={pac} onSave={salvarPacote} onDelete={() => excluirPacote(pac.id)} />
           ))}
           <PacoteEditor
             key={`novo-${pacotes.length}`}
-            inicial={{ id: "", label: "", dias: 7, valor: 0, ativo: true, ordem: pacotes.length + 1 }}
+            inicial={{
+              id: "",
+              label: "",
+              dias: 7,
+              valor: 0,
+              ativo: true,
+              ordem: pacotes.length + 1,
+              escopo: "categoria",
+            }}
             onSave={salvarPacote}
           />
         </TabsContent>
@@ -176,7 +275,10 @@ export default function AdminPlanos() {
         <PlanoEditor
           inicial={editando}
           isNew={novo}
-          onCancel={() => { setEditando(null); setNovo(false); }}
+          onCancel={() => {
+            setEditando(null);
+            setNovo(false);
+          }}
           onSave={salvarPlano}
         />
       )}
@@ -184,8 +286,16 @@ export default function AdminPlanos() {
   );
 }
 
-function PlanoEditor({ inicial, isNew, onCancel, onSave }: {
-  inicial: PlanoRow; isNew: boolean; onCancel: () => void; onSave: (p: PlanoRow, isNew: boolean) => void;
+function PlanoEditor({
+  inicial,
+  isNew,
+  onCancel,
+  onSave,
+}: {
+  inicial: PlanoRow;
+  isNew: boolean;
+  onCancel: () => void;
+  onSave: (p: PlanoRow, isNew: boolean) => void;
 }) {
   const [p, setP] = useState<PlanoRow>(inicial);
   const [beneficiosTexto, setBeneficiosTexto] = useState((inicial.beneficios || []).join("\n"));
@@ -197,7 +307,9 @@ function PlanoEditor({ inicial, isNew, onCancel, onSave }: {
   return (
     <Dialog open onOpenChange={(o) => !o && onCancel()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{isNew ? "Novo plano" : "Editar plano"}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{isNew ? "Novo plano" : "Editar plano"}</DialogTitle>
+        </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -216,11 +328,21 @@ function PlanoEditor({ inicial, isNew, onCancel, onSave }: {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Preço mensal (R$)</Label>
-              <Input type="number" step="0.01" value={p.preco_mensal} onChange={(e) => setP({ ...p, preco_mensal: Number(e.target.value) })} />
+              <Input
+                type="number"
+                step="0.01"
+                value={p.preco_mensal}
+                onChange={(e) => setP({ ...p, preco_mensal: Number(e.target.value) })}
+              />
             </div>
             <div>
               <Label>Preço anual (R$)</Label>
-              <Input type="number" step="0.01" value={p.preco_anual} onChange={(e) => setP({ ...p, preco_anual: Number(e.target.value) })} />
+              <Input
+                type="number"
+                step="0.01"
+                value={p.preco_anual}
+                onChange={(e) => setP({ ...p, preco_anual: Number(e.target.value) })}
+              />
             </div>
             <div>
               <Label>Ordem</Label>
@@ -234,7 +356,13 @@ function PlanoEditor({ inicial, isNew, onCancel, onSave }: {
               value={beneficiosTexto}
               onChange={(e) => {
                 setBeneficiosTexto(e.target.value);
-                setP({ ...p, beneficios: e.target.value.split("\n").map((l) => l.trim()).filter(Boolean) });
+                setP({
+                  ...p,
+                  beneficios: e.target.value
+                    .split("\n")
+                    .map((l) => l.trim())
+                    .filter(Boolean),
+                });
               }}
             />
           </div>
@@ -258,7 +386,11 @@ function PlanoEditor({ inicial, isNew, onCancel, onSave }: {
               {PLAN_LIMITS.map((l) => (
                 <div key={l.key}>
                   <Label className="text-xs">{l.label}</Label>
-                  <Input type="number" value={(p.limites as any)?.[l.key] ?? ""} onChange={(e) => setLimite(l.key, e.target.value)} />
+                  <Input
+                    type="number"
+                    value={(p.limites as any)?.[l.key] ?? ""}
+                    onChange={(e) => setLimite(l.key, e.target.value)}
+                  />
                   <p className="text-[11px] text-muted-foreground mt-1">{l.ajuda}</p>
                 </div>
               ))}
@@ -277,26 +409,50 @@ function PlanoEditor({ inicial, isNew, onCancel, onSave }: {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>Cancelar</Button>
-          <Button onClick={() => onSave(p, isNew)}><Save className="h-4 w-4 mr-1" /> Salvar</Button>
+          <Button variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button onClick={() => onSave(p, isNew)}>
+            <Save className="h-4 w-4 mr-1" /> Salvar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function PacoteEditor({ inicial, onSave, onDelete }: {
-  inicial: PacoteRow; onSave: (p: PacoteRow) => void; onDelete?: () => void;
+function PacoteEditor({
+  inicial,
+  onSave,
+  onDelete,
+}: {
+  inicial: PacoteRow;
+  onSave: (p: PacoteRow) => void;
+  onDelete?: () => void;
 }) {
   const [p, setP] = useState<PacoteRow>(inicial);
-  useEffect(() => { setP(inicial); }, [inicial.id]);
+  useEffect(() => {
+    setP(inicial);
+  }, [inicial.id]);
 
   return (
     <Card>
-      <CardContent className="p-4 grid gap-3 md:grid-cols-[1fr,100px,120px,auto,auto] md:items-end">
+      <CardContent className="p-4 grid gap-3 md:grid-cols-[1fr,160px,90px,110px,auto,auto] md:items-end">
         <div>
           <Label className="text-xs">Rótulo</Label>
           <Input value={p.label} onChange={(e) => setP({ ...p, label: e.target.value })} placeholder="7 dias" />
+        </div>
+        <div>
+          <Label className="text-xs">Onde aparece</Label>
+          <select
+            value={p.escopo}
+            onChange={(e) => setP({ ...p, escopo: e.target.value })}
+            className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+          >
+            <option value="categoria">Topo da categoria</option>
+            <option value="home">Header da home (premium)</option>
+            <option value="cidade">Por cidade</option>
+          </select>
         </div>
         <div>
           <Label className="text-xs">Dias</Label>
@@ -304,14 +460,21 @@ function PacoteEditor({ inicial, onSave, onDelete }: {
         </div>
         <div>
           <Label className="text-xs">Valor (R$)</Label>
-          <Input type="number" step="0.01" value={p.valor} onChange={(e) => setP({ ...p, valor: Number(e.target.value) })} />
+          <Input
+            type="number"
+            step="0.01"
+            value={p.valor}
+            onChange={(e) => setP({ ...p, valor: Number(e.target.value) })}
+          />
         </div>
         <div className="flex items-center gap-2">
           <Switch checked={p.ativo} onCheckedChange={(v) => setP({ ...p, ativo: v })} />
           <Label className="text-xs">Ativo</Label>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => onSave(p)}>{p.id ? "Salvar" : "Adicionar"}</Button>
+          <Button size="sm" onClick={() => onSave(p)}>
+            {p.id ? "Salvar" : "Adicionar"}
+          </Button>
           {onDelete && (
             <Button size="sm" variant="ghost" onClick={onDelete} aria-label="Remover pacote">
               <Trash2 className="h-4 w-4" />
