@@ -5,10 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Heart, Search, ArrowLeft, Building, Star, MapPin, Users, 
-  DollarSign, ChevronDown, ChevronUp, List, LayoutGrid, Tag,
-  ChevronLeft, ChevronRight, Map, Filter, X
+import {
+  Heart,
+  Search,
+  ArrowLeft,
+  Building,
+  Star,
+  MapPin,
+  Users,
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
+  List,
+  LayoutGrid,
+  Tag,
+  ChevronLeft,
+  ChevronRight,
+  Map,
+  Filter,
+  X,
 } from "lucide-react";
 import SupplierSearchMap from "@/components/SupplierSearchMap";
 import BulkContactDialog, { type BulkSupplier } from "@/components/BulkContactDialog";
@@ -37,10 +52,19 @@ type Supplier = {
 };
 
 const subCategories: Record<string, string[]> = {
-  "espacos-buffet": ["Fazendas", "Chácaras", "Hotéis", "Restaurantes", "Salões", "Sítios", "Casas", "Espaços exclusivos"],
-  "fotografia": ["Pré-wedding", "Pós-wedding", "Álbuns", "Mini álbuns", "Álbum digital", "Fotografias em alta resolução"],
+  "espacos-buffet": [
+    "Fazendas",
+    "Chácaras",
+    "Hotéis",
+    "Restaurantes",
+    "Salões",
+    "Sítios",
+    "Casas",
+    "Espaços exclusivos",
+  ],
+  fotografia: ["Pré-wedding", "Pós-wedding", "Álbuns", "Mini álbuns", "Álbum digital", "Fotografias em alta resolução"],
   "musica-dj": ["DJ", "Banda", "Cantor", "Coral", "Instrumentistas"],
-  "decoracao": ["Decoração floral", "Cenografia", "Iluminação", "Mobiliário"],
+  decoracao: ["Decoração floral", "Cenografia", "Iluminação", "Mobiliário"],
 };
 
 const priceRanges = [
@@ -77,7 +101,8 @@ export default function SupplierSearch() {
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
       return n;
     });
   };
@@ -88,18 +113,28 @@ export default function SupplierSearch() {
   };
   const selectedSuppliers: BulkSupplier[] = suppliers
     .filter((s) => selectedIds.has(s.id))
-    .map((s) => ({ id: s.id, company_name: s.company_name, whatsapp: s.whatsapp, phone: s.phone, categories: s.categories }));
+    .map((s) => ({
+      id: s.id,
+      company_name: s.company_name,
+      whatsapp: s.whatsapp,
+      phone: s.phone,
+      categories: s.categories,
+    }));
 
   useEffect(() => {
-    supabase.from("categories").select("*").order("name").then(({ data }) => {
-      if (data) {
-        setCategories(data);
-        if (catSlug) {
-          const found = data.find(c => c.slug === catSlug);
-          if (found) setSelectedCategory(found.id);
+    supabase
+      .from("categories")
+      .select("*")
+      .order("name")
+      .then(({ data }) => {
+        if (data) {
+          setCategories(data);
+          if (catSlug) {
+            const found = data.find((c) => c.slug === catSlug);
+            if (found) setSelectedCategory(found.id);
+          }
         }
-      }
-    });
+      });
   }, [catSlug]);
 
   useEffect(() => {
@@ -110,16 +145,17 @@ export default function SupplierSearch() {
     setLoading(true);
     let query = supabase
       .from("suppliers")
-      .select("*, categories(name), supplier_photos(photo_url)")
+      .select("*, categories(name), supplier_photos(photo_url, is_principal)")
       .eq("status", "approved")
       .order("featured", { ascending: false })
       .order("rating", { ascending: false, nullsFirst: false });
 
     if (selectedCategory) query = query.eq("category_id", selectedCategory);
-    if (searchLocation.trim()) query = query.or(`city.ilike.%${searchLocation.trim()}%,state.ilike.%${searchLocation.trim()}%`);
+    if (searchLocation.trim())
+      query = query.or(`city.ilike.%${searchLocation.trim()}%,state.ilike.%${searchLocation.trim()}%`);
     if (searchQuery.trim()) query = query.ilike("company_name", `%${searchQuery.trim()}%`);
     if (showPromo) query = query.not("promo_percentage", "is", null);
-    
+
     if (selectedPriceRange !== null) {
       const range = priceRanges[selectedPriceRange];
       if (range.min) query = query.gte("price_min", range.min);
@@ -133,12 +169,12 @@ export default function SupplierSearch() {
 
   const handleSearch = () => fetchSuppliers();
 
-  const currentCategoryName = categories.find(c => c.id === selectedCategory)?.name;
-  const currentSlug = categories.find(c => c.id === selectedCategory)?.slug || "";
+  const currentCategoryName = categories.find((c) => c.id === selectedCategory)?.name;
+  const currentSlug = categories.find((c) => c.id === selectedCategory)?.slug || "";
   const subs = subCategories[currentSlug] || [];
 
   const navigatePhoto = (supplierId: string, direction: number, totalPhotos: number) => {
-    setPhotoIndex(prev => {
+    setPhotoIndex((prev) => {
       const current = prev[supplierId] || 0;
       const next = (current + direction + totalPhotos) % totalPhotos;
       return { ...prev, [supplierId]: next };
@@ -158,31 +194,36 @@ export default function SupplierSearch() {
       <div className="mb-6">
         <button
           className="flex items-center justify-between w-full text-sm font-semibold mb-3"
-          onClick={() => setFiltersOpen(p => ({ ...p, category: !p.category }))}
+          onClick={() => setFiltersOpen((p) => ({ ...p, category: !p.category }))}
         >
           <span>{currentCategoryName || "Categoria"}</span>
           {filtersOpen.category ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
         {filtersOpen.category && (
           <div className="space-y-2">
-            {subs.length > 0 ? subs.map((name, i) => (
-              <label key={i} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
-                <Checkbox className="h-4 w-4" />
-                <span>{name}</span>
-              </label>
-            )) : categories.map(cat => (
-              <label
-                key={cat.id}
-                className={`flex items-center gap-2 text-sm cursor-pointer ${selectedCategory === cat.id ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => {
-                  setSelectedCategory(cat.id === selectedCategory ? null : cat.id);
-                  setSelectedCategorySlug(cat.slug);
-                }}
-              >
-                <Checkbox checked={selectedCategory === cat.id} className="h-4 w-4" />
-                <span>{cat.name}</span>
-              </label>
-            ))}
+            {subs.length > 0
+              ? subs.map((name, i) => (
+                  <label
+                    key={i}
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <Checkbox className="h-4 w-4" />
+                    <span>{name}</span>
+                  </label>
+                ))
+              : categories.map((cat) => (
+                  <label
+                    key={cat.id}
+                    className={`flex items-center gap-2 text-sm cursor-pointer ${selectedCategory === cat.id ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => {
+                      setSelectedCategory(cat.id === selectedCategory ? null : cat.id);
+                      setSelectedCategorySlug(cat.slug);
+                    }}
+                  >
+                    <Checkbox checked={selectedCategory === cat.id} className="h-4 w-4" />
+                    <span>{cat.name}</span>
+                  </label>
+                ))}
           </div>
         )}
       </div>
@@ -193,7 +234,7 @@ export default function SupplierSearch() {
       <div className="mb-6">
         <button
           className="flex items-center justify-between w-full text-sm font-semibold mb-3"
-          onClick={() => setFiltersOpen(p => ({ ...p, highlights: !p.highlights }))}
+          onClick={() => setFiltersOpen((p) => ({ ...p, highlights: !p.highlights }))}
         >
           <span>Filtros destacados</span>
           {filtersOpen.highlights ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -208,7 +249,9 @@ export default function SupplierSearch() {
                 onClick={() => setShowPromo(!showPromo)}
                 className={`w-10 h-5 rounded-full transition-colors ${showPromo ? "bg-primary" : "bg-muted"}`}
               >
-                <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${showPromo ? "translate-x-5" : "translate-x-0.5"}`} />
+                <div
+                  className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${showPromo ? "translate-x-5" : "translate-x-0.5"}`}
+                />
               </button>
             </label>
           </div>
@@ -221,7 +264,7 @@ export default function SupplierSearch() {
       <div className="mb-6">
         <button
           className="flex items-center justify-between w-full text-sm font-semibold mb-3"
-          onClick={() => setFiltersOpen(p => ({ ...p, price: !p.price }))}
+          onClick={() => setFiltersOpen((p) => ({ ...p, price: !p.price }))}
         >
           <span>Preço</span>
           {filtersOpen.price ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -229,7 +272,10 @@ export default function SupplierSearch() {
         {filtersOpen.price && (
           <div className="space-y-2">
             {priceRanges.map((range, i) => (
-              <label key={i} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
+              <label
+                key={i}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+              >
                 <Checkbox
                   checked={selectedPriceRange === i}
                   onCheckedChange={() => setSelectedPriceRange(selectedPriceRange === i ? null : i)}
@@ -254,9 +300,15 @@ export default function SupplierSearch() {
             <span className="text-lg font-bold hidden sm:inline">Casamenteiro</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm ml-6">
-            <Link to="/buscar" className="text-muted-foreground hover:text-foreground transition-colors">Fornecedores</Link>
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">Meu Casamento</Link>
-            <Link to="/perfil" className="text-muted-foreground hover:text-foreground transition-colors">Perfil</Link>
+            <Link to="/buscar" className="text-muted-foreground hover:text-foreground transition-colors">
+              Fornecedores
+            </Link>
+            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+              Meu Casamento
+            </Link>
+            <Link to="/perfil" className="text-muted-foreground hover:text-foreground transition-colors">
+              Perfil
+            </Link>
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
@@ -272,11 +324,15 @@ export default function SupplierSearch() {
       {/* Breadcrumb - hidden on mobile */}
       <div className="border-b border-border bg-background hidden sm:block">
         <div className="container py-2 text-xs text-muted-foreground flex items-center gap-1.5">
-          <Link to="/" className="hover:text-foreground">Casamentos</Link>
+          <Link to="/" className="hover:text-foreground">
+            Casamentos
+          </Link>
           <span>/</span>
           {currentCategoryName ? (
             <>
-              <Link to="/buscar" className="hover:text-foreground">Fornecedores</Link>
+              <Link to="/buscar" className="hover:text-foreground">
+                Fornecedores
+              </Link>
               <span>/</span>
               <span className="text-foreground">{currentCategoryName}</span>
               {searchLocation && (
@@ -327,17 +383,12 @@ export default function SupplierSearch() {
 
       {/* Mobile filter bar */}
       <div className="lg:hidden border-b border-border px-3 py-2 flex items-center gap-2 overflow-x-auto">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="shrink-0"
-          onClick={() => setMobileFiltersOpen(true)}
-        >
+        <Button variant="outline" size="sm" className="shrink-0" onClick={() => setMobileFiltersOpen(true)}>
           <Filter className="h-3.5 w-3.5 mr-1.5" />
           Filtros
         </Button>
         {/* Quick category pills */}
-        {categories.slice(0, 4).map(cat => (
+        {categories.slice(0, 4).map((cat) => (
           <Button
             key={cat.id}
             variant={selectedCategory === cat.id ? "default" : "outline"}
@@ -365,7 +416,13 @@ export default function SupplierSearch() {
               </Button>
             </div>
             <FiltersSidebar />
-            <Button className="w-full mt-4" onClick={() => { setMobileFiltersOpen(false); handleSearch(); }}>
+            <Button
+              className="w-full mt-4"
+              onClick={() => {
+                setMobileFiltersOpen(false);
+                handleSearch();
+              }}
+            >
               Aplicar filtros
             </Button>
           </div>
@@ -433,21 +490,30 @@ export default function SupplierSearch() {
               /* MAP VIEW */
               <div className="flex flex-col lg:flex-row gap-4" style={{ height: "600px" }}>
                 <div className="flex-1 min-h-[300px] lg:min-h-0">
-                  <SupplierSearchMap
-                    suppliers={suppliers}
-                    onSupplierClick={(id) => navigate(`/fornecedor/${id}`)}
-                  />
+                  <SupplierSearchMap suppliers={suppliers} onSupplierClick={(id) => navigate(`/fornecedor/${id}`)} />
                 </div>
                 <div className="lg:w-[300px] overflow-y-auto space-y-2">
-                  {suppliers.map(sup => {
-                    const photo = sup.supplier_photos?.[0]?.photo_url;
+                  {suppliers.map((sup) => {
+                    const _fotos = sup.supplier_photos || [];
+                    const photo = (_fotos.find((p: any) => p.is_principal) || _fotos[0])?.photo_url;
                     return (
-                      <Link key={sup.id} to={`/fornecedor/${sup.id}`} className="flex gap-3 p-2 rounded-lg border border-border hover:shadow-md transition-shadow bg-card">
+                      <Link
+                        key={sup.id}
+                        to={`/fornecedor/${sup.id}`}
+                        className="flex gap-3 p-2 rounded-lg border border-border hover:shadow-md transition-shadow bg-card"
+                      >
                         <div className="w-20 h-16 rounded-md overflow-hidden bg-muted shrink-0">
                           {photo ? (
-                            <img src={photo} alt={sup.company_name} className="w-full h-full object-cover" loading="lazy" />
+                            <img
+                              src={photo}
+                              alt={sup.company_name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center"><Building className="h-5 w-5 text-muted-foreground" /></div>
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Building className="h-5 w-5 text-muted-foreground" />
+                            </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -476,7 +542,10 @@ export default function SupplierSearch() {
                   const photos = sup.supplier_photos || [];
                   const currentPhoto = photoIndex[sup.id] || 0;
                   return (
-                    <div key={sup.id} className={`relative flex flex-col sm:flex-row border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-shadow ${selectedIds.has(sup.id) ? "border-primary ring-1 ring-primary" : "border-border"}`}>
+                    <div
+                      key={sup.id}
+                      className={`relative flex flex-col sm:flex-row border rounded-lg overflow-hidden bg-card hover:shadow-lg transition-shadow ${selectedIds.has(sup.id) ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                    >
                       <label className="absolute top-2 left-2 z-10 bg-background/95 rounded-md p-1 cursor-pointer shadow-sm">
                         <Checkbox checked={selectedIds.has(sup.id)} onCheckedChange={() => toggleSelect(sup.id)} />
                       </label>
@@ -512,7 +581,10 @@ export default function SupplierSearch() {
                             </button>
                             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
                               {photos.slice(0, 5).map((_, i) => (
-                                <div key={i} className={`w-2 h-2 rounded-full ${i === currentPhoto ? "bg-white" : "bg-white/50"}`} />
+                                <div
+                                  key={i}
+                                  className={`w-2 h-2 rounded-full ${i === currentPhoto ? "bg-white" : "bg-white/50"}`}
+                                />
                               ))}
                             </div>
                           </>
@@ -538,9 +610,7 @@ export default function SupplierSearch() {
                             <>
                               <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                               <span className="font-semibold">{sup.rating.toFixed(1)}</span>
-                              {sup.review_count && (
-                                <span className="text-muted-foreground">({sup.review_count})</span>
-                              )}
+                              {sup.review_count && <span className="text-muted-foreground">({sup.review_count})</span>}
                               <span className="text-muted-foreground">·</span>
                             </>
                           )}
@@ -576,8 +646,7 @@ export default function SupplierSearch() {
                           )}
                           {sup.promo_percentage && sup.promo_percentage > 0 && (
                             <span className="flex items-center gap-1 text-primary font-medium">
-                              <Tag className="h-3.5 w-3.5" />
-                              -{sup.promo_percentage}%
+                              <Tag className="h-3.5 w-3.5" />-{sup.promo_percentage}%
                             </span>
                           )}
                         </div>
@@ -591,9 +660,7 @@ export default function SupplierSearch() {
                       {/* Desktop CTA */}
                       <div className="hidden sm:flex items-end p-5">
                         <Button className="whitespace-nowrap" asChild>
-                          <Link to={`/fornecedor/${sup.id}`}>
-                            Pedir Orçamento Grátis
-                          </Link>
+                          <Link to={`/fornecedor/${sup.id}`}>Pedir Orçamento Grátis</Link>
                         </Button>
                       </div>
                     </div>
@@ -604,38 +671,59 @@ export default function SupplierSearch() {
               /* GALLERY VIEW */
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                 {suppliers.map((sup) => {
-                  const photo = sup.supplier_photos?.[0]?.photo_url;
+                  const _fotos = sup.supplier_photos || [];
+                  const photo = (_fotos.find((p: any) => p.is_principal) || _fotos[0])?.photo_url;
                   return (
                     <div key={sup.id} className="relative">
-                      <label className="absolute top-2 left-2 z-10 bg-background/95 rounded-md p-1 cursor-pointer shadow-sm" onClick={(e) => e.stopPropagation()}>
+                      <label
+                        className="absolute top-2 left-2 z-10 bg-background/95 rounded-md p-1 cursor-pointer shadow-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Checkbox checked={selectedIds.has(sup.id)} onCheckedChange={() => toggleSelect(sup.id)} />
                       </label>
                       <Link to={`/fornecedor/${sup.id}`} className="group block">
-                      <div className={`rounded-lg overflow-hidden border bg-card hover:shadow-lg transition-all ${selectedIds.has(sup.id) ? "border-primary ring-1 ring-primary" : "border-border"}`}>
-                        <div className="relative h-32 sm:h-48 bg-muted">
-                          {photo ? (
-                            <img src={photo} alt={sup.company_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center"><Building className="h-10 w-10 text-muted-foreground" /></div>
-                          )}
-                          {sup.featured && (
-                            <Badge className="absolute top-2 left-2 bg-amber-600 text-white text-[10px] font-bold">TOP</Badge>
-                          )}
+                        <div
+                          className={`rounded-lg overflow-hidden border bg-card hover:shadow-lg transition-all ${selectedIds.has(sup.id) ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                        >
+                          <div className="relative h-32 sm:h-48 bg-muted">
+                            {photo ? (
+                              <img
+                                src={photo}
+                                alt={sup.company_name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Building className="h-10 w-10 text-muted-foreground" />
+                              </div>
+                            )}
+                            {sup.featured && (
+                              <Badge className="absolute top-2 left-2 bg-amber-600 text-white text-[10px] font-bold">
+                                TOP
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="p-2 sm:p-3">
+                            <h3 className="font-semibold text-xs sm:text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">
+                              {sup.company_name}
+                            </h3>
+                            {sup.rating && (
+                              <div className="flex items-center gap-1 text-xs mb-1">
+                                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                <span className="font-semibold">{sup.rating.toFixed(1)}</span>
+                                {sup.review_count && (
+                                  <span className="text-muted-foreground">({sup.review_count})</span>
+                                )}
+                              </div>
+                            )}
+                            {sup.price_min && (
+                              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                                R${sup.price_min.toLocaleString("pt-BR")}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="p-2 sm:p-3">
-                          <h3 className="font-semibold text-xs sm:text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">{sup.company_name}</h3>
-                          {sup.rating && (
-                            <div className="flex items-center gap-1 text-xs mb-1">
-                              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                              <span className="font-semibold">{sup.rating.toFixed(1)}</span>
-                              {sup.review_count && <span className="text-muted-foreground">({sup.review_count})</span>}
-                            </div>
-                          )}
-                          {sup.price_min && (
-                            <p className="text-[10px] sm:text-xs text-muted-foreground">R${sup.price_min.toLocaleString("pt-BR")}</p>
-                          )}
-                        </div>
-                      </div>
                       </Link>
                     </div>
                   );
@@ -650,13 +738,17 @@ export default function SupplierSearch() {
       {selectedIds.size > 0 && (
         <div className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md shadow-lg">
           <div className="container py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p className="text-sm font-medium">
-              {selectedIds.size} fornecedor(es) selecionado(s)
-            </p>
+            <p className="text-sm font-medium">{selectedIds.size} fornecedor(es) selecionado(s)</p>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Limpar</Button>
-              <Button size="sm" variant="outline" onClick={() => setBulkDialog("whatsapp")}>WhatsApp (um a um)</Button>
-              <Button size="sm" onClick={() => setBulkDialog("platform")}>Enviar pela plataforma</Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                Limpar
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setBulkDialog("whatsapp")}>
+                WhatsApp (um a um)
+              </Button>
+              <Button size="sm" onClick={() => setBulkDialog("platform")}>
+                Enviar pela plataforma
+              </Button>
             </div>
           </div>
         </div>
@@ -664,7 +756,9 @@ export default function SupplierSearch() {
 
       <BulkContactDialog
         open={bulkDialog !== null}
-        onOpenChange={(o) => { if (!o) setBulkDialog(null); }}
+        onOpenChange={(o) => {
+          if (!o) setBulkDialog(null);
+        }}
         suppliers={selectedSuppliers}
         mode={bulkDialog || "platform"}
         onDone={() => setSelectedIds(new Set())}
