@@ -13,9 +13,17 @@ import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { formatBRL } from "@/lib/platformPricing";
 import SupplierShell from "@/components/supplier/SupplierShell";
 import {
-  listarPlanos, assinaturaAtual, criarAssinatura, criarCompraDestaque,
-  ASSINATURA_STATUS_LABEL, DESTAQUE_STATUS_LABEL, PACOTES_DESTAQUE, listarPacotesDestaque,
-  type Plano, type Assinatura, type PacoteDestaque,
+  listarPlanos,
+  assinaturaAtual,
+  criarAssinatura,
+  criarCompraDestaque,
+  ASSINATURA_STATUS_LABEL,
+  DESTAQUE_STATUS_LABEL,
+  PACOTES_DESTAQUE,
+  listarPacotesDestaque,
+  type Plano,
+  type Assinatura,
+  type PacoteDestaque,
 } from "@/lib/monetizacao";
 
 export default function FornecedorPlanos() {
@@ -35,11 +43,16 @@ export default function FornecedorPlanos() {
   const [processando, setProcessando] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) { navigate("/fornecedor/login"); return; }
+    if (!user) {
+      navigate("/fornecedor/login");
+      return;
+    }
     (async () => {
-      const { data: fornecedor } = await supabase
-        .from("suppliers").select("id").eq("user_id", user.id).maybeSingle();
-      if (!fornecedor) { setCarregando(false); return; }
+      const { data: fornecedor } = await supabase.from("suppliers").select("id").eq("user_id", user.id).maybeSingle();
+      if (!fornecedor) {
+        setCarregando(false);
+        return;
+      }
       setSupplierId(fornecedor.id);
       const [ps, a, pk] = await Promise.all([listarPlanos(), assinaturaAtual(fornecedor.id), listarPacotesDestaque()]);
       setPlanos(ps);
@@ -47,9 +60,17 @@ export default function FornecedorPlanos() {
       setPacotes(
         pk.length > 0
           ? pk
-          : PACOTES_DESTAQUE.map((p) => ({ id: `fallback-${p.dias}`, label: p.label, dias: p.dias, valor: p.valor, ativo: true, ordem: p.dias }))
+          : PACOTES_DESTAQUE.map((p) => ({
+              id: `fallback-${p.dias}`,
+              label: p.label,
+              dias: p.dias,
+              valor: p.valor,
+              ativo: true,
+              ordem: p.dias,
+            })),
       );
-      const { data: fp } = await (supabase.from("featured_purchases" as any)
+      const { data: fp } = await (supabase
+        .from("featured_purchases" as any)
         .select("id, dias, valor, status, inicio, fim")
         .eq("supplier_id", fornecedor.id)
         .order("created_at", { ascending: false })
@@ -61,15 +82,14 @@ export default function FornecedorPlanos() {
 
   const assinar = async (plano: Plano) => {
     if (!supplierId) return;
-    const preco = ciclo === "anual" ? plano.preco_anual : plano.preco_mensal;
     setProcessando(plano.id);
-    const { id, erro } = await criarAssinatura({ supplierId, plano, ciclo });
+    const { id, erro, ativadaDireto } = await criarAssinatura({ supplierId, plano, ciclo });
     setProcessando(null);
     if (erro || !id) {
       toast({ title: "Não foi possível iniciar a assinatura", description: erro, variant: "destructive" });
       return;
     }
-    if (preco <= 0) {
+    if (ativadaDireto) {
       toast({ title: "Plano Essencial ativado", description: "Você já pode receber pedidos de orçamento." });
       setAssinatura(await assinaturaAtual(supplierId));
       return;
@@ -103,7 +123,7 @@ export default function FornecedorPlanos() {
     return (
       <SupplierShell>
         <div className="container mx-auto max-w-xl px-4 py-16 text-center space-y-4">
-        <p>Complete o cadastro do seu negócio para acessar os planos.</p>
+          <p>Complete o cadastro do seu negócio para acessar os planos.</p>
           <Button onClick={() => navigate("/fornecedor/cadastro")}>Completar cadastro</Button>
         </div>
       </SupplierShell>
@@ -112,142 +132,158 @@ export default function FornecedorPlanos() {
 
   return (
     <SupplierShell>
-    <div className="container mx-auto max-w-5xl px-4 py-10 space-y-10">
-      <SEO title="Planos e destaques | Meu Grande Dia" description="Escolha seu plano e amplie a visibilidade do seu negócio." noIndex />
+      <div className="container mx-auto max-w-5xl px-4 py-10 space-y-10">
+        <SEO
+          title="Planos e destaques | Meu Grande Dia"
+          description="Escolha seu plano e amplie a visibilidade do seu negócio."
+          noIndex
+        />
 
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">Planos e destaques</h1>
-        <p className="text-muted-foreground text-sm">
-          Escolha o plano que combina com o seu momento e turbine sua visibilidade na busca.
-        </p>
-        {assinatura && (
-          <Badge variant="secondary">
-            Assinatura atual: {ASSINATURA_STATUS_LABEL[assinatura.status] ?? assinatura.status}
-            {assinatura.current_period_end
-              ? ` · até ${new Date(assinatura.current_period_end).toLocaleDateString("pt-BR")}`
-              : ""}
-          </Badge>
-        )}
-      </header>
-
-      {!assinaturaOn ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground">
-            As assinaturas serão liberadas em breve. Enquanto isso, seu perfil segue ativo no plano Essencial.
-          </CardContent>
-        </Card>
-      ) : (
-        <section className="space-y-4">
-          <Tabs value={ciclo} onValueChange={(v) => setCiclo(v as "mensal" | "anual")}>
-            <TabsList>
-              <TabsTrigger value="mensal">Mensal</TabsTrigger>
-              <TabsTrigger value="anual">Anual (2 meses grátis)</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            {planos.map((p) => {
-              const preco = ciclo === "anual" ? p.preco_anual : p.preco_mensal;
-              const atual = assinatura?.plan_id === p.id && assinatura?.status === "ativa";
-              return (
-                <Card key={p.id} className={p.destaque_busca ? "border-primary" : undefined}>
-                  <CardHeader className="space-y-1">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {p.nome}
-                      {p.destaque_busca && <Sparkles className="h-4 w-4 text-primary" />}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">{p.descricao}</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-2xl font-semibold">
-                      {preco > 0 ? formatBRL(preco) : "Grátis"}
-                      {preco > 0 && (
-                        <span className="text-sm font-normal text-muted-foreground">
-                          /{ciclo === "anual" ? "ano" : "mês"}
-                        </span>
-                      )}
-                    </p>
-                    <ul className="space-y-1 text-sm">
-                      {p.beneficios.map((b) => (
-                        <li key={b} className="flex gap-2">
-                          <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      className="w-full"
-                      variant={p.destaque_busca ? "default" : "outline"}
-                      disabled={atual || processando === p.id}
-                      onClick={() => assinar(p)}
-                    >
-                      {atual ? "Plano atual" : processando === p.id ? "Aguarde..." : preco > 0 ? "Assinar" : "Usar plano grátis"}
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Destaque na busca</h2>
-          <p className="text-sm text-muted-foreground">
-            Apareça no topo dos resultados e receba mais pedidos de orçamento.
+        <header className="space-y-2">
+          <h1 className="text-2xl font-semibold">Planos e destaques</h1>
+          <p className="text-muted-foreground text-sm">
+            Escolha o plano que combina com o seu momento e turbine sua visibilidade na busca.
           </p>
-        </div>
+          {assinatura && (
+            <Badge variant="secondary">
+              Assinatura atual: {ASSINATURA_STATUS_LABEL[assinatura.status] ?? assinatura.status}
+              {assinatura.current_period_end
+                ? ` · até ${new Date(assinatura.current_period_end).toLocaleDateString("pt-BR")}`
+                : ""}
+            </Badge>
+          )}
+        </header>
 
-        {!destaqueOn ? (
+        {!assinaturaOn ? (
           <Card>
             <CardContent className="p-6 text-sm text-muted-foreground">
-              A compra de destaque será liberada em breve.
+              As assinaturas serão liberadas em breve. Enquanto isso, seu perfil segue ativo no plano Essencial.
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-3">
-            {pacotes.map((pac) => (
-              <Card key={pac.id}>
-                <CardHeader><CardTitle className="text-base">{pac.label}</CardTitle></CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-xl font-semibold">{formatBRL(pac.valor)}</p>
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    disabled={processando === `destaque-${pac.dias}`}
-                    onClick={() => comprarDestaque(pac.dias, pac.valor)}
-                  >
-                    {processando === `destaque-${pac.dias}` ? "Aguarde..." : "Comprar destaque"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <section className="space-y-4">
+            <Tabs value={ciclo} onValueChange={(v) => setCiclo(v as "mensal" | "anual")}>
+              <TabsList>
+                <TabsTrigger value="mensal">Mensal</TabsTrigger>
+                <TabsTrigger value="anual">Anual (2 meses grátis)</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {planos.map((p) => {
+                const preco = ciclo === "anual" ? p.preco_anual : p.preco_mensal;
+                const atual = assinatura?.plan_id === p.id && assinatura?.status === "ativa";
+                return (
+                  <Card key={p.id} className={p.destaque_busca ? "border-primary" : undefined}>
+                    <CardHeader className="space-y-1">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {p.nome}
+                        {p.destaque_busca && <Sparkles className="h-4 w-4 text-primary" />}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">{p.descricao}</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-2xl font-semibold">
+                        {preco > 0 ? formatBRL(preco) : "Grátis"}
+                        {preco > 0 && (
+                          <span className="text-sm font-normal text-muted-foreground">
+                            /{ciclo === "anual" ? "ano" : "mês"}
+                          </span>
+                        )}
+                      </p>
+                      <ul className="space-y-1 text-sm">
+                        {p.beneficios.map((b) => (
+                          <li key={b} className="flex gap-2">
+                            <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button
+                        className="w-full"
+                        variant={p.destaque_busca ? "default" : "outline"}
+                        disabled={atual || processando === p.id}
+                        onClick={() => assinar(p)}
+                      >
+                        {atual
+                          ? "Plano atual"
+                          : processando === p.id
+                            ? "Aguarde..."
+                            : preco > 0
+                              ? "Assinar"
+                              : "Usar plano grátis"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
         )}
 
-        {destaques.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle className="text-base">Meus destaques</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {destaques.map((d) => (
-                <div key={d.id} className="flex items-center justify-between border-t pt-2 first:border-0 first:pt-0">
-                  <span>{d.dias} dias · {formatBRL(Number(d.valor))}</span>
-                  <div className="flex items-center gap-2">
-                    {d.fim && (
-                      <span className="text-xs text-muted-foreground">
-                        até {new Date(d.fim).toLocaleDateString("pt-BR")}
-                      </span>
-                    )}
-                    <Badge variant="secondary">{DESTAQUE_STATUS_LABEL[d.status] ?? d.status}</Badge>
-                  </div>
-                </div>
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold">Destaque na busca</h2>
+            <p className="text-sm text-muted-foreground">
+              Apareça no topo dos resultados e receba mais pedidos de orçamento.
+            </p>
+          </div>
+
+          {!destaqueOn ? (
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                A compra de destaque será liberada em breve.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              {pacotes.map((pac) => (
+                <Card key={pac.id}>
+                  <CardHeader>
+                    <CardTitle className="text-base">{pac.label}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-xl font-semibold">{formatBRL(pac.valor)}</p>
+                    <Button
+                      className="w-full"
+                      variant="outline"
+                      disabled={processando === `destaque-${pac.dias}`}
+                      onClick={() => comprarDestaque(pac.dias, pac.valor)}
+                    >
+                      {processando === `destaque-${pac.dias}` ? "Aguarde..." : "Comprar destaque"}
+                    </Button>
+                  </CardContent>
+                </Card>
               ))}
-            </CardContent>
-          </Card>
-        )}
-      </section>
-    </div>
+            </div>
+          )}
+
+          {destaques.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Meus destaques</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {destaques.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between border-t pt-2 first:border-0 first:pt-0">
+                    <span>
+                      {d.dias} dias · {formatBRL(Number(d.valor))}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {d.fim && (
+                        <span className="text-xs text-muted-foreground">
+                          até {new Date(d.fim).toLocaleDateString("pt-BR")}
+                        </span>
+                      )}
+                      <Badge variant="secondary">{DESTAQUE_STATUS_LABEL[d.status] ?? d.status}</Badge>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </section>
+      </div>
     </SupplierShell>
   );
 }
