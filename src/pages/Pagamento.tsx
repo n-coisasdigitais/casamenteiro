@@ -32,11 +32,11 @@ export default function Pagamento() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const transparenteFlag = useFeatureFlag("checkout_transparente", false);
+  const tipo = (params.get("tipo") ?? "") as "reserva" | "assinatura" | "destaque" | "cancelamento";
+  const ref = params.get("ref") ?? "";
   // Assinatura recorrente (preapproval) exige redirect para autorizar a recorrência —
   // não funciona no checkout transparente (brick). Força redirect nesse caso.
   const transparente = tipo === "assinatura" ? false : transparenteFlag;
-  const tipo = (params.get("tipo") ?? "") as "reserva" | "assinatura" | "destaque" | "cancelamento";
-  const ref = params.get("ref") ?? "";
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
