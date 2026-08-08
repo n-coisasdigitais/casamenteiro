@@ -11,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 declare global {
-  interface Window { MercadoPago?: any }
+  interface Window {
+    MercadoPago?: any;
+  }
 }
 
 function carregarSdkMp(): Promise<void> {
@@ -29,7 +31,10 @@ export default function Pagamento() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const transparente = useFeatureFlag("checkout_transparente", false);
+  const transparenteFlag = useFeatureFlag("checkout_transparente", false);
+  // Assinatura recorrente (preapproval) exige redirect para autorizar a recorrência —
+  // não funciona no checkout transparente (brick). Força redirect nesse caso.
+  const transparente = tipo === "assinatura" ? false : transparenteFlag;
   const tipo = (params.get("tipo") ?? "") as "reserva" | "assinatura" | "destaque" | "cancelamento";
   const ref = params.get("ref") ?? "";
 
@@ -79,7 +84,9 @@ export default function Pagamento() {
                     const j = await ctx.json();
                     if (j?.detalhe) detalhe = String(j.detalhe);
                   }
-                } catch { /* ignora */ }
+                } catch {
+                  /* ignora */
+                }
                 toast({ title: "Pagamento não aprovado", description: detalhe, variant: "destructive" });
                 throw error;
               }
@@ -107,7 +114,9 @@ export default function Pagamento() {
         <Card>
           <CardContent className="p-6 space-y-4">
             <p className="text-sm text-destructive">{erro}</p>
-            <Button variant="outline" onClick={() => navigate(-1)}>Voltar</Button>
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Voltar
+            </Button>
           </CardContent>
         </Card>
       ) : checkout ? (
@@ -127,7 +136,12 @@ export default function Pagamento() {
               <div id="mp-bricks" ref={brickRef} />
             ) : (
               <>
-                <Button className="w-full" onClick={() => { window.location.href = checkout.checkout_url; }}>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    window.location.href = checkout.checkout_url;
+                  }}
+                >
                   Pagar com Mercado Pago
                 </Button>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
