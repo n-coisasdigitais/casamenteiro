@@ -56,17 +56,25 @@ export const PACOTES_DESTAQUE = [
 ];
 
 export async function listarPacotesDestaque(incluirInativos = false): Promise<PacoteDestaque[]> {
-  let q = (supabase.from("featured_packages" as any)
+  let q = supabase
+    .from("featured_packages" as any)
     .select("id, label, dias, valor, ativo, ordem")
-    .order("ordem", { ascending: true }) as any);
+    .order("ordem", { ascending: true }) as any;
   if (!incluirInativos) q = q.eq("ativo", true);
   const { data } = await q;
-  return ((data as any[]) ?? []).map((p) => ({ ...p, valor: Number(p.valor), dias: Number(p.dias) })) as PacoteDestaque[];
+  return ((data as any[]) ?? []).map((p) => ({
+    ...p,
+    valor: Number(p.valor),
+    dias: Number(p.dias),
+  })) as PacoteDestaque[];
 }
 
 export async function listarPlanos(): Promise<Plano[]> {
-  const { data } = await (supabase.from("subscription_plans" as any)
-    .select("id, slug, nome, descricao, preco_mensal, preco_anual, beneficios, limites, recursos, destaque_busca, ordem")
+  const { data } = await (supabase
+    .from("subscription_plans" as any)
+    .select(
+      "id, slug, nome, descricao, preco_mensal, preco_anual, beneficios, limites, recursos, destaque_busca, ordem",
+    )
     .eq("ativo", true)
     .order("ordem", { ascending: true }) as any);
   return ((data as any[]) ?? []).map((p) => ({
@@ -78,7 +86,8 @@ export async function listarPlanos(): Promise<Plano[]> {
 }
 
 export async function assinaturaAtual(supplierId: string) {
-  const { data } = await (supabase.from("supplier_subscriptions" as any)
+  const { data } = await (supabase
+    .from("supplier_subscriptions" as any)
     .select("id, supplier_id, plan_id, ciclo, status, valor, current_period_end")
     .eq("supplier_id", supplierId)
     .in("status", ["ativa", "pendente"])
@@ -93,16 +102,60 @@ export async function criarAssinatura(opts: {
   supplierId: string;
   plano: Plano;
   ciclo: "mensal" | "anual";
-}): Promise<{ id: string | null; erro?: string }> {
+}): Promise<{ id: string | null; erro?: string; ativadaDireto?: boolean }> {
   const valor = opts.ciclo === "anual" ? opts.plano.preco_anual : opts.plano.preco_mensal;
+  const gratis = Number(valor) <= 0;
   const existente = await assinaturaAtual(opts.supplierId);
-  if (existente && existente.status === "pendente") {
+
+  // PLANO GRÁTIS: ativa direto, sem pagamento. Reusa a linha existente se houver.
+  if (gratis) {
+    const agora = new Date();
+    const fim = new Date(agora);
+    fim.setMonth(fim.getMonth() + 1);
+    if (existente) {
+      const { error } = await (supabase.from("supplier_subscriptions" as any) as any)
+        .update({
+          plan_id: opts.plano.id,
+          ciclo: opts.ciclo,
+          valor: 0,
+          status: "ativa",
+          current_period_start: agora.toISOString(),
+          current_period_end: fim.toISOString(),
+          cancelada_em: null,
+          mp_preapproval_id: null,
+        })
+        .eq("id", existente.id);
+      if (error) return { id: null, erro: error.message };
+      return { id: existente.id, ativadaDireto: true };
+    }
+    const { data, error } = await (supabase.from("supplier_subscriptions" as any) as any)
+      .insert({
+        supplier_id: opts.supplierId,
+        plan_id: opts.plano.id,
+        ciclo: opts.ciclo,
+        valor: 0,
+        status: "ativa",
+        current_period_start: agora.toISOString(),
+        current_period_end: fim.toISOString(),
+      })
+      .select("id")
+      .maybeSingle();
+    if (error) return { id: null, erro: error.message };
+    return { id: data?.id ?? null, ativadaDireto: true };
+  }
+
+  // PLANO PAGO: se já existe assinatura (pendente OU ativa), faz UPDATE (troca/upgrade/downgrade),
+  // voltando a 'pendente' para gerar o preapproval. Evita violar o índice único.
+  // NOTA: durante o trial o acesso vem do trial, então voltar para 'pendente' não remove acesso.
+  if (existente) {
     const { error } = await (supabase.from("supplier_subscriptions" as any) as any)
-      .update({ plan_id: opts.plano.id, ciclo: opts.ciclo, valor })
+      .update({ plan_id: opts.plano.id, ciclo: opts.ciclo, valor, status: "pendente", cancelada_em: null })
       .eq("id", existente.id);
     if (error) return { id: null, erro: error.message };
     return { id: existente.id };
   }
+
+  // Nenhuma assinatura ainda: cria a primeira (pendente, vai gerar o preapproval).
   const { data, error } = await (supabase.from("supplier_subscriptions" as any) as any)
     .insert({ supplier_id: opts.supplierId, plan_id: opts.plano.id, ciclo: opts.ciclo, valor, status: "pendente" })
     .select("id")
@@ -146,7 +199,9 @@ export async function iniciarCheckout(
     try {
       const ctx = (error as any)?.context;
       if (ctx?.text) detalhe = await ctx.text();
-    } catch { /* ignora */ }
+    } catch {
+      /* ignora */
+    }
     return { data: null as CheckoutResposta | null, erro: detalhe };
   }
   return { data: data as CheckoutResposta, erro: null as string | null };
