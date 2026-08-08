@@ -98,6 +98,154 @@ Deno.serve(async (req) => {
     return json({ error: `access token ausente para ambiente ${ambiente}` }, 503);
   }
 
+  // ===== CAMINHO 1: eventos de assinatura recorrente (preapproval) =====
+  // O MP envia type/topic diferentes para assinaturas. Tratamos aqui e retornamos.
+  const evento = String(payload?.type ?? payload?.topic ?? "");
+  if (evento === "subscription_preapproval" || evento === "preapproval") {
+    // data.id = preapproval_id. Consultamos o preapproval para saber o status.
+    const preapprovalId = String(payload?.data?.id ?? "");
+    if (!preapprovalId) {
+      await registrar({ resultado: "preapproval_sem_id" }, 200);
+      return json({ ok: true });
+    }
+
+    const paRes = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const pa = await paRes.json().catch(() => ({}) as any);
+    if (!paRes.ok) {
+      await registrar({ resultado: "falha_consulta_preapproval" }, 502);
+      return json({ error: "falha" }, 502);
+    }
+
+    const paStatus = pa?.status; // authorized | paused | cancelled | pending
+    const externalRef = String(pa?.external_reference ?? "");
+    const referenciaId = externalRef.includes(":") ? externalRef.split(":")[1] : null;
+    registro.tipo = "assinatura";
+    registro.referencia_id = referenciaId;
+    registro.status_recebido = paStatus;
+
+    if (referenciaId) {
+      const { data: assinatura } = await admin
+        .from("supplier_subscriptions")
+        .select("*")
+        .eq("id", referenciaId)
+        .maybeSingle();
+      if (assinatura) {
+        if (paStatus === "authorized") {
+          // Recorrência autorizada. Define vigência (Regra B: se em trial, começa no fim do trial).
+          const { data: sup } = await admin
+            .from("suppliers")
+            .select("trial_ends_at")
+            .eq("id", assinatura.supplier_id)
+            .maybeSingle();
+          const agora = new Date();
+          const trialFim = sup?.trial_ends_at ? new Date(sup.trial_ends_at) : null;
+          const emTrial = trialFim && trialFim > agora;
+          const inicio = emTrial ? trialFim! : agora;
+          const fim = new Date(inicio);
+          if (assinatura.ciclo === "anual") fim.setFullYear(fim.getFullYear() + 1);
+          else fim.setMonth(fim.getMonth() + 1);
+          await admin
+            .from("supplier_subscriptions")
+            .update({
+              status: "ativa",
+              ambiente,
+              mp_preapproval_id: preapprovalId,
+              current_period_start: inicio.toISOString(),
+              current_period_end: fim.toISOString(),
+            })
+            .eq("id", assinatura.id);
+
+          const { data: plano } = await admin
+            .from("subscription_plans")
+            .select("destaque_busca")
+            .eq("id", assinatura.plan_id)
+            .maybeSingle();
+          if (plano?.destaque_busca) {
+            await admin
+              .from("suppliers")
+              .update({ featured: true, featured_until: fim.toISOString() })
+              .eq("id", assinatura.supplier_id);
+          }
+        } else if (paStatus === "cancelled") {
+          // Cancelado no MP: mantém acesso até current_period_end (não zera).
+          await admin
+            .from("supplier_subscriptions")
+            .update({
+              status: "cancelada",
+              cancelada_em: new Date().toISOString(),
+            })
+            .eq("id", assinatura.id);
+        }
+      }
+    }
+    await registrar({ resultado: "preapproval_processado" }, 200);
+    return json({ ok: true, preapproval: paStatus });
+  }
+
+  if (evento === "subscription_authorized_payment") {
+    // Uma cobrança mensal recorrente aconteceu. data.id = authorized_payment_id.
+    const authPayId = String(payload?.data?.id ?? "");
+    const apRes = await fetch(`https://api.mercadopago.com/authorized_payments/${authPayId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const ap = await apRes.json().catch(() => ({}) as any);
+    if (!apRes.ok) {
+      await registrar({ resultado: "falha_authorized_payment" }, 502);
+      return json({ error: "falha" }, 502);
+    }
+
+    const preapprovalId = String(ap?.preapproval_id ?? "");
+    const pago = ap?.status === "processed" || ap?.payment?.status === "approved";
+    const { data: assinatura } = await admin
+      .from("supplier_subscriptions")
+      .select("*")
+      .eq("mp_preapproval_id", preapprovalId)
+      .maybeSingle();
+
+    if (assinatura && pago) {
+      // Renova o período (+1 mês/ano a partir do fim atual ou de agora, o que for maior).
+      const base =
+        assinatura.current_period_end && new Date(assinatura.current_period_end) > new Date()
+          ? new Date(assinatura.current_period_end)
+          : new Date();
+      const novoFim = new Date(base);
+      if (assinatura.ciclo === "anual") novoFim.setFullYear(novoFim.getFullYear() + 1);
+      else novoFim.setMonth(novoFim.getMonth() + 1);
+      await admin
+        .from("supplier_subscriptions")
+        .update({
+          status: "ativa",
+          current_period_start: base.toISOString(),
+          current_period_end: novoFim.toISOString(),
+        })
+        .eq("id", assinatura.id);
+
+      const mpPayId = String(ap?.payment?.id ?? authPayId);
+      const { data: jaFat } = await admin
+        .from("subscription_invoices")
+        .select("id")
+        .eq("mp_payment_id", mpPayId)
+        .maybeSingle();
+      if (!jaFat) {
+        await admin.from("subscription_invoices").insert({
+          subscription_id: assinatura.id,
+          supplier_id: assinatura.supplier_id,
+          valor: assinatura.valor,
+          status: "pago",
+          mp_payment_id: mpPayId,
+          ambiente,
+          periodo_inicio: base.toISOString(),
+          periodo_fim: novoFim.toISOString(),
+          pago_em: new Date().toISOString(),
+        });
+      }
+    }
+    await registrar({ resultado: "cobranca_recorrente_processada" }, 200);
+    return json({ ok: true });
+  }
+
   // --- Consulta o pagamento real no Mercado Pago ---
   const payRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
