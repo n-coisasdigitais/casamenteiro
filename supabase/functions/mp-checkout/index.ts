@@ -130,7 +130,8 @@ Deno.serve(async (req) => {
     // O whitelabel (preapproval + card_token) NÃO funciona no sandbox do MP
     // ("Card token service not found" — falha conhecida do ambiente de teste).
     // Então: whitelabel só em produção; sandbox cai no redirect (que funciona).
-    if (flagTransp?.enabled && ambiente === "live") {
+    // Sem public key do ambiente não dá para montar o brick: cai no redirect.
+    if (flagTransp?.enabled && ambiente === "live" && publicKey) {
       // registra intent para o process-payment localizar
       await admin.from("payment_intents").insert({
         tipo,
