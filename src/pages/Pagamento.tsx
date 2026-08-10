@@ -34,8 +34,11 @@ export default function Pagamento() {
   const transparenteFlag = useFeatureFlag("checkout_transparente", false);
   const tipo = (params.get("tipo") ?? "") as "reserva" | "assinatura" | "destaque" | "cancelamento";
   const ref = params.get("ref") ?? "";
-  // Whitelabel: quando a flag está ligada, assinatura também usa o brick (cartão na própria página).
-  const transparente = transparenteFlag;
+  // Whitelabel (brick) só quando NÃO for ambiente de teste: o sandbox do MP quebra
+  // assinatura recorrente com card_token ("Card token service not found").
+  // Em sandbox, o checkout retorna checkout_url e caímos no redirect.
+  const ehSandbox = checkout?.ambiente === "sandbox";
+  const transparente = transparenteFlag && !(tipo === "assinatura" && ehSandbox);
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
