@@ -34,9 +34,8 @@ export default function Pagamento() {
   const transparenteFlag = useFeatureFlag("checkout_transparente", false);
   const tipo = (params.get("tipo") ?? "") as "reserva" | "assinatura" | "destaque" | "cancelamento";
   const ref = params.get("ref") ?? "";
-  // Assinatura recorrente (preapproval) exige redirect para autorizar a recorrência —
-  // não funciona no checkout transparente (brick). Força redirect nesse caso.
-  const transparente = tipo === "assinatura" ? false : transparenteFlag;
+  // Whitelabel: quando a flag está ligada, assinatura também usa o brick (cartão na própria página).
+  const transparente = transparenteFlag;
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -90,8 +89,14 @@ export default function Pagamento() {
                 toast({ title: "Pagamento não aprovado", description: detalhe, variant: "destructive" });
                 throw error;
               }
-              if (data?.status === "approved") toast({ title: "Pagamento aprovado!" });
-              navigate(`/pagamento/status?tipo=${tipo}&ref=${ref}`);
+              if (data?.status === "approved" || data?.status === "authorized") {
+                toast({ title: tipo === "assinatura" ? "Assinatura ativada!" : "Pagamento aprovado!" });
+              }
+              if (tipo === "assinatura") {
+                navigate("/fornecedor/planos?assinatura=ok");
+              } else {
+                navigate(`/pagamento/status?tipo=${tipo}&ref=${ref}`);
+              }
             },
           },
         });
