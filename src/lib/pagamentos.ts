@@ -20,14 +20,15 @@ export type PaymentIntent = {
 };
 
 /** Etapas simplificadas exibidas para o usuário. */
-export type EtapaPagamento = "pendente" | "processando" | "concluido" | "recusado" | "expirado";
+export type EtapaPagamento = "pendente" | "processando" | "concluido" | "recusado" | "expirado" | "cancelado";
 
 const PROCESSANDO = ["in_process", "in_mediation", "authorized", "processando", "pending_waiting_payment"];
 const RECUSADO = ["rejected", "cancelled", "refunded", "charged_back", "recusado", "falha"];
 
 export function etapaDoStatus(status: string | null | undefined): EtapaPagamento {
   const s = (status ?? "").toLowerCase();
-  if (s === "pago" || s === "approved" || s === "accredited") return "concluido";
+  if (s === "pago" || s === "approved" || s === "accredited" || s === "authorized") return "concluido";
+  if (s === "cancelled" || s === "cancelada" || s === "cancelado") return "cancelado";
   if (s === "expirado" || s === "expired") return "expirado";
   if (RECUSADO.includes(s)) return "recusado";
   if (PROCESSANDO.includes(s) || s === "pending") return "processando";
@@ -40,6 +41,7 @@ export const ETAPA_LABEL: Record<EtapaPagamento, string> = {
   concluido: "Concluído",
   recusado: "Recusado",
   expirado: "Expirado",
+  cancelado: "Cancelado",
 };
 
 export const ETAPA_TONE: Record<EtapaPagamento, string> = {
@@ -48,12 +50,22 @@ export const ETAPA_TONE: Record<EtapaPagamento, string> = {
   concluido: "bg-emerald-100 text-emerald-900",
   recusado: "bg-rose-100 text-rose-900",
   expirado: "bg-gray-200 text-gray-700",
+  cancelado: "bg-gray-200 text-gray-700",
 };
 
 export const TIPO_LABEL: Record<string, string> = {
   reserva: "Reserva de data",
-  assinatura: "Assinatura",
+  assinatura: "Assinatura (recorrente)",
   destaque: "Destaque na busca",
+};
+
+// Rótulo do método de pagamento, para exibir de forma amigável no extrato.
+export const METODO_LABEL: Record<string, string> = {
+  bricks: "Cartão",
+  preapproval_bricks: "Assinatura no cartão",
+  preapproval: "Assinatura recorrente",
+  pix: "Pix",
+  boleto: "Boleto",
 };
 
 export const AMBIENTE_LABEL: Record<string, string> = {
@@ -72,7 +84,8 @@ export function previsaoLiberacao(intent: Pick<PaymentIntent, "metodo" | "create
 }
 
 export async function buscarIntent(tipo: string, referenciaId: string): Promise<PaymentIntent | null> {
-  const { data } = await (supabase.from("payment_intents" as any)
+  const { data } = await (supabase
+    .from("payment_intents" as any)
     .select("*")
     .eq("tipo", tipo)
     .eq("referencia_id", referenciaId)
@@ -83,8 +96,11 @@ export async function buscarIntent(tipo: string, referenciaId: string): Promise<
 }
 
 export async function buscarIntentPorId(id: string): Promise<PaymentIntent | null> {
-  const { data } = await (supabase.from("payment_intents" as any)
-    .select("*").eq("id", id).maybeSingle() as any);
+  const { data } = await (supabase
+    .from("payment_intents" as any)
+    .select("*")
+    .eq("id", id)
+    .maybeSingle() as any);
   return (data as PaymentIntent | null) ?? null;
 }
 
