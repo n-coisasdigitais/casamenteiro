@@ -34,11 +34,22 @@ Deno.serve(async (req) => {
   }
   if (!referenciaId) return json({ error: "referencia_id obrigatório" }, 400);
 
-  const { data: perfil } = await admin.from("profiles").select("is_demo").eq("user_id", userId).maybeSingle();
-  const ambiente: "sandbox" | "live" = perfil?.is_demo ? "sandbox" : "live";
+  const { data: perfil, error: perfilErr } = await admin
+    .from("profiles")
+    .select("is_demo")
+    .eq("user_id", userId)
+    .maybeSingle();
+  // DEFAULT SEGURO: se não conseguimos ler o perfil, NÃO caímos em produção.
+  // Recusa explicitamente em vez de arriscar cobrar de verdade um usuário demo.
+  if (perfilErr || !perfil) {
+    return json({ error: "Não foi possível determinar o ambiente de cobrança. Tente novamente." }, 503);
+  }
+  const ambiente: "sandbox" | "live" = perfil.is_demo ? "sandbox" : "live";
   const accessToken =
     ambiente === "sandbox" ? Deno.env.get("MP_ACCESS_TOKEN_TEST") : Deno.env.get("MP_ACCESS_TOKEN_PROD");
-  const publicKey = ambiente === "sandbox" ? Deno.env.get("MP_PUBLIC_KEY_TEST") : Deno.env.get("MP_PUBLIC_KEY_PROD");
+  // Em sandbox NUNCA expomos public_key: o brick (whitelabel) não funciona no teste do MP,
+  // então todos os tipos caem no redirect. public_key só existe em produção.
+  const publicKey = ambiente === "sandbox" ? null : Deno.env.get("MP_PUBLIC_KEY_PROD");
   if (!accessToken) {
     return json({ error: `Credencial do Mercado Pago não configurada para o ambiente ${ambiente}.`, ambiente }, 503);
   }
@@ -173,6 +184,8 @@ Deno.serve(async (req) => {
       external_reference: `assinatura:${referenciaId}`,
       payer_email: payerEmail,
       back_url: `${origin2}/fornecedor/planos?assinatura=ok`,
+      // Carimba o ambiente na URL: o webhook precisa saber qual token usar ao consultar a API.
+      notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook?env=${ambiente}&topic=preapproval`,
       auto_recurring: {
         ...freq,
         transaction_amount: valor,
@@ -187,7 +200,7 @@ Deno.serve(async (req) => {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
-        "X-Idempotency-Key": `assinatura-${referenciaId}-${Date.now()}`,
+        "X-Idempotency-Key": `assinatura-${referenciaId}`,
       },
       body: JSON.stringify(preapprovalBody),
     });
@@ -299,7 +312,8 @@ Deno.serve(async (req) => {
         };
       })(),
       auto_return: "approved",
-      notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,
+      // Carimba o ambiente na URL: o webhook lê ?env= para escolher o token certo (test x prod).
+      notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook?env=${ambiente}`,
     }),
   });
 
