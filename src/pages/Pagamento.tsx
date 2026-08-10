@@ -45,7 +45,9 @@ export default function Pagamento() {
   // assinatura recorrente com card_token ("Card token service not found").
   // Em sandbox, o checkout retorna checkout_url e caímos no redirect.
   const ehSandbox = checkout?.ambiente === "sandbox";
-  const transparente = transparenteFlag && !(tipo === "assinatura" && ehSandbox);
+  // Whitelabel exige public_key; assinatura em sandbox sempre usa redirect.
+  const transparente =
+    transparenteFlag && !!checkout?.public_key && !(tipo === "assinatura" && ehSandbox);
 
   useEffect(() => {
     if (!tipo || !ref) {
@@ -143,7 +145,7 @@ export default function Pagamento() {
 
             {transparente && checkout.public_key ? (
               <div id="mp-bricks" ref={brickRef} />
-            ) : (
+            ) : checkout.checkout_url ? (
               <>
                 <Button
                   className="w-full"
@@ -157,6 +159,10 @@ export default function Pagamento() {
                   <ShieldCheck className="h-3 w-3" /> Você será levado ao ambiente seguro do Mercado Pago.
                 </p>
               </>
+            ) : (
+              <p className="text-sm text-destructive">
+                Não foi possível gerar o link de pagamento. Tente novamente em instantes.
+              </p>
             )}
           </CardContent>
         </Card>
