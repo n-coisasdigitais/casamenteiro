@@ -83,14 +83,22 @@ export default function FornecedorPlanos() {
   const assinar = async (plano: Plano) => {
     if (!supplierId) return;
     setProcessando(plano.id);
-    const { id, erro, ativadaDireto } = await criarAssinatura({ supplierId, plano, ciclo });
+    const { id, erro, ativadaDireto, trocaDireta } = await criarAssinatura({ supplierId, plano, ciclo });
     setProcessando(null);
     if (erro || !id) {
-      toast({ title: "Não foi possível iniciar a assinatura", description: erro, variant: "destructive" });
+      toast({ title: "Não foi possível alterar o plano", description: erro, variant: "destructive" });
       return;
     }
     if (ativadaDireto) {
       toast({ title: "Plano Essencial ativado", description: "Você já pode receber pedidos de orçamento." });
+      setAssinatura(await assinaturaAtual(supplierId));
+      return;
+    }
+    if (trocaDireta) {
+      toast({
+        title: "Plano alterado!",
+        description: "O novo valor passa a valer na próxima cobrança. Nenhum pagamento agora.",
+      });
       setAssinatura(await assinaturaAtual(supplierId));
       return;
     }
