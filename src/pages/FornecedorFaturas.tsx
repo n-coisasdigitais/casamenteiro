@@ -11,7 +11,15 @@ import { Loader2, Receipt } from "lucide-react";
 import SEO from "@/components/SEO";
 import { formatBRL } from "@/lib/platformPricing";
 import SupplierShell from "@/components/supplier/SupplierShell";
-import { ETAPA_LABEL, ETAPA_TONE, etapaDoStatus, formatarDataHora, TIPO_LABEL, PaymentIntent } from "@/lib/pagamentos";
+import {
+  ETAPA_LABEL,
+  ETAPA_TONE,
+  etapaDoStatus,
+  formatarDataHora,
+  TIPO_LABEL,
+  METODO_LABEL,
+  PaymentIntent,
+} from "@/lib/pagamentos";
 
 export default function FornecedorFaturas() {
   const { user } = useAuth();
@@ -90,6 +98,9 @@ export default function FornecedorFaturas() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Cobranças</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Pagamentos avulsos (reservas, destaques) e a autorização inicial da sua assinatura.
+                </p>
               </CardHeader>
               <CardContent className="overflow-x-auto">
                 {cobrancas.length === 0 ? (
@@ -100,6 +111,7 @@ export default function FornecedorFaturas() {
                       <TableRow>
                         <TableHead>Data</TableHead>
                         <TableHead>Tipo</TableHead>
+                        <TableHead>Método</TableHead>
                         <TableHead>Valor</TableHead>
                         <TableHead>Situação</TableHead>
                         <TableHead>Ambiente</TableHead>
@@ -113,6 +125,9 @@ export default function FornecedorFaturas() {
                           <TableRow key={c.id}>
                             <TableCell>{formatarDataHora(c.created_at)}</TableCell>
                             <TableCell>{TIPO_LABEL[c.tipo] ?? c.tipo}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {METODO_LABEL[c.metodo] ?? "—"}
+                            </TableCell>
                             <TableCell>{formatBRL(c.valor)}</TableCell>
                             <TableCell>
                               <Badge variant="secondary" className={ETAPA_TONE[etapa]}>
@@ -160,6 +175,9 @@ export default function FornecedorFaturas() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Faturas da assinatura</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Cobranças mensais recorrentes do seu plano, geradas automaticamente a cada ciclo.
+                </p>
               </CardHeader>
               <CardContent className="overflow-x-auto">
                 {faturas.length === 0 ? (
@@ -186,10 +204,18 @@ export default function FornecedorFaturas() {
                             <Badge
                               variant="secondary"
                               className={
-                                f.status === "pago" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"
+                                f.status === "pago"
+                                  ? "bg-emerald-100 text-emerald-900"
+                                  : f.status === "cancelada" || f.status === "cancelado"
+                                    ? "bg-gray-200 text-gray-700"
+                                    : "bg-amber-100 text-amber-900"
                               }
                             >
-                              {f.status === "pago" ? "Paga" : "Pendente"}
+                              {f.status === "pago"
+                                ? "Paga"
+                                : f.status === "cancelada" || f.status === "cancelado"
+                                  ? "Cancelada"
+                                  : "Pendente"}
                             </Badge>
                           </TableCell>
                         </TableRow>
