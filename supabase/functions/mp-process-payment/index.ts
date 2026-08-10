@@ -51,6 +51,19 @@ Deno.serve(async (req) => {
 
   // ===== WHITELABEL: assinatura recorrente sem redirect (preapproval + card_token) =====
   if (tipo === "assinatura") {
+    // O whitelabel (card_token + preapproval) NÃO funciona no sandbox do MP
+    // ("Card token service not found"). Em sandbox, orienta o front a usar o redirect.
+    if (ambiente === "sandbox") {
+      return json(
+        {
+          error: "whitelabel_indisponivel_sandbox",
+          detalhe: "Assinatura no cartão embutido não é suportada no ambiente de testes. Use o redirect.",
+          usar_redirect: true,
+          ambiente,
+        },
+        409,
+      );
+    }
     if (!formData.token) return json({ error: "Token do cartão ausente. Preencha os dados do cartão." }, 400);
 
     const { data: assinatura } = await admin
