@@ -119,7 +119,29 @@ Deno.serve(async (req) => {
 
     if (valor <= 0) return json({ error: "Valor inválido para cobrança" }, 400);
 
-    // ===== CAMINHO 1: assinatura recorrente via preapproval (débito automático) =====
+    // Se o checkout transparente (whitelabel) estiver ligado, NÃO cria o preapproval aqui.
+    // O cartão é coletado no brick e o preapproval é criado em mp-process-payment com o token.
+    const { data: flagTransp } = await admin
+      .from("feature_flags")
+      .select("enabled")
+      .eq("key", "checkout_transparente")
+      .maybeSingle();
+    if (flagTransp?.enabled) {
+      // registra intent para o process-payment localizar
+      await admin.from("payment_intents").insert({
+        tipo,
+        referencia_id: referenciaId,
+        user_id: userId,
+        supplier_id: supplierId,
+        valor,
+        metodo: "preapproval_bricks",
+        status: "pendente",
+        ambiente,
+      });
+      return json({ ambiente, tipo, valor, titulo, checkout_url: null, public_key: publicKey ?? null });
+    }
+
+    // ===== CAMINHO 1 (redirect): assinatura recorrente via preapproval =====
     // Email do pagador (exigido pelo preapproval)
     const { data: perfilPagador } = await admin.from("profiles").select("email").eq("user_id", userId).maybeSingle();
     let payerEmail = perfilPagador?.email as string | undefined;
