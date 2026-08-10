@@ -17,6 +17,7 @@ const ICONE: Record<EtapaPagamento, any> = {
   concluido: CheckCircle2,
   recusado: XCircle,
   expirado: XCircle,
+  cancelado: XCircle,
 };
 
 const MENSAGEM: Record<EtapaPagamento, string> = {
@@ -25,6 +26,7 @@ const MENSAGEM: Record<EtapaPagamento, string> = {
   concluido: "Pagamento confirmado! Tudo certo por aqui.",
   recusado: "O pagamento não foi aprovado. Você pode tentar novamente com outro meio de pagamento.",
   expirado: "Esta cobrança expirou. Gere uma nova para continuar.",
+  cancelado: "Esta cobrança foi cancelada.",
 };
 
 export default function PagamentoStatus() {
