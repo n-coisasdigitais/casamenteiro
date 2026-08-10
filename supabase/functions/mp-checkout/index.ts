@@ -213,8 +213,25 @@ Deno.serve(async (req) => {
       detalhes: { preapproval_id: pa.id },
     });
 
-    // init_point é a tela de autorização da recorrência (cartão)
-    const initPoint = pa.init_point || pa.sandbox_init_point;
+    // No sandbox o link vem em sandbox_init_point; em produção, em init_point.
+    // Tratamos string vazia como ausente (não só null).
+    const initPoint =
+      ambiente === "sandbox"
+        ? pa.sandbox_init_point || pa.init_point || null
+        : pa.init_point || pa.sandbox_init_point || null;
+    if (!initPoint) {
+      console.error("Preapproval criado mas sem init_point:", JSON.stringify(pa));
+      return json(
+        {
+          error: "Assinatura criada, mas o Mercado Pago não retornou o link de pagamento.",
+          detalhe: "init_point ausente",
+          preapproval_id: pa.id,
+          ambiente,
+        },
+        502,
+      );
+    }
+    // NÃO enviar public_key aqui: sem ele, o front usa o botão de redirect (não monta o brick).
     return json({
       ambiente,
       tipo,
@@ -222,7 +239,7 @@ Deno.serve(async (req) => {
       titulo,
       preapproval_id: pa.id,
       checkout_url: initPoint,
-      public_key: publicKey ?? null,
+      public_key: null,
     });
   } else if (tipo === "destaque") {
     if (!(await flagLiberada("destaque_pago"))) return json({ error: "Este pagamento ainda não está liberado." }, 403);
