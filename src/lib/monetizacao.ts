@@ -23,6 +23,7 @@ export type Assinatura = {
   status: string;
   valor: number;
   current_period_end: string | null;
+  mp_preapproval_id?: string | null;
 };
 
 export const ASSINATURA_STATUS_LABEL: Record<string, string> = {
@@ -88,7 +89,7 @@ export async function listarPlanos(): Promise<Plano[]> {
 export async function assinaturaAtual(supplierId: string) {
   const { data } = await (supabase
     .from("supplier_subscriptions" as any)
-    .select("id, supplier_id, plan_id, ciclo, status, valor, current_period_end")
+    .select("id, supplier_id, plan_id, ciclo, status, valor, current_period_end, mp_preapproval_id")
     .eq("supplier_id", supplierId)
     .in("status", ["ativa", "pendente"])
     .order("created_at", { ascending: false })
@@ -102,16 +103,24 @@ export async function criarAssinatura(opts: {
   supplierId: string;
   plano: Plano;
   ciclo: "mensal" | "anual";
-}): Promise<{ id: string | null; erro?: string; ativadaDireto?: boolean }> {
+}): Promise<{ id: string | null; erro?: string; ativadaDireto?: boolean; trocaDireta?: boolean }> {
   const valor = opts.ciclo === "anual" ? opts.plano.preco_anual : opts.plano.preco_mensal;
   const gratis = Number(valor) <= 0;
   const existente = await assinaturaAtual(opts.supplierId);
 
-  // PLANO GRÁTIS: ativa direto, sem pagamento. Reusa a linha existente se houver.
+  // (1) PLANO GRÁTIS: ativa direto, sem pagamento.
   if (gratis) {
     const agora = new Date();
     const fim = new Date(agora);
     fim.setMonth(fim.getMonth() + 1);
+    // Se tinha preapproval (assinatura paga), cancela no MP ao virar grátis.
+    if (existente?.mp_preapproval_id) {
+      try {
+        await supabase.functions.invoke("mp-cancel-subscription", { body: { supplier_id: opts.supplierId } });
+      } catch {
+        /* segue */
+      }
+    }
     if (existente) {
       const { error } = await (supabase.from("supplier_subscriptions" as any) as any)
         .update({
@@ -144,9 +153,30 @@ export async function criarAssinatura(opts: {
     return { id: data?.id ?? null, ativadaDireto: true };
   }
 
-  // PLANO PAGO: se já existe assinatura (pendente OU ativa), faz UPDATE (troca/upgrade/downgrade),
-  // voltando a 'pendente' para gerar o preapproval. Evita violar o índice único.
-  // NOTA: durante o trial o acesso vem do trial, então voltar para 'pendente' não remove acesso.
+  // (2) TROCA INTELIGENTE: já existe assinatura ATIVA com preapproval (débito recorrente já configurado).
+  // Não gera novo pagamento: ajusta o valor no Mercado Pago e troca o plano mantendo ATIVA.
+  if (existente && existente.status === "ativa" && existente.mp_preapproval_id) {
+    const { data, error } = await supabase.functions.invoke("mp-change-plan", {
+      body: { supplier_id: opts.supplierId, plan_id: opts.plano.id, ciclo: opts.ciclo, valor },
+    });
+    if (error) {
+      let detalhe = error.message;
+      try {
+        const ctx = (error as any)?.context;
+        if (ctx?.json) {
+          const j = await ctx.json();
+          if (j?.error) detalhe = j.error;
+        }
+      } catch {
+        /* ignora */
+      }
+      return { id: null, erro: detalhe };
+    }
+    return { id: existente.id, trocaDireta: true };
+  }
+
+  // (3) TROCA sem preapproval ainda (ex.: assinatura pendente, ou ativa gratuita virando paga):
+  // reusa a linha existente e leva ao pagamento (brick) para criar o preapproval.
   if (existente) {
     const { error } = await (supabase.from("supplier_subscriptions" as any) as any)
       .update({ plan_id: opts.plano.id, ciclo: opts.ciclo, valor, status: "pendente", cancelada_em: null })
@@ -155,7 +185,7 @@ export async function criarAssinatura(opts: {
     return { id: existente.id };
   }
 
-  // Nenhuma assinatura ainda: cria a primeira (pendente, vai gerar o preapproval).
+  // (4) PRIMEIRA assinatura paga: cria pendente e leva ao pagamento.
   const { data, error } = await (supabase.from("supplier_subscriptions" as any) as any)
     .insert({ supplier_id: opts.supplierId, plan_id: opts.plano.id, ciclo: opts.ciclo, valor, status: "pendente" })
     .select("id")
