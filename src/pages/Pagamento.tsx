@@ -34,17 +34,18 @@ export default function Pagamento() {
   const transparenteFlag = useFeatureFlag("checkout_transparente", false);
   const tipo = (params.get("tipo") ?? "") as "reserva" | "assinatura" | "destaque" | "cancelamento";
   const ref = params.get("ref") ?? "";
-  // Whitelabel (brick) só quando NÃO for ambiente de teste: o sandbox do MP quebra
-  // assinatura recorrente com card_token ("Card token service not found").
-  // Em sandbox, o checkout retorna checkout_url e caímos no redirect.
-  const ehSandbox = checkout?.ambiente === "sandbox";
-  const transparente = transparenteFlag && !(tipo === "assinatura" && ehSandbox);
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [checkout, setCheckout] = useState<CheckoutResposta | null>(null);
   const brickRef = useRef<HTMLDivElement | null>(null);
   const brickMontado = useRef(false);
+
+  // Whitelabel (brick) só quando NÃO for ambiente de teste: o sandbox do MP quebra
+  // assinatura recorrente com card_token ("Card token service not found").
+  // Em sandbox, o checkout retorna checkout_url e caímos no redirect.
+  const ehSandbox = checkout?.ambiente === "sandbox";
+  const transparente = transparenteFlag && !(tipo === "assinatura" && ehSandbox);
 
   useEffect(() => {
     if (!tipo || !ref) {
