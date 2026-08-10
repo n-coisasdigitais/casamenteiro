@@ -10,6 +10,7 @@ type Tipo = "reserva" | "assinatura" | "destaque" | "cancelamento";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  console.log("DIAG mp-checkout VERSAO-PREAPPROVAL-V2 iniciada", req.method);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -190,9 +191,20 @@ Deno.serve(async (req) => {
       body: JSON.stringify(preapprovalBody),
     });
     const pa = await paRes.json().catch(() => ({}));
+    // Log de diagnóstico: o que foi enviado e o que o MP devolveu.
+    console.log("DIAG preapproval enviado:", JSON.stringify(preapprovalBody));
+    console.log("DIAG preapproval resposta:", paRes.status, JSON.stringify(pa));
     if (!paRes.ok) {
       console.error("Erro MP preapproval:", paRes.status, pa);
-      return json({ error: "Falha ao criar assinatura no Mercado Pago", detalhe: pa?.message ?? null, ambiente }, 502);
+      return json(
+        {
+          error: "Falha ao criar assinatura no Mercado Pago",
+          detalhe: pa?.message ?? null,
+          causa: pa?.cause ?? null,
+          ambiente,
+        },
+        502,
+      );
     }
 
     // Guarda o preapproval_id na assinatura + registra intent
