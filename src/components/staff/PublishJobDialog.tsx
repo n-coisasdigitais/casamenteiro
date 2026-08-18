@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FUNCOES_STAFF } from "@/lib/staff";
+import CityAutocomplete from "@/components/CityAutocomplete";
 
 export default function PublishJobDialog({
   supplierId,
@@ -109,7 +110,17 @@ export default function PublishJobDialog({
             <div><Label>Fim</Label><Input type="time" value={horaFim} onChange={e => setHoraFim(e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div><Label>Cidade</Label><Input value={cidade} onChange={e => setCidade(e.target.value)} /></div>
+            <div>
+              <Label>Cidade</Label>
+              <CityAutocomplete
+                fonte="brasil"
+                mostrarContinuarMesmoAssim={false}
+                value={cidade}
+                placeholder="Digite e selecione"
+                onChange={(c) => setCidade(c)}
+                onSelect={(c) => setCidade(c)}
+              />
+            </div>
             <div><Label>Local</Label><Input value={local} onChange={e => setLocal(e.target.value)} placeholder="Ex.: Salão Aurora" /></div>
           </div>
           <div><Label>Valor do turno (R$)</Label><Input type="number" value={valor} onChange={e => setValor(e.target.value === "" ? "" : Number(e.target.value))} /></div>
