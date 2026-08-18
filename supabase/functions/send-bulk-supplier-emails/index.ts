@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { logEmail, sendViaResend } from "../_shared/resend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,21 +50,17 @@ Deno.serve(async (req) => {
           <p style="font-size:12px;color:#888">Enviado pelo Casamenteiro em nome de ${coupleNames}. Responda diretamente para este e-mail.</p>
         </div>`;
 
-      await supabase.rpc("enqueue_email", {
-        queue_name: "transactional_emails",
-        payload: {
-          to: m.to_email,
-          subject: m.subject,
-          html,
-          from: "Casamenteiro <orcamentos@avisos.www.casamenteiro.com.br>",
-          sender_domain: "avisos.www.casamenteiro.com.br",
-          purpose: "transactional",
-          label: "bulk-supplier-quote",
-          idempotency_key: `bulk-quote-${couple_id}-${m.supplier_id}-${Date.now()}`,
-          message_id: crypto.randomUUID(),
-          queued_at: new Date().toISOString(),
-        },
+      const messageId = crypto.randomUUID();
+      const result = await sendViaResend({ to: m.to_email, subject: m.subject, html });
+      await logEmail(supabase, {
+        message_id: result.id || messageId,
+        template_name: "bulk-supplier-quote",
+        recipient_email: m.to_email,
+        status: result.ok ? "sent" : "failed",
+        error_message: result.ok ? null : `[${result.status}] ${result.error}`,
+        metadata: { supplier_id: m.supplier_id, provider: "resend" },
       });
+      if (!result.ok) continue;
 
       if (m.couple_supplier_id) {
         await supabase.from("couple_supplier_events").insert({
@@ -75,7 +72,7 @@ Deno.serve(async (req) => {
       queued++;
     }
 
-    return new Response(JSON.stringify({ queued }), {
+    return new Response(JSON.stringify({ sent: queued }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
