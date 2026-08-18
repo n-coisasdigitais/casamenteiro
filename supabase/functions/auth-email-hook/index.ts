@@ -3,6 +3,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { parseEmailWebhookPayload } from 'npm:@lovable.dev/email-js'
 import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { appUrl, logEmail, sendViaResend } from '../_shared/resend.ts'
 import { SignupEmail } from '../_shared/email-templates/signup.tsx'
 import { InviteEmail } from '../_shared/email-templates/invite.tsx'
 import { MagicLinkEmail } from '../_shared/email-templates/magic-link.tsx'
@@ -17,12 +18,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
-  invite: "You've been invited",
-  magiclink: 'Your login link',
-  recovery: 'Reset your password',
-  email_change: 'Confirm your new email',
-  reauthentication: 'Your verification code',
+  signup: 'Confirme seu e-mail no Casamenteiro 💍',
+  invite: 'Você foi convidado para o Casamenteiro',
+  magiclink: 'Seu link de acesso ao Casamenteiro',
+  recovery: 'Redefinir sua senha no Casamenteiro',
+  email_change: 'Confirme seu novo e-mail',
+  reauthentication: 'Seu código de verificação',
 }
 
 // Template mapping
