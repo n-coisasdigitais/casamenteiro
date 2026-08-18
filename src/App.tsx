@@ -116,7 +116,14 @@ const App = () => (
               <Route path="/confirmado" element={<EmailConfirmado />} />
               <Route path="/termos" element={<Termos />} />
               <Route path="/privacidade" element={<Privacidade />} />
-              <Route path="/onboarding" element={<CoupleOnboarding />} />
+              <Route
+                path="/onboarding"
+                element={
+                  <Casal>
+                    <CoupleOnboarding />
+                  </Casal>
+                }
+              />
               <Route
                 path="/dashboard"
                 element={

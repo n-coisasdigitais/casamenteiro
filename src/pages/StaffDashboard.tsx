@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import WelcomeModal from "@/components/WelcomeModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -266,6 +267,7 @@ export default function StaffDashboard() {
   return (
     <div className="min-h-screen bg-muted/30">
       <SEO title="Painel do profissional — Casamenteiro" noIndex />
+      <WelcomeModal tipo="profissional" />
       <header className="border-b bg-white">
         <div className="container mx-auto flex items-center justify-between py-3 px-4">
           <Link to="/" className="flex items-center gap-2">

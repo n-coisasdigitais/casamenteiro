@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import WelcomeModal from "@/components/WelcomeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -669,6 +670,7 @@ export default function SupplierDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <WelcomeModal tipo="supplier" />
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2">

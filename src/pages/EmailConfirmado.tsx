@@ -18,7 +18,7 @@ import SEO from "@/components/SEO";
  */
 export default function EmailConfirmado() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { toast } = useToast();
   const [count, setCount] = useState(4);
   const [redirecting, setRedirecting] = useState(false);
@@ -34,6 +34,38 @@ export default function EmailConfirmado() {
       // Sem usuário (caso o link não tenha logado), manda pro login
       if (!user) {
         navigate("/login", { replace: true });
+        return;
+      }
+
+      // Admin vai direto para o painel administrativo
+      try {
+        const { data: isAdmin } = await supabase.rpc("has_role", {
+          _user_id: user.id,
+          _role: "admin" as any,
+        });
+        if (isAdmin) {
+          navigate("/admin", { replace: true });
+          return;
+        }
+      } catch (_) { /* noop */ }
+
+      // Fornecedor e profissional NÃO passam pelo onboarding do casal
+      const tipo = profile?.account_type || "couple";
+      if (tipo === "supplier") {
+        const { data: sup } = await supabase
+          .from("suppliers")
+          .select("onboarding_completed")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        navigate(sup && !sup.onboarding_completed ? "/fornecedor/cadastro" : "/fornecedor/painel", { replace: true });
+        return;
+      }
+      if (tipo === "profissional") {
+        const { data: sp } = await (supabase.from("staff_profiles" as any) as any)
+          .select("cidade, consentimento_lgpd")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        navigate(!sp?.cidade || !sp?.consentimento_lgpd ? "/profissional/onboarding" : "/profissional/painel", { replace: true });
         return;
       }
 
