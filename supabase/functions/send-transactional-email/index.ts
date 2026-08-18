@@ -1,6 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
-
-const GATEWAY_URL = 'https://connector-gateway.lovable.dev/resend'
+import { createClient } from 'npm:@supabase/supabase-js@2'
+import { logEmail, resendApiKey, sendViaResend } from '../_shared/resend.ts'
 
 interface SendBody {
   to: string | string[]
@@ -9,6 +9,7 @@ interface SendBody {
   text?: string
   from?: string
   replyTo?: string
+  label?: string
 }
 
 Deno.serve(async (req) => {
@@ -16,13 +17,9 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
-  const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-  const DEFAULT_FROM = Deno.env.get('RESEND_FROM') ?? 'Casamenteiro <onboarding@resend.dev>'
-
-  if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
+  if (!resendApiKey()) {
     return new Response(
-      JSON.stringify({ error: 'Email service not configured' }),
+      JSON.stringify({ error: 'Serviço de e-mail não configurado' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   }
@@ -37,43 +34,42 @@ Deno.serve(async (req) => {
     )
   }
 
-  const { to, subject, html, text, from, replyTo } = body ?? {}
+  const { to, subject, html, text, from, replyTo, label } = body ?? {}
   if (!to || !subject || (!html && !text)) {
     return new Response(
-      JSON.stringify({ error: 'Missing required fields: to, subject, and html or text' }),
+      JSON.stringify({ error: 'Campos obrigatórios: to, subject e html ou text' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   }
 
-  const payload: Record<string, unknown> = {
-    from: from ?? DEFAULT_FROM,
-    to: Array.isArray(to) ? to : [to],
-    subject,
-  }
-  if (html) payload.html = html
-  if (text) payload.text = text
-  if (replyTo) payload.reply_to = replyTo
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
 
-  const response = await fetch(`${GATEWAY_URL}/emails`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      'X-Connection-Api-Key': RESEND_API_KEY,
-    },
-    body: JSON.stringify(payload),
+  const recipient = Array.isArray(to) ? to[0] : to
+  const messageId = crypto.randomUUID()
+  const templateName = label || 'transactional'
+
+  const result = await sendViaResend({ to, subject, html, text, from, replyTo })
+
+  await logEmail(supabase, {
+    message_id: result.id || messageId,
+    template_name: templateName,
+    recipient_email: recipient,
+    status: result.ok ? 'sent' : 'failed',
+    error_message: result.ok ? null : `[${result.status}] ${result.error}`,
+    metadata: { subject, provider: 'resend' },
   })
 
-  const responseText = await response.text()
-  if (!response.ok) {
-    console.error(`Resend send failed [${response.status}]: ${responseText}`)
+  if (!result.ok) {
     return new Response(
-      JSON.stringify({ error: 'Failed to send email', status: response.status, details: responseText }),
-      { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      JSON.stringify({ error: 'Falha ao enviar e-mail', status: result.status, details: result.error }),
+      { status: result.status || 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   }
 
-  return new Response(responseText, {
+  return new Response(JSON.stringify({ id: result.id, sent: true }), {
     status: 200,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
