@@ -67,14 +67,18 @@ export default function PublishJobDialog({
       valor_turno: Number(valor), observacoes: descricao || null,
       is_public: pub,
     };
-    const { error } = isEdit
-      ? await (supabase.from("staff_jobs" as any) as any).update(payload).eq("id", job.id)
-      : await (supabase.from("staff_jobs" as any) as any).insert({
-          ...payload,
-          supplier_id: supplierId,
-          status: "aberta",
-          criado_por_user_id: user.id,
-        });
+    let novoId: string | null = null;
+    let error: any = null;
+    if (isEdit) {
+      ({ error } = await (supabase.from("staff_jobs" as any) as any).update(payload).eq("id", job.id));
+    } else {
+      const res = await (supabase.from("staff_jobs" as any) as any)
+        .insert({ ...payload, supplier_id: supplierId, status: "aberta", criado_por_user_id: user.id })
+        .select("id")
+        .maybeSingle();
+      error = res.error;
+      novoId = res.data?.id ?? null;
+    }
     setLoading(false);
     if (error) {
       const msg = error.message || "";
@@ -86,6 +90,10 @@ export default function PublishJobDialog({
       return toast({ title: isEdit ? "Erro ao salvar vaga" : "Erro ao publicar vaga", description: friendly, variant: "destructive" });
     }
     toast({ title: isEdit ? "Vaga atualizada!" : "Vaga publicada!" });
+    // Avisa por e-mail os profissionais com a mesma função e cidade
+    if (!isEdit && novoId && pub) {
+      supabase.functions.invoke("send-job-match-emails", { body: { job_id: novoId } }).catch(() => {});
+    }
     setOpen(false);
     setFuncao(""); setData(""); setHoraIni(""); setHoraFim(""); setLocal(""); setCidade(""); setValor(""); setDescricao("");
     onCreated?.();
