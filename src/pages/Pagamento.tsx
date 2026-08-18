@@ -138,9 +138,20 @@ export default function Pagamento() {
           <CardContent className="space-y-4">
             <p className="text-2xl font-semibold">{formatBRL(checkout.valor)}</p>
             {checkout.ambiente === "sandbox" && (
-              <p className="text-xs rounded-md bg-amber-50 border border-amber-200 p-2 text-amber-900">
-                Ambiente de testes — nenhum valor real será cobrado.
-              </p>
+              <div className="text-xs rounded-md bg-amber-50 border border-amber-200 p-3 text-amber-900 space-y-1">
+                <p className="font-medium">Ambiente de testes — nenhum valor real será cobrado.</p>
+                <p>
+                  O Mercado Pago abre a página em <strong>mercadopago.com.br</strong> mesmo no teste. Faça login com um{" "}
+                  <strong>usuário comprador de teste</strong> (criado no painel de desenvolvedor do Mercado Pago) e use
+                  um <strong>cartão de teste</strong>. Sua conta real do Mercado Pago não consegue pagar esta cobrança.
+                </p>
+                {checkout.mp_account ? (
+                  <p className="opacity-80">
+                    Vendedor: {checkout.mp_account.nickname ?? checkout.mp_account.id}
+                    {checkout.mp_account.is_test ? " (conta de teste)" : " (ATENÇÃO: conta real)"}
+                  </p>
+                ) : null}
+              </div>
             )}
 
             {transparente && checkout.public_key ? (
