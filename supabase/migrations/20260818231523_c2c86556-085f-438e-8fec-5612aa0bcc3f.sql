@@ -1,0 +1,1 @@
+ALTER TABLE public.staff_profiles ADD COLUMN IF NOT EXISTS notificar_vagas_email boolean NOT NULL DEFAULT true;
