@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function MarkAsPaidDialog({
   open, onOpenChange, paymentId, defaultAmount, onSuccess,
@@ -37,7 +38,7 @@ export default function MarkAsPaidDialog({
     }).eq("id", paymentId);
     setSaving(false);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Pagamento registrado" });

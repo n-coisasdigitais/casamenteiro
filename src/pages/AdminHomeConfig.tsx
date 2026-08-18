@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, Trash2, Plus, ArrowUp, ArrowDown, ExternalLink, Upload, Loader2 } from "lucide-react";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Frase = { id: string; grupo: string; texto: string; ordem: number; ativo: boolean };
 type Bloco = {
@@ -56,7 +57,7 @@ export default function AdminHomeConfig() {
       .from("home-photos")
       .upload(path, file, { upsert: false, contentType: file.type });
     if (error) {
-      toast({ title: "Erro no upload", description: error.message, variant: "destructive" });
+      toast({ title: "Erro no upload", description: traduzirErro(error), variant: "destructive" });
       return null;
     }
     const { data } = supabase.storage.from("home-photos").getPublicUrl(path);
@@ -120,7 +121,7 @@ export default function AdminHomeConfig() {
     }
     setSavingExplore(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Hero da Explore salvo!" });

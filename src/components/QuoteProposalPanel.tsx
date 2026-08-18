@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, X, DollarSign, Percent, Handshake } from "lucide-react";
 import ConfirmFinishTaskDialog from "@/components/ConfirmFinishTaskDialog";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Proposal = {
   id: string;
@@ -59,7 +60,7 @@ export default function QuoteProposalPanel({ quoteId, currentUserId, isSupplier,
       amount: Number(amount),
       description: desc.trim() || null,
     });
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else {
       setAmount(""); setDesc("");
       toast({ title: kind === "discount_request" ? "Pedido de desconto enviado" : "Proposta enviada" });

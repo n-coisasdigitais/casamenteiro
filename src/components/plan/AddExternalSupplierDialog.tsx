@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 interface Props {
   open: boolean;
@@ -67,7 +68,7 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
     });
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao adicionar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao adicionar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Fornecedor externo adicionado", description: "Ele já aparece no seu kanban e no orçamento." });

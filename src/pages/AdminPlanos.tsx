@@ -15,6 +15,7 @@ import { Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatBRL } from "@/lib/platformPricing";
 import { PLAN_FEATURES, PLAN_LIMITS, type PlanLimites, type PlanRecursos } from "@/lib/planFeatures";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type PlanoRow = {
   id: string;
@@ -163,7 +164,7 @@ export default function AdminPlanos() {
   const excluirPacote = async (id: string) => {
     const { error } = await (supabase.from("featured_packages" as any) as any).delete().eq("id", id);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Pacote removido" });

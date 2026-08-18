@@ -13,6 +13,7 @@ import { ArrowLeft, Send, Search, Calendar, MapPin, Users, Wallet, Download } fr
 import { useToast } from "@/hooks/use-toast";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { baixarCsv } from "@/lib/csv";
+import { traduzirErro } from "@/lib/errorMessages";
 
 const PAGE_SIZE = 20;
 
@@ -191,7 +192,7 @@ function CoupleDetail({ coupleId }: { coupleId: string }) {
       body: pushBody,
     });
     setSending(false);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else { toast({ title: "Mensagem enviada!" }); setPushTitle(""); setPushBody(""); }
   };
 

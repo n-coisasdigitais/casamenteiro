@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Mail, MessageCircle, AlertTriangle } from "lucide-react";
 import type { PlanSupplier } from "./PlanKanban";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Channel = "platform" | "email";
 type SupplierMeta = { id: string; email: string | null; whatsapp: string | null; phone: string | null };
@@ -143,7 +144,7 @@ export default function BulkContactTab({
       setSelected(new Set());
       onChange();
     } catch (e: any) {
-      toast({ title: "Erro ao enviar", description: e.message || "Tente novamente", variant: "destructive" });
+      toast({ title: "Erro ao enviar", description: traduzirErro(e) || "Tente novamente", variant: "destructive" });
     } finally {
       setSending(false);
     }

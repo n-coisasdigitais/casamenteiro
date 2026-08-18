@@ -12,6 +12,7 @@ import SEO from "@/components/SEO";
 import { formatBRL } from "@/lib/platformPricing";
 import SupplierShell from "@/components/supplier/SupplierShell";
 import {
+import { traduzirErro } from "@/lib/errorMessages";
   ETAPA_LABEL,
   ETAPA_TONE,
   etapaDoStatus,
@@ -38,7 +39,7 @@ export default function FornecedorFaturas() {
       .eq("id", c.id);
     setCancelandoId(null);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Tentativa cancelada" });

@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Star } from "lucide-react";
+import { traduzirErro } from "@/lib/errorMessages";
 
 interface Props {
   open: boolean;
@@ -44,7 +45,7 @@ export default function ReviewSupplierDialog({
       comentario: comentario || null,
     });
     setLoading(false);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Avaliação enviada. Obrigado!" });
     onOpenChange(false);
     setComentario("");

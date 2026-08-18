@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ExternalLink, Loader2, Plus, Save, Trash2, Upload, ArrowUp, ArrowDown } from "lucide-react";
 import { DEFAULT_LANDING, SupplierLandingConfig, HowStep, WhyItem, TestimonialItem, TrustPillar } from "@/lib/supplierLandingConfig";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function AdminFornecedorLanding() {
   const { toast } = useToast();
@@ -40,7 +41,7 @@ export default function AdminFornecedorLanding() {
     const ext = file.name.split(".").pop() || "bin";
     const path = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error } = await supabase.storage.from("supplier-landing").upload(path, file, { upsert: false, contentType: file.type });
-    if (error) { toast({ title: "Erro no upload", description: error.message, variant: "destructive" }); return null; }
+    if (error) { toast({ title: "Erro no upload", description: traduzirErro(error), variant: "destructive" }); return null; }
     const { data } = supabase.storage.from("supplier-landing").getPublicUrl(path);
     return data.publicUrl;
   };

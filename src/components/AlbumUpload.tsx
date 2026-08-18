@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Camera, Loader2, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 interface Props {
   album: string[];
@@ -37,7 +38,7 @@ export default function AlbumUpload({ album, onChange, max = 10 }: Props) {
       const path = `${user.id}/album-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error } = await supabase.storage.from("couple-photos").upload(path, file, { upsert: false });
       if (error) {
-        toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+        toast({ title: "Erro ao enviar", description: traduzirErro(error), variant: "destructive" });
         continue;
       }
       const { data: { publicUrl } } = supabase.storage.from("couple-photos").getPublicUrl(path);

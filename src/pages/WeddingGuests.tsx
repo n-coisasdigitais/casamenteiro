@@ -22,6 +22,7 @@ import GuestListPdfDialog from "@/components/GuestListPdfDialog";
 import { buildWhatsAppLink } from "@/lib/phone";
 import EditGuestDialog, { EditableGuest } from "@/components/EditGuestDialog";
 import { normalizarPessoas, resumoPessoas } from "@/lib/guestPeople";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Guest = {
   id: string;
@@ -106,7 +107,7 @@ export default function WeddingGuests() {
       .select("token")
       .maybeSingle();
     if (error || !data) {
-      toast({ title: "Erro ao gerar convite", description: error?.message, variant: "destructive" });
+      toast({ title: "Erro ao gerar convite", description: traduzirErro(error), variant: "destructive" });
       return null;
     }
     setInvites(prev => ({ ...prev, [guestId]: { token: data.token, sent_at: null, opened_at: null, responded_at: null } }));
@@ -165,7 +166,7 @@ export default function WeddingGuests() {
     if (guest.total_pessoas) insertData.total_pessoas = guest.total_pessoas;
     const { data, error } = await supabase.from("wedding_guests").insert(insertData).select().maybeSingle();
     if (error) {
-      toast({ title: "Erro ao adicionar convidado", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao adicionar convidado", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     if (data) setGuests((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
@@ -204,7 +205,7 @@ export default function WeddingGuests() {
   const saveGuest = async (id: string, values: Record<string, any>) => {
     const { error } = await (supabase.from("wedding_guests") as any).update(values).eq("id", id);
     if (error) {
-      toast({ title: "Erro ao salvar convidado", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar convidado", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     setGuests((prev) => prev.map((g) => (g.id === id ? { ...g, ...values } : g)).sort((a, b) => a.name.localeCompare(b.name)));
@@ -340,7 +341,7 @@ export default function WeddingGuests() {
       setSelected(new Set());
       loadData(coupleId);
     } catch (e: any) {
-      toast({ title: "Erro ao enviar emails", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar emails", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setSendingEmails(false);
     }

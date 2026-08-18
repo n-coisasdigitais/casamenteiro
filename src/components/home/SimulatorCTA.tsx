@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { calcularSimulacao, type Estilo } from "@/lib/simulador";
+import { traduzirErro } from "@/lib/errorMessages";
 
 const CIDADES_MG = [
   "Belo Horizonte","Uberlândia","Contagem","Juiz de Fora","Betim","Montes Claros","Ribeirão das Neves","Uberaba","Governador Valadares","Ipatinga","Sete Lagoas","Divinópolis","Santa Luzia","Ibirité","Poços de Caldas","Patos de Minas","Pouso Alegre","Teófilo Otoni","Barbacena","Sabará","Varginha","Conselheiro Lafaiete","Vespasiano","Itabira","Araguari","Ubá","Passos","Coronel Fabriciano","Muriaé","Lavras"
@@ -98,7 +99,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
         navigate("/simulador/resultado?preview=1");
       }
     } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(err), variant: "destructive" });
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import UserAvatar from "@/components/UserAvatar";
 import { Camera, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 interface AvatarUploadProps {
   avatarUrl: string | null;
@@ -40,7 +41,7 @@ export default function AvatarUpload({ avatarUrl, fullName, onUploaded }: Avatar
       .upload(path, file, { upsert: true });
 
     if (uploadError) {
-      toast({ title: "Erro ao enviar foto", description: uploadError.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar foto", description: traduzirErro(uploadError), variant: "destructive" });
       setUploading(false);
       return;
     }

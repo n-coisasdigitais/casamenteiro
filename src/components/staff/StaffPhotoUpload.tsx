@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import UserAvatar from "@/components/UserAvatar";
 import { Camera, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 interface Props {
   fotoUrl: string | null;
@@ -33,7 +34,7 @@ export default function StaffPhotoUpload({ fotoUrl, nome, onUploaded }: Props) {
     const path = `${user.id}/profissional.${ext}`;
     const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
     if (error) {
-      toast({ title: "Erro ao enviar foto", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar foto", description: traduzirErro(error), variant: "destructive" });
       setUploading(false);
       return;
     }

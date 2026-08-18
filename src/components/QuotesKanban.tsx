@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import ConfirmFinishTaskDialog from "@/components/ConfirmFinishTaskDialog";
 import {
+import { traduzirErro } from "@/lib/errorMessages";
   DndContext,
   DragEndEvent,
   PointerSensor,
@@ -114,7 +115,7 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
       status: status === "fechado" ? "accepted" : "pending",
     }).select("id").maybeSingle();
     if (error || !q) {
-      toast({ title: "Erro", description: error?.message || "Falha ao criar", variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error) || "Falha ao criar", variant: "destructive" });
       setSaving(false);
       return;
     }

@@ -13,6 +13,7 @@ import TaskItem from "@/components/TaskItem";
 import AddTaskDialog from "@/components/AddTaskDialog";
 import { useToast } from "@/hooks/use-toast";
 import { gerarTarefasPdf } from "@/lib/tasksPdf";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Task = {
   id: string;
@@ -198,7 +199,7 @@ export default function WeddingTasks() {
     const { data, error } = await (supabase.rpc as any)("expandir_tarefas_detalhadas", { _couple_id: coupleId });
     setExpanding(false);
     if (error) {
-      toast({ title: "Erro ao expandir", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao expandir", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Tarefas detalhadas adicionadas", description: `${data ?? 0} tarefas incluídas no seu plano.` });

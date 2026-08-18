@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { traduzirErro } from "@/lib/errorMessages";
 
 /**
  * Página de pouso após o usuário clicar no link de confirmação de e-mail.
@@ -90,7 +91,7 @@ export default function EmailConfirmado() {
         } catch (e: any) {
           toast({
             title: "Simulação não pôde ser recuperada",
-            description: e.message,
+            description: traduzirErro(e),
             variant: "destructive",
           });
         }

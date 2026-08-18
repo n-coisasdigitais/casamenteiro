@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Parcela = { descricao: string; valor: string; vencimento: string };
 
@@ -111,7 +112,7 @@ export default function ContractSupplierDialog({
       reset();
       onConfirmed();
     } catch (e: any) {
-      toast({ title: "Erro ao contratar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao contratar", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setSaving(false);
     }

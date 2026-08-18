@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { criarPlano, type SimuladorResultado as SimRes } from "@/lib/simulador";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Category = { id: string; name: string; slug: string };
 
@@ -96,14 +97,14 @@ export default function CoupleOnboarding() {
           navigate("/meu-casamento/plano");
           return;
         } catch (e: any) {
-          toast({ title: "Plano não foi criado", description: e.message, variant: "destructive" });
+          toast({ title: "Plano não foi criado", description: traduzirErro(e), variant: "destructive" });
         }
       }
 
       toast({ title: "Tudo pronto!", description: "Vamos encontrar os melhores fornecedores para você." });
       navigate("/dashboard");
     } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     } finally {
       setLoading(false);
     }

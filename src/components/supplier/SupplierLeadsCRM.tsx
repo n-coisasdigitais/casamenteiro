@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import LeadNoteDialog from "./LeadNoteDialog";
 import { cn } from "@/lib/utils";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Props = {
   supplierId: string;
@@ -180,7 +181,7 @@ export default function SupplierLeadsCRM({ supplierId, supplierUserId, companyNa
       link: `/painel?quote=${lead.quote.id}`,
     }));
     const { error } = await supabase.from("notifications").insert(rows);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     await supabase.from("lead_notes" as any).insert({
       quote_id: lead.quote.id, supplier_id: supplierId, author_id: supplierUserId,
       note: `Lembrete enviado em ${new Date().toLocaleString("pt-BR")}`,

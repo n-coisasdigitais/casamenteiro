@@ -42,6 +42,7 @@ import NotificationsBell from "@/components/NotificationsBell";
 import DynamicFieldsView from "@/components/dynamic-fields/DynamicFieldsView";
 import SupplierPublicAttachments from "@/components/supplier/SupplierPublicAttachments";
 import { isEspacoCategory } from "@/lib/categories";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Review = {
   id: string;
@@ -189,7 +190,7 @@ export default function SupplierProfile() {
     });
     setSubmittingReview(false);
     if (error) {
-      toast({ title: "Erro ao enviar avaliação", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar avaliação", description: traduzirErro(error), variant: "destructive" });
     } else {
       toast({ title: "Avaliação enviada!" });
       setReviewTitle("");

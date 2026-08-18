@@ -11,6 +11,7 @@ import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { calcularOferta } from "@/lib/corretagem";
 import { formatBRL } from "@/lib/platformPricing";
 import { antecedenciaDoFornecedor } from "@/lib/reservasConfig";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type PromoDate = {
   id: string;
@@ -81,7 +82,7 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
     });
     setSaving(false);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     setDate("");
@@ -97,7 +98,7 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
   const remove = async (id: string) => {
     const { error } = await (supabase.from("supplier_promo_dates" as any) as any).delete().eq("id", id);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     load();
@@ -113,7 +114,7 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
     const { error } = await (supabase.from("suppliers" as any) as any)
       .update({ reserva_antecedencia_min_dias: n }).eq("id", supplierId);
     setSalvandoAntecedencia(false);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); return; }
     toast({ title: "Antecedência mínima atualizada" });
   };
 

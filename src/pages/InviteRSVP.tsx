@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Heart, MapPin, Calendar, Phone, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type InviteData = {
   invite_id: string;
@@ -139,7 +140,7 @@ export default function InviteRSVP() {
     });
     setSubmitting(false);
     if (error || !ok) {
-      toast({ title: "Erro ao registrar resposta", description: error?.message, variant: "destructive" });
+      toast({ title: "Erro ao registrar resposta", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     setDone(response);

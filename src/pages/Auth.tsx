@@ -13,6 +13,7 @@ import { traduzirErroAuth } from "@/lib/authErrors";
 import { getStoredReferral } from "@/lib/referral";
 import SEO from "@/components/SEO";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -110,7 +111,7 @@ export default function Auth() {
           navigate(`/simulador/resultado?id=${data?.id}`, { replace: true });
           return;
         } catch (error: any) {
-          toast({ title: "Não foi possível recuperar a simulação", description: error.message, variant: "destructive" });
+          toast({ title: "Não foi possível recuperar a simulação", description: traduzirErro(error), variant: "destructive" });
         }
       }
 
@@ -134,7 +135,7 @@ export default function Auth() {
           navigate(`/simulador/resultado?id=${data?.id}`, { replace: true });
           return;
         } catch (error: any) {
-          toast({ title: "Não foi possível recuperar a simulação", description: error.message, variant: "destructive" });
+          toast({ title: "Não foi possível recuperar a simulação", description: traduzirErro(error), variant: "destructive" });
         }
       }
 

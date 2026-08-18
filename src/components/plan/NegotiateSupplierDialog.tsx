@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export type NegotiateTarget = {
   coupleSupplierId: string;
@@ -53,7 +54,7 @@ export default function NegotiateSupplierDialog({
       onOpenChange(false);
       onConfirmed();
     } catch (e: any) {
-      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setSaving(false);
     }

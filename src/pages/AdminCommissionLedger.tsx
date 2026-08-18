@@ -10,6 +10,7 @@ import { formatBRL } from "@/lib/platformPricing";
 import { CORRETAGEM_STATUS_LEDGER } from "@/lib/corretagem";
 import { formatarData } from "@/lib/reservas";
 import { CalendarRange } from "lucide-react";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Row = {
   id: string;
@@ -79,7 +80,7 @@ export default function AdminCommissionLedger() {
   const setStatus = async (r: Row, status: string) => {
     const { error } = await (supabase.from("commission_ledger" as any) as any).update({ status }).eq("id", r.id);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     load();

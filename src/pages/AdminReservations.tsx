@@ -20,6 +20,7 @@ import {
   type TaxaStatus,
 } from "@/lib/reservas";
 import { formatBRL } from "@/lib/platformPricing";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Row = {
   id: string;
@@ -121,7 +122,7 @@ export default function AdminReservations() {
       .update({ taxa_status: novo })
       .eq("id", id);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Status da taxa atualizado" });

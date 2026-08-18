@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Heart, ArrowLeft, Save, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Sup = {
   id: string; company_name: string; city: string|null; state: string|null;
@@ -74,14 +75,14 @@ export default function AdminSuppliers() {
   const deleteSelected = async () => {
     if (!confirm(`Excluir ${selected.size} fornecedor(es)?`)) return;
     const { error } = await supabase.from("suppliers").delete().in("id", [...selected]);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else { toast({ title: `${selected.size} excluídos` }); load(); }
   };
 
   const deleteAllDemo = async () => {
     if (!confirm("Excluir TODOS os fornecedores marcados como demo?")) return;
     const { error } = await (supabase.from("suppliers").delete() as any).eq("is_demo", true);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else { toast({ title: "Todos os demos foram excluídos" }); load(); }
   };
 

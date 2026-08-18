@@ -11,6 +11,7 @@ import { Heart, Search, ShieldCheck, ShieldOff, Ban, RotateCcw, Trash2, ArrowLef
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { baixarCsv } from "@/lib/csv";
+import { traduzirErro } from "@/lib/errorMessages";
 
 const PAGE_SIZE = 25;
 
@@ -84,7 +85,7 @@ export default function AdminUsers() {
     const { error } = await supabase.rpc("admin_set_user_suspended", {
       _user_id: r.user_id, _suspended: !r.suspended, _reason: reason,
     });
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else { toast({ title: r.suspended ? "Usuário reativado" : "Usuário suspenso" }); load(); }
   };
 
@@ -93,7 +94,7 @@ export default function AdminUsers() {
     const { error } = await supabase.rpc("admin_toggle_admin_role", {
       _user_id: r.user_id, _make_admin: !r.is_admin,
     });
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else { toast({ title: "Papel atualizado" }); load(); }
   };
 
@@ -109,7 +110,7 @@ export default function AdminUsers() {
       window.open(data.action_link, "_blank", "noopener");
       toast({ title: "Link aberto em nova aba", description: "Acesse a nova janela para logar como o usuário." });
     } catch (e: any) {
-      toast({ title: "Erro ao impersonar", description: e?.message, variant: "destructive" });
+      toast({ title: "Erro ao impersonar", description: traduzirErro(e), variant: "destructive" });
     } finally { setImpersonating(null); }
   };
 

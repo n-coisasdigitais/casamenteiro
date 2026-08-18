@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { FileText, ShieldCheck, Search } from "lucide-react";
 import { TIPOS_DOC, verificacaoLabel } from "@/components/staff/StaffDocumentsTab";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function AdminProfissionais() {
   const { toast } = useToast();
@@ -48,7 +49,7 @@ export default function AdminProfissionais() {
       verificado_em: novo === "verificado" ? new Date().toISOString() : null,
       verificacao_obs: obs[s.id] || null,
     }).eq("id", s.id);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: novo === "verificado" ? "Profissional verificado" : "Verificação recusada" });
     load();
   };

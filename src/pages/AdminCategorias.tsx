@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil, SlidersHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CategoryFormDialog from "@/components/admin/categorias/CategoryFormDialog";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Cat = {
   id: string; name: string; slug: string; icon: string | null;
@@ -44,7 +45,7 @@ export default function AdminCategorias() {
 
   const toggleActive = async (cat: Cat, v: boolean) => {
     const { error } = await supabase.from("categories").update({ active: v }).eq("id", cat.id);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     setCats((prev) => prev.map((c) => c.id === cat.id ? { ...c, active: v } : c));
   };
 

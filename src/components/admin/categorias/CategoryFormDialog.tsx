@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { slugify } from "@/lib/slugify";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Cat = {
   id?: string;
@@ -66,7 +67,7 @@ export default function CategoryFormDialog({
     const { error } = await q;
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: data.id ? "Categoria atualizada" : "Categoria criada" });

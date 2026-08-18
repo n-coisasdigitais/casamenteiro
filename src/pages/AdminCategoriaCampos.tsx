@@ -18,6 +18,7 @@ import {
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import FieldEditorDrawer, { type Campo } from "@/components/admin/categorias/FieldEditorDrawer";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Cat = { id: string; name: string; icon: string | null };
 
@@ -104,7 +105,7 @@ export default function AdminCategoriaCampos() {
     }
     setCampos((prev) => prev.map((x) => x.id === c.id ? { ...x, ativo: v } : x));
     const { error } = await supabase.from("campos_categoria").update({ ativo: v }).eq("id", c.id!);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); load(); return; }
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); load(); return; }
     toast({ title: "Salvo" });
   };
 
@@ -114,7 +115,7 @@ export default function AdminCategoriaCampos() {
     setCampos((prev) => prev.map((x) => x.id === c.id ? { ...x, ativo: false } : x));
     const { error } = await supabase.from("campos_categoria").update({ ativo: false }).eq("id", c.id!);
     setConfirmDeactivate(null);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); load(); return; }
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); load(); return; }
     toast({ title: "Campo desativado", description: `"${c.label}" não aparece mais no formulário.` });
   };
 
@@ -122,7 +123,7 @@ export default function AdminCategoriaCampos() {
     if (!confirmDelete) return;
     const { error } = await supabase.from("campos_categoria").delete().eq("id", confirmDelete.id!);
     setConfirmDelete(null);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Campo removido" });
     load();
   };

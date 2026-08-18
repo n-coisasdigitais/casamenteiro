@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, ArrowLeft, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function AdminFinance() {
   const { user, loading: authLoading } = useAuth();
@@ -40,7 +41,7 @@ export default function AdminFinance() {
     const amt = Number(input.replace(",", "."));
     if (isNaN(amt)) return;
     const { error } = await (supabase.rpc as any)("admin_mark_commission_paid", { _lead_id: lead.id, _amount: amt });
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else { toast({ title: "Comissão registrada" }); load(); }
   };
 

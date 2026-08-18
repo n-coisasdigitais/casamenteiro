@@ -14,6 +14,7 @@ import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { formatBRL } from "@/lib/platformPricing";
 import { gerarCorpoContratoHtml } from "@/lib/contratos";
 import { carenciaCancelamentoDias, taxaCancelamento } from "@/lib/reservasConfig";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Props = {
   supplierId: string;
@@ -84,7 +85,7 @@ export default function RequestReservationDialog({ supplierId, supplierName, pro
       .maybeSingle();
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao solicitar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao solicitar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
 

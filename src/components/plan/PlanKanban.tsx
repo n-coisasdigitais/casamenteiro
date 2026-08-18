@@ -16,6 +16,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Pencil, Maximize2 } from "lucide-react";
 import {
+import { traduzirErro } from "@/lib/errorMessages";
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
@@ -82,7 +83,7 @@ export default function PlanKanban({
     const { error } = await (supabase.from("couple_suppliers") as any)
       .update({ kanban_status: newStatus }).eq("id", item.id);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     if (newStatus === "contratado") {

@@ -5,6 +5,7 @@ import { DEMO_ACCOUNTS, loginAsDemo, DemoRole } from "@/lib/demoAuth";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { useAuth } from "@/contexts/AuthContext";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function DemoLanding() {
   const [loading, setLoading] = useState<DemoRole | null>(null);
@@ -21,7 +22,7 @@ export default function DemoLanding() {
       await loginAsDemo(role);
       navigate(role === "supplier" ? "/fornecedor/painel" : "/dashboard", { replace: true });
     } catch (e: any) {
-      toast({ title: "Não foi possível entrar na demo", description: e.message, variant: "destructive" });
+      toast({ title: "Não foi possível entrar na demo", description: traduzirErro(e), variant: "destructive" });
       setLoading(null);
     }
   };

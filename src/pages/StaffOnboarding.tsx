@@ -14,6 +14,7 @@ import SEO from "@/components/SEO";
 import { FUNCOES_STAFF, slugify } from "@/lib/staff";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import StaffPhotoUpload from "@/components/staff/StaffPhotoUpload";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function StaffOnboarding() {
   const { user } = useAuth();
@@ -90,7 +91,7 @@ export default function StaffOnboarding() {
       ({ error } = await (supabase.from("staff_profiles" as any) as any).insert(payload));
     }
     setLoading(false);
-    if (error) return toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Perfil salvo!" });
     navigate("/profissional/painel");
   };

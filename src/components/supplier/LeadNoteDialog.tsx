@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function LeadNoteDialog({
   open,
@@ -54,7 +55,7 @@ export default function LeadNoteDialog({
       : supabase.from("lead_notes" as any).insert(payload);
     const { error } = await q;
     setLoading(false);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     await supabase.from("lead_events" as any).insert({
       quote_id: quoteId, supplier_id: supplierId, tipo: existing?.id ? "nota_editada" : "nota_criada",
       created_by: authorId,

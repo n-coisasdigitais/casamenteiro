@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import DynamicFieldInput, { Campo } from "./DynamicFieldInput";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Props = {
   supplierId: string;
@@ -92,7 +93,7 @@ export default function DynamicFieldsForm({ supplierId, categoryId }: Props) {
     if (error) {
       toast({
         title: "Erro ao salvar",
-        description: error.message,
+        description: traduzirErro(error),
         variant: "destructive",
       });
     } else {

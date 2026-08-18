@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Check, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Category = { id: string; name: string };
 
@@ -89,7 +90,7 @@ export default function SupplierOnboardingWizard({
     if (Object.keys(patch).length > 0) {
       const { error } = await supabase.from("suppliers").update(patch).eq("id", supplier.id);
       if (error) {
-        toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+        toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
         setSaving(false);
         return false;
       }
@@ -120,7 +121,7 @@ export default function SupplierOnboardingWizard({
     const filePath = `${supplier.user_id}/${Date.now()}-${file.name}`;
     const { error } = await supabase.storage.from("supplier-photos").upload(filePath, file);
     if (error) {
-      toast({ title: "Erro no upload", description: error.message, variant: "destructive" });
+      toast({ title: "Erro no upload", description: traduzirErro(error), variant: "destructive" });
       setUploading(false);
       return;
     }

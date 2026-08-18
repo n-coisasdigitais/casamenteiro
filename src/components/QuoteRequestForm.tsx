@@ -11,6 +11,7 @@ import { Send, Calendar, Users, Phone } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 import { AttachmentPicker } from "@/components/QuoteAttachments";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Props = {
   supplierId: string;
@@ -89,7 +90,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
       .maybeSingle();
 
     if (error) {
-      toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar", description: traduzirErro(error), variant: "destructive" });
       setLoading(false);
       return;
     }

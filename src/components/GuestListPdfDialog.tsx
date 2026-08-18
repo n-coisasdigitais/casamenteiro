@@ -10,6 +10,7 @@ import { gerarPdfConvidados, PdfGuest, PdfGroup, TipoEvento } from "@/lib/guestL
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Props = {
   guests: PdfGuest[];
@@ -71,7 +72,7 @@ export default function GuestListPdfDialog({ guests, groups, dadosCasal, tipoEve
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(URL.createObjectURL(blob));
     } catch (e: any) {
-      toast({ title: "Erro na pré-visualização", description: e?.message, variant: "destructive" });
+      toast({ title: "Erro na pré-visualização", description: traduzirErro(e), variant: "destructive" });
     } finally { setLoading(false); }
   };
 
@@ -96,7 +97,7 @@ export default function GuestListPdfDialog({ guests, groups, dadosCasal, tipoEve
       }
       setOpen(false);
     } catch (e: any) {
-      toast({ title: "Erro ao gerar PDF", description: e?.message, variant: "destructive" });
+      toast({ title: "Erro ao gerar PDF", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setLoading(false);
     }

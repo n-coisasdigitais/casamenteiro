@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Star, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function SupplierReviewCouples({ supplierId }: { supplierId: string }) {
   const { user } = useAuth();
@@ -76,7 +77,7 @@ export default function SupplierReviewCouples({ supplierId }: { supplierId: stri
       rating, comment: texto.trim(),
       autor_tipo: "supplier", alvo_tipo: "couple", publico, aprovado: true,
     });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error)); return; }
     toast.success("Avaliação enviada!");
     setModalOpen(false);
     await carregar();

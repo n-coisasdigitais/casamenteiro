@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, CheckCircle2, Lock, CalendarClock } from "lucide-react";
+import { traduzirErro } from "@/lib/errorMessages";
 
 function fmtData(d: string | null) {
   if (!d) return "—";
@@ -42,7 +43,7 @@ export default function MinhaAssinaturaCard({ supplierId }: { supplierId: string
       toast({ title: "Assinatura cancelada", description: "Você mantém o acesso pelo período contratado." });
       setTimeout(() => window.location.reload(), 1200);
     } catch (e: any) {
-      toast({ title: "Erro ao cancelar", description: e?.message || "Tente novamente.", variant: "destructive" });
+      toast({ title: "Erro ao cancelar", description: traduzirErro(e) || "Tente novamente.", variant: "destructive" });
     } finally {
       setCancelando(false);
     }

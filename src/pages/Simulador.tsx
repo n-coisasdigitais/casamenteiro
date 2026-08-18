@@ -7,6 +7,7 @@ import { calcularSimulacao, type Estilo } from "@/lib/simulador";
 import { Loader2, Heart, ArrowLeft } from "lucide-react";
 import CityAutocomplete from "@/components/CityAutocomplete";
 import { supabase } from "@/integrations/supabase/client";
+import { traduzirErro } from "@/lib/errorMessages";
 
 const GUEST_OPTIONS = [
   { letter: "A", label: "Até 50 pessoas — íntimo e especial", value: 50 },
@@ -77,7 +78,7 @@ export default function Simulador() {
         navigate("/simulador/resultado?preview=1");
       }
     } catch (e: any) {
-      toast({ title: "Erro ao calcular", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao calcular", description: traduzirErro(e), variant: "destructive" });
       setStep(4);
     }
   };

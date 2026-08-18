@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { traduzirErro } from "@/lib/errorMessages";
 
 const STATUS_LABEL: Record<string, string> = {
   aberta: "Publicada",
@@ -32,7 +33,7 @@ export default function AdminStaffJobs() {
     if (status !== "todos") query = query.eq("status", status);
     const { data, error } = await query;
     setLoading(false);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     setRows(data || []);
   };
 
@@ -51,7 +52,7 @@ export default function AdminStaffJobs() {
 
   const setJobStatus = async (id: string, novo: string) => {
     const { error } = await (supabase.from("staff_jobs" as any) as any).update({ status: novo }).eq("id", id);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Status atualizado" });
     load();
   };

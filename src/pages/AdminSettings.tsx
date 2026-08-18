@@ -14,6 +14,7 @@ import {
 import { Heart, ArrowLeft, Save, Flag, PlayCircle, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReloadFeatureFlags } from "@/contexts/FeatureFlagsContext";
+import { traduzirErro } from "@/lib/errorMessages";
 
 const DEFAULTS = { locacao:25, buffet:20, decoracao:12, foto_video:10, musica:8, trajes:7, convites:3, beleza:3, lua_de_mel:7, outros:5 };
 
@@ -78,7 +79,7 @@ export default function AdminSettings() {
     const { error } = await (supabase.from("system_settings" as any) as any).upsert({
       key: "budget_distribution", value: dist, description: "Percentuais padrão de distribuição do orçamento", updated_by: user!.id, updated_at: new Date().toISOString(),
     });
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else toast({ title: "Configurações salvas" });
   };
 
@@ -88,7 +89,7 @@ export default function AdminSettings() {
       { key: "reserva_antecedencia_min_dias", value: { dias: Number(antecedencia) }, description: "Antecedência mínima padrão (em dias) para reservar datas ociosas" },
     ].map(r => ({ ...r, updated_by: user!.id, updated_at: new Date().toISOString() }));
     const { error } = await (supabase.from("system_settings" as any) as any).upsert(rows);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else toast({ title: "Regras de reserva salvas" });
   };
 
@@ -99,7 +100,7 @@ export default function AdminSettings() {
       updated_by: user!.id, updated_at: new Date().toISOString(),
     });
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: enabled ? "Funcionalidade ativada" : "Funcionalidade desativada", description: flag.label });
@@ -121,7 +122,7 @@ export default function AdminSettings() {
     setResettingDemo(false);
     setConfirmReset(false);
     if (error) {
-      toast({ title: "Erro ao resetar demo", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao resetar demo", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({

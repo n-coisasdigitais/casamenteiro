@@ -18,6 +18,7 @@ import CepInput from "@/components/CepInput";
 import AlbumUpload from "@/components/AlbumUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -191,7 +192,7 @@ export default function UserProfile() {
     const { data, error } = await (supabase.rpc as any)("link_partner_by_invite_code", { _code: code });
     setLinking(false);
     if (error) {
-      toast({ title: "Não foi possível vincular", description: error.message, variant: "destructive" });
+      toast({ title: "Não foi possível vincular", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Vinculado com sucesso!", description: "Vocês agora compartilham o mesmo casamento." });
@@ -204,7 +205,7 @@ export default function UserProfile() {
     if (!confirm("Tem certeza que quer desvincular essa pessoa do casamento? Ela perderá o acesso.")) return;
     const { error } = await supabase.from("couple_links").delete().eq("id", linkId);
     if (error) {
-      toast({ title: "Erro ao desvincular", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao desvincular", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Vínculo removido" });
@@ -275,7 +276,7 @@ export default function UserProfile() {
     setSavingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
-      toast({ title: "Erro ao alterar senha", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao alterar senha", description: traduzirErro(error), variant: "destructive" });
     } else {
       toast({ title: "Senha alterada com sucesso!" });
       setNewPassword("");
@@ -293,7 +294,7 @@ export default function UserProfile() {
     setSavingEmail(true);
     const { error } = await supabase.auth.updateUser({ email });
     if (error) {
-      toast({ title: "Erro ao alterar email", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao alterar email", description: traduzirErro(error), variant: "destructive" });
     } else {
       toast({ title: "Email atualizado!", description: "Verifique sua caixa de entrada para confirmar a alteração." });
     }

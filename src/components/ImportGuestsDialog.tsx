@@ -12,6 +12,7 @@ import { Upload, FileText, Check, ArrowLeft, ArrowRight, Download, AlertCircle }
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneBR, onlyDigits } from "@/lib/phone";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Group = { id: string; name: string };
 type Field = "ignore" | "name" | "phone" | "email" | "group" | "type" | "rsvp" | "table" | "notes";
@@ -168,7 +169,7 @@ export default function ImportGuestsDialog({
       const parsed = isXlsx ? await parseXlsx(file) : await parseCsv(file);
       loadParsed(parsed.headers.filter(Boolean), parsed.rows);
     } catch (err: any) {
-      toast({ title: "Erro ao ler arquivo", description: err?.message || String(err), variant: "destructive" });
+      toast({ title: "Erro ao ler arquivo", description: traduzirErro(err) || String(err), variant: "destructive" });
     } finally {
       e.target.value = "";
     }

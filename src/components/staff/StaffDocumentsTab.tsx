@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Upload, Trash2, ShieldCheck } from "lucide-react";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export const TIPOS_DOC = [
   { value: "identidade", label: "RG ou CNH" },
@@ -61,7 +62,7 @@ export default function StaffDocumentsTab({
     const { error: upErr } = await supabase.storage.from("staff-docs").upload(path, file);
     if (upErr) {
       setUploading(false);
-      return toast({ title: "Erro ao enviar", description: upErr.message, variant: "destructive" });
+      return toast({ title: "Erro ao enviar", description: traduzirErro(upErr), variant: "destructive" });
     }
     const { error } = await (supabase.from("staff_documents" as any) as any).insert({
       staff_id: staff.id, tipo, file_path: path, file_name: file.name,
@@ -72,7 +73,7 @@ export default function StaffDocumentsTab({
     }
     setUploading(false);
     if (inputRef.current) inputRef.current.value = "";
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Documento enviado", description: "Nossa equipe vai analisar em breve." });
     load();
     onChanged?.();

@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import CityAutocomplete from "@/components/CityAutocomplete";
 import { MapPin, X } from "lucide-react";
+import { traduzirErro } from "@/lib/errorMessages";
 
 interface Props {
   supplierId: string;
@@ -89,7 +90,7 @@ export default function SupplierAreaEditor({ supplierId, inline = false, onSaved
     const { error } = await supabase.from("suppliers").update(update).eq("id", supplierId);
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Atendimento atualizado" });

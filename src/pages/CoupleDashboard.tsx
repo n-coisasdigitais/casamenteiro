@@ -34,6 +34,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import CouplePhotoUpload from "@/components/CouplePhotoUpload";
 import { Textarea } from "@/components/ui/textarea";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type CoupleData = {
   id: string;
@@ -207,7 +208,7 @@ export default function CoupleDashboard() {
       .eq("id", couple.id);
     setSavingCover(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     setCouple({ ...couple, header_photo_url: photo || null, header_quote: quote || null } as CoupleData);
@@ -599,7 +600,7 @@ export default function CoupleDashboard() {
                               if (error || !upd || upd.length === 0) {
                                 toast({
                                   title: "Erro",
-                                  description: error?.message || "Não foi possível atualizar (verifique permissões).",
+                                  description: traduzirErro(error) || "Não foi possível atualizar (verifique permissões).",
                                   variant: "destructive",
                                 });
                                 return;
@@ -625,7 +626,7 @@ export default function CoupleDashboard() {
                               .delete()
                               .eq("id", s.id);
                             if (error) {
-                              toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+                              toast({ title: "Erro ao excluir", description: traduzirErro(error), variant: "destructive" });
                               return;
                             }
                             setSimulacoes((prev) => prev.filter((x) => x.id !== s.id));

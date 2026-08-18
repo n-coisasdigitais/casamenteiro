@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, MapPin, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 export default function AdminPanel() {
   const { toast } = useToast();
@@ -30,7 +31,7 @@ export default function AdminPanel() {
   const updateStatus = async (supplierId: string, status: "approved" | "rejected") => {
     const { error } = await supabase.from("suppliers").update({ status }).eq("id", supplierId);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     } else {
       toast({ title: status === "approved" ? "Fornecedor aprovado!" : "Fornecedor rejeitado." });
       loadSuppliers();

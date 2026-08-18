@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, ArrowUp, ArrowDown, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Cat = { id: string; name: string; slug: string };
 type Campo = {
@@ -66,7 +67,7 @@ export default function AdminCampos() {
       ? supabase.from("campos_categoria").update(payload).eq("id", editing.id)
       : supabase.from("campos_categoria").insert(payload);
     const { error } = await q;
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); return; }
     toast({ title: "Campo salvo" });
     setEditing(null); loadCampos();
   };

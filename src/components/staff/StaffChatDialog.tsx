@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Phone, MessageCircle, Lock } from "lucide-react";
 import { buildWhatsAppLink } from "@/lib/phone";
 import { appStatusLabel, fetchStaffContact } from "@/lib/staff";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Msg = {
   id: string;
@@ -90,7 +91,7 @@ export default function StaffChatDialog({
       body,
     });
     setSending(false);
-    if (error) return toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro ao enviar", description: traduzirErro(error), variant: "destructive" });
     setText("");
     load();
   };

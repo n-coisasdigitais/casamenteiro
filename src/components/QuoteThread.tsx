@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 import { AttachmentPicker, AttachmentList } from "@/components/QuoteAttachments";
+import { traduzirErro } from "@/lib/errorMessages";
 
 type Message = {
   id: string;
@@ -52,7 +53,7 @@ export default function QuoteThread({ quoteId, currentUserId }: Props) {
         .from("quote-attachments")
         .upload(filePath, file);
       if (uploadErr) {
-        toast({ title: `Falha ao enviar ${file.name}`, description: uploadErr.message, variant: "destructive" });
+        toast({ title: `Falha ao enviar ${file.name}`, description: traduzirErro(uploadErr), variant: "destructive" });
         continue;
       }
       const { data: { publicUrl } } = supabase.storage
@@ -70,7 +71,7 @@ export default function QuoteThread({ quoteId, currentUserId }: Props) {
     });
 
     if (error) {
-      toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar", description: traduzirErro(error), variant: "destructive" });
     } else {
       setNewMessage("");
       setAttachments([]);
