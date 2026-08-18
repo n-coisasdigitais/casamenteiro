@@ -64,7 +64,9 @@ export default function StaffOnboarding() {
     if (!user) return;
     if (!nome.trim()) return toast({ title: "Informe seu nome", variant: "destructive" });
     if (!isValidPhoneBR(telefone)) return toast({ title: "Telefone inválido", variant: "destructive" });
-    if (!cidade.trim()) return toast({ title: "Informe sua cidade", variant: "destructive" });
+    if (!cidade.trim() || !estado.trim()) {
+      return toast({ title: "Selecione sua cidade na lista de sugestões", variant: "destructive" });
+    }
     if (funcoes.length === 0) return toast({ title: "Selecione ao menos uma função", variant: "destructive" });
     if (!consent) return toast({ title: "Aceite os termos LGPD para continuar", variant: "destructive" });
 
