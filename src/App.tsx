@@ -63,6 +63,7 @@ import UserProfile from "./pages/UserProfile";
 import InviteRSVP from "./pages/InviteRSVP";
 import InviteObrigado from "./pages/InviteObrigado";
 import EmailConfirmado from "./pages/EmailConfirmado";
+import AuthConfirmar from "./pages/AuthConfirmar";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./components/admin/AdminLayout";
 import CategoriaPublica from "./pages/CategoriaPublica";
@@ -114,6 +115,7 @@ const App = () => (
               <Route path="/esqueci-senha" element={<EsqueciSenha />} />
               <Route path="/redefinir-senha" element={<RedefinirSenha />} />
               <Route path="/confirmado" element={<EmailConfirmado />} />
+              <Route path="/auth/confirmar" element={<AuthConfirmar />} />
               <Route path="/termos" element={<Termos />} />
               <Route path="/privacidade" element={<Privacidade />} />
               <Route

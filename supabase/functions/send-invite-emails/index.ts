@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { logEmail, sendViaResend } from "../_shared/resend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,21 +78,17 @@ Deno.serve(async (req) => {
           <p style="font-size:12px;color:#888;margin-top:32px">Convite enviado pelo Casamenteiro</p>
         </div>`;
 
-      await supabase.rpc("enqueue_email", {
-        queue_name: "transactional_emails",
-        payload: {
-          to: g.email,
-          subject,
-          html,
-          from: "Casamenteiro <convites@avisos.www.casamenteiro.com.br>",
-          sender_domain: "avisos.www.casamenteiro.com.br",
-          purpose: "transactional",
-          label: "guest-invite",
-          idempotency_key: `guest-invite-${g.id}-${token}`,
-          message_id: crypto.randomUUID(),
-          queued_at: new Date().toISOString(),
-        },
+      const messageId = crypto.randomUUID();
+      const result = await sendViaResend({ to: g.email, subject, html });
+      await logEmail(supabase, {
+        message_id: result.id || messageId,
+        template_name: "guest-invite",
+        recipient_email: g.email,
+        status: result.ok ? "sent" : "failed",
+        error_message: result.ok ? null : `[${result.status}] ${result.error}`,
+        metadata: { guest_id: g.id, provider: "resend" },
       });
+      if (!result.ok) continue;
 
       await supabase.from("guest_invites")
         .update({ sent_at: new Date().toISOString() })
@@ -100,7 +97,7 @@ Deno.serve(async (req) => {
       queued++;
     }
 
-    return new Response(JSON.stringify({ queued }), {
+    return new Response(JSON.stringify({ sent: queued }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

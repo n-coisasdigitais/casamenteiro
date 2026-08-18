@@ -3,6 +3,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { parseEmailWebhookPayload } from 'npm:@lovable.dev/email-js'
 import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { appUrl, logEmail, sendViaResend } from '../_shared/resend.ts'
 import { SignupEmail } from '../_shared/email-templates/signup.tsx'
 import { InviteEmail } from '../_shared/email-templates/invite.tsx'
 import { MagicLinkEmail } from '../_shared/email-templates/magic-link.tsx'
@@ -17,12 +18,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
-  invite: "You've been invited",
-  magiclink: 'Your login link',
-  recovery: 'Reset your password',
-  email_change: 'Confirm your new email',
-  reauthentication: 'Your verification code',
+  signup: 'Confirme seu e-mail no Casamenteiro 💍',
+  invite: 'Você foi convidado para o Casamenteiro',
+  magiclink: 'Seu link de acesso ao Casamenteiro',
+  recovery: 'Redefinir sua senha no Casamenteiro',
+  email_change: 'Confirme seu novo e-mail',
+  reauthentication: 'Seu código de verificação',
 }
 
 // Template mapping
@@ -218,12 +219,21 @@ async function handleWebhook(req: Request): Promise<Response> {
     )
   }
 
+  // Reescreve o link de confirmação para o domínio próprio quando possível,
+  // evitando que o usuário passe por um endereço técnico/Lovable.
+  const APP = appUrl()
+  const tokenHash = payload.data.token_hash
+  const redirectTo: string = payload.data.redirect_to || `${APP}/confirmado`
+  const confirmationUrl = tokenHash
+    ? `${APP}/auth/confirmar?token_hash=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(emailType)}&redirect_to=${encodeURIComponent(redirectTo)}`
+    : payload.data.url
+
   // Build template props from payload.data (HookData structure)
   const templateProps = {
     siteName: SITE_NAME,
-    siteUrl: `https://${ROOT_DOMAIN}`,
+    siteUrl: APP,
     recipient: payload.data.email,
-    confirmationUrl: payload.data.url,
+    confirmationUrl,
     token: payload.data.token,
     email: payload.data.email,
     oldEmail: payload.data.old_email,
@@ -236,7 +246,7 @@ async function handleWebhook(req: Request): Promise<Response> {
     plainText: true,
   })
 
-  // Enqueue email for async processing by the dispatcher (process-email-queue).
+  // Envio direto pelo Resend (sem fila/infra da Lovable).
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -244,50 +254,34 @@ async function handleWebhook(req: Request): Promise<Response> {
 
   const messageId = crypto.randomUUID()
 
-  // Log pending BEFORE enqueue so we have a record even if enqueue crashes
-  await supabase.from('email_send_log').insert({
-    message_id: messageId,
+  const result = await sendViaResend({
+    to: payload.data.email,
+    subject: EMAIL_SUBJECTS[emailType] || 'Casamenteiro',
+    html,
+    text,
+  })
+
+  await logEmail(supabase, {
+    message_id: result.id || messageId,
     template_name: emailType,
     recipient_email: payload.data.email,
-    status: 'pending',
+    status: result.ok ? 'sent' : 'failed',
+    error_message: result.ok ? null : `[${result.status}] ${result.error}`,
+    metadata: { run_id, provider: 'resend' },
   })
 
-  const { error: enqueueError } = await supabase.rpc('enqueue_email', {
-    queue_name: 'auth_emails',
-    payload: {
-      run_id,
-      message_id: messageId,
-      to: payload.data.email,
-      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-      sender_domain: SENDER_DOMAIN,
-      subject: EMAIL_SUBJECTS[emailType] || 'Notification',
-      html,
-      text,
-      purpose: 'transactional',
-      label: emailType,
-      queued_at: new Date().toISOString(),
-    },
-  })
-
-  if (enqueueError) {
-    console.error('Failed to enqueue auth email', { error: enqueueError, run_id, emailType })
-    await supabase.from('email_send_log').insert({
-      message_id: messageId,
-      template_name: emailType,
-      recipient_email: payload.data.email,
-      status: 'failed',
-      error_message: 'Failed to enqueue email',
-    })
-    return new Response(JSON.stringify({ error: 'Failed to enqueue email' }), {
+  if (!result.ok) {
+    console.error('Falha ao enviar e-mail de autenticação', { emailType, run_id, error: result.error })
+    return new Response(JSON.stringify({ error: 'Failed to send email', details: result.error }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 
-  console.log('Auth email enqueued', { emailType, email: payload.data.email, run_id })
+  console.log('Auth email enviado via Resend', { emailType, email: payload.data.email, run_id })
 
   return new Response(
-    JSON.stringify({ success: true, queued: true }),
+    JSON.stringify({ success: true, id: result.id }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }
