@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil, SlidersHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CategoryFormDialog from "@/components/admin/categorias/CategoryFormDialog";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Cat = {
   id: string; name: string; slug: string; icon: string | null;

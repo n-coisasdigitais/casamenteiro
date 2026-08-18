@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { criarPlano, type SimuladorResultado as SimRes } from "@/lib/simulador";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Category = { id: string; name: string; slug: string };
 

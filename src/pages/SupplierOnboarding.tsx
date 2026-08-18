@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,6 @@ import { ArrowLeft, ArrowRight, Check, Heart, Upload, X, Loader2 } from "lucide-
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import { traduzirErroAuth } from "@/lib/authErrors";
 import SEO from "@/components/SEO";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Categoria = { id: string; name: string; slug: string; icon: string | null };
 type Campo = {

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +11,6 @@ import { Switch } from "@/components/ui/switch";
 import { Star, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import { traduzirErro } from "@/lib/errorMessages";
 
 export default function SupplierReviewCouples({ supplierId }: { supplierId: string }) {
   const { user } = useAuth();

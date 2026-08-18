@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +23,6 @@ import GuestListPdfDialog from "@/components/GuestListPdfDialog";
 import { buildWhatsAppLink } from "@/lib/phone";
 import EditGuestDialog, { EditableGuest } from "@/components/EditGuestDialog";
 import { normalizarPessoas, resumoPessoas } from "@/lib/guestPeople";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Guest = {
   id: string;

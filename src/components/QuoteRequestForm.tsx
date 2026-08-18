@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,6 @@ import { Send, Calendar, Users, Phone } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 import { AttachmentPicker } from "@/components/QuoteAttachments";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Props = {
   supplierId: string;

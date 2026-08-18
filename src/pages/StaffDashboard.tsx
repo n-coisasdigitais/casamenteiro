@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +19,6 @@ import { Heart, Calendar, Star, ShieldCheck, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import StaffDocumentsTab, { verificacaoLabel } from "@/components/staff/StaffDocumentsTab";
 import StaffChatDialog from "@/components/staff/StaffChatDialog";
-import { traduzirErro } from "@/lib/errorMessages";
 
 /**
  * Deriva a tag exibida no card da candidatura.

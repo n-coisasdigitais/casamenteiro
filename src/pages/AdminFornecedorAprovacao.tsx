@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Check, X, MapPin, ExternalLink, Phone, Instagram } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { traduzirErro } from "@/lib/errorMessages";
 
 export default function AdminFornecedorAprovacao() {
   const { user } = useAuth();

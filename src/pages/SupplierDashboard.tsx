@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,7 +56,6 @@ import SupplierActionCards from "@/components/supplier/SupplierActionCards";
 import SupplierLeadsCRM from "@/components/supplier/SupplierLeadsCRM";
 import PlanGate, { TrialBanner } from "@/components/plan/PlanGate";
 import MinhaAssinaturaCard from "@/components/plan/MinhaAssinaturaCard";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Category = { id: string; name: string; slug?: string | null };
 

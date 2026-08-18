@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +21,6 @@ import {
   type TaxaStatus,
 } from "@/lib/reservas";
 import { formatBRL } from "@/lib/platformPricing";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Row = {
   id: string;

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -11,7 +12,6 @@ import { Progress } from "@/components/ui/progress";
 import { Check, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Category = { id: string; name: string };
 

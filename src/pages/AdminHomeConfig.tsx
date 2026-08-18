@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +10,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, Trash2, Plus, ArrowUp, ArrowDown, ExternalLink, Upload, Loader2 } from "lucide-react";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Frase = { id: string; grupo: string; texto: string; ordem: number; ativo: boolean };
 type Bloco = {

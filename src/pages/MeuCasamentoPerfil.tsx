@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +17,6 @@ import DashboardNav from "@/components/DashboardNav";
 import { ensureCoupleProfile, youtubeIdFromUrl, youtubeThumbnail } from "@/lib/coupleProfile";
 import { toast } from "sonner";
 import { Trash2, Upload, Star, ExternalLink, Plus } from "lucide-react";
-import { traduzirErro } from "@/lib/errorMessages";
 
 const PRIVACY_KEYS = [
   { key: "publico", label: "Perfil público" },

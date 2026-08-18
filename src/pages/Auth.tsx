@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,6 @@ import { traduzirErroAuth } from "@/lib/authErrors";
 import { getStoredReferral } from "@/lib/referral";
 import SEO from "@/components/SEO";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
-import { traduzirErro } from "@/lib/errorMessages";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();

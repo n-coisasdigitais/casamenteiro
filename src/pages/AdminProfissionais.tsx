@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { FileText, ShieldCheck, Search } from "lucide-react";
 import { TIPOS_DOC, verificacaoLabel } from "@/components/staff/StaffDocumentsTab";
-import { traduzirErro } from "@/lib/errorMessages";
 
 export default function AdminProfissionais() {
   const { toast } = useToast();

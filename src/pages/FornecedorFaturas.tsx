@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,6 @@ import SEO from "@/components/SEO";
 import { formatBRL } from "@/lib/platformPricing";
 import SupplierShell from "@/components/supplier/SupplierShell";
 import {
-import { traduzirErro } from "@/lib/errorMessages";
   ETAPA_LABEL,
   ETAPA_TONE,
   etapaDoStatus,

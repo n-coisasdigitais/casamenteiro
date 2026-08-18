@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,6 @@ import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { calcularOferta } from "@/lib/corretagem";
 import { formatBRL } from "@/lib/platformPricing";
 import { antecedenciaDoFornecedor } from "@/lib/reservasConfig";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type PromoDate = {
   id: string;

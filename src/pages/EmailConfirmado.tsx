@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Heart, CheckCircle2, Loader2 } from "lucide-react";
@@ -7,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
-import { traduzirErro } from "@/lib/errorMessages";
 
 /**
  * Página de pouso após o usuário clicar no link de confirmação de e-mail.

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +16,6 @@ import { Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatBRL } from "@/lib/platformPricing";
 import { PLAN_FEATURES, PLAN_LIMITS, type PlanLimites, type PlanRecursos } from "@/lib/planFeatures";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type PlanoRow = {
   id: string;

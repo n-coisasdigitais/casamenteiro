@@ -1,10 +1,10 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import UserAvatar from "@/components/UserAvatar";
 import { Camera, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { traduzirErro } from "@/lib/errorMessages";
 
 interface Props {
   fotoUrl: string | null;

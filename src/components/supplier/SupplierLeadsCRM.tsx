@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import LeadNoteDialog from "./LeadNoteDialog";
 import { cn } from "@/lib/utils";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Props = {
   supplierId: string;

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,6 @@ import { formatBRL } from "@/lib/platformPricing";
 import { CORRETAGEM_STATUS_LEDGER } from "@/lib/corretagem";
 import { formatarData } from "@/lib/reservas";
 import { CalendarRange } from "lucide-react";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Row = {
   id: string;

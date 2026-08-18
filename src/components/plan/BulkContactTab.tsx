@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +15,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Mail, MessageCircle, AlertTriangle } from "lucide-react";
 import type { PlanSupplier } from "./PlanKanban";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Channel = "platform" | "email";
 type SupplierMeta = { id: string; email: string | null; whatsapp: string | null; phone: string | null };

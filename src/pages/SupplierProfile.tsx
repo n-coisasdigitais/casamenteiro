@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +43,6 @@ import NotificationsBell from "@/components/NotificationsBell";
 import DynamicFieldsView from "@/components/dynamic-fields/DynamicFieldsView";
 import SupplierPublicAttachments from "@/components/supplier/SupplierPublicAttachments";
 import { isEspacoCategory } from "@/lib/categories";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Review = {
   id: string;

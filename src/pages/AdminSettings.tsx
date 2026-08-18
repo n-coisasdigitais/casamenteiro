@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +15,6 @@ import {
 import { Heart, ArrowLeft, Save, Flag, PlayCircle, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReloadFeatureFlags } from "@/contexts/FeatureFlagsContext";
-import { traduzirErro } from "@/lib/errorMessages";
 
 const DEFAULTS = { locacao:25, buffet:20, decoracao:12, foto_video:10, musica:8, trajes:7, convites:3, beleza:3, lua_de_mel:7, outros:5 };
 

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,6 @@ import PaymentDisclaimer from "./PaymentDisclaimer";
 import StaffChatDialog from "./StaffChatDialog";
 import { Star, MapPin, ShieldCheck, Search, CheckCircle2, AlertTriangle, Copy } from "lucide-react";
 import { appStatusLabel, jobStatusLabel, buildJobWhatsAppLink, fetchStaffContact, maskPhone } from "@/lib/staff";
-import { traduzirErro } from "@/lib/errorMessages";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */

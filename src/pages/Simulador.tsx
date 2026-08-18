@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -7,7 +8,6 @@ import { calcularSimulacao, type Estilo } from "@/lib/simulador";
 import { Loader2, Heart, ArrowLeft } from "lucide-react";
 import CityAutocomplete from "@/components/CityAutocomplete";
 import { supabase } from "@/integrations/supabase/client";
-import { traduzirErro } from "@/lib/errorMessages";
 
 const GUEST_OPTIONS = [
   { letter: "A", label: "Até 50 pessoas — íntimo e especial", value: 50 },

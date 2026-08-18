@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -8,7 +9,6 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import CityAutocomplete from "@/components/CityAutocomplete";
 import { MapPin, X } from "lucide-react";
-import { traduzirErro } from "@/lib/errorMessages";
 
 interface Props {
   supplierId: string;

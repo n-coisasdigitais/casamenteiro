@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useMemo, useState } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
@@ -12,7 +13,6 @@ import { Upload, FileText, Check, ArrowLeft, ArrowRight, Download, AlertCircle }
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneBR, onlyDigits } from "@/lib/phone";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Group = { id: string; name: string };
 type Field = "ignore" | "name" | "phone" | "email" | "group" | "type" | "rsvp" | "table" | "notes";

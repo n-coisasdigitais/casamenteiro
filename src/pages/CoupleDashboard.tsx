@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +35,6 @@ import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import CouplePhotoUpload from "@/components/CouplePhotoUpload";
 import { Textarea } from "@/components/ui/textarea";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type CoupleData = {
   id: string;

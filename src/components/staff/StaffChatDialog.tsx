@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Phone, MessageCircle, Lock } from "lucide-react";
 import { buildWhatsAppLink } from "@/lib/phone";
 import { appStatusLabel, fetchStaffContact } from "@/lib/staff";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Msg = {
   id: string;

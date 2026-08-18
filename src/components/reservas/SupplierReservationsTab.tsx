@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { calcularTaxa, formatBRL } from "@/lib/platformPricing";
 import { RESERVA_STATUS_LABEL, RESERVA_STATUS_TONE, TAXA_STATUS_LABEL, formatarData, formatarDataHora, type ReservaStatus } from "@/lib/reservas";
 import { Calendar, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Reserva = {
   id: string;

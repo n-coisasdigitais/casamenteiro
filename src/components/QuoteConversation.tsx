@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Send, DollarSign, CheckCircle2, Loader2, X } from "lucide-react";
 import { AttachmentPicker, AttachmentList } from "@/components/QuoteAttachments";
 import ConfirmFinishTaskDialog from "@/components/ConfirmFinishTaskDialog";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type TextMsg = {
   id: string;

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ExternalLink, Loader2, Plus, Save, Trash2, Upload, ArrowUp, ArrowDown } from "lucide-react";
 import { DEFAULT_LANDING, SupplierLandingConfig, HowStep, WhyItem, TestimonialItem, TrustPillar } from "@/lib/supplierLandingConfig";
-import { traduzirErro } from "@/lib/errorMessages";
 
 export default function AdminFornecedorLanding() {
   const { toast } = useToast();

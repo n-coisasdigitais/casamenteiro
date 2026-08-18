@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,6 @@ import TaskItem from "@/components/TaskItem";
 import AddTaskDialog from "@/components/AddTaskDialog";
 import { useToast } from "@/hooks/use-toast";
 import { gerarTarefasPdf } from "@/lib/tasksPdf";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Task = {
   id: string;

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { formatBRL } from "@/lib/platformPricing";
 import { gerarCorpoContratoHtml } from "@/lib/contratos";
 import { carenciaCancelamentoDias, taxaCancelamento } from "@/lib/reservasConfig";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Props = {
   supplierId: string;

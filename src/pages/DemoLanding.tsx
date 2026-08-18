@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState } from "react";
 import { useNavigate, Link, Navigate } from "react-router-dom";
 import { Heart, Users, Store, Loader2, ArrowLeft } from "lucide-react";
@@ -5,7 +6,6 @@ import { DEMO_ACCOUNTS, loginAsDemo, DemoRole } from "@/lib/demoAuth";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { useAuth } from "@/contexts/AuthContext";
-import { traduzirErro } from "@/lib/errorMessages";
 
 export default function DemoLanding() {
   const [loading, setLoading] = useState<DemoRole | null>(null);

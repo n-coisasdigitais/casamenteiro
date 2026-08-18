@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +19,6 @@ import {
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import FieldEditorDrawer, { type Campo } from "@/components/admin/categorias/FieldEditorDrawer";
-import { traduzirErro } from "@/lib/errorMessages";
 
 type Cat = { id: string; name: string; icon: string | null };
 

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,6 @@ import { Heart, Search, ShieldCheck, ShieldOff, Ban, RotateCcw, Trash2, ArrowLef
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { baixarCsv } from "@/lib/csv";
-import { traduzirErro } from "@/lib/errorMessages";
 
 const PAGE_SIZE = 25;
 
