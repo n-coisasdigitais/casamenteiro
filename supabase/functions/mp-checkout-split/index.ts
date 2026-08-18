@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
   const comissao = Number(reserva.comissao_plataforma || 0)
   if (valor <= 0) return json({ error: 'Valor ofertado inválido' }, 400)
 
-  const origin = req.headers.get('origin') || 'https://casamenteiro.lovable.app'
+  const origin = req.headers.get('origin') || 'https://www.casamenteiro.com.br'
 
   const prefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
     method: 'POST',

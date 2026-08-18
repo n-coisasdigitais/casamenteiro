@@ -1,3 +1,4 @@
+import { publicBaseUrl } from "@/lib/appUrl";
 import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_KEY = "casamenteiro_ref";
@@ -137,6 +138,6 @@ export async function getOrCreateReferralForCouple(coupleId: string) {
 }
 
 export function buildReferralUrl(codigo: string) {
-  const base = typeof window !== "undefined" ? window.location.origin : "https://casamenteiro.com.br";
+  const base = publicBaseUrl();
   return `${base}/i/${codigo}`;
 }

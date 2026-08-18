@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/oauth-calendar-callback`;
-const APP_ORIGIN = Deno.env.get("APP_PUBLIC_URL") || "https://casamenteiro.lovable.app";
+const APP_ORIGIN = Deno.env.get("APP_PUBLIC_URL") || "https://www.casamenteiro.com.br";
 
 function htmlRedirect(url: string, msg: string) {
   return new Response(
