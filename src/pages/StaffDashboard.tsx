@@ -266,6 +266,7 @@ export default function StaffDashboard() {
   return (
     <div className="min-h-screen bg-muted/30">
       <SEO title="Painel do profissional — Casamenteiro" noIndex />
+      <WelcomeModal tipo="profissional" />
       <header className="border-b bg-white">
         <div className="container mx-auto flex items-center justify-between py-3 px-4">
           <Link to="/" className="flex items-center gap-2">
