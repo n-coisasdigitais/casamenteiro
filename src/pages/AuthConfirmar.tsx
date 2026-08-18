@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SEO } from "@/components/SEO";
+import SEO from "@/components/SEO";
 
 type OtpType = "signup" | "magiclink" | "recovery" | "invite" | "email_change";
 
