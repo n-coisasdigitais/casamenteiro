@@ -54,6 +54,7 @@ export default function StaffOnboarding() {
         setFuncoes(data.funcoes || []);
         setConsent(!!data.consentimento_lgpd);
         setPub(!!data.is_public);
+        setAvisarVagas((data as any).notificar_vagas_email !== false);
         setAvisarVagas(data.notificar_vagas_email !== false);
       }
     })();
