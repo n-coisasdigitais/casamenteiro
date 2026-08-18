@@ -91,7 +91,15 @@ export default function CasaisFeed() {
         </header>
 
         <div className="flex flex-col sm:flex-row gap-3 mb-8 max-w-2xl mx-auto">
-          <Input placeholder="Cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} />
+          <div className="flex-1">
+            <CityAutocomplete
+              fonte="brasil"
+              mostrarContinuarMesmoAssim={false}
+              value={cidade}
+              placeholder="Cidade"
+              onChange={(c) => setCidade(c)}
+            />
+          </div>
           <Select value={estilo} onValueChange={setEstilo}>
             <SelectTrigger className="sm:w-48"><SelectValue placeholder="Estilo" /></SelectTrigger>
             <SelectContent>
