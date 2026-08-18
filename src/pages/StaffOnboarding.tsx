@@ -34,6 +34,7 @@ export default function StaffOnboarding() {
   const [funcoes, setFuncoes] = useState<string[]>([]);
   const [consent, setConsent] = useState(false);
   const [pub, setPub] = useState(true);
+  const [avisarVagas, setAvisarVagas] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -53,6 +54,7 @@ export default function StaffOnboarding() {
         setFuncoes(data.funcoes || []);
         setConsent(!!data.consentimento_lgpd);
         setPub(!!data.is_public);
+        setAvisarVagas(data.notificar_vagas_email !== false);
       }
     })();
   }, [user]);
@@ -86,6 +88,7 @@ export default function StaffOnboarding() {
       funcoes,
       consentimento_lgpd: consent,
       is_public: pub,
+      notificar_vagas_email: avisarVagas,
     };
     let error;
     if (profileId) {
@@ -148,6 +151,10 @@ export default function StaffOnboarding() {
             <label className="flex gap-2 items-start text-sm cursor-pointer">
               <Checkbox checked={pub} onCheckedChange={v => setPub(v === true)} className="mt-0.5" />
               <span>Manter meu perfil visível no marketplace público</span>
+            </label>
+            <label className="flex gap-2 items-start text-sm cursor-pointer">
+              <Checkbox checked={avisarVagas} onCheckedChange={v => setAvisarVagas(v === true)} className="mt-0.5" />
+              <span>Quero receber e-mails quando surgirem vagas na minha cidade para as minhas funções.</span>
             </label>
             <label className="flex gap-2 items-start text-sm cursor-pointer">
               <Checkbox checked={consent} onCheckedChange={v => setConsent(v === true)} className="mt-0.5" />
