@@ -15,6 +15,7 @@ import SEO from "@/components/SEO";
 import { FUNCOES_STAFF, slugify } from "@/lib/staff";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import StaffPhotoUpload from "@/components/staff/StaffPhotoUpload";
+import CityAutocomplete from "@/components/CityAutocomplete";
 
 export default function StaffOnboarding() {
   const { user } = useAuth();
@@ -110,8 +111,19 @@ export default function StaffOnboarding() {
               <p className="text-xs text-muted-foreground mt-1">Fica oculto até você aceitar uma vaga.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Cidade</Label><Input value={cidade} onChange={e => setCidade(e.target.value)} /></div>
-              <div><Label>Estado (UF)</Label><Input value={estado} onChange={e => setEstado(e.target.value.slice(0, 2).toUpperCase())} /></div>
+              <div>
+                <Label>Cidade</Label>
+                <CityAutocomplete
+                  fonte="brasil"
+                  mostrarContinuarMesmoAssim={false}
+                  value={cidade}
+                  placeholder="Digite e selecione sua cidade"
+                  onChange={(c) => setCidade(c)}
+                  onSelect={(c, uf) => { setCidade(c); if (uf) setEstado(uf); }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Selecione uma cidade da lista oficial.</p>
+              </div>
+              <div><Label>Estado (UF)</Label><Input value={estado} readOnly placeholder="Preenchido pela cidade" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Raio de atendimento (km)</Label><Input type="number" value={raio} onChange={e => setRaio(Number(e.target.value))} /></div>
