@@ -64,7 +64,7 @@ export default function AuthConfirmar() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
-      <SEO title="Confirmando acesso | Casamenteiro" description="Validação do link enviado por e-mail." noindex />
+      <SEO title="Confirmando acesso | Casamenteiro" description="Validação do link enviado por e-mail." noIndex />
       <div className="max-w-sm w-full text-center space-y-4">
         {state === "loading" ? (
           <>
