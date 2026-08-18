@@ -1,3 +1,4 @@
+import { publicUrl } from "@/lib/appUrl";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -118,10 +119,7 @@ export default function WeddingGuests() {
     const token = await ensureInvite(guest.id);
     if (!token) return;
     // Usa o domínio publicado para garantir que o link funcione fora do preview
-    const origin = window.location.hostname.includes("lovable")
-      ? "https://ocasamenteiro.lovable.app"
-      : window.location.origin;
-    const url = `${origin}/convite/${token}`;
+    const url = publicUrl(`/convite/${token}`);
     await navigator.clipboard.writeText(url).catch(() => {});
     await (supabase as any).from("guest_invites").update({ sent_at: new Date().toISOString() }).eq("guest_id", guest.id);
     setInvites(prev => ({ ...prev, [guest.id]: { ...prev[guest.id], token, sent_at: new Date().toISOString() } }));
@@ -135,10 +133,7 @@ export default function WeddingGuests() {
     }
     const token = await ensureInvite(guest.id);
     if (!token) return;
-    const origin = window.location.hostname.includes("lovable")
-      ? "https://ocasamenteiro.lovable.app"
-      : window.location.origin;
-    const url = `${origin}/convite/${token}`;
+    const url = publicUrl(`/convite/${token}`);
     const msg = `Olá, ${guest.name}! 💍 Você está convidado(a) para o nosso casamento. Confirme sua presença aqui: ${url}`;
     const wa = buildWhatsAppLink(guest.phone, msg);
     if (!wa) {
