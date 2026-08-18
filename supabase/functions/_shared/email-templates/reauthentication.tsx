@@ -29,6 +29,6 @@ const brand = { fontSize: '14px', fontWeight: '600' as const, color: '#D9905A', 
 const h1 = { fontSize: '24px', fontWeight: '700' as const, color: '#1F1D1B', margin: '0 0 16px', lineHeight: '1.3' }
 const text = { fontSize: '15px', color: '#3A352F', lineHeight: '1.6', margin: '0 0 20px' }
 const link = { color: '#D9905A', textDecoration: 'underline' }
-const button = { backgroundColor: '#D9905A', color: '#ffffff !important' as any, border: '1px solid #C97D46', fontSize: '15px', fontWeight: '600' as const, borderRadius: '999px', padding: '14px 28px', textDecoration: 'none', display: 'inline-block' }
+const button = { backgroundColor: '#D9905A', color: '#ffffff', border: '1px solid #C97D46', fontSize: '15px', fontWeight: '600' as const, borderRadius: '999px', padding: '14px 28px', textDecoration: 'none', display: 'inline-block' }
 const footer = { fontSize: '12px', color: '#6B645C', margin: '32px 0 0', lineHeight: '1.5' }
 const codeStyle = { fontFamily: 'monospace', fontSize: '28px', fontWeight: '700' as const, color: '#D9905A', letterSpacing: '0.2em', margin: '24px 0', textAlign: 'center' as const }
