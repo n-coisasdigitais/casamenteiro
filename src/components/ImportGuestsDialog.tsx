@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useMemo, useState } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
@@ -168,7 +169,7 @@ export default function ImportGuestsDialog({
       const parsed = isXlsx ? await parseXlsx(file) : await parseCsv(file);
       loadParsed(parsed.headers.filter(Boolean), parsed.rows);
     } catch (err: any) {
-      toast({ title: "Erro ao ler arquivo", description: err?.message || String(err), variant: "destructive" });
+      toast({ title: "Erro ao ler arquivo", description: traduzirErro(err) || String(err), variant: "destructive" });
     } finally {
       e.target.value = "";
     }

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -114,7 +115,7 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
       status: status === "fechado" ? "accepted" : "pending",
     }).select("id").maybeSingle();
     if (error || !q) {
-      toast({ title: "Erro", description: error?.message || "Falha ao criar", variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error) || "Falha ao criar", variant: "destructive" });
       setSaving(false);
       return;
     }

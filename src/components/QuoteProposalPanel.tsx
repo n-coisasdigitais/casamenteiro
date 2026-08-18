@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,7 @@ export default function QuoteProposalPanel({ quoteId, currentUserId, isSupplier,
       amount: Number(amount),
       description: desc.trim() || null,
     });
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else {
       setAmount(""); setDesc("");
       toast({ title: kind === "discount_request" ? "Pedido de desconto enviado" : "Proposta enviada" });

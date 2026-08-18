@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,7 @@ import SEO from "@/components/SEO";
 import { FUNCOES_STAFF, slugify } from "@/lib/staff";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import StaffPhotoUpload from "@/components/staff/StaffPhotoUpload";
+import CityAutocomplete from "@/components/CityAutocomplete";
 
 export default function StaffOnboarding() {
   const { user } = useAuth();
@@ -32,6 +34,7 @@ export default function StaffOnboarding() {
   const [funcoes, setFuncoes] = useState<string[]>([]);
   const [consent, setConsent] = useState(false);
   const [pub, setPub] = useState(true);
+  const [avisarVagas, setAvisarVagas] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -51,6 +54,8 @@ export default function StaffOnboarding() {
         setFuncoes(data.funcoes || []);
         setConsent(!!data.consentimento_lgpd);
         setPub(!!data.is_public);
+        setAvisarVagas((data as any).notificar_vagas_email !== false);
+        setAvisarVagas(data.notificar_vagas_email !== false);
       }
     })();
   }, [user]);
@@ -62,7 +67,9 @@ export default function StaffOnboarding() {
     if (!user) return;
     if (!nome.trim()) return toast({ title: "Informe seu nome", variant: "destructive" });
     if (!isValidPhoneBR(telefone)) return toast({ title: "Telefone inválido", variant: "destructive" });
-    if (!cidade.trim()) return toast({ title: "Informe sua cidade", variant: "destructive" });
+    if (!cidade.trim() || !estado.trim()) {
+      return toast({ title: "Selecione sua cidade na lista de sugestões", variant: "destructive" });
+    }
     if (funcoes.length === 0) return toast({ title: "Selecione ao menos uma função", variant: "destructive" });
     if (!consent) return toast({ title: "Aceite os termos LGPD para continuar", variant: "destructive" });
 
@@ -82,6 +89,7 @@ export default function StaffOnboarding() {
       funcoes,
       consentimento_lgpd: consent,
       is_public: pub,
+      notificar_vagas_email: avisarVagas,
     };
     let error;
     if (profileId) {
@@ -90,7 +98,7 @@ export default function StaffOnboarding() {
       ({ error } = await (supabase.from("staff_profiles" as any) as any).insert(payload));
     }
     setLoading(false);
-    if (error) return toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Perfil salvo!" });
     navigate("/profissional/painel");
   };
@@ -109,8 +117,19 @@ export default function StaffOnboarding() {
               <p className="text-xs text-muted-foreground mt-1">Fica oculto até você aceitar uma vaga.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Cidade</Label><Input value={cidade} onChange={e => setCidade(e.target.value)} /></div>
-              <div><Label>Estado (UF)</Label><Input value={estado} onChange={e => setEstado(e.target.value.slice(0, 2).toUpperCase())} /></div>
+              <div>
+                <Label>Cidade</Label>
+                <CityAutocomplete
+                  fonte="brasil"
+                  mostrarContinuarMesmoAssim={false}
+                  value={cidade}
+                  placeholder="Digite e selecione sua cidade"
+                  onChange={(c) => setCidade(c)}
+                  onSelect={(c, uf) => { setCidade(c); if (uf) setEstado(uf); }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Selecione uma cidade da lista oficial.</p>
+              </div>
+              <div><Label>Estado (UF)</Label><Input value={estado} readOnly placeholder="Preenchido pela cidade" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Raio de atendimento (km)</Label><Input type="number" value={raio} onChange={e => setRaio(Number(e.target.value))} /></div>
@@ -133,6 +152,10 @@ export default function StaffOnboarding() {
             <label className="flex gap-2 items-start text-sm cursor-pointer">
               <Checkbox checked={pub} onCheckedChange={v => setPub(v === true)} className="mt-0.5" />
               <span>Manter meu perfil visível no marketplace público</span>
+            </label>
+            <label className="flex gap-2 items-start text-sm cursor-pointer">
+              <Checkbox checked={avisarVagas} onCheckedChange={v => setAvisarVagas(v === true)} className="mt-0.5" />
+              <span>Quero receber e-mails quando surgirem vagas na minha cidade para as minhas funções.</span>
             </label>
             <label className="flex gap-2 items-start text-sm cursor-pointer">
               <Checkbox checked={consent} onCheckedChange={v => setConsent(v === true)} className="mt-0.5" />

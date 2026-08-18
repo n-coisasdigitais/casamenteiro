@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +45,7 @@ export default function AdminCategorias() {
 
   const toggleActive = async (cat: Cat, v: boolean) => {
     const { error } = await supabase.from("categories").update({ active: v }).eq("id", cat.id);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     setCats((prev) => prev.map((c) => c.id === cat.id ? { ...c, active: v } : c));
   };
 

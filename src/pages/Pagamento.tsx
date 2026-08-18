@@ -114,7 +114,7 @@ export default function Pagamento() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-10">
-      <SEO title="Pagamento | Meu Grande Dia" description="Finalize seu pagamento com segurança." noIndex />
+      <SEO title="Pagamento | Casamenteiro" description="Finalize seu pagamento com segurança." noIndex />
       <h1 className="text-2xl font-semibold mb-6">Finalizar pagamento</h1>
 
       {carregando ? (

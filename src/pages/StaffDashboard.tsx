@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,7 +138,7 @@ export default function StaffDashboard() {
     const { error } = await (supabase.from("staff_applications" as any) as any)
       .update({ status, respondido_em: new Date().toISOString() })
       .eq("id", appId);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: status === "aceito" ? "Vaga aceita!" : "Recusado" });
     load();
   };
@@ -146,7 +147,7 @@ export default function StaffDashboard() {
     const { error } = await (supabase.from("staff_applications" as any) as any)
       .update({ status: "retirada", respondido_em: new Date().toISOString() })
       .eq("id", appId);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Candidatura retirada" });
     load();
   };
@@ -162,7 +163,7 @@ export default function StaffDashboard() {
       },
       { onConflict: "job_id,staff_id", ignoreDuplicates: true },
     );
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Candidatura enviada!" });
     load();
   };
@@ -181,7 +182,7 @@ export default function StaffDashboard() {
       });
       if (url) window.open(url, "_blank");
     } catch (e: any) {
-      toast({ title: "Aguardando aceite", description: e.message, variant: "destructive" });
+      toast({ title: "Aguardando aceite", description: traduzirErro(e), variant: "destructive" });
     }
   };
 
@@ -215,7 +216,7 @@ export default function StaffDashboard() {
     }
 
     const { error } = await (supabase.from("staff_unavailability" as any) as any).insert(novos);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: novos.length === 1 ? "Data bloqueada" : `${novos.length} datas bloqueadas` });
     setBlockStart("");
     setBlockEnd("");
@@ -225,7 +226,7 @@ export default function StaffDashboard() {
 
   const desbloquear = async (id: string) => {
     const { error } = await (supabase.from("staff_unavailability" as any) as any).delete().eq("id", id);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Bloqueio removido" });
     load();
   };
@@ -235,7 +236,7 @@ export default function StaffDashboard() {
     const { error } = await (supabase.from("staff_profiles" as any) as any)
       .update({ disponivel: v })
       .eq("id", staff.id);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: v ? "Você está disponível para vagas" : "Você não receberá novas vagas" });
   };
 

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,7 +95,7 @@ export default function MeuCasamentoPerfil() {
       .eq("id", perfil.id)
       .select("*").maybeSingle();
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error)); return; }
     setPerfil(data);
     toast.success("Salvo!");
   };
@@ -105,7 +106,7 @@ export default function MeuCasamentoPerfil() {
     const ext = file.name.split(".").pop();
     const path = `${user.id}/${campo}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("couple-profile").upload(path, file, { upsert: true });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error)); return; }
     const { data: { publicUrl } } = supabase.storage.from("couple-profile").getPublicUrl(path);
     await salvar({ [campo]: publicUrl });
   };
@@ -117,7 +118,7 @@ export default function MeuCasamentoPerfil() {
     const ext = file.name.split(".").pop();
     const path = `${user.id}/album-${Date.now()}-${Math.random().toString(36).slice(2,6)}.${ext}`;
     const { error } = await supabase.storage.from("couple-profile").upload(path, file);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error)); return; }
     const { data: { publicUrl } } = supabase.storage.from("couple-profile").getPublicUrl(path);
     await supabase.from("couple_photos").insert({ couple_id: coupleId, url: publicUrl, ordem: fotos.length });
     await reloadMedia(coupleId, perfil?.id);
@@ -164,7 +165,7 @@ export default function MeuCasamentoPerfil() {
       rating: reviewRating, comment: reviewText.trim(),
       autor_tipo: "couple", alvo_tipo: "supplier", publico: reviewPublico, aprovado: true,
     });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error)); return; }
     toast.success("Avaliação enviada!");
     setReviewModalOpen(false);
     await reloadMedia(coupleId, perfil?.id);

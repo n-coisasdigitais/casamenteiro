@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -156,7 +157,7 @@ export default function QuoteConversation({
             .from("quote-attachments")
             .upload(filePath, file);
           if (uploadErr) {
-            toast({ title: `Falha ao enviar ${file.name}`, description: uploadErr.message, variant: "destructive" });
+            toast({ title: `Falha ao enviar ${file.name}`, description: traduzirErro(uploadErr), variant: "destructive" });
             continue;
           }
           const { data: { publicUrl } } = supabase.storage
@@ -179,7 +180,7 @@ export default function QuoteConversation({
       setAttachments([]);
       await load();
     } catch (e: any) {
-      toast({ title: "Erro ao enviar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -281,7 +282,7 @@ export default function QuoteConversation({
       await load();
       onContracted?.();
     } catch (e: any) {
-      toast({ title: "Erro ao fechar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao fechar", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setAccepting(null);
     }

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -90,7 +91,7 @@ export default function StaffChatDialog({
       body,
     });
     setSending(false);
-    if (error) return toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro ao enviar", description: traduzirErro(error), variant: "destructive" });
     setText("");
     load();
   };

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -215,7 +216,7 @@ export default function SupplierOnboarding() {
       category_id: categoryId || null,
       onboarding_step: step + 1,
     }).eq("id", supplierId);
-    if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); return false; }
+    if (error) { toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" }); return false; }
     return true;
   };
 
@@ -224,7 +225,7 @@ export default function SupplierOnboarding() {
     const { error } = await (supabase.from("suppliers") as any).update({
       category_id: categoryId, onboarding_step: step + 1,
     }).eq("id", supplierId);
-    if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); return false; }
+    if (error) { toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" }); return false; }
     return true;
   };
 
@@ -250,7 +251,7 @@ export default function SupplierOnboarding() {
     if (rows.length > 0) {
       const { error } = await (supabase.from("fornecedor_campos") as any)
         .upsert(rows, { onConflict: "supplier_id,campo_id" });
-      if (error) { toast({ title: "Erro ao salvar respostas", description: error.message, variant: "destructive" }); return false; }
+      if (error) { toast({ title: "Erro ao salvar respostas", description: traduzirErro(error), variant: "destructive" }); return false; }
     }
     await (supabase.from("suppliers") as any).update({ onboarding_step: step + 1 }).eq("id", supplierId);
     return true;
@@ -267,7 +268,7 @@ export default function SupplierOnboarding() {
       await (supabase.from("suppliers") as any).update({ profile_photo_url: publicUrl }).eq("id", supplierId);
       setProfilePhoto(publicUrl);
     } catch (e: any) {
-      toast({ title: "Erro no upload", description: e.message, variant: "destructive" });
+      toast({ title: "Erro no upload", description: traduzirErro(e), variant: "destructive" });
     } finally { setUploading(false); }
   };
 
@@ -284,7 +285,7 @@ export default function SupplierOnboarding() {
         .select().maybeSingle();
       if (ins) setGalleryPhotos([...galleryPhotos, { id: ins.id, url: publicUrl }]);
     } catch (e: any) {
-      toast({ title: "Erro no upload", description: e.message, variant: "destructive" });
+      toast({ title: "Erro no upload", description: traduzirErro(e), variant: "destructive" });
     } finally { setUploading(false); }
   };
 
@@ -311,7 +312,7 @@ export default function SupplierOnboarding() {
       toast({ title: "Cadastro enviado!", description: "Vamos revisar e te avisar em até 48h." });
       navigate("/fornecedor/painel", { replace: true });
     } catch (e: any) {
-      toast({ title: "Erro ao enviar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar", description: traduzirErro(e), variant: "destructive" });
     } finally { setSaving(false); }
   };
 

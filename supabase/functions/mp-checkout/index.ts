@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
         ? { frequency: 12, frequency_type: "months" }
         : { frequency: 1, frequency_type: "months" };
 
-    const origin2 = req.headers.get("origin") || "https://casamenteiro.lovable.app";
+    const origin2 = req.headers.get("origin") || "https://www.casamenteiro.com.br";
     const preapprovalBody = {
       reason: titulo,
       external_reference: `assinatura:${referenciaId}`,
@@ -309,7 +309,7 @@ Deno.serve(async (req) => {
   if (valor <= 0) return json({ error: "Valor inválido para cobrança" }, 400);
 
   const externalReference = `${tipo}:${referenciaId}`;
-  const origin = req.headers.get("origin") || "https://casamenteiro.lovable.app";
+  const origin = req.headers.get("origin") || "https://www.casamenteiro.com.br";
   const retorno =
     tipo === "cancelamento"
       ? "/minhas-reservas"

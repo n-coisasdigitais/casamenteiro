@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -37,7 +38,7 @@ export default function MarkAsPaidDialog({
     }).eq("id", paymentId);
     setSaving(false);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Pagamento registrado" });

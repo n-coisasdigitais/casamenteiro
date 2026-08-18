@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ export default function LeadNoteDialog({
       : supabase.from("lead_notes" as any).insert(payload);
     const { error } = await q;
     setLoading(false);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     await supabase.from("lead_events" as any).insert({
       quote_id: quoteId, supplier_id: supplierId, tipo: existing?.id ? "nota_editada" : "nota_criada",
       created_by: authorId,

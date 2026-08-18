@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -77,7 +78,7 @@ export default function Simulador() {
         navigate("/simulador/resultado?preview=1");
       }
     } catch (e: any) {
-      toast({ title: "Erro ao calcular", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao calcular", description: traduzirErro(e), variant: "destructive" });
       setStep(4);
     }
   };

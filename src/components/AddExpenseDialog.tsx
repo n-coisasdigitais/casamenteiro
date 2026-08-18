@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ export default function AddExpenseDialog({ open, onOpenChange, coupleId, onSucce
     });
 
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     } else {
       toast({ title: "Sucesso", description: "Despesa criada com sucesso" });
       setForm({ description: "", category: "outros", estimated_cost: "", final_cost: "" });

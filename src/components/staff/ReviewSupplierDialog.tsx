@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ export default function ReviewSupplierDialog({
       comentario: comentario || null,
     });
     setLoading(false);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Avaliação enviada. Obrigado!" });
     onOpenChange(false);
     setComentario("");

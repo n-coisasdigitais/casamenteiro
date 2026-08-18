@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -66,7 +67,7 @@ export default function AdminCampos() {
       ? supabase.from("campos_categoria").update(payload).eq("id", editing.id)
       : supabase.from("campos_categoria").insert(payload);
     const { error } = await q;
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); return; }
     toast({ title: "Campo salvo" });
     setEditing(null); loadCampos();
   };

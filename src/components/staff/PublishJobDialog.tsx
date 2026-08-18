@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FUNCOES_STAFF } from "@/lib/staff";
+import CityAutocomplete from "@/components/CityAutocomplete";
 
 export default function PublishJobDialog({
   supplierId,
@@ -66,14 +67,18 @@ export default function PublishJobDialog({
       valor_turno: Number(valor), observacoes: descricao || null,
       is_public: pub,
     };
-    const { error } = isEdit
-      ? await (supabase.from("staff_jobs" as any) as any).update(payload).eq("id", job.id)
-      : await (supabase.from("staff_jobs" as any) as any).insert({
-          ...payload,
-          supplier_id: supplierId,
-          status: "aberta",
-          criado_por_user_id: user.id,
-        });
+    let novoId: string | null = null;
+    let error: any = null;
+    if (isEdit) {
+      ({ error } = await (supabase.from("staff_jobs" as any) as any).update(payload).eq("id", job.id));
+    } else {
+      const res = await (supabase.from("staff_jobs" as any) as any)
+        .insert({ ...payload, supplier_id: supplierId, status: "aberta", criado_por_user_id: user.id })
+        .select("id")
+        .maybeSingle();
+      error = res.error;
+      novoId = res.data?.id ?? null;
+    }
     setLoading(false);
     if (error) {
       const msg = error.message || "";
@@ -85,6 +90,10 @@ export default function PublishJobDialog({
       return toast({ title: isEdit ? "Erro ao salvar vaga" : "Erro ao publicar vaga", description: friendly, variant: "destructive" });
     }
     toast({ title: isEdit ? "Vaga atualizada!" : "Vaga publicada!" });
+    // Avisa por e-mail os profissionais com a mesma função e cidade
+    if (!isEdit && novoId && pub) {
+      supabase.functions.invoke("send-job-match-emails", { body: { job_id: novoId } }).catch(() => {});
+    }
     setOpen(false);
     setFuncao(""); setData(""); setHoraIni(""); setHoraFim(""); setLocal(""); setCidade(""); setValor(""); setDescricao("");
     onCreated?.();
@@ -109,7 +118,17 @@ export default function PublishJobDialog({
             <div><Label>Fim</Label><Input type="time" value={horaFim} onChange={e => setHoraFim(e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div><Label>Cidade</Label><Input value={cidade} onChange={e => setCidade(e.target.value)} /></div>
+            <div>
+              <Label>Cidade</Label>
+              <CityAutocomplete
+                fonte="brasil"
+                mostrarContinuarMesmoAssim={false}
+                value={cidade}
+                placeholder="Digite e selecione"
+                onChange={(c) => setCidade(c)}
+                onSelect={(c) => setCidade(c)}
+              />
+            </div>
             <div><Label>Local</Label><Input value={local} onChange={e => setLocal(e.target.value)} placeholder="Ex.: Salão Aurora" /></div>
           </div>
           <div><Label>Valor do turno (R$)</Label><Input type="number" value={valor} onChange={e => setValor(e.target.value === "" ? "" : Number(e.target.value))} /></div>

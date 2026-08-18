@@ -142,7 +142,7 @@ export default function FornecedorPlanos() {
     <SupplierShell>
       <div className="container mx-auto max-w-5xl px-4 py-10 space-y-10">
         <SEO
-          title="Planos e destaques | Meu Grande Dia"
+          title="Planos e destaques | Casamenteiro"
           description="Escolha seu plano e amplie a visibilidade do seu negócio."
           noIndex
         />

@@ -1,3 +1,5 @@
+import { publicUrl } from "@/lib/appUrl";
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -106,7 +108,7 @@ export default function WeddingGuests() {
       .select("token")
       .maybeSingle();
     if (error || !data) {
-      toast({ title: "Erro ao gerar convite", description: error?.message, variant: "destructive" });
+      toast({ title: "Erro ao gerar convite", description: traduzirErro(error), variant: "destructive" });
       return null;
     }
     setInvites(prev => ({ ...prev, [guestId]: { token: data.token, sent_at: null, opened_at: null, responded_at: null } }));
@@ -117,10 +119,7 @@ export default function WeddingGuests() {
     const token = await ensureInvite(guest.id);
     if (!token) return;
     // Usa o domínio publicado para garantir que o link funcione fora do preview
-    const origin = window.location.hostname.includes("lovable")
-      ? "https://ocasamenteiro.lovable.app"
-      : window.location.origin;
-    const url = `${origin}/convite/${token}`;
+    const url = publicUrl(`/convite/${token}`);
     await navigator.clipboard.writeText(url).catch(() => {});
     await (supabase as any).from("guest_invites").update({ sent_at: new Date().toISOString() }).eq("guest_id", guest.id);
     setInvites(prev => ({ ...prev, [guest.id]: { ...prev[guest.id], token, sent_at: new Date().toISOString() } }));
@@ -134,10 +133,7 @@ export default function WeddingGuests() {
     }
     const token = await ensureInvite(guest.id);
     if (!token) return;
-    const origin = window.location.hostname.includes("lovable")
-      ? "https://ocasamenteiro.lovable.app"
-      : window.location.origin;
-    const url = `${origin}/convite/${token}`;
+    const url = publicUrl(`/convite/${token}`);
     const msg = `Olá, ${guest.name}! 💍 Você está convidado(a) para o nosso casamento. Confirme sua presença aqui: ${url}`;
     const wa = buildWhatsAppLink(guest.phone, msg);
     if (!wa) {
@@ -165,7 +161,7 @@ export default function WeddingGuests() {
     if (guest.total_pessoas) insertData.total_pessoas = guest.total_pessoas;
     const { data, error } = await supabase.from("wedding_guests").insert(insertData).select().maybeSingle();
     if (error) {
-      toast({ title: "Erro ao adicionar convidado", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao adicionar convidado", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     if (data) setGuests((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
@@ -204,7 +200,7 @@ export default function WeddingGuests() {
   const saveGuest = async (id: string, values: Record<string, any>) => {
     const { error } = await (supabase.from("wedding_guests") as any).update(values).eq("id", id);
     if (error) {
-      toast({ title: "Erro ao salvar convidado", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar convidado", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     setGuests((prev) => prev.map((g) => (g.id === id ? { ...g, ...values } : g)).sort((a, b) => a.name.localeCompare(b.name)));
@@ -340,7 +336,7 @@ export default function WeddingGuests() {
       setSelected(new Set());
       loadData(coupleId);
     } catch (e: any) {
-      toast({ title: "Erro ao enviar emails", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar emails", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setSendingEmails(false);
     }

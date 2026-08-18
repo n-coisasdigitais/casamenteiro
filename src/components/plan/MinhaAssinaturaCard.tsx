@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +43,7 @@ export default function MinhaAssinaturaCard({ supplierId }: { supplierId: string
       toast({ title: "Assinatura cancelada", description: "Você mantém o acesso pelo período contratado." });
       setTimeout(() => window.location.reload(), 1200);
     } catch (e: any) {
-      toast({ title: "Erro ao cancelar", description: e?.message || "Tente novamente.", variant: "destructive" });
+      toast({ title: "Erro ao cancelar", description: traduzirErro(e) || "Tente novamente.", variant: "destructive" });
     } finally {
       setCancelando(false);
     }

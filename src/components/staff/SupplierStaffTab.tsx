@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -216,7 +217,7 @@ function ReviewStaffDialog({
       comentario: comentario || null,
     });
     setLoading(false);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Avaliação enviada. Obrigado!" });
     onOpenChange(false);
     setComentario("");
@@ -445,7 +446,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
         .eq("supplier_id", supplierId)
         .eq("staff_id", staffId);
       if (error) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
+        toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
         load();
         return;
       }
@@ -456,7 +457,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
         staff_id: staffId,
       });
       if (error) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
+        toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
         load();
         return;
       }
@@ -481,7 +482,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
       { job_id: jobId, staff_id: staffId, origem: "convite", status: "convidado" },
       { onConflict: "job_id,staff_id", ignoreDuplicates: true },
     );
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Convite enviado!" });
     load();
   };
@@ -495,7 +496,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
       onConflict: "job_id,staff_id",
       ignoreDuplicates: true,
     });
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: `Convite enviado para ${alvo.length} da sua equipe` });
     load();
   };
@@ -504,7 +505,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
     const { error } = await (supabase.from("staff_applications" as any) as any)
       .update({ status, respondido_em: new Date().toISOString() })
       .eq("id", appId);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     load();
   };
 
@@ -522,13 +523,13 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
       });
       if (url) window.open(url, "_blank");
     } catch (e: any) {
-      toast({ title: "Contato liberado após aceite", description: e.message, variant: "destructive" });
+      toast({ title: "Contato liberado após aceite", description: traduzirErro(e), variant: "destructive" });
     }
   };
 
   const alterarStatusVaga = async (job: any, status: "aberta" | "pausada" | "cancelada") => {
     const { error } = await (supabase.from("staff_jobs" as any) as any).update({ status }).eq("id", job.id);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({
       title: status === "aberta" ? "Vaga republicada" : status === "pausada" ? "Vaga despublicada" : "Vaga cancelada",
     });

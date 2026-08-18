@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,7 +77,7 @@ export default function SupplierReviewCouples({ supplierId }: { supplierId: stri
       rating, comment: texto.trim(),
       autor_tipo: "supplier", alvo_tipo: "couple", publico, aprovado: true,
     });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(traduzirErro(error)); return; }
     toast.success("Avaliação enviada!");
     setModalOpen(false);
     await carregar();

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -116,7 +117,7 @@ export default function SimuladorResultado() {
         ),
       });
     } catch (e: any) {
-      toast({ title: "Erro ao enviar pedido", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar pedido", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setEnviandoPedido(null);
     }
@@ -224,7 +225,7 @@ export default function SimuladorResultado() {
         .update({ resultado: { ...r, simulacaoId: id } })
         .eq("id", id);
     } catch (e: any) {
-      toast({ title: "Erro ao recalcular", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao recalcular", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setRecalculando(false);
     }
@@ -278,7 +279,7 @@ export default function SimuladorResultado() {
       setNovaVerbaCat("");
       toast({ title: "Categoria recalculada" });
     } catch (e: any) {
-      toast({ title: "Erro ao recalcular categoria", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao recalcular categoria", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setRecalculandoCat(null);
     }
@@ -346,7 +347,7 @@ export default function SimuladorResultado() {
       setOpenAssumir(false);
       navigate("/meu-casamento/plano");
     } catch (e: any) {
-      toast({ title: "Erro ao criar plano", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao criar plano", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setCriando(false);
     }

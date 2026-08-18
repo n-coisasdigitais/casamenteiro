@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -288,7 +289,7 @@ export default function SupplierDashboard() {
       })
       .eq("id", supplier.id);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
     } else {
       toast({ title: "Perfil atualizado!" });
     }
@@ -302,7 +303,7 @@ export default function SupplierDashboard() {
     const filePath = `${user!.id}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage.from("supplier-photos").upload(filePath, file);
     if (uploadError) {
-      toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
+      toast({ title: "Erro no upload", description: traduzirErro(uploadError), variant: "destructive" });
       setUploading(false);
       return;
     }
@@ -338,7 +339,7 @@ export default function SupplierDashboard() {
         .eq("id", photoId)
         .select("id");
       if (error) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
+        toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
         return;
       }
       if (!data || data.length === 0) {

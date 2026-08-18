@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -155,14 +156,14 @@ export default function FieldEditorDrawer({
       };
       const { error } = await supabase.from("campos_categoria").update(baseOnly).eq("id", campo.id!);
       setSaving(false);
-      if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+      if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     } else {
       const q = campo?.id
         ? supabase.from("campos_categoria").update(payload).eq("id", campo.id)
         : supabase.from("campos_categoria").insert({ ...payload, ordem: data.ordem, is_base: false });
       const { error } = await q;
       setSaving(false);
-      if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+      if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     }
     toast({ title: "Salvo" });
     onSaved();

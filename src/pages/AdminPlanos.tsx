@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,7 +164,7 @@ export default function AdminPlanos() {
   const excluirPacote = async (id: string) => {
     const { error } = await (supabase.from("featured_packages" as any) as any).delete().eq("id", id);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Pacote removido" });

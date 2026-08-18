@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -143,7 +144,7 @@ export default function BulkContactTab({
       setSelected(new Set());
       onChange();
     } catch (e: any) {
-      toast({ title: "Erro ao enviar", description: e.message || "Tente novamente", variant: "destructive" });
+      toast({ title: "Erro ao enviar", description: traduzirErro(e) || "Tente novamente", variant: "destructive" });
     } finally {
       setSending(false);
     }

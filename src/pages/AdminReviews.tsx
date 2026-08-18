@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +41,7 @@ export default function AdminReviews() {
       .order("created_at", { ascending: false })
       .limit(500);
     if (error) {
-      toast({ title: "Erro ao carregar avaliações", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao carregar avaliações", description: traduzirErro(error), variant: "destructive" });
       setRows([]);
       return;
     }
@@ -61,7 +62,7 @@ export default function AdminReviews() {
   const removeReview = async (id: string) => {
     if (!confirm("Excluir esta avaliação?")) return;
     const { error } = await supabase.from("reviews").delete().eq("id", id);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else {
       toast({ title: "Avaliação excluída" });
       load();

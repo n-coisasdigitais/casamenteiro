@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,7 +38,7 @@ export default function AlbumUpload({ album, onChange, max = 10 }: Props) {
       const path = `${user.id}/album-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error } = await supabase.storage.from("couple-photos").upload(path, file, { upsert: false });
       if (error) {
-        toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+        toast({ title: "Erro ao enviar", description: traduzirErro(error), variant: "destructive" });
         continue;
       }
       const { data: { publicUrl } } = supabase.storage.from("couple-photos").getPublicUrl(path);

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,7 +41,7 @@ export default function AvatarUpload({ avatarUrl, fullName, onUploaded }: Avatar
       .upload(path, file, { upsert: true });
 
     if (uploadError) {
-      toast({ title: "Erro ao enviar foto", description: uploadError.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar foto", description: traduzirErro(uploadError), variant: "destructive" });
       setUploading(false);
       return;
     }

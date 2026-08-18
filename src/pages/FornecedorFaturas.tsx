@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,7 @@ export default function FornecedorFaturas() {
       .eq("id", c.id);
     setCancelandoId(null);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Tentativa cancelada" });
@@ -80,7 +81,7 @@ export default function FornecedorFaturas() {
     <SupplierShell>
       <div className="container mx-auto max-w-5xl px-4 py-8 space-y-6">
         <SEO
-          title="Faturas e pagamentos | Meu Grande Dia"
+          title="Faturas e pagamentos | Casamenteiro"
           description="Histórico de cobranças, assinaturas e destaques."
           noIndex
         />

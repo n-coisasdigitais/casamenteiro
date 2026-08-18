@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -67,7 +68,7 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
     });
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao adicionar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao adicionar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Fornecedor externo adicionado", description: "Ele já aparece no seu kanban e no orçamento." });

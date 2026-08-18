@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,7 @@ export default function GuestListPdfDialog({ guests, groups, dadosCasal, tipoEve
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(URL.createObjectURL(blob));
     } catch (e: any) {
-      toast({ title: "Erro na pré-visualização", description: e?.message, variant: "destructive" });
+      toast({ title: "Erro na pré-visualização", description: traduzirErro(e), variant: "destructive" });
     } finally { setLoading(false); }
   };
 
@@ -96,7 +97,7 @@ export default function GuestListPdfDialog({ guests, groups, dadosCasal, tipoEve
       }
       setOpen(false);
     } catch (e: any) {
-      toast({ title: "Erro ao gerar PDF", description: e?.message, variant: "destructive" });
+      toast({ title: "Erro ao gerar PDF", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setLoading(false);
     }

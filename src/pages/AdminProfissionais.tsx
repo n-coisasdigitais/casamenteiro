@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,7 +49,7 @@ export default function AdminProfissionais() {
       verificado_em: novo === "verificado" ? new Date().toISOString() : null,
       verificacao_obs: obs[s.id] || null,
     }).eq("id", s.id);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: novo === "verificado" ? "Profissional verificado" : "Verificação recusada" });
     load();
   };

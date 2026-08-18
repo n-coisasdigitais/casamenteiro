@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { forwardRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -98,7 +99,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
         navigate("/simulador/resultado?preview=1");
       }
     } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(err), variant: "destructive" });
     } finally {
       setLoading(false);
     }

@@ -3071,6 +3071,7 @@ export type Database = {
           id: string
           is_public: boolean
           nome: string
+          notificar_vagas_email: boolean
           raio_km: number
           rating: number | null
           review_count: number
@@ -3099,6 +3100,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           nome: string
+          notificar_vagas_email?: boolean
           raio_km?: number
           rating?: number | null
           review_count?: number
@@ -3127,6 +3129,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           nome?: string
+          notificar_vagas_email?: boolean
           raio_km?: number
           rating?: number | null
           review_count?: number

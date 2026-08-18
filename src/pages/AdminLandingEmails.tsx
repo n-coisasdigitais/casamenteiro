@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ export default function AdminLandingEmails() {
       .from("fornecedor_landing_emails" as any)
       .select("id,email,status,origem,notes,created_at")
       .order("created_at", { ascending: false }) as any);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     setRows((data || []) as Lead[]);
     setLoading(false);
   };
@@ -62,7 +63,7 @@ export default function AdminLandingEmails() {
     setRows((p) => p.map((r) => (r.id === id ? { ...r, status } : r)));
     const { error } = await (supabase.from("fornecedor_landing_emails" as any) as any)
       .update({ status }).eq("id", id);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); load(); }
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); load(); }
   };
 
   const handleDelete = async () => {
@@ -70,7 +71,7 @@ export default function AdminLandingEmails() {
     const { error } = await (supabase.from("fornecedor_landing_emails" as any) as any)
       .delete().eq("id", toDelete.id);
     setToDelete(null);
-    if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "E-mail removido" });
     load();
   };

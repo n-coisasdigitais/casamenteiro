@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,7 +73,7 @@ export default function SupplierReservationsTab({ supplierId, categoriaSlug }: {
       })
       .eq("id", r.id);
     setConfirming(null);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); return; }
     if (taxa > 0) {
       toast({ title: "Reserva confirmada", description: `Falta pagar a taxa de ${formatBRL(taxa)} para liberar a data.` });
       navigate(`/pagamento?tipo=reserva&ref=${r.id}`);
@@ -86,7 +87,7 @@ export default function SupplierReservationsTab({ supplierId, categoriaSlug }: {
     const { error } = await (supabase.from("idle_date_reservations" as any) as any)
       .update({ status: "recusada", respondida_em: new Date().toISOString() })
       .eq("id", r.id);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); return; }
     toast({ title: "Solicitação recusada" });
     load();
   };

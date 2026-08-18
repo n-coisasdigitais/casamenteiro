@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,7 +50,7 @@ export default function AdminFornecedorAprovacao() {
   const decide = async (status: "approved" | "rejected", motivoTxt?: string) => {
     if (!selected) return;
     const { error } = await supabase.from("suppliers").update({ status }).eq("id", selected.id);
-    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); return; }
     await supabase.from("fornecedor_aprovacoes").insert({
       supplier_id: selected.id, admin_id: user?.id, acao: status, motivo: motivoTxt || null,
     });

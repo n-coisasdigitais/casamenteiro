@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,7 @@ export default function RequestReservationDialog({ supplierId, supplierName, pro
       .maybeSingle();
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao solicitar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao solicitar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
 

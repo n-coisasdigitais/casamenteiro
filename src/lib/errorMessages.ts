@@ -1,10 +1,16 @@
-// Tradução genérica de erros de banco/storage/edge functions para pt-BR.
-// Complementa src/lib/authErrors.ts (que é focado em Supabase Auth).
+// Tradução genérica de erros (auth, banco, storage, edge functions) para pt-BR.
+import { traduzirErroAuth } from "./authErrors";
+
+const TEM_PORTUGUES = /[ãõçáéíóúâêô]|não|senha|cadastr|inválid|permiss/i;
 
 export function traduzirErro(error: any): string {
   const msg = String(error?.message || error || "").toLowerCase();
   const code = String(error?.code || "").toLowerCase();
   const details = String(error?.details || "").toLowerCase();
+
+  // Erros de autenticação primeiro (mensagens do Supabase Auth em inglês)
+  const auth = traduzirErroAuth(error);
+  if (auth && auth !== error?.message) return auth;
 
   // Postgres codes
   if (code === "23505" || msg.includes("duplicate key")) return "Este registro já existe.";
@@ -28,9 +34,11 @@ export function traduzirErro(error: any): string {
   if (msg.includes("timeout")) return "A operação demorou demais. Tente novamente.";
   if (msg.includes("function") && msg.includes("not found")) return "Serviço indisponível no momento.";
 
-  // Genéricos
-  if (details) return String(error?.message || error) + " — " + details;
-  return error?.message || "Algo deu errado. Tente novamente.";
+  // Genéricos: nunca expor texto técnico em inglês
+  const original = String(error?.message || error || "").trim();
+  if (original && TEM_PORTUGUES.test(original) && original.length < 180) return original;
+  if (details && TEM_PORTUGUES.test(details)) return details;
+  return "Não foi possível concluir. Tente novamente.";
 }
 
 // Wrapper conveniente para toasts

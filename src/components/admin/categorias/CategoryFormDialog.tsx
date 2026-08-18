@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -66,7 +67,7 @@ export default function CategoryFormDialog({
     const { error } = await q;
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: data.id ? "Categoria atualizada" : "Categoria criada" });

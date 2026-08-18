@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -89,7 +90,7 @@ export default function SupplierAreaEditor({ supplierId, inline = false, onSaved
     const { error } = await supabase.from("suppliers").update(update).eq("id", supplierId);
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Atendimento atualizado" });

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -189,7 +190,7 @@ export default function SupplierProfile() {
     });
     setSubmittingReview(false);
     if (error) {
-      toast({ title: "Erro ao enviar avaliação", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar avaliação", description: traduzirErro(error), variant: "destructive" });
     } else {
       toast({ title: "Avaliação enviada!" });
       setReviewTitle("");

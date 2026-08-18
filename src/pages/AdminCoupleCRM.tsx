@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -191,7 +192,7 @@ function CoupleDetail({ coupleId }: { coupleId: string }) {
       body: pushBody,
     });
     setSending(false);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else { toast({ title: "Mensagem enviada!" }); setPushTitle(""); setPushBody(""); }
   };
 

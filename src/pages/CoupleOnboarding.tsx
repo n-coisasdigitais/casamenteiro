@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,14 +97,14 @@ export default function CoupleOnboarding() {
           navigate("/meu-casamento/plano");
           return;
         } catch (e: any) {
-          toast({ title: "Plano não foi criado", description: e.message, variant: "destructive" });
+          toast({ title: "Plano não foi criado", description: traduzirErro(e), variant: "destructive" });
         }
       }
 
       toast({ title: "Tudo pronto!", description: "Vamos encontrar os melhores fornecedores para você." });
       navigate("/dashboard");
     } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     } finally {
       setLoading(false);
     }

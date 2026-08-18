@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,7 +111,7 @@ export default function Auth() {
           navigate(`/simulador/resultado?id=${data?.id}`, { replace: true });
           return;
         } catch (error: any) {
-          toast({ title: "Não foi possível recuperar a simulação", description: error.message, variant: "destructive" });
+          toast({ title: "Não foi possível recuperar a simulação", description: traduzirErro(error), variant: "destructive" });
         }
       }
 
@@ -134,7 +135,7 @@ export default function Auth() {
           navigate(`/simulador/resultado?id=${data?.id}`, { replace: true });
           return;
         } catch (error: any) {
-          toast({ title: "Não foi possível recuperar a simulação", description: error.message, variant: "destructive" });
+          toast({ title: "Não foi possível recuperar a simulação", description: traduzirErro(error), variant: "destructive" });
         }
       }
 

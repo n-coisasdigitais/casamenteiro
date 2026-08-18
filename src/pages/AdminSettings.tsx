@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,7 +79,7 @@ export default function AdminSettings() {
     const { error } = await (supabase.from("system_settings" as any) as any).upsert({
       key: "budget_distribution", value: dist, description: "Percentuais padrão de distribuição do orçamento", updated_by: user!.id, updated_at: new Date().toISOString(),
     });
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else toast({ title: "Configurações salvas" });
   };
 
@@ -88,7 +89,7 @@ export default function AdminSettings() {
       { key: "reserva_antecedencia_min_dias", value: { dias: Number(antecedencia) }, description: "Antecedência mínima padrão (em dias) para reservar datas ociosas" },
     ].map(r => ({ ...r, updated_by: user!.id, updated_at: new Date().toISOString() }));
     const { error } = await (supabase.from("system_settings" as any) as any).upsert(rows);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else toast({ title: "Regras de reserva salvas" });
   };
 
@@ -99,7 +100,7 @@ export default function AdminSettings() {
       updated_by: user!.id, updated_at: new Date().toISOString(),
     });
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: enabled ? "Funcionalidade ativada" : "Funcionalidade desativada", description: flag.label });
@@ -121,7 +122,7 @@ export default function AdminSettings() {
     setResettingDemo(false);
     setConfirmReset(false);
     if (error) {
-      toast({ title: "Erro ao resetar demo", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao resetar demo", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({

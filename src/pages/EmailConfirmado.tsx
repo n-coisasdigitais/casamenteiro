@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Heart, CheckCircle2, Loader2 } from "lucide-react";
@@ -90,7 +91,7 @@ export default function EmailConfirmado() {
         } catch (e: any) {
           toast({
             title: "Simulação não pôde ser recuperada",
-            description: e.message,
+            description: traduzirErro(e),
             variant: "destructive",
           });
         }

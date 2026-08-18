@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -89,7 +90,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
       .maybeSingle();
 
     if (error) {
-      toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar", description: traduzirErro(error), variant: "destructive" });
       setLoading(false);
       return;
     }

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ export default function CalendarConnections({ supplierId }: Props) {
     });
     setBusy(null);
     if (error || !data?.url) {
-      toast({ title: "Erro", description: error?.message || "Não foi possível iniciar a conexão", variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error) || "Não foi possível iniciar a conexão", variant: "destructive" });
       return;
     }
     window.location.href = data.url;
@@ -62,7 +63,7 @@ export default function CalendarConnections({ supplierId }: Props) {
       body: { supplier_id: supplierId },
     });
     setBusy(null);
-    if (error) toast({ title: "Erro ao sincronizar", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro ao sincronizar", description: traduzirErro(error), variant: "destructive" });
     else {
       toast({ title: "Sincronizado", description: "Datas atualizadas a partir da agenda." });
       load();

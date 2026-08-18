@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,7 +140,7 @@ export default function InviteRSVP() {
     });
     setSubmitting(false);
     if (error || !ok) {
-      toast({ title: "Erro ao registrar resposta", description: error?.message, variant: "destructive" });
+      toast({ title: "Erro ao registrar resposta", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     setDone(response);

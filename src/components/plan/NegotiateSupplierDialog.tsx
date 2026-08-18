@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -53,7 +54,7 @@ export default function NegotiateSupplierDialog({
       onOpenChange(false);
       onConfirmed();
     } catch (e: any) {
-      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setSaving(false);
     }

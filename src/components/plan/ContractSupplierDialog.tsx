@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -111,7 +112,7 @@ export default function ContractSupplierDialog({
       reset();
       onConfirmed();
     } catch (e: any) {
-      toast({ title: "Erro ao contratar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao contratar", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setSaving(false);
     }

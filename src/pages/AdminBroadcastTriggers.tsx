@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ export default function AdminBroadcastTriggers() {
     }
     const { error } = await (supabase.from("broadcast_gatilhos") as any).insert([novo]);
     if (error) {
-      toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao criar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Gatilho criado!" });
@@ -81,7 +82,7 @@ export default function AdminBroadcastTriggers() {
     const { error } = await (supabase.from("broadcast_gatilhos") as any).update(patch).eq("id", g.id);
     setSaving(null);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     setGatilhos((arr) => arr.map((x) => x.id === g.id ? { ...x, ...patch } : x));
@@ -97,7 +98,7 @@ export default function AdminBroadcastTriggers() {
     toast({ title: "Disparando cron...", description: "Aguarde alguns segundos." });
     const { error } = await supabase.functions.invoke("broadcast-cron");
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Cron executado", description: "Veja as notificações geradas." });

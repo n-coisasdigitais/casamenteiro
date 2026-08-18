@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ export default function AvailabilityCalendar({ supplierId }: Props) {
         .eq("supplier_id", supplierId)
         .eq("blocked_date", dateStr);
       if (error) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
+        toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       } else {
         setBlockedDates(prev => prev.filter(d => d !== dateStr));
       }
@@ -61,7 +62,7 @@ export default function AvailabilityCalendar({ supplierId }: Props) {
         .from("supplier_blocked_dates")
         .insert({ supplier_id: supplierId, blocked_date: dateStr });
       if (error) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
+        toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       } else {
         setBlockedDates(prev => [...prev, dateStr]);
       }
@@ -113,7 +114,7 @@ export default function AvailabilityCalendar({ supplierId }: Props) {
         .map(d => ({ supplier_id: supplierId, blocked_date: d }));
       if (toInsert.length) {
         const { error } = await supabase.from("supplier_blocked_dates").insert(toInsert);
-        if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+        if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       }
     } else {
       const { error } = await supabase
@@ -121,7 +122,7 @@ export default function AvailabilityCalendar({ supplierId }: Props) {
         .delete()
         .eq("supplier_id", supplierId)
         .in("blocked_date", dates);
-      if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+      if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     }
     await loadBlockedDates();
     setRangeStart(null);
@@ -151,7 +152,7 @@ export default function AvailabilityCalendar({ supplierId }: Props) {
         .map(d => ({ supplier_id: supplierId, blocked_date: d }));
       if (toInsert.length) {
         const { error } = await supabase.from("supplier_blocked_dates").insert(toInsert);
-        if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+        if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       }
     } else {
       const { error } = await supabase
@@ -159,7 +160,7 @@ export default function AvailabilityCalendar({ supplierId }: Props) {
         .delete()
         .eq("supplier_id", supplierId)
         .in("blocked_date", targets);
-      if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+      if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     }
     await loadBlockedDates();
     setLoading(false);

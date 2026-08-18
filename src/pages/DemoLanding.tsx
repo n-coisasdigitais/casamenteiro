@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useState } from "react";
 import { useNavigate, Link, Navigate } from "react-router-dom";
 import { Heart, Users, Store, Loader2, ArrowLeft } from "lucide-react";
@@ -21,7 +22,7 @@ export default function DemoLanding() {
       await loginAsDemo(role);
       navigate(role === "supplier" ? "/fornecedor/painel" : "/dashboard", { replace: true });
     } catch (e: any) {
-      toast({ title: "Não foi possível entrar na demo", description: e.message, variant: "destructive" });
+      toast({ title: "Não foi possível entrar na demo", description: traduzirErro(e), variant: "destructive" });
       setLoading(null);
     }
   };

@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +31,7 @@ export default function AdminPanel() {
   const updateStatus = async (supplierId: string, status: "approved" | "rejected") => {
     const { error } = await supabase.from("suppliers").update({ status }).eq("id", supplierId);
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     } else {
       toast({ title: status === "approved" ? "Fornecedor aprovado!" : "Fornecedor rejeitado." });
       loadSuppliers();

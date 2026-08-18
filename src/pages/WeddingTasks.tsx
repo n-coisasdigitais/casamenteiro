@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -198,7 +199,7 @@ export default function WeddingTasks() {
     const { data, error } = await (supabase.rpc as any)("expandir_tarefas_detalhadas", { _couple_id: coupleId });
     setExpanding(false);
     if (error) {
-      toast({ title: "Erro ao expandir", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao expandir", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Tarefas detalhadas adicionadas", description: `${data ?? 0} tarefas incluídas no seu plano.` });

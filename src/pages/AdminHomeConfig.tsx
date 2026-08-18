@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +57,7 @@ export default function AdminHomeConfig() {
       .from("home-photos")
       .upload(path, file, { upsert: false, contentType: file.type });
     if (error) {
-      toast({ title: "Erro no upload", description: error.message, variant: "destructive" });
+      toast({ title: "Erro no upload", description: traduzirErro(error), variant: "destructive" });
       return null;
     }
     const { data } = supabase.storage.from("home-photos").getPublicUrl(path);
@@ -120,7 +121,7 @@ export default function AdminHomeConfig() {
     }
     setSavingExplore(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Hero da Explore salvo!" });

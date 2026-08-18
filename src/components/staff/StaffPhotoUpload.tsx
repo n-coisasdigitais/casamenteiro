@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,7 +34,7 @@ export default function StaffPhotoUpload({ fotoUrl, nome, onUploaded }: Props) {
     const path = `${user.id}/profissional.${ext}`;
     const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
     if (error) {
-      toast({ title: "Erro ao enviar foto", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao enviar foto", description: traduzirErro(error), variant: "destructive" });
       setUploading(false);
       return;
     }

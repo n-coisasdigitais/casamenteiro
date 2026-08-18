@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -92,7 +93,7 @@ export default function DynamicFieldsForm({ supplierId, categoryId }: Props) {
     if (error) {
       toast({
         title: "Erro ao salvar",
-        description: error.message,
+        description: traduzirErro(error),
         variant: "destructive",
       });
     } else {

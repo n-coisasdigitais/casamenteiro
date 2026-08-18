@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +41,7 @@ export default function AdminFinance() {
     const amt = Number(input.replace(",", "."));
     if (isNaN(amt)) return;
     const { error } = await (supabase.rpc as any)("admin_mark_commission_paid", { _lead_id: lead.id, _amount: amt });
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else { toast({ title: "Comissão registrada" }); load(); }
   };
 

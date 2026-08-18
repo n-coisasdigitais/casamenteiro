@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ export default function AdminFornecedorLanding() {
     const ext = file.name.split(".").pop() || "bin";
     const path = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error } = await supabase.storage.from("supplier-landing").upload(path, file, { upsert: false, contentType: file.type });
-    if (error) { toast({ title: "Erro no upload", description: error.message, variant: "destructive" }); return null; }
+    if (error) { toast({ title: "Erro no upload", description: traduzirErro(error), variant: "destructive" }); return null; }
     const { data } = supabase.storage.from("supplier-landing").getPublicUrl(path);
     return data.publicUrl;
   };

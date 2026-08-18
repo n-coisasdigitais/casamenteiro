@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errorMessages";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -53,7 +54,7 @@ export default function SupplierFilesTab({ supplierId, isEspaco }: Props) {
       .order("ordem", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) {
-      toast({ title: "Erro ao carregar arquivos", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao carregar arquivos", description: traduzirErro(error), variant: "destructive" });
     }
     setItems((data as Attachment[]) || []);
     setLoading(false);
@@ -68,7 +69,7 @@ export default function SupplierFilesTab({ supplierId, isEspaco }: Props) {
     await supabase.storage.from(BUCKET).remove([target.storage_path]);
     const { error } = await (supabase as any).from("supplier_attachments").delete().eq("id", target.id);
     if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao excluir", description: traduzirErro(error), variant: "destructive" });
       return;
     }
     toast({ title: "Arquivo removido" });
@@ -210,7 +211,7 @@ function TipoPanel({
       toast({ title: "Arquivo enviado" });
       onChange();
     } catch (e: any) {
-      toast({ title: "Falha no envio", description: e.message, variant: "destructive" });
+      toast({ title: "Falha no envio", description: traduzirErro(e), variant: "destructive" });
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
