@@ -62,7 +62,7 @@ export default function Comprovante() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-10 print:py-4">
-      <SEO title="Comprovante de pagamento | Meu Grande Dia" description="Comprovante do seu pagamento." noIndex />
+      <SEO title="Comprovante de pagamento | Casamenteiro" description="Comprovante do seu pagamento." noIndex />
 
       {carregando ? (
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -83,7 +83,7 @@ export default function Comprovante() {
             <CardContent className="p-6 space-y-6">
               <div className="flex items-start justify-between gap-4 border-b pb-4">
                 <div>
-                  <p className="text-lg font-semibold">Meu Grande Dia</p>
+                  <p className="text-lg font-semibold">Casamenteiro</p>
                   <p className="text-sm text-muted-foreground">{TIPO_LABEL[intent.tipo] ?? intent.tipo}</p>
                 </div>
                 <Badge className={ETAPA_TONE[etapa]} variant="secondary">{ETAPA_LABEL[etapa]}</Badge>
@@ -114,7 +114,7 @@ export default function Comprovante() {
               )}
 
               <p className="text-xs text-muted-foreground border-t pt-4">
-                Documento gerado eletronicamente pela plataforma Meu Grande Dia.
+                Documento gerado eletronicamente pela plataforma Casamenteiro.
               </p>
             </CardContent>
           </Card>

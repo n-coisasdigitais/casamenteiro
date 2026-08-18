@@ -94,7 +94,7 @@ export default function MinhasReservas() {
     <div className="min-h-screen bg-background">
       <DashboardNav />
       <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
-        <SEO title="Minhas reservas | Meu Grande Dia" description="Acompanhe o status das suas reservas de data." noIndex />
+        <SEO title="Minhas reservas | Casamenteiro" description="Acompanhe o status das suas reservas de data." noIndex />
         <div className="flex items-center gap-2">
           <CalendarRange className="h-5 w-5 text-primary" />
           <h1 className="text-2xl font-semibold">Minhas reservas</h1>
