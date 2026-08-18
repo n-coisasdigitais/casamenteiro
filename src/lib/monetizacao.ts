@@ -215,6 +215,7 @@ export type CheckoutResposta = {
   preference_id: string;
   checkout_url: string;
   public_key: string | null;
+  mp_account?: { id?: string | number | null; nickname?: string | null; is_test?: boolean } | null;
 };
 
 export async function iniciarCheckout(

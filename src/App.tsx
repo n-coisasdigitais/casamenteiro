@@ -77,6 +77,7 @@ import AdminPlatformReviews from "./pages/AdminPlatformReviews";
 import DemoLanding from "./pages/DemoLanding";
 import DemoBanner from "./components/DemoBanner";
 import StaffLanding from "./pages/StaffLanding";
+import Vagas from "./pages/Vagas";
 import StaffOnboarding from "./pages/StaffOnboarding";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffPublicProfile from "./pages/StaffPublicProfile";
@@ -243,6 +244,14 @@ const App = () => (
                 element={
                   <FlagGate flag="vagas">
                     <StaffLanding />
+                  </FlagGate>
+                }
+              />
+              <Route
+                path="/vagas"
+                element={
+                  <FlagGate flag="vagas">
+                    <Vagas />
                   </FlagGate>
                 }
               />

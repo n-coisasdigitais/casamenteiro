@@ -54,6 +54,30 @@ Deno.serve(async (req) => {
     return json({ error: `Credencial do Mercado Pago não configurada para o ambiente ${ambiente}.`, ambiente }, 503);
   }
 
+  // DIAGNÓSTICO: identifica a conta MP dona do token (teste x real).
+  // Não expõe o token; serve para confirmar que o modo demo usa credencial de teste.
+  let mpAccount: { id?: unknown; nickname?: string | null; is_test?: boolean; site_id?: string | null } | null = null;
+  try {
+    const meRes = await fetch("https://api.mercadopago.com/users/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const me = await meRes.json().catch(() => ({}) as any);
+    if (meRes.ok) {
+      const nickname: string | null = me?.nickname ?? null;
+      const tags: string[] = Array.isArray(me?.tags) ? me.tags : [];
+      const isTest = tags.includes("test_user") || (nickname ?? "").startsWith("TEST");
+      mpAccount = { id: me?.id ?? null, nickname, is_test: isTest, site_id: me?.site_id ?? null };
+      console.log("DIAG mp conta:", ambiente, JSON.stringify(mpAccount));
+      if (ambiente === "sandbox" && !isTest) {
+        console.error("ALERTA: ambiente sandbox usando credencial de conta REAL do Mercado Pago.");
+      }
+    } else {
+      console.error("DIAG /users/me falhou:", meRes.status, JSON.stringify(me));
+    }
+  } catch (e) {
+    console.error("DIAG /users/me erro:", String(e));
+  }
+
   let titulo = "";
   let valor = 0;
   let comissao = 0;
@@ -154,7 +178,7 @@ Deno.serve(async (req) => {
         status: "pendente",
         ambiente,
       });
-      return json({ ambiente, tipo, valor, titulo, checkout_url: null, public_key: publicKey ?? null });
+      return json({ ambiente, tipo, valor, titulo, checkout_url: null, public_key: publicKey ?? null, mp_account: mpAccount });
     }
 
     // ===== CAMINHO 1 (redirect): assinatura recorrente via preapproval =====
@@ -266,6 +290,7 @@ Deno.serve(async (req) => {
       preapproval_id: pa.id,
       checkout_url: initPoint,
       public_key: null,
+      mp_account: mpAccount,
     });
   } else if (tipo === "destaque") {
     if (!(await flagLiberada("destaque_pago"))) return json({ error: "Este pagamento ainda não está liberado." }, 403);
@@ -355,5 +380,6 @@ Deno.serve(async (req) => {
     preference_id: pref.id,
     checkout_url: checkoutUrl,
     public_key: publicKey ?? null,
+    mp_account: mpAccount,
   });
 });
