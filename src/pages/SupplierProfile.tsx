@@ -515,7 +515,7 @@ export default function SupplierProfile() {
                         </Button>
                       )}
                   </div>
-                  {(supplier.whatsapp || supplier.phone) && !phoneUnlocked && (
+                  {!phoneUnlocked && (
                     <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                       <MessageCircle className="h-3 w-3" />
                       WhatsApp liberado após enviar o primeiro pedido de orçamento
