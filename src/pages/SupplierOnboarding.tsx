@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -95,7 +96,7 @@ export default function SupplierOnboarding() {
       // tem supplier?
       const { data: sup } = await supabase
         .from("suppliers")
-        .select("*")
+        .select(SUPPLIER_COLS)
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (!sup) {
@@ -112,7 +113,9 @@ export default function SupplierOnboarding() {
       setCompanyName(sup.company_name || "");
       setCity(sup.city || "");
       setState(sup.state || "");
-      setWhatsapp(formatPhoneBR(sup.whatsapp || sup.phone || ""));
+      const { data: contato } = await supabase.rpc("get_supplier_contact", { _supplier_id: sup.id });
+      const c = (contato as any[])?.[0];
+      setWhatsapp(formatPhoneBR(c?.whatsapp || c?.phone || ""));
       setInstagram(sup.instagram || "");
       setWebsite(sup.website || "");
       setDescription(sup.description || "");

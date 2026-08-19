@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import WelcomeModal from "@/components/WelcomeModal";
@@ -207,7 +208,7 @@ export default function SupplierDashboard() {
 
   const loadSupplier = async () => {
     if (!user) return;
-    const { data } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle();
+    const { data } = await supabase.from("suppliers").select(SUPPLIER_COLS).eq("user_id", user.id).maybeSingle();
     if (data) {
       setSupplier(data);
       setCompanyName(data.company_name || "");
@@ -215,8 +216,10 @@ export default function SupplierDashboard() {
       setCategoryId(data.category_id || "");
       setCity(data.city || "");
       setState(data.state || "");
-      setPhone(formatPhoneBR(data.whatsapp || data.phone || ""));
-      setEmail(data.email || "");
+      const { data: contato } = await supabase.rpc("get_supplier_contact", { _supplier_id: data.id });
+      const c = (contato as any[])?.[0];
+      setPhone(formatPhoneBR(c?.whatsapp || c?.phone || ""));
+      setEmail(c?.email || "");
       const { data: photoData } = await supabase
         .from("supplier_photos")
         .select("*")

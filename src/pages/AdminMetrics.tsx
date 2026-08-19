@@ -43,7 +43,7 @@ export default function AdminMetrics() {
       const [p, c, s, qz, cs, si, rv] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("couples").select("*").order("created_at", { ascending: false }),
-        supabase.from("suppliers").select("id, company_name, email, phone, city, state, status, featured, rating, review_count, created_at, category_id, categories(name)").order("created_at", { ascending: false }),
+        supabase.from("suppliers").select("id, company_name, city, state, status, featured, rating, review_count, created_at, category_id, categories(name)").order("created_at", { ascending: false }),
         supabase.from("quotes").select("id, status, kanban_status, created_at"),
         supabase.from("couple_suppliers").select("id, final_value, contract_value, contracted_at").eq("status", "contracted"),
         (supabase.from("home_simulacoes" as any) as any).select("id, criado_em"),
@@ -51,7 +51,10 @@ export default function AdminMetrics() {
       ]);
       setProfiles(p.data || []);
       setCouples(c.data || []);
-      setSuppliers(s.data || []);
+      const { data: contatos } = await supabase.rpc("admin_suppliers_contacts");
+      const contatoPorId = new Map<string, any>();
+      (contatos || []).forEach((c: any) => contatoPorId.set(c.id, c));
+      setSuppliers(((s.data || []) as any[]).map((sup: any) => ({ ...sup, ...(contatoPorId.get(sup.id) || {}) })));
       setQuotes(qz.data || []);
       setContracts(cs.data || []);
       setSims(si.data || []);

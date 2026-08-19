@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,7 +28,7 @@ function SupplierList() {
   const [page, setPage] = useState(0);
 
   useEffect(() => {
-    supabase.from("suppliers").select("*, categories(name)").order("created_at", { ascending: false }).then(({ data }) => {
+    supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`).order("created_at", { ascending: false }).then(({ data }) => {
       setSuppliers(data || []);
     });
   }, []);
@@ -120,7 +121,7 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
 
   useEffect(() => {
     (async () => {
-      const { data: sup } = await supabase.from("suppliers").select("*, categories(name)").eq("id", supplierId).maybeSingle();
+      const { data: sup } = await supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`).eq("id", supplierId).maybeSingle();
       if (!sup) { setLoading(false); return; }
       const [quotes, contracts, views, reviews, leads] = await Promise.all([
         supabase.from("quotes").select("*").eq("supplier_id", supplierId).order("created_at", { ascending: false }),

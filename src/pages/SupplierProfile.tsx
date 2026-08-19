@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -86,7 +87,7 @@ export default function SupplierProfile() {
 
     supabase
       .from("suppliers")
-      .select("*, categories(name, slug)")
+      .select(`${SUPPLIER_COLS}, categories(name, slug)`)
       .eq("id", id)
       .maybeSingle()
       .then(({ data }) => {
@@ -95,7 +96,7 @@ export default function SupplierProfile() {
         if (data?.category_id) {
           supabase
             .from("suppliers")
-            .select("*, categories(name), supplier_photos(photo_url, is_principal)")
+            .select(`${SUPPLIER_COLS}, categories(name), supplier_photos(photo_url, is_principal)`)
             .eq("status", "approved")
             .eq("category_id", data.category_id)
             .neq("id", id)
@@ -151,13 +152,15 @@ export default function SupplierProfile() {
                 setUserHasReview(!!rev);
               });
             supabase
-              .from("quotes")
-              .select("id")
-              .eq("couple_id", data.id)
-              .eq("supplier_id", id)
-              .limit(1)
-              .then(({ data: q }) => {
-                setPhoneUnlocked(!!(q && q.length > 0));
+              .rpc("get_supplier_contact", { _supplier_id: id })
+              .then(({ data: contato }) => {
+                const c = (contato as any[])?.[0];
+                if (c && (c.phone || c.whatsapp || c.email)) {
+                  setPhoneUnlocked(true);
+                  setSupplier((prev: any) => (prev ? { ...prev, ...c } : prev));
+                } else {
+                  setPhoneUnlocked(false);
+                }
               });
           }
         });
@@ -200,7 +203,7 @@ export default function SupplierProfile() {
       loadReviews();
       supabase
         .from("suppliers")
-        .select("*, categories(name)")
+        .select(`${SUPPLIER_COLS}, categories(name)`)
         .eq("id", id)
         .maybeSingle()
         .then(({ data }) => setSupplier(data));
@@ -512,7 +515,7 @@ export default function SupplierProfile() {
                         </Button>
                       )}
                   </div>
-                  {(supplier.whatsapp || supplier.phone) && !phoneUnlocked && (
+                  {!phoneUnlocked && (
                     <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                       <MessageCircle className="h-3 w-3" />
                       WhatsApp liberado após enviar o primeiro pedido de orçamento

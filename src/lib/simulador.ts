@@ -180,7 +180,7 @@ function enriquecer(s: any, verba: number, convidados: number, aceitaOciosas: bo
           : Number(s.price_min ?? s.price_max ?? 0)
       )
     : null;
-  const fone = (s.whatsapp || s.phone || "");
+  const fone = "";
   const msg =
     `Olá! Vim pela plataforma Casamenteiro e tenho interesse no seu serviço. ` +
     `Orçamento estimado: R$ ${verba.toLocaleString("pt-BR")} para ${convidados} convidados.`;
@@ -188,7 +188,7 @@ function enriquecer(s: any, verba: number, convidados: number, aceitaOciosas: bo
     id: s.id,
     nome: s.company_name,
     cidade: s.city,
-    whatsapp: s.whatsapp || s.phone || null,
+    whatsapp: null,
     foto_perfil_url: s.profile_photo_url,
     faixa_preco: faixaPreco(s, convidados),
     destaque: !!s.featured,
@@ -220,7 +220,7 @@ async function buscarFornecedores(
   const { data, error } = await supabase
     .from("suppliers")
     .select(
-      "id, company_name, city, state, whatsapp, phone, profile_photo_url, price_min, price_max, featured, rating, accepts_idle_dates, idle_discount_pct, status, category_id, guest_min, guest_max, cidades_atendidas, raio_atendimento_km, lat, lng, pricing_model",
+      "id, company_name, city, state, profile_photo_url, price_min, price_max, featured, rating, accepts_idle_dates, idle_discount_pct, status, category_id, guest_min, guest_max, cidades_atendidas, raio_atendimento_km, lat, lng, pricing_model",
     )
     .eq("status", "approved")
     .eq("category_id", catId)

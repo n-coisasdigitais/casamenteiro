@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ export default function AdminFornecedorAprovacao() {
   const load = async () => {
     setLoading(true);
     const { data } = await supabase.from("suppliers")
-      .select("*, categories(name)")
+      .select(`${SUPPLIER_COLS}, categories(name)`)
       .order("created_at", { ascending: false });
     setSuppliers(data || []);
     setLoading(false);

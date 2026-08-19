@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,8 +117,8 @@ export default function SupplierSearch() {
     .map((s) => ({
       id: s.id,
       company_name: s.company_name,
-      whatsapp: s.whatsapp,
-      phone: s.phone,
+      whatsapp: null,
+      phone: null,
       categories: s.categories,
     }));
 
@@ -145,7 +146,7 @@ export default function SupplierSearch() {
     setLoading(true);
     let query = supabase
       .from("suppliers")
-      .select("*, categories(name), supplier_photos(photo_url, is_principal)")
+      .select(`${SUPPLIER_COLS}, categories(name), supplier_photos(photo_url, is_principal)`)
       .eq("status", "approved")
       .order("featured", { ascending: false })
       .order("rating", { ascending: false, nullsFirst: false });
