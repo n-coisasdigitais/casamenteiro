@@ -152,13 +152,15 @@ export default function SupplierProfile() {
                 setUserHasReview(!!rev);
               });
             supabase
-              .from("quotes")
-              .select("id")
-              .eq("couple_id", data.id)
-              .eq("supplier_id", id)
-              .limit(1)
-              .then(({ data: q }) => {
-                setPhoneUnlocked(!!(q && q.length > 0));
+              .rpc("get_supplier_contact", { _supplier_id: id })
+              .then(({ data: contato }) => {
+                const c = (contato as any[])?.[0];
+                if (c && (c.phone || c.whatsapp || c.email)) {
+                  setPhoneUnlocked(true);
+                  setSupplier((prev: any) => (prev ? { ...prev, ...c } : prev));
+                } else {
+                  setPhoneUnlocked(false);
+                }
               });
           }
         });
