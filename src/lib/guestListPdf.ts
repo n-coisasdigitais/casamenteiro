@@ -85,6 +85,9 @@ const M = 15;          // margem lateral (mm)
 const TOP_LIST = 49;   // topo do conteúdo nas páginas de lista (abaixo do cabeçalho)
 const BOTTOM_LIMIT = 20;
 
+// Caixa da foto de capa (um pouco maior e levemente retrato p/ mostrar mais)
+const COVER = { x: M, y: 80, w: 122, h: 138 };
+
 // Famílias resolvidas em runtime (custom ou fallback)
 type FF = { sans: string; sansLight: string; serif: string; ok: boolean };
 const FALLBACK_FF: FF = { sans: "helvetica", sansLight: "helvetica", serif: "times", ok: false };
@@ -151,7 +154,44 @@ async function loadImageAsDataUrl(src: string): Promise<{ data: string; w: numbe
 }
 
 // ---------------------------------------------------------------------------
-// Logo da marca: coração preenchido (terracota) + wordmark "Casamenteiro".
+// Recorte "cover": preenche a caixa sem distorcer (corta o excedente).
+// focusY controla o viés vertical do corte (0.36 ~ mantém os rostos/topo).
+// ---------------------------------------------------------------------------
+async function coverCropToDataUrl(
+  src: { data: string; w: number; h: number },
+  boxWmm: number,
+  boxHmm: number,
+  focusY = 0.36,
+): Promise<string> {
+  if (typeof document === "undefined") return src.data; // Node/SSR: sem canvas
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = 4; // resolução p/ impressão
+        const tw = Math.round(boxWmm * scale);
+        const th = Math.round(boxHmm * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = tw;
+        canvas.height = th;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(src.data); return; }
+        const sAsp = img.width / img.height;
+        const tAsp = tw / th;
+        let sw: number, sh: number, sx: number, sy: number;
+        if (sAsp > tAsp) {            // fonte mais larga -> corta laterais
+          sh = img.height; sw = sh * tAsp; sx = (img.width - sw) / 2; sy = 0;
+        } else {                      // fonte mais alta -> corta topo/base (com viés)
+          sw = img.width; sh = sw / tAsp; sx = 0; sy = (img.height - sh) * focusY;
+        }
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, tw, th);
+        resolve(canvas.toDataURL("image/jpeg", 0.92));
+      } catch { resolve(src.data); }
+    };
+    img.onerror = () => resolve(src.data);
+    img.src = src.data;
+  });
+}
 // (Se um dia tiverem um PNG do logo, dá para trocar drawLogo por doc.addImage.)
 // ---------------------------------------------------------------------------
 function drawHeart(doc: jsPDF, cx: number, cy: number, r: number, color: RGB) {
@@ -184,7 +224,7 @@ function nomeDoLocal(str: string): string {
 // ---------------------------------------------------------------------------
 // CAPA
 // ---------------------------------------------------------------------------
-function drawCover(doc: jsPDF, input: GerarPdfInput, ff: FF, coverImg: { data: string; w: number; h: number } | null) {
+function drawCover(doc: jsPDF, input: GerarPdfInput, ff: FF, coverData: string | null) {
   const cfg = EVENTO_CONFIG[input.tipoEvento || "casamento"];
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -234,12 +274,12 @@ function drawCover(doc: jsPDF, input: GerarPdfInput, ff: FF, coverImg: { data: s
   doc.text(linha1, M, 46);
   doc.text(linha2, M, 62);
 
-  // foto quadrada
-  const boxX = M, boxY = 84, boxW = 118, boxH = 118;
+  // foto de capa (recortada em "cover", sem distorção)
+  const boxX = COVER.x, boxY = COVER.y, boxW = COVER.w, boxH = COVER.h;
   let drew = false;
-  if (coverImg) {
+  if (coverData) {
     for (const fmt of ["JPEG", "PNG"] as const) {
-      try { doc.addImage(coverImg.data, fmt, boxX, boxY, boxW, boxH, undefined, "FAST"); drew = true; break; } catch { /* tenta próximo */ }
+      try { doc.addImage(coverData, fmt, boxX, boxY, boxW, boxH, undefined, "FAST"); drew = true; break; } catch { /* tenta próximo */ }
     }
   }
   if (!drew) {
@@ -252,7 +292,7 @@ function drawCover(doc: jsPDF, input: GerarPdfInput, ff: FF, coverImg: { data: s
   }
 
   // faixa translúcida com o nome do casal (Cormorant itálico)
-  const bandH = 30, bandY = boxY + boxH - 42, bandW = 110;
+  const bandH = 32, bandY = boxY + boxH - 46, bandW = 112;
   const g: any = (doc as any).GState;
   if (g) { doc.setGState(new g({ opacity: 0.55 })); }
   doc.setFillColor(...WHITE);
@@ -621,8 +661,9 @@ export async function gerarPdfConvidados(input: GerarPdfInput): Promise<void | B
   const cfg = EVENTO_CONFIG[input.tipoEvento || "casamento"];
   const coverSrc = input.dados.fotoCapaUrl || cfg.imagemPadrao;
   const coverImg = await loadImageAsDataUrl(coverSrc);
+  const coverData = coverImg ? await coverCropToDataUrl(coverImg, COVER.w, COVER.h, 0.36) : null;
 
-  drawCover(doc, input, ff, coverImg);
+  drawCover(doc, input, ff, coverData);
 
   const c: Ctx = { doc, input, ff, pageW: doc.internal.pageSize.getWidth(), pageH: doc.internal.pageSize.getHeight(), y: TOP_LIST, sectionRedraw: null };
 
