@@ -202,17 +202,30 @@ Deno.serve(async (req) => {
         ? { frequency: 12, frequency_type: "months" }
         : { frequency: 1, frequency_type: "months" };
 
-    const origin2 = req.headers.get("origin") || "https://www.casamenteiro.com.br";
+    // O Mercado Pago valida o conteúdo de `reason` e das URLs. Textos com acentos,
+    // parênteses/símbolos ou domínios de preview costumam devolver
+    // "Request contains invalid or disallowed content". Então normalizamos tudo.
+    const sanitizarTexto = (t: string) =>
+      t
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Za-z0-9 .-]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 100) || "Assinatura Casamenteiro";
+    const reason = sanitizarTexto(titulo);
+    // back_url precisa ser um domínio público e estável (sem query string).
+    const BASE_PUBLICA = "https://www.casamenteiro.com.br";
     const preapprovalBody = {
-      reason: titulo,
+      reason,
       external_reference: `assinatura:${referenciaId}`,
       payer_email: payerEmail,
-      back_url: `${origin2}/fornecedor/planos?assinatura=ok`,
+      back_url: `${BASE_PUBLICA}/fornecedor/planos`,
       // Carimba o ambiente na URL: o webhook precisa saber qual token usar ao consultar a API.
       notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook?env=${ambiente}&topic=preapproval`,
       auto_recurring: {
         ...freq,
-        transaction_amount: valor,
+        transaction_amount: Math.round(valor * 100) / 100,
         currency_id: "BRL",
         start_date: startDate.toISOString(),
       },
@@ -224,7 +237,7 @@ Deno.serve(async (req) => {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
-        "X-Idempotency-Key": `assinatura-${referenciaId}`,
+        "X-Idempotency-Key": `assinatura-${referenciaId}-${Date.now()}`,
       },
       body: JSON.stringify(preapprovalBody),
     });
