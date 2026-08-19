@@ -113,7 +113,9 @@ export default function SupplierOnboarding() {
       setCompanyName(sup.company_name || "");
       setCity(sup.city || "");
       setState(sup.state || "");
-      setWhatsapp(formatPhoneBR(sup.whatsapp || sup.phone || ""));
+      const { data: contato } = await supabase.rpc("get_supplier_contact", { _supplier_id: sup.id });
+      const c = (contato as any[])?.[0];
+      setWhatsapp(formatPhoneBR(c?.whatsapp || c?.phone || ""));
       setInstagram(sup.instagram || "");
       setWebsite(sup.website || "");
       setDescription(sup.description || "");

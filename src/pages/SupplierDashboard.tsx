@@ -216,8 +216,10 @@ export default function SupplierDashboard() {
       setCategoryId(data.category_id || "");
       setCity(data.city || "");
       setState(data.state || "");
-      setPhone(formatPhoneBR(data.whatsapp || data.phone || ""));
-      setEmail(data.email || "");
+      const { data: contato } = await supabase.rpc("get_supplier_contact", { _supplier_id: data.id });
+      const c = (contato as any[])?.[0];
+      setPhone(formatPhoneBR(c?.whatsapp || c?.phone || ""));
+      setEmail(c?.email || "");
       const { data: photoData } = await supabase
         .from("supplier_photos")
         .select("*")
