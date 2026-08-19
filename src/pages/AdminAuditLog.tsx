@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PlatformEventsTable from "@/components/admin/PlatformEventsTable";
 
 type Row = {
   id: string;
@@ -109,15 +111,27 @@ export default function AdminAuditLog() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-2xl font-semibold">Logs de auditoria</h1>
-          <p className="text-sm text-muted-foreground">Rastreamento de ações administrativas sensíveis.</p>
+          <h1 className="text-2xl font-semibold">Auditoria</h1>
+          <p className="text-sm text-muted-foreground">Rastreamento de ações administrativas e eventos da plataforma.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{filtered.length} de {rows.length}</span>
-          <Button size="sm" variant="outline" onClick={exportCsv} disabled={!filtered.length}>
-            <Download className="h-4 w-4 mr-1" />CSV
-          </Button>
-        </div>
+      </div>
+
+      <Tabs defaultValue="eventos">
+        <TabsList>
+          <TabsTrigger value="eventos">Eventos da plataforma</TabsTrigger>
+          <TabsTrigger value="admin">Ações administrativas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="eventos" className="mt-4">
+          <PlatformEventsTable />
+        </TabsContent>
+
+        <TabsContent value="admin" className="mt-4 space-y-4">
+      <div className="flex items-center justify-end gap-2">
+        <span className="text-xs text-muted-foreground">{filtered.length} de {rows.length}</span>
+        <Button size="sm" variant="outline" onClick={exportCsv} disabled={!filtered.length}>
+          <Download className="h-4 w-4 mr-1" />CSV
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-6 gap-2 border rounded-lg p-3 bg-card">
@@ -182,6 +196,8 @@ export default function AdminAuditLog() {
           </tbody>
         </table>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
