@@ -76,7 +76,8 @@ const MESA_C: RGB = [176, 174, 167];
 const LINE_C: RGB = [190, 188, 181];
 const PAGE_BG: RGB = [237, 236, 231];   // bege claro (páginas de lista)
 const COVER_GRAY: RGB = [232, 230, 224]; // bloco da capa
-const CORAL: RGB = [214, 142, 118];      // endereço / detalhes da capa
+const BRAND: RGB = [217, 144, 90];       // terracota da marca (--primary #D9905A)
+const CORAL: RGB = BRAND;                 // detalhes/endereço na cor da marca
 const SERIF_GRAY: RGB = [139, 137, 131]; // subtítulo serifado do cabeçalho
 const WHITE: RGB = [255, 255, 255];
 
@@ -150,26 +151,34 @@ async function loadImageAsDataUrl(src: string): Promise<{ data: string; w: numbe
 }
 
 // ---------------------------------------------------------------------------
-// Buquê (ícone do logo) desenhado com primitivas
+// Logo da marca: coração preenchido (terracota) + wordmark "Casamenteiro".
+// (Se um dia tiverem um PNG do logo, dá para trocar drawLogo por doc.addImage.)
 // ---------------------------------------------------------------------------
-function drawBouquet(doc: jsPDF, x: number, y: number, s: number, color: RGB) {
-  doc.setDrawColor(...color);
-  doc.setLineWidth(0.3 * s);
-  const r = 1.15 * s;
-  const flores: [number, number][] = [
-    [x, y], [x + 2.4 * s, y], [x + 1.2 * s, y - 1.6 * s],
-    [x - 1.1 * s, y + 1.8 * s], [x + 3.5 * s, y + 1.8 * s], [x + 1.2 * s, y + 1.8 * s],
-  ];
-  flores.forEach(([cx, cy]) => doc.circle(cx, cy, r, "S"));
-  // hastes convergindo
-  doc.line(x - 0.2 * s, y + 3 * s, x + 1.2 * s, y + 7 * s);
-  doc.line(x + 2.6 * s, y + 3 * s, x + 1.2 * s, y + 7 * s);
-  doc.line(x + 1.2 * s, y + 3 * s, x + 1.2 * s, y + 7.2 * s);
-  // laço / envoltório
-  doc.line(x - 0.3 * s, y + 6.6 * s, x + 2.7 * s, y + 6.6 * s);
-  doc.line(x - 0.3 * s, y + 6.6 * s, x + 0.4 * s, y + 9 * s);
-  doc.line(x + 2.7 * s, y + 6.6 * s, x + 2.0 * s, y + 9 * s);
-  doc.line(x + 0.4 * s, y + 9 * s, x + 2.0 * s, y + 9 * s);
+function drawHeart(doc: jsPDF, cx: number, cy: number, r: number, color: RGB) {
+  doc.setFillColor(...color);
+  const lobeR = 0.58 * r;
+  const lobeY = cy - 0.28 * r;
+  doc.circle(cx - 0.5 * r, lobeY, lobeR, "F");
+  doc.circle(cx + 0.5 * r, lobeY, lobeR, "F");
+  doc.triangle(cx - 1.03 * r, lobeY, cx + 1.03 * r, lobeY, cx, cy + 1.02 * r, "F");
+}
+
+function drawLogo(doc: jsPDF, x: number, baseline: number, ff: FF, r: number, fontSize: number) {
+  drawHeart(doc, x + r, baseline - r * 0.95, r, BRAND);
+  doc.setFont(ff.sans, "bold");
+  doc.setFontSize(fontSize);
+  doc.setTextColor(...INK);
+  doc.text("Casamenteiro", x + 2 * r + 2.6, baseline);
+}
+
+// Link do Google Maps a partir do endereço completo
+function mapsUrl(fullText: string): string {
+  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(fullText);
+}
+// Nome do local = trecho antes do "·" (o resto é o endereço, que vai no link)
+function nomeDoLocal(str: string): string {
+  const nome = (str.split("·")[0] || str).trim();
+  return nome.length > 46 ? nome.slice(0, 45).trimEnd() + "…" : nome;
 }
 
 // ---------------------------------------------------------------------------
@@ -186,24 +195,34 @@ function drawCover(doc: jsPDF, input: GerarPdfInput, ff: FF, coverImg: { data: s
   doc.setFillColor(...COVER_GRAY);
   doc.rect(0, grayTop, pageW, pageH - grayTop, "F");
 
-  // logo (topo-esquerda)
-  drawBouquet(doc, M + 2, 22, 1.5, INK);
-  doc.setFont(ff.sans, "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(...INK);
-  doc.text("LOGOMARCA", M + 12, 26, { charSpace: 0.3 });
+  // logo (topo-esquerda): coração + "Casamenteiro"
+  drawLogo(doc, M, 24, ff, 2.7, 15);
 
-  // endereço / detalhes (topo-direita, coral)
+  // detalhes (topo-direita): só o NOME do local; endereço completo vai no LINK
+  const linhas: { label: string; nome: string; full: string | null }[] = [];
+  if (d.localCerimonia) linhas.push({ label: "Cerimônia", nome: nomeDoLocal(d.localCerimonia), full: d.localCerimonia });
+  if (d.localRecepcao) linhas.push({ label: "Recepção", nome: nomeDoLocal(d.localRecepcao), full: d.localRecepcao });
+  if (d.horario) {
+    const h = String(d.horario).trim();
+    linhas.push({ label: "Horário", nome: /^\d{1,2}$/.test(h) ? `${h}h` : h, full: null });
+  }
   doc.setFont(ff.sans, "normal");
   doc.setFontSize(9.5);
-  doc.setTextColor(...CORAL);
-  const detalhes = [
-    d.localCerimonia ? `Cerimônia: ${d.localCerimonia}` : null,
-    d.localRecepcao ? `Recepção: ${d.localRecepcao}` : null,
-    d.horario ? `Horário: ${d.horario}` : null,
-    d.contatoCerimonial ? `Cerimonial: ${d.contatoCerimonial}` : null,
-  ].filter(Boolean) as string[];
-  detalhes.forEach((l, i) => doc.text(l, pageW - M, 22 + i * 5, { align: "right" }));
+  linhas.forEach((ln, i) => {
+    const y = 20 + i * 5.4;
+    const texto = `${ln.label}: ${ln.nome}`;
+    const w = doc.getTextWidth(texto);
+    const x = pageW - M - w;
+    doc.setTextColor(...CORAL);
+    if (ln.full) {
+      doc.textWithLink(texto, x, y, { url: mapsUrl(ln.full) });
+      const wLabel = doc.getTextWidth(`${ln.label}: `);
+      doc.setDrawColor(...CORAL); doc.setLineWidth(0.2);
+      doc.line(x + wLabel, y + 1, x + w, y + 1); // sublinha o nome = sinal de link
+    } else {
+      doc.text(texto, x, y);
+    }
+  });
 
   // título (duas linhas, esquerda)
   const partes = cfg.titulo.split(" ");
@@ -277,12 +296,8 @@ function paintPageChrome(c: Ctx) {
   // fundo bege
   doc.setFillColor(...PAGE_BG);
   doc.rect(0, 0, c.pageW, c.pageH, "F");
-  // cabeçalho fixo: logo + subtítulo serifado
-  drawBouquet(doc, M + 1, 12.5, 1.05, INK);
-  doc.setFont(ff.sans, "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(...INK);
-  doc.text("LOGOMARCA", M + 9.5, 16, { charSpace: 0.3 });
+  // cabeçalho fixo: logo (coração + Casamenteiro) + subtítulo serifado
+  drawLogo(doc, M, 16, ff, 2.1, 12);
   doc.setFont(ff.serif, "bold");
   doc.setFontSize(17);
   doc.setTextColor(...SERIF_GRAY);
@@ -415,7 +430,7 @@ function drawGuestRow(c: Ctx, g: PdfGuest, indentX: number, showTable: boolean) 
     extraLine = 3;
   }
 
-  c.y = y + 6.6 + extraLine;
+  c.y = y + 7.4 + extraLine;
 
   // observações
   if (g.notes && g.notes.trim()) {
@@ -437,7 +452,7 @@ function drawBigLetter(c: Ctx, letter: string) {
   doc.setFontSize(52);
   doc.setTextColor(...INK);
   doc.text(letter, M, c.y + 13);
-  c.y += 4; // nomes começam logo abaixo do topo da letra, indentados à direita
+  c.y += 6; // nomes começam logo abaixo do topo da letra, indentados à direita
 }
 
 function drawGroupHeader(c: Ctx, label: string, count: number) {
@@ -485,23 +500,22 @@ function drawAlfabetico(c: Ctx) {
       ensureSpace(c, 22);
       c.sectionRedraw = (cc) => drawGroupHeader(cc, groupName(key) + " (cont.)", list.length);
       drawGroupHeader(c, groupName(key), list.length);
-      for (const g of list) { ensureSpace(c, 12); drawGuestRow(c, g, M + 4, true); }
+      for (const g of list) { ensureSpace(c, 13); drawGuestRow(c, g, M + 4, true); }
       c.sectionRedraw = null;
-      c.y += 3;
+      c.y += 9;
     }
   } else {
     let currentLetter = "";
     for (const g of ordered) {
       const letter = (g.name.trim()[0] || "#").toUpperCase();
       if (letter !== currentLetter) {
+        c.y += currentLetter === "" ? 3 : 10; // respiro entre blocos de letra
         currentLetter = letter;
-        ensureSpace(c, 26);
-        const secTop = c.y;
+        ensureSpace(c, 30);
         c.sectionRedraw = (cc) => drawBigLetter(cc, letter);
         drawBigLetter(c, letter);
-        (c as any)._secTop = secTop;
       }
-      ensureSpace(c, 12);
+      ensureSpace(c, 13);
       drawGuestRow(c, g, nameIndent, true);
     }
     c.sectionRedraw = null;
@@ -536,9 +550,9 @@ function drawPorMesa(c: Ctx) {
     ensureSpace(c, 22);
     c.sectionRedraw = (cc) => drawMesaHeader(cc, header + "  (cont.)");
     drawMesaHeader(c, header);
-    for (const g of list) { ensureSpace(c, 12); drawGuestRow(c, g, M + 4, false); }
+    for (const g of list) { ensureSpace(c, 13); drawGuestRow(c, g, M + 4, false); }
     c.sectionRedraw = null;
-    c.y += 3;
+    c.y += 9;
   }
 }
 
