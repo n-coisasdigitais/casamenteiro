@@ -42,7 +42,7 @@ export default function BulkContactTab({
   useEffect(() => {
     const ids = items.map((i) => i.supplier_id).filter(Boolean) as string[];
     if (ids.length === 0) return;
-    supabase.from("suppliers").select("id, email, whatsapp, phone").in("id", ids).then(({ data }) => {
+    supabase.rpc("my_supplier_contacts", { _ids: ids }).then(({ data }) => {
       const map: Record<string, SupplierMeta> = {};
       (data || []).forEach((s: any) => { map[s.id] = s; });
       setMeta(map);

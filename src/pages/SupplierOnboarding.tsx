@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -95,7 +96,7 @@ export default function SupplierOnboarding() {
       // tem supplier?
       const { data: sup } = await supabase
         .from("suppliers")
-        .select("*")
+        .select(SUPPLIER_COLS)
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (!sup) {

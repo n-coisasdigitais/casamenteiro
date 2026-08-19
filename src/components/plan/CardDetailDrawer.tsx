@@ -86,9 +86,13 @@ export default function CardDetailDrawer({
         .eq("couple_id", coupleId).eq("supplier_id", item.supplier_id)
         .order("created_at", { ascending: false }).limit(1)
         .then(({ data }) => setQuoteId(data?.[0]?.id || null));
-      supabase.from("suppliers").select("id, whatsapp, phone, email, website")
-        .eq("id", item.supplier_id).maybeSingle()
-        .then(({ data }) => setMeta(data as SupplierMeta | null));
+      Promise.all([
+        supabase.rpc("my_supplier_contacts", { _ids: [item.supplier_id] }),
+        supabase.from("suppliers").select("id, website").eq("id", item.supplier_id).maybeSingle(),
+      ]).then(([{ data: contatos }, { data: sup }]) => {
+        const c = (contatos as any[])?.[0] || null;
+        setMeta({ ...(sup as any), ...(c || {}) } as SupplierMeta | null);
+      });
     } else {
       setQuoteId(null);
       setMeta(null);
