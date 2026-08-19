@@ -117,8 +117,8 @@ export default function SupplierSearch() {
     .map((s) => ({
       id: s.id,
       company_name: s.company_name,
-      whatsapp: s.whatsapp,
-      phone: s.phone,
+      whatsapp: null,
+      phone: null,
       categories: s.categories,
     }));
 
