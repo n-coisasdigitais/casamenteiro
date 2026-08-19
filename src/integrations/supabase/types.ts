@@ -4728,6 +4728,15 @@ export type Database = {
         Args: { _reason?: string; _suspended: boolean; _user_id: string }
         Returns: undefined
       }
+      admin_suppliers_contacts: {
+        Args: never
+        Returns: {
+          email: string
+          id: string
+          phone: string
+          whatsapp: string
+        }[]
+      }
       admin_toggle_admin_role: {
         Args: { _make_admin: boolean; _user_id: string }
         Returns: undefined
@@ -4864,6 +4873,15 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      my_supplier_contacts: {
+        Args: { _ids: string[] }
+        Returns: {
+          email: string
+          id: string
+          phone: string
+          whatsapp: string
+        }[]
       }
       pode_avaliar_review: {
         Args: { _autor_id: string; _autor_tipo: string; _job_id: string }
