@@ -2198,6 +2198,51 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          details: Json | null
+          entity: string
+          entity_id: string | null
+          id: string
+          severity: string
+          source: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          details?: Json | null
+          entity: string
+          entity_id?: string | null
+          id?: string
+          severity?: string
+          source?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          details?: Json | null
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          severity?: string
+          source?: string
+        }
+        Relationships: []
+      }
       platform_prices: {
         Row: {
           ativo: boolean
@@ -4779,6 +4824,7 @@ export type Database = {
       get_supplier_contact: {
         Args: { _supplier_id: string }
         Returns: {
+          email: string
           phone: string
           whatsapp: string
         }[]
@@ -4797,6 +4843,19 @@ export type Database = {
         Returns: boolean
       }
       link_partner_by_invite_code: { Args: { _code: string }; Returns: Json }
+      log_platform_event: {
+        Args: {
+          _action: string
+          _after?: Json
+          _before?: Json
+          _details?: Json
+          _entity: string
+          _entity_id?: string
+          _severity?: string
+          _source?: string
+        }
+        Returns: string
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
