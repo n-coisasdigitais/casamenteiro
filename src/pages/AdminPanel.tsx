@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,7 @@ export default function AdminPanel() {
 
   const loadSuppliers = async () => {
     setLoading(true);
-    let query = supabase.from("suppliers").select("*, categories(name)").order("created_at", { ascending: false });
+    let query = supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`).order("created_at", { ascending: false });
     
     // Note: we can't filter by status here due to RLS allowing admin to see all
     const { data } = await query;

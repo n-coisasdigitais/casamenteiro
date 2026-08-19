@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import WelcomeModal from "@/components/WelcomeModal";
@@ -207,7 +208,7 @@ export default function SupplierDashboard() {
 
   const loadSupplier = async () => {
     if (!user) return;
-    const { data } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle();
+    const { data } = await supabase.from("suppliers").select(SUPPLIER_COLS).eq("user_id", user.id).maybeSingle();
     if (data) {
       setSupplier(data);
       setCompanyName(data.company_name || "");

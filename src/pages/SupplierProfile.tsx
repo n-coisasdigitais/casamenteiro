@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
+import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -86,7 +87,7 @@ export default function SupplierProfile() {
 
     supabase
       .from("suppliers")
-      .select("*, categories(name, slug)")
+      .select(`${SUPPLIER_COLS}, categories(name, slug)`)
       .eq("id", id)
       .maybeSingle()
       .then(({ data }) => {
@@ -95,7 +96,7 @@ export default function SupplierProfile() {
         if (data?.category_id) {
           supabase
             .from("suppliers")
-            .select("*, categories(name), supplier_photos(photo_url, is_principal)")
+            .select(`${SUPPLIER_COLS}, categories(name), supplier_photos(photo_url, is_principal)`)
             .eq("status", "approved")
             .eq("category_id", data.category_id)
             .neq("id", id)
@@ -200,7 +201,7 @@ export default function SupplierProfile() {
       loadReviews();
       supabase
         .from("suppliers")
-        .select("*, categories(name)")
+        .select(`${SUPPLIER_COLS}, categories(name)`)
         .eq("id", id)
         .maybeSingle()
         .then(({ data }) => setSupplier(data));
