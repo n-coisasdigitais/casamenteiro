@@ -182,14 +182,33 @@ Deno.serve(async (req) => {
     }
 
     // ===== CAMINHO 1 (redirect): assinatura recorrente via preapproval =====
-    // Email do pagador (exigido pelo preapproval)
-    const { data: perfilPagador } = await admin.from("profiles").select("email").eq("user_id", userId).maybeSingle();
-    let payerEmail = perfilPagador?.email as string | undefined;
-    if (!payerEmail) {
-      const { data: authUser } = await admin.auth.admin.getUserById(userId);
-      payerEmail = authUser?.user?.email ?? undefined;
+    // Email do pagador (exigido pelo preapproval).
+    // Regra: em SANDBOX, o pagador precisa ser um COMPRADOR DE TESTE (não a conta logada,
+    // e nunca o mesmo test user dono das credenciais). Em PRODUÇÃO, é o e-mail real do fornecedor.
+    let payerEmail: string | undefined;
+
+    if (ambiente === "sandbox") {
+      // E-mail do comprador de teste, configurável por secret. Nunca vazio.
+      payerEmail = Deno.env.get("MP_TEST_BUYER_EMAIL") ?? undefined;
+      if (!payerEmail) {
+        return json({
+          error: "Configure o secret MP_TEST_BUYER_EMAIL com o e-mail de um usuário de teste COMPRADOR do Mercado Pago para testar assinatura no sandbox.",
+          ambiente,
+        }, 400);
+      }
+    } else {
+      const { data: perfilPagador } = await admin.from("profiles").select("email").eq("user_id", userId).maybeSingle();
+      payerEmail = (perfilPagador?.email as string | undefined) || undefined;
+      if (!payerEmail) {
+        const { data: authUser } = await admin.auth.admin.getUserById(userId);
+        payerEmail = authUser?.user?.email ?? undefined;
+      }
     }
-    if (!payerEmail) return json({ error: "E-mail do pagador não encontrado para criar a assinatura." }, 400);
+
+    // Sanitiza: string vazia NÃO é e-mail válido.
+    if (!payerEmail || !payerEmail.includes("@")) {
+      return json({ error: "E-mail do pagador não encontrado para criar a assinatura.", ambiente }, 400);
+    }
 
     // REGRA B: se ainda em trial, a 1ª cobrança começa no fim do trial.
     const trialFim = (assinatura as any).supplier?.trial_ends_at
