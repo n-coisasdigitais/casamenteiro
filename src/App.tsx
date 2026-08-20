@@ -27,6 +27,7 @@ import Pagamento from "./pages/Pagamento";
 import PagamentoStatus from "./pages/PagamentoStatus";
 import Comprovante from "./pages/Comprovante";
 import FornecedorFaturas from "./pages/FornecedorFaturas";
+import MpCallback from "./pages/MpCallback";
 import MinhasReservas from "./pages/MinhasReservas";
 import SupplierLanding from "./pages/SupplierLanding";
 import SupplierOnboarding from "./pages/SupplierOnboarding";
@@ -232,6 +233,7 @@ const App = () => (
               />
               <Route path="/fornecedor/:id" element={<SupplierProfile />} />
               <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
+              <Route path="/fornecedor/mp-callback" element={<MpCallback />} />
               <Route path="/fornecedor/planos" element={<FornecedorPlanos />} />
               <Route path="/pagamento" element={<Pagamento />} />
               <Route path="/pagamento/status" element={<PagamentoStatus />} />

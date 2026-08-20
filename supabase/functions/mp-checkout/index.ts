@@ -2,6 +2,7 @@
 // Ambiente: usuário demo -> credenciais de teste; usuário real -> produção.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { obterTokenFornecedor } from "../_shared/mp-oauth.ts";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -84,6 +85,9 @@ Deno.serve(async (req) => {
   let supplierId: string | null = null;
   let coupleId: string | null = null;
   let marketplaceAccount: string | null = null;
+  // No split de corretagem a preferência é criada NA CONTA DO FORNECEDOR (collector),
+  // com marketplace_fee = comissão da plataforma. Demais fluxos usam o token da plataforma.
+  let collectorToken: string | null = null;
 
   const flagLiberada = async (key: string) => {
     const { data: flag } = await admin.from("feature_flags").select("enabled").eq("key", key).maybeSingle();
@@ -125,6 +129,11 @@ Deno.serve(async (req) => {
       marketplaceAccount = (reserva as any).supplier?.mp_account_id ?? null;
       titulo = `Reserva de data — ${nomeFornecedor}`;
       if (!marketplaceAccount) return json({ error: "Fornecedor sem conta Mercado Pago vinculada" }, 400);
+      const conexao = await obterTokenFornecedor(admin, reserva.supplier_id);
+      if (conexao.erro || !conexao.accessToken) {
+        return json({ error: conexao.erro ?? "Fornecedor sem conta Mercado Pago vinculada" }, 400);
+      }
+      collectorToken = conexao.accessToken;
     } else {
       // taxa_reserva: o fornecedor paga a taxa da plataforma (sem split)
       const { data: fornecedor } = await admin
@@ -352,7 +361,8 @@ Deno.serve(async (req) => {
   const prefRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      // Corretagem: collector = fornecedor (token dele). Demais fluxos: conta da plataforma.
+      Authorization: `Bearer ${collectorToken ?? accessToken}`,
       "Content-Type": "application/json",
       "X-Idempotency-Key": `${tipo}-${referenciaId}`,
     },
