@@ -361,7 +361,8 @@ Deno.serve(async (req) => {
   const prefRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      // Corretagem: collector = fornecedor (token dele). Demais fluxos: conta da plataforma.
+      Authorization: `Bearer ${collectorToken ?? accessToken}`,
       "Content-Type": "application/json",
       "X-Idempotency-Key": `${tipo}-${referenciaId}`,
     },
