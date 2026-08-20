@@ -85,6 +85,9 @@ Deno.serve(async (req) => {
   let supplierId: string | null = null;
   let coupleId: string | null = null;
   let marketplaceAccount: string | null = null;
+  // No split de corretagem a preferência é criada NA CONTA DO FORNECEDOR (collector),
+  // com marketplace_fee = comissão da plataforma. Demais fluxos usam o token da plataforma.
+  let collectorToken: string | null = null;
 
   const flagLiberada = async (key: string) => {
     const { data: flag } = await admin.from("feature_flags").select("enabled").eq("key", key).maybeSingle();
