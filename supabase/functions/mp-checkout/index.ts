@@ -233,6 +233,18 @@ Deno.serve(async (req) => {
         .trim()
         .slice(0, 100) || "Assinatura Casamenteiro";
     const reason = sanitizarTexto(titulo);
+    // O MP rejeita/500 datas em UTC "Z" com milissegundos. Ele espera o formato
+    // "yyyy-MM-dd'T'HH:mm:ss.SSS-03:00" (com offset explícito).
+    const formatarDataMp = (d: Date) => {
+      const off = -3 * 60; // BRT
+      const local = new Date(d.getTime() + off * 60000);
+      const p = (n: number, l = 2) => String(n).padStart(l, "0");
+      return (
+        `${local.getUTCFullYear()}-${p(local.getUTCMonth() + 1)}-${p(local.getUTCDate())}` +
+        `T${p(local.getUTCHours())}:${p(local.getUTCMinutes())}:${p(local.getUTCSeconds())}` +
+        `.${p(local.getUTCMilliseconds(), 3)}-03:00`
+      );
+    };
     // back_url precisa ser um domínio público e estável (sem query string).
     const BASE_PUBLICA = "https://www.casamenteiro.com.br";
     const preapprovalBody = {
@@ -246,7 +258,7 @@ Deno.serve(async (req) => {
         ...freq,
         transaction_amount: Math.round(valor * 100) / 100,
         currency_id: "BRL",
-        start_date: startDate.toISOString(),
+        start_date: formatarDataMp(startDate),
       },
       status: "pending",
     };
@@ -264,13 +276,32 @@ Deno.serve(async (req) => {
     // Log de diagnóstico: o que foi enviado e o que o MP devolveu.
     console.log("DIAG preapproval enviado:", JSON.stringify(preapprovalBody));
     console.log("DIAG preapproval resposta:", paRes.status, JSON.stringify(pa));
-    if (!paRes.ok) {
+    let paFinal = pa;
+    let paOk = paRes.ok;
+    // O sandbox do MP devolve 500 intermitente. Tenta uma vez sem start_date.
+    if (!paOk && paRes.status >= 500) {
+      const { start_date: _omit, ...autoSemData } = preapprovalBody.auto_recurring as any;
+      const retryBody = { ...preapprovalBody, auto_recurring: autoSemData };
+      const retryRes = await fetch("https://api.mercadopago.com/preapproval", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": `assinatura-${referenciaId}-retry-${Date.now()}`,
+        },
+        body: JSON.stringify(retryBody),
+      });
+      paFinal = await retryRes.json().catch(() => ({}));
+      paOk = retryRes.ok;
+      console.log("DIAG preapproval retry:", retryRes.status, JSON.stringify(paFinal));
+    }
+    if (!paOk) {
       console.error("Erro MP preapproval:", paRes.status, pa);
       return json(
         {
           error: "Falha ao criar assinatura no Mercado Pago",
-          detalhe: pa?.message ?? null,
-          causa: pa?.cause ?? null,
+          detalhe: (paFinal as any)?.message ?? null,
+          causa: (paFinal as any)?.cause ?? null,
           ambiente,
         },
         502,
