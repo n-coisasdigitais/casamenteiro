@@ -10,7 +10,7 @@ type Tipo = "reserva" | "assinatura" | "destaque" | "cancelamento";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  console.log("DIAG mp-checkout VERSAO-V4-SECRET iniciada", req.method);
+  console.log("DIAG mp-checkout VERSAO-PREAPPROVAL-V4 iniciada", req.method);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -233,18 +233,6 @@ Deno.serve(async (req) => {
         .trim()
         .slice(0, 100) || "Assinatura Casamenteiro";
     const reason = sanitizarTexto(titulo);
-    // O MP rejeita/500 datas em UTC "Z" com milissegundos. Ele espera o formato
-    // "yyyy-MM-dd'T'HH:mm:ss.SSS-03:00" (com offset explícito).
-    const formatarDataMp = (d: Date) => {
-      const off = -3 * 60; // BRT
-      const local = new Date(d.getTime() + off * 60000);
-      const p = (n: number, l = 2) => String(n).padStart(l, "0");
-      return (
-        `${local.getUTCFullYear()}-${p(local.getUTCMonth() + 1)}-${p(local.getUTCDate())}` +
-        `T${p(local.getUTCHours())}:${p(local.getUTCMinutes())}:${p(local.getUTCSeconds())}` +
-        `.${p(local.getUTCMilliseconds(), 3)}-03:00`
-      );
-    };
     // back_url precisa ser um domínio público e estável (sem query string).
     const BASE_PUBLICA = "https://www.casamenteiro.com.br";
     const preapprovalBody = {
@@ -258,104 +246,31 @@ Deno.serve(async (req) => {
         ...freq,
         transaction_amount: Math.round(valor * 100) / 100,
         currency_id: "BRL",
-        start_date: formatarDataMp(startDate),
+        start_date: startDate.toISOString(),
       },
       status: "pending",
     };
-
-    // O sandbox é mais restritivo que produção e rejeita alguns campos opcionais
-    // do preapproval com o genérico "User bad request". Para testes usamos o
-    // payload mínimo documentado; a referência externa continua permitindo a
-    // conciliação da assinatura. Em produção preservamos webhook e início pós-trial.
-    const requestBody = ambiente === "sandbox"
-      ? {
-          reason: preapprovalBody.reason,
-          external_reference: preapprovalBody.external_reference,
-          payer_email: preapprovalBody.payer_email,
-          back_url: preapprovalBody.back_url,
-          auto_recurring: {
-            frequency: preapprovalBody.auto_recurring.frequency,
-            frequency_type: preapprovalBody.auto_recurring.frequency_type,
-            transaction_amount: preapprovalBody.auto_recurring.transaction_amount,
-            currency_id: preapprovalBody.auto_recurring.currency_id,
-          },
-        }
-      : preapprovalBody;
-
-    const idempotencyKey = `assinatura-${referenciaId}-${Date.now()}`;
-
-    // Confirma que o e-mail configurado representa uma conta de teste brasileira
-    // diferente do vendedor. O MP devolve apenas "User bad request" quando o
-    // comprador não pertence ao mesmo cenário de testes da integração.
-    if (ambiente === "sandbox") {
-      const buyerIdMatch = payerEmail.match(/^test_user_(\d+)@testuser\.com$/i);
-      const buyerId = buyerIdMatch?.[1];
-      if (!buyerId) {
-        return json({
-          error: "Comprador de teste inválido.",
-          detalhe: "Configure MP_TEST_BUYER_EMAIL com o e-mail original de uma conta de teste do tipo Comprador.",
-          ambiente,
-        }, 400);
-      }
-      if (String(mpAccount?.id ?? "") === buyerId) {
-        return json({
-          error: "A conta compradora não pode ser a mesma conta vendedora.",
-          detalhe: "Use uma conta de teste do tipo Comprador vinculada à mesma aplicação do Mercado Pago.",
-          ambiente,
-        }, 400);
-      }
-    }
 
     const paRes = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
-        "X-Idempotency-Key": idempotencyKey,
+        "X-Idempotency-Key": `assinatura-${referenciaId}-${Date.now()}`,
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(preapprovalBody),
     });
     const pa = await paRes.json().catch(() => ({}));
     // Log de diagnóstico: o que foi enviado e o que o MP devolveu.
-    console.log("DIAG preapproval enviado:", JSON.stringify(requestBody));
+    console.log("DIAG preapproval enviado:", JSON.stringify(preapprovalBody));
     console.log("DIAG preapproval resposta:", paRes.status, JSON.stringify(pa));
-    let paFinal = pa;
-    let paOk = paRes.ok;
-    let paStatus = paRes.status;
-    // O sandbox do MP devolve 500 intermitente. Aguarda antes de repetir a
-    // mesma operação com a mesma chave para não criar duas assinaturas.
-    if (!paOk && paRes.status >= 500) {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      const retryRes = await fetch("https://api.mercadopago.com/preapproval", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "X-Idempotency-Key": idempotencyKey,
-        },
-        body: JSON.stringify(requestBody),
-      });
-      paFinal = await retryRes.json().catch(() => ({}));
-      paOk = retryRes.ok;
-      paStatus = retryRes.status;
-      console.log("DIAG preapproval retry:", retryRes.status, JSON.stringify(paFinal));
-
-      // Depois de um 5xx, o sandbox às vezes converte a repetição idempotente
-      // em 400 genérico. Nesse caso o erro real continua sendo o 5xx inicial;
-      // não apresentamos o 400 como se o payload estivesse incorreto.
-      if (!paOk && retryRes.status === 400 && (paFinal as any)?.message === "User bad request") {
-        paFinal = pa;
-        paStatus = paRes.status;
-      }
-    }
-    if (!paOk) {
-      console.error("Erro MP preapproval:", paStatus, paFinal);
+    if (!paRes.ok) {
+      console.error("Erro MP preapproval:", paRes.status, pa);
       return json(
         {
           error: "Falha ao criar assinatura no Mercado Pago",
-          detalhe: (paFinal as any)?.message ?? null,
-          causa: (paFinal as any)?.cause ?? null,
-          codigo_http_mp: paStatus,
+          detalhe: pa?.message ?? null,
+          causa: pa?.cause ?? null,
           ambiente,
         },
         502,
@@ -365,7 +280,7 @@ Deno.serve(async (req) => {
     // Guarda o preapproval_id na assinatura + registra intent
     await admin
       .from("supplier_subscriptions")
-      .update({ mp_preapproval_id: String(paFinal.id), ambiente })
+      .update({ mp_preapproval_id: String(pa.id), ambiente })
       .eq("id", referenciaId);
 
     await admin.from("payment_intents").insert({
@@ -377,22 +292,22 @@ Deno.serve(async (req) => {
       metodo: "preapproval",
       status: "pendente",
       ambiente,
-      detalhes: { preapproval_id: paFinal.id },
+      detalhes: { preapproval_id: pa.id },
     });
 
     // No sandbox o link vem em sandbox_init_point; em produção, em init_point.
     // Tratamos string vazia como ausente (não só null).
     const initPoint =
       ambiente === "sandbox"
-        ? paFinal.sandbox_init_point || paFinal.init_point || null
-        : paFinal.init_point || paFinal.sandbox_init_point || null;
+        ? pa.sandbox_init_point || pa.init_point || null
+        : pa.init_point || pa.sandbox_init_point || null;
     if (!initPoint) {
       console.error("Preapproval criado mas sem init_point:", JSON.stringify(pa));
       return json(
         {
           error: "Assinatura criada, mas o Mercado Pago não retornou o link de pagamento.",
           detalhe: "init_point ausente",
-          preapproval_id: paFinal.id,
+          preapproval_id: pa.id,
           ambiente,
         },
         502,
@@ -404,7 +319,7 @@ Deno.serve(async (req) => {
       tipo,
       valor,
       titulo,
-      preapproval_id: paFinal.id,
+      preapproval_id: pa.id,
       checkout_url: initPoint,
       public_key: null,
       mp_account: mpAccount,
