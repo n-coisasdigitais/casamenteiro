@@ -155,6 +155,27 @@ export default function SupplierDashboard() {
     }
   }, [supplier, searchParams]);
 
+  // Retorno do OAuth do Mercado Pago (?mp=conectado|erro)
+  useEffect(() => {
+    const mp = searchParams.get("mp");
+    if (!mp) return;
+    if (mp === "conectado") {
+      toast({ title: "Mercado Pago conectado com sucesso!" });
+    } else {
+      toast({
+        title: "Não foi possível conectar o Mercado Pago",
+        description: searchParams.get("motivo") || undefined,
+        variant: "destructive",
+      });
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("mp");
+    next.delete("motivo");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+
   // Abre automaticamente um quote vindo de notificação (?quote=)
   useEffect(() => {
     const qid = searchParams.get("quote");
@@ -413,6 +434,7 @@ export default function SupplierDashboard() {
           <div className="mt-4">
             <MinhaAssinaturaCard supplierId={supplier.id} />
           </div>
+          <MercadoPagoConnectCard supplierId={supplier.id} />
         </div>
       );
     }
