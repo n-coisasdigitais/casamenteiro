@@ -284,6 +284,28 @@ Deno.serve(async (req) => {
 
     const idempotencyKey = `assinatura-${referenciaId}-${Date.now()}`;
 
+    // Confirma que o e-mail configurado representa uma conta de teste brasileira
+    // diferente do vendedor. O MP devolve apenas "User bad request" quando o
+    // comprador não pertence ao mesmo cenário de testes da integração.
+    if (ambiente === "sandbox") {
+      const buyerIdMatch = payerEmail.match(/^test_user_(\d+)@testuser\.com$/i);
+      const buyerId = buyerIdMatch?.[1];
+      if (!buyerId) {
+        return json({
+          error: "Comprador de teste inválido.",
+          detalhe: "Configure MP_TEST_BUYER_EMAIL com o e-mail original de uma conta de teste do tipo Comprador.",
+          ambiente,
+        }, 400);
+      }
+      if (String(mpAccount?.id ?? "") === buyerId) {
+        return json({
+          error: "A conta compradora não pode ser a mesma conta vendedora.",
+          detalhe: "Use uma conta de teste do tipo Comprador vinculada à mesma aplicação do Mercado Pago.",
+          ambiente,
+        }, 400);
+      }
+    }
+
     const paRes = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
       headers: {
@@ -300,9 +322,10 @@ Deno.serve(async (req) => {
     let paFinal = pa;
     let paOk = paRes.ok;
     let paStatus = paRes.status;
-    // O sandbox do MP devolve 500 intermitente. Repete exatamente a mesma
-    // operação com a mesma chave para não criar duas assinaturas.
+    // O sandbox do MP devolve 500 intermitente. Aguarda antes de repetir a
+    // mesma operação com a mesma chave para não criar duas assinaturas.
     if (!paOk && paRes.status >= 500) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       const retryRes = await fetch("https://api.mercadopago.com/preapproval", {
         method: "POST",
         headers: {
@@ -316,6 +339,14 @@ Deno.serve(async (req) => {
       paOk = retryRes.ok;
       paStatus = retryRes.status;
       console.log("DIAG preapproval retry:", retryRes.status, JSON.stringify(paFinal));
+
+      // Depois de um 5xx, o sandbox às vezes converte a repetição idempotente
+      // em 400 genérico. Nesse caso o erro real continua sendo o 5xx inicial;
+      // não apresentamos o 400 como se o payload estivesse incorreto.
+      if (!paOk && retryRes.status === 400 && (paFinal as any)?.message === "User bad request") {
+        paFinal = pa;
+        paStatus = paRes.status;
+      }
     }
     if (!paOk) {
       console.error("Erro MP preapproval:", paStatus, paFinal);
