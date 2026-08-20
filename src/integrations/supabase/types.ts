@@ -2111,6 +2111,42 @@ export type Database = {
           },
         ]
       }
+      mp_oauth_states: {
+        Row: {
+          created_at: string
+          expira_em: string
+          state: string
+          supplier_id: string
+        }
+        Insert: {
+          created_at?: string
+          expira_em: string
+          state: string
+          supplier_id: string
+        }
+        Update: {
+          created_at?: string
+          expira_em?: string
+          state?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_oauth_states_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mp_oauth_states_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -4217,7 +4253,11 @@ export type Database = {
           is_demo: boolean
           lat: number | null
           lng: number | null
+          mp_access_token: string | null
           mp_account_id: string | null
+          mp_connected_at: string | null
+          mp_refresh_token: string | null
+          mp_token_expires_at: string | null
           onboarding_completed: boolean
           onboarding_step: number
           phone: string | null
@@ -4259,7 +4299,11 @@ export type Database = {
           is_demo?: boolean
           lat?: number | null
           lng?: number | null
+          mp_access_token?: string | null
           mp_account_id?: string | null
+          mp_connected_at?: string | null
+          mp_refresh_token?: string | null
+          mp_token_expires_at?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
@@ -4301,7 +4345,11 @@ export type Database = {
           is_demo?: boolean
           lat?: number | null
           lng?: number | null
+          mp_access_token?: string | null
           mp_account_id?: string | null
+          mp_connected_at?: string | null
+          mp_refresh_token?: string | null
+          mp_token_expires_at?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
