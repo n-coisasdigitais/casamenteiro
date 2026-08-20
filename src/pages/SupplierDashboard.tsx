@@ -57,6 +57,7 @@ import SupplierActionCards from "@/components/supplier/SupplierActionCards";
 import SupplierLeadsCRM from "@/components/supplier/SupplierLeadsCRM";
 import PlanGate, { TrialBanner } from "@/components/plan/PlanGate";
 import MinhaAssinaturaCard from "@/components/plan/MinhaAssinaturaCard";
+import MercadoPagoConnectCard from "@/components/supplier/MercadoPagoConnectCard";
 
 type Category = { id: string; name: string; slug?: string | null };
 
