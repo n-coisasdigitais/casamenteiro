@@ -2,6 +2,7 @@
 // Ambiente: usuário demo -> credenciais de teste; usuário real -> produção.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { obterTokenFornecedor } from "../_shared/mp-oauth.ts";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
