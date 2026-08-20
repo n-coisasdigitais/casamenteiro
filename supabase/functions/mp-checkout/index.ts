@@ -10,7 +10,7 @@ type Tipo = "reserva" | "assinatura" | "destaque" | "cancelamento";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  console.log("DIAG mp-checkout VERSAO-PREAPPROVAL-V2 iniciada", req.method);
+  console.log("DIAG mp-checkout VERSAO-V4-SECRET iniciada", req.method);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
