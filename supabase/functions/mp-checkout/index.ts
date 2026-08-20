@@ -311,7 +311,7 @@ Deno.serve(async (req) => {
     // Guarda o preapproval_id na assinatura + registra intent
     await admin
       .from("supplier_subscriptions")
-      .update({ mp_preapproval_id: String(pa.id), ambiente })
+      .update({ mp_preapproval_id: String(paFinal.id), ambiente })
       .eq("id", referenciaId);
 
     await admin.from("payment_intents").insert({
@@ -323,22 +323,22 @@ Deno.serve(async (req) => {
       metodo: "preapproval",
       status: "pendente",
       ambiente,
-      detalhes: { preapproval_id: pa.id },
+      detalhes: { preapproval_id: paFinal.id },
     });
 
     // No sandbox o link vem em sandbox_init_point; em produção, em init_point.
     // Tratamos string vazia como ausente (não só null).
     const initPoint =
       ambiente === "sandbox"
-        ? pa.sandbox_init_point || pa.init_point || null
-        : pa.init_point || pa.sandbox_init_point || null;
+        ? paFinal.sandbox_init_point || paFinal.init_point || null
+        : paFinal.init_point || paFinal.sandbox_init_point || null;
     if (!initPoint) {
       console.error("Preapproval criado mas sem init_point:", JSON.stringify(pa));
       return json(
         {
           error: "Assinatura criada, mas o Mercado Pago não retornou o link de pagamento.",
           detalhe: "init_point ausente",
-          preapproval_id: pa.id,
+          preapproval_id: paFinal.id,
           ambiente,
         },
         502,
@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
       tipo,
       valor,
       titulo,
-      preapproval_id: pa.id,
+      preapproval_id: paFinal.id,
       checkout_url: initPoint,
       public_key: null,
       mp_account: mpAccount,
