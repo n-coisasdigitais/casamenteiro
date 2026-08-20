@@ -129,6 +129,11 @@ Deno.serve(async (req) => {
       marketplaceAccount = (reserva as any).supplier?.mp_account_id ?? null;
       titulo = `Reserva de data — ${nomeFornecedor}`;
       if (!marketplaceAccount) return json({ error: "Fornecedor sem conta Mercado Pago vinculada" }, 400);
+      const conexao = await obterTokenFornecedor(admin, reserva.supplier_id);
+      if (conexao.erro || !conexao.accessToken) {
+        return json({ error: conexao.erro ?? "Fornecedor sem conta Mercado Pago vinculada" }, 400);
+      }
+      collectorToken = conexao.accessToken;
     } else {
       // taxa_reserva: o fornecedor paga a taxa da plataforma (sem split)
       const { data: fornecedor } = await admin
