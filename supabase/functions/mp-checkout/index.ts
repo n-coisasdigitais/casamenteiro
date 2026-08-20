@@ -263,45 +263,68 @@ Deno.serve(async (req) => {
       status: "pending",
     };
 
+    // O sandbox é mais restritivo que produção e rejeita alguns campos opcionais
+    // do preapproval com o genérico "User bad request". Para testes usamos o
+    // payload mínimo documentado; a referência externa continua permitindo a
+    // conciliação da assinatura. Em produção preservamos webhook e início pós-trial.
+    const requestBody = ambiente === "sandbox"
+      ? {
+          reason: preapprovalBody.reason,
+          external_reference: preapprovalBody.external_reference,
+          payer_email: preapprovalBody.payer_email,
+          back_url: preapprovalBody.back_url,
+          auto_recurring: {
+            frequency: preapprovalBody.auto_recurring.frequency,
+            frequency_type: preapprovalBody.auto_recurring.frequency_type,
+            transaction_amount: preapprovalBody.auto_recurring.transaction_amount,
+            currency_id: preapprovalBody.auto_recurring.currency_id,
+          },
+        }
+      : preapprovalBody;
+
+    const idempotencyKey = `assinatura-${referenciaId}-${Date.now()}`;
+
     const paRes = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
-        "X-Idempotency-Key": `assinatura-${referenciaId}-${Date.now()}`,
+        "X-Idempotency-Key": idempotencyKey,
       },
-      body: JSON.stringify(preapprovalBody),
+      body: JSON.stringify(requestBody),
     });
     const pa = await paRes.json().catch(() => ({}));
     // Log de diagnóstico: o que foi enviado e o que o MP devolveu.
-    console.log("DIAG preapproval enviado:", JSON.stringify(preapprovalBody));
+    console.log("DIAG preapproval enviado:", JSON.stringify(requestBody));
     console.log("DIAG preapproval resposta:", paRes.status, JSON.stringify(pa));
     let paFinal = pa;
     let paOk = paRes.ok;
-    // O sandbox do MP devolve 500 intermitente. Tenta uma vez sem start_date.
+    let paStatus = paRes.status;
+    // O sandbox do MP devolve 500 intermitente. Repete exatamente a mesma
+    // operação com a mesma chave para não criar duas assinaturas.
     if (!paOk && paRes.status >= 500) {
-      const { start_date: _omit, ...autoSemData } = preapprovalBody.auto_recurring as any;
-      const retryBody = { ...preapprovalBody, auto_recurring: autoSemData };
       const retryRes = await fetch("https://api.mercadopago.com/preapproval", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
-          "X-Idempotency-Key": `assinatura-${referenciaId}-retry-${Date.now()}`,
+          "X-Idempotency-Key": idempotencyKey,
         },
-        body: JSON.stringify(retryBody),
+        body: JSON.stringify(requestBody),
       });
       paFinal = await retryRes.json().catch(() => ({}));
       paOk = retryRes.ok;
+      paStatus = retryRes.status;
       console.log("DIAG preapproval retry:", retryRes.status, JSON.stringify(paFinal));
     }
     if (!paOk) {
-      console.error("Erro MP preapproval:", paRes.status, pa);
+      console.error("Erro MP preapproval:", paStatus, paFinal);
       return json(
         {
           error: "Falha ao criar assinatura no Mercado Pago",
           detalhe: (paFinal as any)?.message ?? null,
           causa: (paFinal as any)?.cause ?? null,
+          codigo_http_mp: paStatus,
           ambiente,
         },
         502,
