@@ -5136,6 +5136,10 @@ export type Database = {
           estado: string
         }[]
       }
+      consumir_creditos_ciclo: {
+        Args: { _supplier_id: string; _valor_base: number }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -5236,6 +5240,10 @@ export type Database = {
           _source?: string
         }
         Returns: string
+      }
+      marcar_indicacao_assinatura: {
+        Args: { _supplier_id: string }
+        Returns: Json
       }
       move_to_dlq: {
         Args: {
