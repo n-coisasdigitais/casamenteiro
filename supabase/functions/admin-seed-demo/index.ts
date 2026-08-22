@@ -66,7 +66,22 @@ const SUP_COLS = ['user_id','company_name','category_id','city','state','phone',
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  
+
+  // Somente admins autenticados (ou chamadas internas com service role) podem semear a demo.
+  if (!isServiceRole(req)) {
+    const userId = await getUserId(req);
+    if (!userId) {
+      return new Response(JSON.stringify({ ok: false, error: "Não autenticado" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!(await isAdmin(userId))) {
+      return new Response(JSON.stringify({ ok: false, error: "Acesso restrito a administradores" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   const log: string[] = [];
   const client = new Client(DB_URL);
   
