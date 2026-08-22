@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+
 import { logEmail, sendViaResend } from "../_shared/resend.ts";
 import { adminClient, getUserId, isServiceRole } from "../_shared/auth.ts";
 
