@@ -85,6 +85,9 @@ import StaffDashboard from "./pages/StaffDashboard";
 import StaffPublicProfile from "./pages/StaffPublicProfile";
 import AdminPlatformPrices from "./pages/AdminPlatformPrices";
 import AdminPlanos from "./pages/AdminPlanos";
+import AdminCupons from "./pages/AdminCupons";
+import FornecedorIndicacoes from "./pages/FornecedorIndicacoes";
+import CapturarIndicacaoFornecedor from "./pages/CapturarIndicacaoFornecedor";
 import AdminReservations from "./pages/AdminReservations";
 import AdminIdleDates from "./pages/AdminIdleDates";
 import AdminCommissionLedger from "./pages/AdminCommissionLedger";
@@ -239,6 +242,15 @@ const App = () => (
               <Route path="/pagamento/status" element={<PagamentoStatus />} />
               <Route path="/comprovante/:id" element={<Comprovante />} />
               <Route path="/fornecedor/faturas" element={<FornecedorFaturas />} />
+              <Route
+                path="/fornecedor/indicacoes"
+                element={
+                  <FlagGate flag="indicacao_fornecedor">
+                    <FornecedorIndicacoes />
+                  </FlagGate>
+                }
+              />
+              <Route path="/indica-fornecedor/:codigo" element={<CapturarIndicacaoFornecedor />} />
               <Route
                 path="/meu-casamento/reservas"
                 element={
@@ -550,6 +562,14 @@ const App = () => (
                 element={
                   <AdminLayout>
                     <AdminPlatformPrices />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/cupons"
+                element={
+                  <AdminLayout>
+                    <AdminCupons />
                   </AdminLayout>
                 }
               />

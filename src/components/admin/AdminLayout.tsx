@@ -51,6 +51,7 @@ const groups = [
       { title: "Simulações", url: "/admin/simulacoes", icon: Calculator },
       { title: "Tabela de preços", url: "/admin/tabela-precos", icon: Tag },
       { title: "Planos e destaques", url: "/admin/planos", icon: Sparkles },
+      { title: "Cupons e presentes", url: "/admin/cupons", icon: Tag },
       { title: "Reservas", url: "/admin/reservas", icon: CalendarRange },
       { title: "Datas ociosas", url: "/admin/datas-ociosas", icon: Sparkles },
       { title: "Corretagem", url: "/admin/corretagem", icon: Tag },
