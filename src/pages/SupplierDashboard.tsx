@@ -1,3 +1,4 @@
+import { registrarMinhaIndicacaoSeHouver } from "@/lib/beneficios";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -154,6 +155,12 @@ export default function SupplierDashboard() {
       setQuotesInnerTab("kanban");
     }
   }, [supplier, searchParams]);
+
+  // Indicação de fornecedor: registra a atribuição uma única vez, quando o indicado entra no painel.
+  useEffect(() => {
+    if (!supplier) return;
+    registrarMinhaIndicacaoSeHouver();
+  }, [supplier]);
 
   // Retorno do OAuth do Mercado Pago (?mp=conectado|erro)
   useEffect(() => {
