@@ -158,17 +158,7 @@ export default function CasalPerfilPublico() {
       setMsgEnviando(false);
       return;
     }
-    // Notificação in-app para o casal destinatário
-    const { data: dest } = await supabase.from("couples").select("user_id").eq("id", perfil.couple_id).maybeSingle();
-    if (dest?.user_id) {
-      await supabase.from("notifications").insert({
-        user_id: dest.user_id,
-        type: "mensagem_casal",
-        title: "Você recebeu uma nova mensagem",
-        body: msgTexto.trim().slice(0, 120),
-        link: "/mensagens",
-      });
-    }
+    // A notificação in-app do destinatário é criada pelo gatilho seguro no banco.
     toast.success("Mensagem enviada!");
     setMsgTexto("");
     setMsgOpen(false);
