@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     )
   }
 
-  const { to, subject, html, text, from, replyTo, label } = body ?? {}
+  let { to, subject, html, text, from, replyTo, label } = body ?? {}
   if (!to || !subject || (!html && !text)) {
     return new Response(
       JSON.stringify({ error: 'Campos obrigatórios: to, subject e html ou text' }),
@@ -42,10 +42,41 @@ Deno.serve(async (req) => {
     )
   }
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  )
+  const supabase = adminClient()
+
+  // Não é um relay aberto: exige chamada interna (service role) ou usuário autenticado.
+  const interno = isServiceRole(req)
+  let admin = false
+  if (!interno) {
+    const userId = await getUserId(req)
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'Não autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+    admin = await isAdmin(userId)
+  }
+
+  if (!interno && !admin) {
+    // Usuários comuns: remetente fixo da plataforma e poucos destinatários por chamada.
+    from = undefined
+    const destinatarios = Array.isArray(to) ? to : [to]
+    if (destinatarios.length > 5) {
+      return new Response(
+        JSON.stringify({ error: 'Máximo de 5 destinatários por envio' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+    const invalido = destinatarios.some((e) => typeof e !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+    if (invalido) {
+      return new Response(
+        JSON.stringify({ error: 'Destinatário inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+    to = destinatarios
+  }
 
   const recipient = Array.isArray(to) ? to[0] : to
   const messageId = crypto.randomUUID()
