@@ -25,6 +25,13 @@ import {
   type Assinatura,
   type PacoteDestaque,
 } from "@/lib/monetizacao";
+import CupomInput from "@/components/plan/CupomInput";
+import {
+  BENEFICIO_ORIGEM_LABEL,
+  beneficiosPendentes,
+  descreverBeneficio,
+  type Beneficio,
+} from "@/lib/beneficios";
 
 export default function FornecedorPlanos() {
   const { user } = useAuth();
