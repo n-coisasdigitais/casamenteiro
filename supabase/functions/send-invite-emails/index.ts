@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
 import { logEmail, sendViaResend } from "../_shared/resend.ts";
+import { adminClient, getUserId, isServiceRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,10 +17,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = adminClient();
+
+    // Só o casal dono da lista (ou uma chamada interna) pode enviar convites.
+    if (!isServiceRole(req)) {
+      const userId = await getUserId(req);
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "Não autenticado" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: meuCoupleId } = await supabase.rpc("get_couple_id_for_user", { _user_id: userId });
+      if (!meuCoupleId || meuCoupleId !== couple_id) {
+        return new Response(JSON.stringify({ error: "Sem permissão para este casal" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     // Carrega convidados + couple
     const { data: guests } = await supabase
