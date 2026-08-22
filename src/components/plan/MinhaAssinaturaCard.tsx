@@ -73,7 +73,7 @@ export default function MinhaAssinaturaCard({ supplierId }: { supplierId: string
               <AlertDialogTitle>Cancelar sua assinatura?</AlertDialogTitle>
               <AlertDialogDescription>
                 Você mantém acesso a tudo até{" "}
-                <strong>{fmtData(plano.acessoAte ?? plano.cobrancaComecaEm ?? plano.trialEndsAt)}</strong> — o fim do
+                <strong>{fmtData(plano.periodEnd ?? plano.trialEndsAt)}</strong> — o fim do
                 período já pago. Depois dessa data o perfil volta ao plano gratuito, mas nada é apagado: seus dados,
                 fotos e orçamentos continuam salvos e voltam ao normal se você assinar de novo.
               </AlertDialogDescription>
