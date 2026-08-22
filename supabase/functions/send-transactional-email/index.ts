@@ -1,6 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
-import { createClient } from 'npm:@supabase/supabase-js@2'
 import { logEmail, resendApiKey, sendViaResend } from '../_shared/resend.ts'
+import { adminClient, getUserId, isAdmin, isServiceRole } from '../_shared/auth.ts'
 
 interface SendBody {
   to: string | string[]
