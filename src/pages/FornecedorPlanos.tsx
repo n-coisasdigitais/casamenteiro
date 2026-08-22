@@ -25,6 +25,13 @@ import {
   type Assinatura,
   type PacoteDestaque,
 } from "@/lib/monetizacao";
+import CupomInput from "@/components/plan/CupomInput";
+import {
+  BENEFICIO_ORIGEM_LABEL,
+  beneficiosPendentes,
+  descreverBeneficio,
+  type Beneficio,
+} from "@/lib/beneficios";
 
 export default function FornecedorPlanos() {
   const { user } = useAuth();
@@ -32,6 +39,7 @@ export default function FornecedorPlanos() {
   const { toast } = useToast();
   const assinaturaOn = useFeatureFlag("assinatura_fornecedor", false);
   const destaqueOn = useFeatureFlag("destaque_pago", false);
+  const cuponsOn = useFeatureFlag("cupons", false);
 
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [planos, setPlanos] = useState<Plano[]>([]);
@@ -41,6 +49,12 @@ export default function FornecedorPlanos() {
   const [ciclo, setCiclo] = useState<"mensal" | "anual">("mensal");
   const [carregando, setCarregando] = useState(true);
   const [processando, setProcessando] = useState<string | null>(null);
+  const [beneficios, setBeneficios] = useState<Beneficio[]>([]);
+
+  const recarregarBeneficios = async () => {
+    if (supplierId) setBeneficios(await beneficiosPendentes(supplierId));
+  };
+
 
   useEffect(() => {
     if (!user) {
@@ -54,6 +68,7 @@ export default function FornecedorPlanos() {
         return;
       }
       setSupplierId(fornecedor.id);
+      setBeneficios(await beneficiosPendentes(fornecedor.id));
       const [ps, a, pk] = await Promise.all([listarPlanos(), assinaturaAtual(fornecedor.id), listarPacotesDestaque()]);
       setPlanos(ps);
       setAssinatura(a);
@@ -170,6 +185,27 @@ export default function FornecedorPlanos() {
           </Card>
         ) : (
           <section className="space-y-4">
+            {cuponsOn && supplierId && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <CupomInput supplierId={supplierId} onResgatado={recarregarBeneficios} />
+                {beneficios.length > 0 && (
+                  <Card className="border-emerald-200 bg-emerald-50/50">
+                    <CardContent className="p-4 space-y-2">
+                      <p className="text-sm font-medium text-emerald-900">Descontos na sua próxima cobrança</p>
+                      {beneficios.map((b) => (
+                        <p key={b.id} className="text-sm text-emerald-800">
+                          • {descreverBeneficio(b)} ({BENEFICIO_ORIGEM_LABEL[b.origem] ?? b.origem})
+                        </p>
+                      ))}
+                      <p className="text-xs text-emerald-700">
+                        Aplicados a partir da primeira cobrança, com teto de 100% por mês.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
             <Tabs value={ciclo} onValueChange={(v) => setCiclo(v as "mensal" | "anual")}>
               <TabsList>
                 <TabsTrigger value="mensal">Mensal</TabsTrigger>

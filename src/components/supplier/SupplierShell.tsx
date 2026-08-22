@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Heart, LayoutDashboard, MessageSquare, Store, Star, Sparkles, Receipt } from "lucide-react";
+import { Heart, LayoutDashboard, MessageSquare, Store, Star, Sparkles, Receipt, Gift } from "lucide-react";
 import NotificationsBell from "@/components/NotificationsBell";
 import UserMenu from "@/components/UserMenu";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,9 @@ const links = [
   { label: "Avaliações", to: "/fornecedor/painel?tab=avaliacoes", match: "avaliacoes", icon: Star },
   { label: "Planos e destaques", to: "/fornecedor/planos", match: "/fornecedor/planos", icon: Sparkles },
   { label: "Faturas e pagamentos", to: "/fornecedor/faturas", match: "/fornecedor/faturas", icon: Receipt },
+  { label: "Indique e ganhe", to: "/fornecedor/indicacoes", match: "/fornecedor/indicacoes", icon: Gift },
 ];
+
 
 /** Casca com cabeçalho e navegação para páginas isoladas do fornecedor. */
 export default function SupplierShell({ children }: { children: React.ReactNode }) {
