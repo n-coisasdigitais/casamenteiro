@@ -5285,6 +5285,10 @@ export type Database = {
         }
         Returns: Json
       }
+      registrar_minha_indicacao_fornecedor: {
+        Args: { _codigo: string }
+        Returns: Json
+      }
       resgatar_cupom: {
         Args: { _codigo: string; _plan_id?: string; _supplier_id: string }
         Returns: Json
