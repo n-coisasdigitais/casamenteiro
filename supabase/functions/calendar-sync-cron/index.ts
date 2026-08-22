@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getUserId, isAdmin, isServiceRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -160,11 +161,33 @@ async function syncOne(admin: ReturnType<typeof createClient>, c: Conn) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  const unauthorized = (msg: string, status: number) =>
+    new Response(JSON.stringify({ error: msg }), {
+      status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   let supplierFilter: string | null = null;
   if (req.method === "POST") {
     const body = await req.json().catch(() => ({}));
     supplierFilter = body.supplier_id || null;
   }
+
+  // Cron/back-end (service role) sincroniza tudo. Usuários só a própria agenda; admin, qualquer uma.
+  if (!isServiceRole(req)) {
+    const userId = await getUserId(req);
+    if (!userId) return unauthorized("Não autenticado", 401);
+    if (!(await isAdmin(userId))) {
+      const { data: meus } = await admin.from("suppliers").select("id").eq("user_id", userId);
+      const meusIds = (meus || []).map((s: { id: string }) => s.id);
+      if (!meusIds.length) return unauthorized("Sem fornecedor associado", 403);
+      if (supplierFilter && !meusIds.includes(supplierFilter)) {
+        return unauthorized("Sem permissão para este fornecedor", 403);
+      }
+      supplierFilter = supplierFilter || meusIds[0];
+    }
+  }
+
   let q = admin.from("supplier_calendar_connections").select("*").eq("sync_enabled", true);
   if (supplierFilter) q = q.eq("supplier_id", supplierFilter);
   const { data: conns, error } = await q;

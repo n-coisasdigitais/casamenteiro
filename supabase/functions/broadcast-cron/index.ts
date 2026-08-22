@@ -3,6 +3,7 @@
 // e cria notificações para os usuários alvo, usando `broadcast_gatilho_execucoes`
 // para evitar reenvio duplicado.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getUserId, isAdmin, isServiceRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,17 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Apenas o agendador (service role) ou um admin autenticado podem disparar.
+  if (!isServiceRole(req)) {
+    const userId = await getUserId(req);
+    if (!userId || !(await isAdmin(userId))) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: userId ? 403 : 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
