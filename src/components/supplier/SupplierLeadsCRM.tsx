@@ -173,14 +173,12 @@ export default function SupplierLeadsCRM({ supplierId, supplierUserId, companyNa
     const couple = lead.couple;
     const targetIds = [couple?.user_id, couple?.partner2_user_id].filter(Boolean) as string[];
     if (!targetIds.length) return toast({ title: "Casal sem contato registrado", variant: "destructive" });
-    const rows = targetIds.map((uid) => ({
-      user_id: uid,
-      type: "quote_reminder",
-      title: `Lembrete: ${companyName || "um fornecedor"} está aguardando seu retorno`,
-      body: "Você recebeu uma proposta e ainda não respondeu. Que tal continuar a conversa?",
-      link: `/painel?quote=${lead.quote.id}`,
-    }));
-    const { error } = await supabase.from("notifications").insert(rows);
+    const { error } = await (supabase.rpc as any)("notificar_casal_do_lead", {
+      _quote_id: lead.quote.id,
+      _title: `Lembrete: ${companyName || "um fornecedor"} está aguardando seu retorno`,
+      _body: "Você recebeu uma proposta e ainda não respondeu. Que tal continuar a conversa?",
+      _link: `/painel?quote=${lead.quote.id}`,
+    });
     if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     await supabase.from("lead_notes" as any).insert({
       quote_id: lead.quote.id, supplier_id: supplierId, author_id: supplierUserId,
