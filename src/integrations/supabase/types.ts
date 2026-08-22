@@ -5263,6 +5263,15 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      notificar_casal_do_lead: {
+        Args: {
+          _body: string
+          _link?: string
+          _quote_id: string
+          _title: string
+        }
+        Returns: number
+      }
       pode_avaliar_review: {
         Args: { _autor_id: string; _autor_tipo: string; _job_id: string }
         Returns: boolean
