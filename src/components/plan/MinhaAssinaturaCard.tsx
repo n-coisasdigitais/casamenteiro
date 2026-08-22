@@ -8,6 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, CheckCircle2, Lock, CalendarClock } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 function fmtData(d: string | null) {
   if (!d) return "—";
@@ -18,6 +29,7 @@ export default function MinhaAssinaturaCard({ supplierId }: { supplierId: string
   const { plano, carregando } = useSupplierPlan(supplierId);
   const { toast } = useToast();
   const [cancelando, setCancelando] = useState(false);
+  const [confirmarCancelamento, setConfirmarCancelamento] = useState(false);
 
   if (carregando)
     return (
@@ -28,12 +40,7 @@ export default function MinhaAssinaturaCard({ supplierId }: { supplierId: string
   if (!plano) return null;
 
   const cancelar = async () => {
-    if (
-      !confirm(
-        "Cancelar sua assinatura? Você mantém o acesso até o fim do período já pago (ou até o fim do teste, se ainda não começou a pagar); depois disso o perfil volta ao plano gratuito.",
-      )
-    )
-      return;
+    setConfirmarCancelamento(false);
     setCancelando(true);
     try {
       const { error } = await supabase.functions.invoke("mp-cancel-subscription", {
@@ -55,14 +62,28 @@ export default function MinhaAssinaturaCard({ supplierId }: { supplierId: string
         <Link to="/fornecedor/planos">Trocar de plano</Link>
       </Button>
       {!plano.cancelada && (
-        <Button
-          variant="ghost"
-          className="text-destructive hover:text-destructive"
-          onClick={cancelar}
-          disabled={cancelando}
-        >
-          {cancelando ? "Cancelando…" : "Cancelar"}
-        </Button>
+        <AlertDialog open={confirmarCancelamento} onOpenChange={setConfirmarCancelamento}>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" className="text-destructive hover:text-destructive" disabled={cancelando}>
+              {cancelando ? "Cancelando…" : "Cancelar"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancelar sua assinatura?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você mantém acesso a tudo até{" "}
+                <strong>{fmtData(plano.acessoAte ?? plano.cobrancaComecaEm ?? plano.trialEndsAt)}</strong> — o fim do
+                período já pago. Depois dessa data o perfil volta ao plano gratuito, mas nada é apagado: seus dados,
+                fotos e orçamentos continuam salvos e voltam ao normal se você assinar de novo.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Manter assinatura</AlertDialogCancel>
+              <AlertDialogAction onClick={cancelar}>Cancelar assinatura</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );

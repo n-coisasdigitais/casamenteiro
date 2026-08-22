@@ -168,6 +168,14 @@ Deno.serve(async (req) => {
               .update({ featured: true, featured_until: fim.toISOString() })
               .eq("id", assinatura.supplier_id);
           }
+
+          // Indicação entre fornecedores: assinatura confirmada libera o bônus de quem indicou.
+          try {
+            await admin.rpc("marcar_indicacao_assinatura", { _supplier_id: assinatura.supplier_id });
+          } catch (_e) {
+            /* bônus de indicação nunca derruba o webhook */
+          }
+
         } else if (paStatus === "cancelled") {
           // Cancelado no MP: mantém acesso até current_period_end (não zera).
           await admin
@@ -351,6 +359,14 @@ Deno.serve(async (req) => {
           .update({ featured: true, featured_until: fim.toISOString() })
           .eq("id", assinatura.supplier_id);
       }
+
+          // Indicação entre fornecedores: assinatura confirmada libera o bônus de quem indicou.
+          try {
+            await admin.rpc("marcar_indicacao_assinatura", { _supplier_id: assinatura.supplier_id });
+          } catch (_e) {
+            /* bônus de indicação nunca derruba o webhook */
+          }
+
     }
     await registrar({ resultado: aprovado ? "assinatura_ativada" : "assinatura_atualizada" }, 200);
     return json({ ok: true, tipo, ambiente, status });
