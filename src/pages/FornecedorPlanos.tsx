@@ -68,6 +68,7 @@ export default function FornecedorPlanos() {
         return;
       }
       setSupplierId(fornecedor.id);
+      setBeneficios(await beneficiosPendentes(fornecedor.id));
       const [ps, a, pk] = await Promise.all([listarPlanos(), assinaturaAtual(fornecedor.id), listarPacotesDestaque()]);
       setPlanos(ps);
       setAssinatura(a);
