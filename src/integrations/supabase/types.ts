@@ -1217,6 +1217,113 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          credit_id: string | null
+          id: string
+          supplier_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          credit_id?: string | null
+          id?: string
+          supplier_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          credit_id?: string | null
+          id?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_credit_id_fkey"
+            columns: ["credit_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_credits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          ativo: boolean
+          ciclos: number
+          codigo: string
+          created_at: string
+          descricao: string | null
+          id: string
+          max_usos: number | null
+          max_usos_por_fornecedor: number
+          planos_elegiveis: string[]
+          tipo: string
+          updated_at: string
+          usos: number
+          valido_ate: string | null
+          valido_de: string | null
+          valor: number
+        }
+        Insert: {
+          ativo?: boolean
+          ciclos?: number
+          codigo: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          max_usos?: number | null
+          max_usos_por_fornecedor?: number
+          planos_elegiveis?: string[]
+          tipo?: string
+          updated_at?: string
+          usos?: number
+          valido_ate?: string | null
+          valido_de?: string | null
+          valor?: number
+        }
+        Update: {
+          ativo?: boolean
+          ciclos?: number
+          codigo?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          max_usos?: number | null
+          max_usos_por_fornecedor?: number
+          planos_elegiveis?: string[]
+          tipo?: string
+          updated_at?: string
+          usos?: number
+          valido_ate?: string | null
+          valido_de?: string | null
+          valor?: number
+        }
+        Relationships: []
+      }
       default_tasks: {
         Row: {
           action_label: string | null
@@ -3581,6 +3688,84 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_credits: {
+        Row: {
+          aplicado_em: string | null
+          ciclos_restantes: number
+          ciclos_total: number
+          concedido_por: string | null
+          created_at: string
+          encerrado_em: string | null
+          expira_em: string | null
+          id: string
+          motivo: string | null
+          origem: string
+          origem_id: string | null
+          status: string
+          supplier_id: string
+          tipo: string
+          updated_at: string
+          valor: number
+          valor_com_desconto: number | null
+          valor_original: number | null
+        }
+        Insert: {
+          aplicado_em?: string | null
+          ciclos_restantes?: number
+          ciclos_total?: number
+          concedido_por?: string | null
+          created_at?: string
+          encerrado_em?: string | null
+          expira_em?: string | null
+          id?: string
+          motivo?: string | null
+          origem: string
+          origem_id?: string | null
+          status?: string
+          supplier_id: string
+          tipo: string
+          updated_at?: string
+          valor?: number
+          valor_com_desconto?: number | null
+          valor_original?: number | null
+        }
+        Update: {
+          aplicado_em?: string | null
+          ciclos_restantes?: number
+          ciclos_total?: number
+          concedido_por?: string | null
+          created_at?: string
+          encerrado_em?: string | null
+          expira_em?: string | null
+          id?: string
+          motivo?: string | null
+          origem?: string
+          origem_id?: string | null
+          status?: string
+          supplier_id?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+          valor_com_desconto?: number | null
+          valor_original?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_credits_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_credits_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_details_beleza: {
         Row: {
           created_at: string
@@ -4120,6 +4305,126 @@ export type Database = {
           valor_ofertado?: number | null
         }
         Relationships: []
+      }
+      supplier_referral_events: {
+        Row: {
+          bonus_assinatura_credit_id: string | null
+          bonus_cadastro_credit_id: string | null
+          created_at: string
+          id: string
+          indicado_nome: string | null
+          indicado_supplier_id: string | null
+          indicado_user_id: string | null
+          referral_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bonus_assinatura_credit_id?: string | null
+          bonus_cadastro_credit_id?: string | null
+          created_at?: string
+          id?: string
+          indicado_nome?: string | null
+          indicado_supplier_id?: string | null
+          indicado_user_id?: string | null
+          referral_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bonus_assinatura_credit_id?: string | null
+          bonus_cadastro_credit_id?: string | null
+          created_at?: string
+          id?: string
+          indicado_nome?: string | null
+          indicado_supplier_id?: string | null
+          indicado_user_id?: string | null
+          referral_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_referral_events_bonus_assinatura_credit_id_fkey"
+            columns: ["bonus_assinatura_credit_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_credits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_referral_events_bonus_cadastro_credit_id_fkey"
+            columns: ["bonus_cadastro_credit_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_credits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_referral_events_indicado_supplier_id_fkey"
+            columns: ["indicado_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_referral_events_indicado_supplier_id_fkey"
+            columns: ["indicado_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_referral_events_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_referrals: {
+        Row: {
+          ativo: boolean
+          cliques: number
+          codigo: string
+          created_at: string
+          id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cliques?: number
+          codigo: string
+          created_at?: string
+          id?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cliques?: number
+          codigo?: string
+          created_at?: string
+          id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_referrals_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_referrals_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       supplier_staff_favorites: {
         Row: {
@@ -4767,6 +5072,16 @@ export type Database = {
         }
         Returns: number
       }
+      admin_conceder_beneficio: {
+        Args: {
+          _ciclos: number
+          _motivo: string
+          _supplier_id: string
+          _tipo: string
+          _valor: number
+        }
+        Returns: string
+      }
       admin_mark_commission_paid: {
         Args: { _amount: number; _lead_id: string }
         Returns: undefined
@@ -4871,6 +5186,15 @@ export type Database = {
           wedding_date: string
         }[]
       }
+      get_or_create_supplier_referral: {
+        Args: { _supplier_id: string }
+        Returns: {
+          ativo: boolean
+          cliques: number
+          codigo: string
+          id: string
+        }[]
+      }
       get_staff_contact: {
         Args: { _job_id: string; _staff_id: string }
         Returns: {
@@ -4946,6 +5270,24 @@ export type Database = {
       recalc_task_due_dates: {
         Args: { _couple_id: string }
         Returns: undefined
+      }
+      registrar_clique_indicacao_fornecedor: {
+        Args: { _codigo: string }
+        Returns: boolean
+      }
+      registrar_etapa_indicacao_fornecedor: {
+        Args: {
+          _codigo: string
+          _indicado_nome?: string
+          _indicado_supplier_id?: string
+          _indicado_user_id: string
+          _status: string
+        }
+        Returns: Json
+      }
+      resgatar_cupom: {
+        Args: { _codigo: string; _plan_id?: string; _supplier_id: string }
+        Returns: Json
       }
       respond_invite: {
         Args: {
