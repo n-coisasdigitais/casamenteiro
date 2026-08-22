@@ -59,6 +59,8 @@ Já funciona como na App Store. Vou apenas deixar isso explícito na tela: subst
 3. Indicação entre fornecedores com status e conversão via webhook.
 4. Presentes/descontos manuais no admin.
 
-## Pontos para você decidir
-- Benefício vale a partir do 1º ciclo cobrado (recomendado) ou só após 1 fatura paga?
-- Teto de acúmulo de indicações por ciclo: 100% (um mês grátis) ou 50%?
+## Decisões confirmadas
+- Benefício (cupom ou indicação) vale a partir do **1º ciclo cobrado** após o fim dos 60 dias de teste.
+- Acúmulo de indicações limitado a **100% em um único ciclo** (vira um mês grátis); o excedente fica guardado para os ciclos seguintes.
+- Links de indicação usam sempre o **domínio próprio** (`https://www.casamenteiro.com.br/i/CODIGO`) via `publicBaseUrl()` — nunca o domínio de preview.
+
