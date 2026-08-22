@@ -170,6 +170,27 @@ export default function FornecedorPlanos() {
           </Card>
         ) : (
           <section className="space-y-4">
+            {cuponsOn && supplierId && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <CupomInput supplierId={supplierId} onResgatado={recarregarBeneficios} />
+                {beneficios.length > 0 && (
+                  <Card className="border-emerald-200 bg-emerald-50/50">
+                    <CardContent className="p-4 space-y-2">
+                      <p className="text-sm font-medium text-emerald-900">Descontos na sua próxima cobrança</p>
+                      {beneficios.map((b) => (
+                        <p key={b.id} className="text-sm text-emerald-800">
+                          • {descreverBeneficio(b)} ({BENEFICIO_ORIGEM_LABEL[b.origem] ?? b.origem})
+                        </p>
+                      ))}
+                      <p className="text-xs text-emerald-700">
+                        Aplicados a partir da primeira cobrança, com teto de 100% por mês.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
             <Tabs value={ciclo} onValueChange={(v) => setCiclo(v as "mensal" | "anual")}>
               <TabsList>
                 <TabsTrigger value="mensal">Mensal</TabsTrigger>
