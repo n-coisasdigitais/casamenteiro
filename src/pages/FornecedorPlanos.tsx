@@ -39,6 +39,7 @@ export default function FornecedorPlanos() {
   const { toast } = useToast();
   const assinaturaOn = useFeatureFlag("assinatura_fornecedor", false);
   const destaqueOn = useFeatureFlag("destaque_pago", false);
+  const cuponsOn = useFeatureFlag("cupons", false);
 
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [planos, setPlanos] = useState<Plano[]>([]);
@@ -48,6 +49,12 @@ export default function FornecedorPlanos() {
   const [ciclo, setCiclo] = useState<"mensal" | "anual">("mensal");
   const [carregando, setCarregando] = useState(true);
   const [processando, setProcessando] = useState<string | null>(null);
+  const [beneficios, setBeneficios] = useState<Beneficio[]>([]);
+
+  const recarregarBeneficios = async () => {
+    if (supplierId) setBeneficios(await beneficiosPendentes(supplierId));
+  };
+
 
   useEffect(() => {
     if (!user) {
