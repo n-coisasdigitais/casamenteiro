@@ -1,5 +1,6 @@
 // Aplica migration (is_demo + admin policies) e popula 27 fornecedores demo + detalhes
 import { Client } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
+import { getUserId, isAdmin, isServiceRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
