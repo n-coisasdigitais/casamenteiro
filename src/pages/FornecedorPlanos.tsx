@@ -95,7 +95,25 @@ export default function FornecedorPlanos() {
     })();
   }, [user, navigate]);
 
+  const verificarPagamento = async () => {
+    if (!supplierId || !assinatura) return;
+    setProcessando("sync");
+    const { ok, encontrado, erro } = await sincronizarAssinatura(assinatura.id);
+    if (ok && encontrado) {
+      setAssinatura(await assinaturaAtual(supplierId));
+      toast({ title: "Assinatura ativada!", description: "Encontramos seu pagamento e liberamos o plano." });
+    } else {
+      toast({
+        title: "Nenhum pagamento confirmado ainda",
+        description: erro ?? "Se você acabou de pagar, aguarde alguns minutos e tente de novo.",
+        variant: erro ? "destructive" : "default",
+      });
+    }
+    setProcessando(null);
+  };
+
   const assinar = async (plano: Plano) => {
+
     if (!supplierId) return;
     setProcessando(plano.id);
     const { id, erro, ativadaDireto, trocaDireta } = await criarAssinatura({ supplierId, plano, ciclo });
