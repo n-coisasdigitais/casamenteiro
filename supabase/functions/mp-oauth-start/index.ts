@@ -1,6 +1,7 @@
 // Inicia o vínculo OAuth da conta Mercado Pago do fornecedor (necessário para o split de corretagem).
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { redirectUriMp } from "../_shared/mp-redirect.ts";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
