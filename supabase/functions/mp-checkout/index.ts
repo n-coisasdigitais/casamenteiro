@@ -275,16 +275,100 @@ Deno.serve(async (req) => {
     console.log("DIAG preapproval resposta:", paRes.status, JSON.stringify(pa));
     if (!paRes.ok) {
       console.error("Erro MP preapproval:", paRes.status, pa);
+
+      if (ambiente === "sandbox") {
+        // --- DIAGNÓSTICO 1: o preapproval funciona sem trial/start_date? ---
+        try {
+          const minimo = {
+            reason: reason,
+            external_reference: `diag:${referenciaId}`,
+            payer_email: payerEmail,
+            back_url: `${BASE_PUBLICA}/fornecedor/planos`,
+            auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: 10, currency_id: "BRL" },
+            status: "pending",
+          };
+          const dRes = await fetch("https://api.mercadopago.com/preapproval", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify(minimo),
+          });
+          const dJson = await dRes.json().catch(() => ({}));
+          console.log("DIAG preapproval minimo:", dRes.status, JSON.stringify(dJson));
+        } catch (e) {
+          console.error("DIAG preapproval minimo erro:", String(e));
+        }
+
+        // --- DIAGNÓSTICO 2: usuários de teste da aplicação (o comprador precisa ser da mesma app/país) ---
+        try {
+          const tuRes = await fetch("https://api.mercadopago.com/users/test_user", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          console.log("DIAG test_user status:", tuRes.status, (await tuRes.text()).slice(0, 300));
+        } catch (e) {
+          console.error("DIAG test_user erro:", String(e));
+        }
+
+        // --- FALLBACK: pagamento único (Checkout Pro) para validar o fluxo ponta a ponta ---
+        // O sandbox do MP é instável para assinatura recorrente; o webhook trata
+        // external_reference "assinatura:<id>" de payment e ativa a assinatura.
+        const prefBody = {
+          items: [{ title: reason, quantity: 1, unit_price: Math.round(valor * 100) / 100, currency_id: "BRL" }],
+          external_reference: `assinatura:${referenciaId}`,
+          back_urls: {
+            success: `${BASE_PUBLICA}/fornecedor/planos`,
+            failure: `${BASE_PUBLICA}/fornecedor/planos`,
+            pending: `${BASE_PUBLICA}/fornecedor/planos`,
+          },
+          notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook?env=${ambiente}`,
+        };
+        const prefRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify(prefBody),
+        });
+        const pref = await prefRes.json().catch(() => ({}));
+        console.log("DIAG fallback preference:", prefRes.status, JSON.stringify(pref).slice(0, 500));
+        const fallbackUrl = prefRes.ok ? pref.sandbox_init_point || pref.init_point || null : null;
+        if (fallbackUrl) {
+          await admin.from("payment_intents").insert({
+            tipo,
+            referencia_id: referenciaId,
+            user_id: userId,
+            supplier_id: supplierId,
+            valor,
+            metodo: "preference_sandbox_fallback",
+            status: "pendente",
+            ambiente,
+            detalhes: { preference_id: pref.id, motivo_fallback: pa?.message ?? "preapproval_falhou" },
+          });
+          return json({
+            ambiente,
+            tipo,
+            valor,
+            titulo,
+            checkout_url: fallbackUrl,
+            public_key: null,
+            mp_account: mpAccount,
+            aviso:
+              "Assinatura recorrente indisponível no ambiente de testes do Mercado Pago. Gerando cobrança única de teste para validar o fluxo.",
+          });
+        }
+      }
+
       return json(
         {
           error: "Falha ao criar assinatura no Mercado Pago",
-          detalhe: pa?.message ?? null,
+          detalhe:
+            pa?.message === "User bad request" && ambiente === "sandbox"
+              ? "O Mercado Pago recusou o par vendedor/comprador de teste (User bad request). Verifique se MP_TEST_BUYER_EMAIL é um usuário de teste COMPRADOR criado na MESMA aplicação e país (Brasil) das credenciais de teste."
+              : (pa?.message ?? null),
           causa: pa?.cause ?? null,
           ambiente,
         },
         502,
       );
     }
+
 
     // Guarda o preapproval_id na assinatura + registra intent
     await admin
