@@ -89,6 +89,8 @@ Deno.serve(async (req) => {
   return json({
     ok: true,
     acesso_ate: sub.current_period_end,
+    aviso_mp: avisoMp,
     mensagem: "Assinatura cancelada. Acesso mantido até o fim do período pago.",
+
   });
 });
