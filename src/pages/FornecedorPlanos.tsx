@@ -168,14 +168,27 @@ export default function FornecedorPlanos() {
             Escolha o plano que combina com o seu momento e turbine sua visibilidade na busca.
           </p>
           {assinatura && (
-            <Badge variant="secondary">
-              Assinatura atual: {ASSINATURA_STATUS_LABEL[assinatura.status] ?? assinatura.status}
-              {assinatura.current_period_end
-                ? ` · até ${new Date(assinatura.current_period_end).toLocaleDateString("pt-BR")}`
-                : ""}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">
+                Assinatura atual: {ASSINATURA_STATUS_LABEL[assinatura.status] ?? assinatura.status}
+                {assinatura.current_period_end
+                  ? ` · até ${new Date(assinatura.current_period_end).toLocaleDateString("pt-BR")}`
+                  : ""}
+              </Badge>
+              {assinatura.status !== "ativa" && (
+                <Button size="sm" variant="outline" onClick={verificarPagamento} disabled={processando === "sync"}>
+                  {processando === "sync" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Já paguei, verificar
+                </Button>
+              )}
+            </div>
           )}
         </header>
+
 
         {!assinaturaOn ? (
           <Card>
