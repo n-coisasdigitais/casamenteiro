@@ -117,6 +117,35 @@ export default function FornecedorPlanos() {
     setProcessando(null);
   };
 
+  const recarregarDestaques = async (sid: string) => {
+    const { data: fp } = await (supabase
+      .from("featured_purchases" as any)
+      .select("id, dias, valor, status, inicio, fim")
+      .eq("supplier_id", sid)
+      .order("created_at", { ascending: false })
+      .limit(5) as any);
+    setDestaques((fp as any[]) ?? []);
+  };
+
+  const verificarDestaque = async (destaqueId: string) => {
+    if (!supplierId) return;
+    setProcessando(`sync-destaque-${destaqueId}`);
+    const { ok, encontrado, erro } = await sincronizarDestaque(destaqueId);
+    if (ok && encontrado) {
+      await recarregarDestaques(supplierId);
+      toast({ title: "Destaque ativado!", description: "Seu perfil já aparece no topo das buscas." });
+    } else {
+      toast({
+        title: "Nenhum pagamento confirmado ainda",
+        description: erro ?? "Se você acabou de pagar, aguarde alguns minutos e tente de novo.",
+        variant: erro ? "destructive" : "default",
+      });
+    }
+    setProcessando(null);
+  };
+
+
+
   const assinar = async (plano: Plano) => {
 
     if (!supplierId) return;
