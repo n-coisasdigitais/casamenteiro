@@ -241,6 +241,14 @@ export default function FornecedorPlanos() {
           )}
         </header>
 
+        {supplierId && (
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Gerenciar minha assinatura</h2>
+            <MinhaAssinaturaCard supplierId={supplierId} />
+          </section>
+        )}
+
+
 
         {!assinaturaOn ? (
           <Card>
