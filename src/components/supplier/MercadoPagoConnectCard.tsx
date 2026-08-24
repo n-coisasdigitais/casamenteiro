@@ -42,11 +42,16 @@ export default function MercadoPagoConnectCard({ supplierId }: Props) {
     setConectando(false);
     const url = (data as any)?.url as string | undefined;
     if (error || !url) {
-      toast.error((data as any)?.error ?? "Não foi possível iniciar a conexão com o Mercado Pago.");
+      let motivo = (data as any)?.error as string | undefined;
+      // funções retornam o motivo no corpo mesmo em status de erro
+      const ctx = (error as any)?.context;
+      if (!motivo && ctx?.json) motivo = (await ctx.json().catch(() => null))?.error;
+      toast.error(motivo ?? "Não foi possível iniciar a conexão com o Mercado Pago.");
       return;
     }
     window.location.href = url;
   };
+
 
   const desconectar = async () => {
     const { error } = await supabase
