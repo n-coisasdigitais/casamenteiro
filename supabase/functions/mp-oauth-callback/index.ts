@@ -48,8 +48,8 @@ Deno.serve(async (req) => {
 
   const CLIENT_ID = Deno.env.get("MP_OAUTH_CLIENT_ID");
   const CLIENT_SECRET = Deno.env.get("MP_OAUTH_CLIENT_SECRET");
-  const REDIRECT_URI = Deno.env.get("MP_OAUTH_REDIRECT_URI");
-  if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
+  const REDIRECT_URI = redirectUriMp();
+  if (!CLIENT_ID || !CLIENT_SECRET) {
     return redirect(erroUrl("Integração do Mercado Pago não configurada."));
   }
 
