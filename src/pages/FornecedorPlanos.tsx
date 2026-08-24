@@ -385,7 +385,23 @@ export default function FornecedorPlanos() {
                         </span>
                       )}
                       <Badge variant="secondary">{DESTAQUE_STATUS_LABEL[d.status] ?? d.status}</Badge>
+                      {d.status !== "ativo" && d.status !== "expirado" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => verificarDestaque(d.id)}
+                          disabled={processando === `sync-destaque-${d.id}`}
+                        >
+                          {processando === `sync-destaque-${d.id}` ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                          )}
+                          Já paguei, verificar
+                        </Button>
+                      )}
                     </div>
+
                   </div>
                 ))}
               </CardContent>
