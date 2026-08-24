@@ -34,12 +34,21 @@ export default function FornecedorFaturas() {
   const cancelarTentativa = async (c: PaymentIntent) => {
     if (!confirm("Cancelar esta tentativa de pagamento? Ela sairá da sua lista de cobranças pendentes.")) return;
     setCancelandoId(c.id);
-    const { error } = await (supabase.from("payment_intents" as any) as any)
+    const { data, error } = await (supabase.from("payment_intents" as any) as any)
       .update({ status: "cancelled" })
-      .eq("id", c.id);
+      .eq("id", c.id)
+      .select("id");
     setCancelandoId(null);
     if (error) {
       toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
+      return;
+    }
+    if (!data || data.length === 0) {
+      toast({
+        title: "Não foi possível cancelar",
+        description: "Esta cobrança já não está mais pendente. Atualize a página.",
+        variant: "destructive",
+      });
       return;
     }
     toast({ title: "Tentativa cancelada" });
