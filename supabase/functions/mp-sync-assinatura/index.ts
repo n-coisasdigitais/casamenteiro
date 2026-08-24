@@ -24,7 +24,87 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const body = await req.json().catch(() => ({}) as any);
   const referenciaId = body?.referencia_id as string | undefined;
+  const tipo = (body?.tipo as string | undefined) ?? "assinatura";
   if (!referenciaId) return json({ error: "referencia_id ausente" }, 400);
+
+  const tokens: Array<{ ambiente: "sandbox" | "live"; token?: string }> = [
+    { ambiente: "sandbox", token: Deno.env.get("MP_ACCESS_TOKEN_TEST") },
+    { ambiente: "live", token: Deno.env.get("MP_ACCESS_TOKEN_PROD") },
+  ];
+
+  async function buscarPagamentoAprovado(externalRef: string) {
+    for (const c of tokens) {
+      if (!c.token) continue;
+      try {
+        const r = await fetch(
+          `https://api.mercadopago.com/v1/payments/search?external_reference=${encodeURIComponent(externalRef)}&sort=date_created&criteria=desc&limit=10`,
+          { headers: { Authorization: `Bearer ${c.token}` } },
+        );
+        const j = await r.json().catch(() => ({}) as any);
+        const aprovado = (j?.results ?? []).find((p: any) => p?.status === "approved");
+        if (aprovado) return { ambiente: c.ambiente, paymentId: String(aprovado.id) };
+      } catch (_e) {
+        /* segue */
+      }
+    }
+    return null;
+  }
+
+  // ---------- DESTAQUE ----------
+  if (tipo === "destaque") {
+    const { data: destaque } = await admin
+      .from("featured_purchases")
+      .select("*, supplier:suppliers(id, user_id)")
+      .eq("id", referenciaId)
+      .maybeSingle();
+    if (!destaque) return json({ error: "Compra de destaque não encontrada" }, 404);
+
+    const { data: ehAdminD } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if ((destaque as any).supplier?.user_id !== userId && ehAdminD !== true)
+      return json({ error: "Não autorizado" }, 403);
+
+    if (destaque.status === "ativo") return json({ ok: true, encontrado: true, ja_ativo: true });
+
+    const achado = await buscarPagamentoAprovado(`destaque:${referenciaId}`);
+    if (!achado) return json({ ok: false, encontrado: false });
+
+    const inicio = new Date();
+    const fim = new Date(inicio.getTime() + Number(destaque.dias || 7) * 24 * 60 * 60 * 1000);
+
+    await admin
+      .from("featured_purchases")
+      .update({
+        status: "ativo",
+        ambiente: achado.ambiente,
+        mp_payment_id: achado.paymentId,
+        inicio: inicio.toISOString(),
+        fim: fim.toISOString(),
+      })
+      .eq("id", destaque.id);
+
+    await admin
+      .from("suppliers")
+      .update({ featured: true, featured_until: fim.toISOString() })
+      .eq("id", destaque.supplier_id);
+
+    const { data: intentD } = await admin
+      .from("payment_intents")
+      .select("id")
+      .eq("tipo", "destaque")
+      .eq("referencia_id", referenciaId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (intentD) {
+      await admin
+        .from("payment_intents")
+        .update({ status: "pago", ambiente: achado.ambiente, mp_payment_id: achado.paymentId })
+        .eq("id", intentD.id);
+    }
+
+    return json({ ok: true, encontrado: true, ambiente: achado.ambiente, ate: fim.toISOString() });
+  }
+
 
   const { data: assinatura } = await admin
     .from("supplier_subscriptions")

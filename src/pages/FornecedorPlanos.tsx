@@ -17,6 +17,8 @@ import {
   assinaturaAtual,
   criarAssinatura,
   sincronizarAssinatura,
+  sincronizarDestaque,
+
 
   criarCompraDestaque,
   ASSINATURA_STATUS_LABEL,
@@ -28,6 +30,7 @@ import {
   type PacoteDestaque,
 } from "@/lib/monetizacao";
 import CupomInput from "@/components/plan/CupomInput";
+import MinhaAssinaturaCard from "@/components/plan/MinhaAssinaturaCard";
 import {
   BENEFICIO_ORIGEM_LABEL,
   beneficiosPendentes,
@@ -113,6 +116,35 @@ export default function FornecedorPlanos() {
     }
     setProcessando(null);
   };
+
+  const recarregarDestaques = async (sid: string) => {
+    const { data: fp } = await (supabase
+      .from("featured_purchases" as any)
+      .select("id, dias, valor, status, inicio, fim")
+      .eq("supplier_id", sid)
+      .order("created_at", { ascending: false })
+      .limit(5) as any);
+    setDestaques((fp as any[]) ?? []);
+  };
+
+  const verificarDestaque = async (destaqueId: string) => {
+    if (!supplierId) return;
+    setProcessando(`sync-destaque-${destaqueId}`);
+    const { ok, encontrado, erro } = await sincronizarDestaque(destaqueId);
+    if (ok && encontrado) {
+      await recarregarDestaques(supplierId);
+      toast({ title: "Destaque ativado!", description: "Seu perfil já aparece no topo das buscas." });
+    } else {
+      toast({
+        title: "Nenhum pagamento confirmado ainda",
+        description: erro ?? "Se você acabou de pagar, aguarde alguns minutos e tente de novo.",
+        variant: erro ? "destructive" : "default",
+      });
+    }
+    setProcessando(null);
+  };
+
+
 
   const assinar = async (plano: Plano) => {
 
@@ -208,6 +240,14 @@ export default function FornecedorPlanos() {
             </div>
           )}
         </header>
+
+        {supplierId && (
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Gerenciar minha assinatura</h2>
+            <MinhaAssinaturaCard supplierId={supplierId} />
+          </section>
+        )}
+
 
 
         {!assinaturaOn ? (
@@ -353,7 +393,23 @@ export default function FornecedorPlanos() {
                         </span>
                       )}
                       <Badge variant="secondary">{DESTAQUE_STATUS_LABEL[d.status] ?? d.status}</Badge>
+                      {d.status !== "ativo" && d.status !== "expirado" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => verificarDestaque(d.id)}
+                          disabled={processando === `sync-destaque-${d.id}`}
+                        >
+                          {processando === `sync-destaque-${d.id}` ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                          )}
+                          Já paguei, verificar
+                        </Button>
+                      )}
                     </div>
+
                   </div>
                 ))}
               </CardContent>

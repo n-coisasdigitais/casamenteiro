@@ -219,14 +219,21 @@ export type CheckoutResposta = {
   mp_account?: { id?: string | number | null; nickname?: string | null; is_test?: boolean } | null;
 };
 
-/** Reconciliação manual: procura o pagamento no Mercado Pago e ativa a assinatura. */
-export async function sincronizarAssinatura(referenciaId: string) {
+/** Reconciliação manual: procura o pagamento no Mercado Pago e ativa a assinatura/destaque. */
+export async function sincronizarAssinatura(
+  referenciaId: string,
+  tipo: "assinatura" | "destaque" = "assinatura",
+) {
   const { data, error } = await supabase.functions.invoke("mp-sync-assinatura", {
-    body: { referencia_id: referenciaId },
+    body: { referencia_id: referenciaId, tipo },
   });
   if (error) return { ok: false, encontrado: false, erro: error.message };
   return { ok: !!(data as any)?.ok, encontrado: !!(data as any)?.encontrado, erro: null as string | null };
 }
+
+/** Atalho para destaques pendentes. */
+export const sincronizarDestaque = (referenciaId: string) => sincronizarAssinatura(referenciaId, "destaque");
+
 
 
 export async function iniciarCheckout(
