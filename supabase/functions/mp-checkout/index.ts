@@ -341,7 +341,11 @@ Deno.serve(async (req) => {
             metodo: "preference_sandbox_fallback",
             status: "pendente",
             ambiente,
-            detalhes: { preference_id: pref.id, motivo_fallback: pa?.message ?? "preapproval_falhou" },
+            detalhes: {
+              preference_id: pref.id,
+              motivo_fallback: pa?.message ?? "preapproval_falhou",
+              link_usado: pref.init_point ? "init_point" : "sandbox_init_point",
+            },
           });
           return json({
             ambiente,
