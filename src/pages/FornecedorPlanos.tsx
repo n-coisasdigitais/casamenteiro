@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import SEO from "@/components/SEO";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
@@ -16,6 +16,8 @@ import {
   listarPlanos,
   assinaturaAtual,
   criarAssinatura,
+  sincronizarAssinatura,
+
   criarCompraDestaque,
   ASSINATURA_STATUS_LABEL,
   DESTAQUE_STATUS_LABEL,
@@ -95,7 +97,25 @@ export default function FornecedorPlanos() {
     })();
   }, [user, navigate]);
 
+  const verificarPagamento = async () => {
+    if (!supplierId || !assinatura) return;
+    setProcessando("sync");
+    const { ok, encontrado, erro } = await sincronizarAssinatura(assinatura.id);
+    if (ok && encontrado) {
+      setAssinatura(await assinaturaAtual(supplierId));
+      toast({ title: "Assinatura ativada!", description: "Encontramos seu pagamento e liberamos o plano." });
+    } else {
+      toast({
+        title: "Nenhum pagamento confirmado ainda",
+        description: erro ?? "Se você acabou de pagar, aguarde alguns minutos e tente de novo.",
+        variant: erro ? "destructive" : "default",
+      });
+    }
+    setProcessando(null);
+  };
+
   const assinar = async (plano: Plano) => {
+
     if (!supplierId) return;
     setProcessando(plano.id);
     const { id, erro, ativadaDireto, trocaDireta } = await criarAssinatura({ supplierId, plano, ciclo });
@@ -168,14 +188,27 @@ export default function FornecedorPlanos() {
             Escolha o plano que combina com o seu momento e turbine sua visibilidade na busca.
           </p>
           {assinatura && (
-            <Badge variant="secondary">
-              Assinatura atual: {ASSINATURA_STATUS_LABEL[assinatura.status] ?? assinatura.status}
-              {assinatura.current_period_end
-                ? ` · até ${new Date(assinatura.current_period_end).toLocaleDateString("pt-BR")}`
-                : ""}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">
+                Assinatura atual: {ASSINATURA_STATUS_LABEL[assinatura.status] ?? assinatura.status}
+                {assinatura.current_period_end
+                  ? ` · até ${new Date(assinatura.current_period_end).toLocaleDateString("pt-BR")}`
+                  : ""}
+              </Badge>
+              {assinatura.status !== "ativa" && (
+                <Button size="sm" variant="outline" onClick={verificarPagamento} disabled={processando === "sync"}>
+                  {processando === "sync" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Já paguei, verificar
+                </Button>
+              )}
+            </div>
           )}
         </header>
+
 
         {!assinaturaOn ? (
           <Card>

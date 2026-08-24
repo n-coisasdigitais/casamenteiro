@@ -219,6 +219,16 @@ export type CheckoutResposta = {
   mp_account?: { id?: string | number | null; nickname?: string | null; is_test?: boolean } | null;
 };
 
+/** Reconciliação manual: procura o pagamento no Mercado Pago e ativa a assinatura. */
+export async function sincronizarAssinatura(referenciaId: string) {
+  const { data, error } = await supabase.functions.invoke("mp-sync-assinatura", {
+    body: { referencia_id: referenciaId },
+  });
+  if (error) return { ok: false, encontrado: false, erro: error.message };
+  return { ok: !!(data as any)?.ok, encontrado: !!(data as any)?.encontrado, erro: null as string | null };
+}
+
+
 export async function iniciarCheckout(
   tipo: "reserva" | "assinatura" | "destaque" | "cancelamento",
   referenciaId: string,

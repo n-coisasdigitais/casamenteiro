@@ -74,16 +74,54 @@ Deno.serve(async (req) => {
 
   let ambiente: "sandbox" | "live" | null = null;
   let accessToken: string | undefined;
+  let assinaturaValida = false;
   if (ts && v1) {
-    const manifest = `id:${paymentId};request-id:${xRequestId};ts:${ts};`;
+    const url = new URL(req.url);
+    const idQuery = url.searchParams.get("data.id") ?? url.searchParams.get("id") ?? String(paymentId);
+    const ids = [...new Set([String(paymentId), String(paymentId).toLowerCase(), idQuery, idQuery.toLowerCase()])];
+    const manifests = ids.flatMap((id) => [
+      `id:${id};request-id:${xRequestId};ts:${ts};`,
+      `id:${id};ts:${ts};`,
+    ]);
     for (const c of candidatos) {
       if (!c.secret) continue;
-      if ((await hmacHex(c.secret, manifest)) === v1) {
-        ambiente = c.ambiente;
-        accessToken = c.token;
-        break;
+      for (const manifest of manifests) {
+        if ((await hmacHex(c.secret, manifest)) === v1) {
+          ambiente = c.ambiente;
+          accessToken = c.token;
+          assinaturaValida = true;
+          break;
+        }
+      }
+      if (ambiente) break;
+    }
+  }
+
+  // Fallback de autenticidade: se a assinatura não bater (secret ausente/desatualizado no MP),
+  // confirmamos o evento consultando o próprio Mercado Pago com cada credencial.
+  // Só seguimos se o recurso existir de fato na conta — evita processar eventos forjados.
+  if (!ambiente) {
+    const evt = String(payload?.type ?? payload?.topic ?? "");
+    const recurso =
+      evt === "subscription_preapproval" || evt === "preapproval"
+        ? `https://api.mercadopago.com/preapproval/${paymentId}`
+        : evt === "subscription_authorized_payment"
+          ? `https://api.mercadopago.com/authorized_payments/${paymentId}`
+          : `https://api.mercadopago.com/v1/payments/${paymentId}`;
+    for (const c of candidatos) {
+      if (!c.token) continue;
+      try {
+        const r = await fetch(recurso, { headers: { Authorization: `Bearer ${c.token}` } });
+        if (r.ok) {
+          ambiente = c.ambiente;
+          accessToken = c.token;
+          break;
+        }
+      } catch (_e) {
+        /* tenta a próxima credencial */
       }
     }
+    if (ambiente) console.warn("Webhook sem assinatura válida — validado via API do Mercado Pago", ambiente);
   }
 
   if (!ambiente) {
@@ -92,7 +130,8 @@ Deno.serve(async (req) => {
     return json({ error: "assinatura inválida" }, 401);
   }
   registro.ambiente = ambiente;
-  registro.assinatura_valida = true;
+  registro.assinatura_valida = assinaturaValida;
+
   if (!accessToken) {
     await registrar({ resultado: "token_ausente", erro: `access token ausente para ambiente ${ambiente}` }, 503);
     return json({ error: `access token ausente para ambiente ${ambiente}` }, 503);
