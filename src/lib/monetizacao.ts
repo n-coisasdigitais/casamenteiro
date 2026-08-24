@@ -215,6 +215,7 @@ export type CheckoutResposta = {
   preference_id: string;
   checkout_url: string;
   public_key: string | null;
+  aviso?: string | null;
   mp_account?: { id?: string | number | null; nickname?: string | null; is_test?: boolean } | null;
 };
 
@@ -229,7 +230,15 @@ export async function iniciarCheckout(
     let detalhe = error.message;
     try {
       const ctx = (error as any)?.context;
-      if (ctx?.text) detalhe = await ctx.text();
+      if (ctx?.text) {
+        const bruto = await ctx.text();
+        try {
+          const j = JSON.parse(bruto);
+          detalhe = [j?.error, j?.detalhe].filter(Boolean).join(" — ") || bruto;
+        } catch {
+          detalhe = bruto;
+        }
+      }
     } catch {
       /* ignora */
     }
@@ -237,3 +246,4 @@ export async function iniciarCheckout(
   }
   return { data: data as CheckoutResposta, erro: null as string | null };
 }
+
