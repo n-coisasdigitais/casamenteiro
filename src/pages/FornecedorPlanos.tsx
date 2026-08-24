@@ -17,6 +17,8 @@ import {
   assinaturaAtual,
   criarAssinatura,
   sincronizarAssinatura,
+  sincronizarDestaque,
+
 
   criarCompraDestaque,
   ASSINATURA_STATUS_LABEL,
