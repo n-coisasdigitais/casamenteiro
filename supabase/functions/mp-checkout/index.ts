@@ -328,7 +328,9 @@ Deno.serve(async (req) => {
         });
         const pref = await prefRes.json().catch(() => ({}));
         console.log("DIAG fallback preference:", prefRes.status, JSON.stringify(pref).slice(0, 500));
-        const fallbackUrl = prefRes.ok ? pref.sandbox_init_point || pref.init_point || null : null;
+        // Sempre preferimos init_point: o domínio sandbox.mercadopago.com.br entra em
+        // loop de login (ERR_TOO_MANY_REDIRECTS) quando há sessão de conta real no navegador.
+        const fallbackUrl = prefRes.ok ? pref.init_point || pref.sandbox_init_point || null : null;
         if (fallbackUrl) {
           await admin.from("payment_intents").insert({
             tipo,
@@ -339,7 +341,11 @@ Deno.serve(async (req) => {
             metodo: "preference_sandbox_fallback",
             status: "pendente",
             ambiente,
-            detalhes: { preference_id: pref.id, motivo_fallback: pa?.message ?? "preapproval_falhou" },
+            detalhes: {
+              preference_id: pref.id,
+              motivo_fallback: pa?.message ?? "preapproval_falhou",
+              link_usado: pref.init_point ? "init_point" : "sandbox_init_point",
+            },
           });
           return json({
             ambiente,
@@ -385,15 +391,16 @@ Deno.serve(async (req) => {
       metodo: "preapproval",
       status: "pendente",
       ambiente,
-      detalhes: { preapproval_id: pa.id },
+      detalhes: {
+        preapproval_id: pa.id,
+        link_usado: pa.init_point ? "init_point" : "sandbox_init_point",
+      },
     });
 
-    // No sandbox o link vem em sandbox_init_point; em produção, em init_point.
-    // Tratamos string vazia como ausente (não só null).
-    const initPoint =
-      ambiente === "sandbox"
-        ? pa.sandbox_init_point || pa.init_point || null
-        : pa.init_point || pa.sandbox_init_point || null;
+    // Sempre init_point: o domínio sandbox.mercadopago.com.br entra em loop de login
+    // (ERR_TOO_MANY_REDIRECTS) quando o navegador já tem sessão de uma conta MP real.
+    // Com credenciais de teste, o init_point normal já abre em ambiente de teste.
+    const initPoint = pa.init_point || pa.sandbox_init_point || null;
     if (!initPoint) {
       console.error("Preapproval criado mas sem init_point:", JSON.stringify(pa));
       return json(
@@ -485,7 +492,10 @@ Deno.serve(async (req) => {
     metodo: "checkout_pro",
     status: "pendente",
     ambiente,
-    detalhes: { preference_id: pref.id },
+    detalhes: {
+      preference_id: pref.id,
+      link_usado: pref.init_point ? "init_point" : "sandbox_init_point",
+    },
   });
 
   if (tipo === "reserva" && comissao > 0) {
@@ -495,7 +505,8 @@ Deno.serve(async (req) => {
       .eq("id", referenciaId);
   }
 
-  const checkoutUrl = ambiente === "sandbox" ? pref.sandbox_init_point || pref.init_point : pref.init_point;
+  // init_point sempre: o domínio de sandbox causa loop de redirecionamento no navegador.
+  const checkoutUrl = pref.init_point || pref.sandbox_init_point;
 
   return json({
     ambiente,

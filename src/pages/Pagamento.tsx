@@ -168,6 +168,11 @@ export default function Pagamento() {
                   <strong>usuário comprador de teste</strong> (criado no painel de desenvolvedor do Mercado Pago) e use
                   um <strong>cartão de teste</strong>. Sua conta real do Mercado Pago não consegue pagar esta cobrança.
                 </p>
+                <p>
+                  Abra o checkout em uma <strong>janela anônima</strong>. Se o navegador já estiver logado na sua conta
+                  real do Mercado Pago, a página de teste entra em loop de login
+                  (<em>ERR_TOO_MANY_REDIRECTS</em>).
+                </p>
               </div>
             )}
 
