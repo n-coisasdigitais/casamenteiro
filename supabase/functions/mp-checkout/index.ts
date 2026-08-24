@@ -492,7 +492,10 @@ Deno.serve(async (req) => {
     metodo: "checkout_pro",
     status: "pendente",
     ambiente,
-    detalhes: { preference_id: pref.id },
+    detalhes: {
+      preference_id: pref.id,
+      link_usado: pref.init_point ? "init_point" : "sandbox_init_point",
+    },
   });
 
   if (tipo === "reserva" && comissao > 0) {
