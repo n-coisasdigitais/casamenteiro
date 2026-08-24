@@ -505,7 +505,8 @@ Deno.serve(async (req) => {
       .eq("id", referenciaId);
   }
 
-  const checkoutUrl = ambiente === "sandbox" ? pref.sandbox_init_point || pref.init_point : pref.init_point;
+  // init_point sempre: o domínio de sandbox causa loop de redirecionamento no navegador.
+  const checkoutUrl = pref.init_point || pref.sandbox_init_point;
 
   return json({
     ambiente,
