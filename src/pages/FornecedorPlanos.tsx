@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import SEO from "@/components/SEO";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
