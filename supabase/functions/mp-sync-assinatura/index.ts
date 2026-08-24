@@ -33,10 +33,10 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!assinatura) return json({ error: "Assinatura não encontrada" }, 404);
 
-  const { data: ehAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" }).maybeSingle?.() ?? {
-    data: null,
-  };
-  if ((assinatura as any).supplier?.user_id !== userId && !ehAdmin) return json({ error: "Não autorizado" }, 403);
+  const { data: ehAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+  if ((assinatura as any).supplier?.user_id !== userId && ehAdmin !== true)
+    return json({ error: "Não autorizado" }, 403);
+
 
   const credenciais: Array<{ ambiente: "sandbox" | "live"; token?: string }> = [
     { ambiente: "sandbox", token: Deno.env.get("MP_ACCESS_TOKEN_TEST") },
