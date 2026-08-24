@@ -30,6 +30,7 @@ import {
   type PacoteDestaque,
 } from "@/lib/monetizacao";
 import CupomInput from "@/components/plan/CupomInput";
+import MinhaAssinaturaCard from "@/components/plan/MinhaAssinaturaCard";
 import {
   BENEFICIO_ORIGEM_LABEL,
   beneficiosPendentes,
