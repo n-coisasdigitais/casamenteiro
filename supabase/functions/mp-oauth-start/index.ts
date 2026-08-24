@@ -1,6 +1,7 @@
 // Inicia o vínculo OAuth da conta Mercado Pago do fornecedor (necessário para o split de corretagem).
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { redirectUriMp } from "../_shared/mp-redirect.ts";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -30,10 +31,10 @@ Deno.serve(async (req) => {
   if (!flag?.enabled) return json({ error: "Funcionalidade não liberada" }, 403);
 
   const CLIENT_ID = Deno.env.get("MP_OAUTH_CLIENT_ID");
-  const REDIRECT_URI = Deno.env.get("MP_OAUTH_REDIRECT_URI");
-  if (!CLIENT_ID || !REDIRECT_URI) {
+  const REDIRECT_URI = redirectUriMp();
+  if (!CLIENT_ID) {
     return json(
-      { error: "Integração do Mercado Pago não configurada (MP_OAUTH_CLIENT_ID / MP_OAUTH_REDIRECT_URI)." },
+      { error: "Integração do Mercado Pago não configurada (MP_OAUTH_CLIENT_ID)." },
       503,
     );
   }

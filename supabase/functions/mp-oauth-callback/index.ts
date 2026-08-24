@@ -2,6 +2,7 @@
 // Pública (o Mercado Pago redireciona o navegador do fornecedor para cá).
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { redirectUriMp } from "../_shared/mp-redirect.ts";
 
 const BASE_PUBLICA = "https://www.casamenteiro.com.br";
 
@@ -47,8 +48,8 @@ Deno.serve(async (req) => {
 
   const CLIENT_ID = Deno.env.get("MP_OAUTH_CLIENT_ID");
   const CLIENT_SECRET = Deno.env.get("MP_OAUTH_CLIENT_SECRET");
-  const REDIRECT_URI = Deno.env.get("MP_OAUTH_REDIRECT_URI");
-  if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
+  const REDIRECT_URI = redirectUriMp();
+  if (!CLIENT_ID || !CLIENT_SECRET) {
     return redirect(erroUrl("Integração do Mercado Pago não configurada."));
   }
 

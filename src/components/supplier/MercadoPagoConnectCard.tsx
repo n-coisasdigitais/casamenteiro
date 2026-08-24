@@ -42,11 +42,16 @@ export default function MercadoPagoConnectCard({ supplierId }: Props) {
     setConectando(false);
     const url = (data as any)?.url as string | undefined;
     if (error || !url) {
-      toast.error((data as any)?.error ?? "Não foi possível iniciar a conexão com o Mercado Pago.");
+      let motivo = (data as any)?.error as string | undefined;
+      // funções retornam o motivo no corpo mesmo em status de erro
+      const ctx = (error as any)?.context;
+      if (!motivo && ctx?.json) motivo = (await ctx.json().catch(() => null))?.error;
+      toast.error(motivo ?? "Não foi possível iniciar a conexão com o Mercado Pago.");
       return;
     }
     window.location.href = url;
   };
+
 
   const desconectar = async () => {
     const { error } = await supabase
@@ -92,17 +97,33 @@ export default function MercadoPagoConnectCard({ supplierId }: Props) {
             </Button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p className="text-sm">
               Conecte seu Mercado Pago para receber pagamentos de reservas vendidas pela plataforma.
             </p>
-            <Button onClick={conectar} disabled={conectando}>
-              {conectando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Conectar Mercado Pago
-            </Button>
+            <ol className="text-xs text-muted-foreground list-decimal pl-4 space-y-1">
+              <li>Tenha (ou crie) uma conta Mercado Pago com seus dados de recebimento.</li>
+              <li>Clique em "Conectar Mercado Pago" e autorize o Casamenteiro.</li>
+              <li>Pronto: os valores das reservas caem direto na sua conta.</li>
+            </ol>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={conectar} disabled={conectando}>
+                {conectando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Conectar Mercado Pago
+              </Button>
+              <a
+                href="https://www.mercadopago.com.br/registration-widget"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm underline text-muted-foreground hover:text-foreground"
+              >
+                Ainda não tenho conta — criar no Mercado Pago
+              </a>
+            </div>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
+
