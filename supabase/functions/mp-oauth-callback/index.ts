@@ -2,6 +2,7 @@
 // Pública (o Mercado Pago redireciona o navegador do fornecedor para cá).
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { redirectUriMp } from "../_shared/mp-redirect.ts";
 
 const BASE_PUBLICA = "https://www.casamenteiro.com.br";
 
