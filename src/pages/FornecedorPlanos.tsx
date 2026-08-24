@@ -16,6 +16,8 @@ import {
   listarPlanos,
   assinaturaAtual,
   criarAssinatura,
+  sincronizarAssinatura,
+
   criarCompraDestaque,
   ASSINATURA_STATUS_LABEL,
   DESTAQUE_STATUS_LABEL,
