@@ -328,7 +328,9 @@ Deno.serve(async (req) => {
         });
         const pref = await prefRes.json().catch(() => ({}));
         console.log("DIAG fallback preference:", prefRes.status, JSON.stringify(pref).slice(0, 500));
-        const fallbackUrl = prefRes.ok ? pref.sandbox_init_point || pref.init_point || null : null;
+        // Sempre preferimos init_point: o domínio sandbox.mercadopago.com.br entra em
+        // loop de login (ERR_TOO_MANY_REDIRECTS) quando há sessão de conta real no navegador.
+        const fallbackUrl = prefRes.ok ? pref.init_point || pref.sandbox_init_point || null : null;
         if (fallbackUrl) {
           await admin.from("payment_intents").insert({
             tipo,
