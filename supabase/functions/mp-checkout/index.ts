@@ -391,15 +391,16 @@ Deno.serve(async (req) => {
       metodo: "preapproval",
       status: "pendente",
       ambiente,
-      detalhes: { preapproval_id: pa.id },
+      detalhes: {
+        preapproval_id: pa.id,
+        link_usado: pa.init_point ? "init_point" : "sandbox_init_point",
+      },
     });
 
-    // No sandbox o link vem em sandbox_init_point; em produção, em init_point.
-    // Tratamos string vazia como ausente (não só null).
-    const initPoint =
-      ambiente === "sandbox"
-        ? pa.sandbox_init_point || pa.init_point || null
-        : pa.init_point || pa.sandbox_init_point || null;
+    // Sempre init_point: o domínio sandbox.mercadopago.com.br entra em loop de login
+    // (ERR_TOO_MANY_REDIRECTS) quando o navegador já tem sessão de uma conta MP real.
+    // Com credenciais de teste, o init_point normal já abre em ambiente de teste.
+    const initPoint = pa.init_point || pa.sandbox_init_point || null;
     if (!initPoint) {
       console.error("Preapproval criado mas sem init_point:", JSON.stringify(pa));
       return json(
