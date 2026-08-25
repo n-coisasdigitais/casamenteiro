@@ -449,17 +449,26 @@ Deno.serve(async (req) => {
         ? "/fornecedor/painel?tab=reservas"
         : "/fornecedor/planos";
 
+  // Em SANDBOX: vincula a cobrança a um comprador de teste e exclui saldo em conta
+  // (as contas de teste normalmente não têm saldo), permitindo pagar com cartão de teste
+  // sem precisar logar na conta real do Mercado Pago.
+  const testBuyerEmail = ambiente === "sandbox" ? (Deno.env.get("MP_TEST_BUYER_EMAIL") ?? null) : null;
+
   const prefRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
     headers: {
       // Corretagem: collector = fornecedor (token dele). Demais fluxos: conta da plataforma.
       Authorization: `Bearer ${collectorToken ?? accessToken}`,
       "Content-Type": "application/json",
-      "X-Idempotency-Key": `${tipo}-${referenciaId}`,
+      "X-Idempotency-Key": `${tipo}-${referenciaId}-${Date.now()}`,
     },
     body: JSON.stringify({
       items: [{ id: referenciaId, title: titulo, quantity: 1, currency_id: "BRL", unit_price: valor }],
       ...(comissao > 0 ? { marketplace_fee: comissao } : {}),
+      ...(testBuyerEmail ? { payer: { email: testBuyerEmail } } : {}),
+      ...(ambiente === "sandbox"
+        ? { payment_methods: { excluded_payment_types: [{ id: "account_money" }] } }
+        : {}),
       external_reference: externalReference,
       back_urls: (() => {
         const sep = retorno.includes("?") ? "&" : "?";
