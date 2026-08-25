@@ -49,3 +49,11 @@ export async function cancelarReserva(reservationId: string, motivo?: string) {
   if (error) return { erro: error.message, resultado: null as any };
   return { erro: null as string | null, resultado: data as { com_custo: boolean; taxa: number; carencia_dias: number } };
 }
+export async function cancelarReservaFornecedor(reservationId: string, motivo?: string) {
+  const { data, error } = await (supabase.rpc as any)("cancelar_reserva_fornecedor", {
+    _reservation_id: reservationId,
+    _motivo: motivo ?? null,
+  });
+  if (error) return { erro: error.message as string, resultado: null as any };
+  return { erro: null as string | null, resultado: data as { com_custo: boolean; taxa: number; carencia_dias: number } };
+}
