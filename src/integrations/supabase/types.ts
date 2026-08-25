@@ -5129,6 +5129,10 @@ export type Database = {
         Args: { _motivo?: string; _reservation_id: string }
         Returns: Json
       }
+      cancelar_reserva_fornecedor: {
+        Args: { _motivo?: string; _reservation_id: string }
+        Returns: Json
+      }
       cidades_disponiveis: {
         Args: { _prefix: string }
         Returns: {
