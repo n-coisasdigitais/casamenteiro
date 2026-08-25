@@ -531,6 +531,8 @@ Deno.serve(async (req) => {
     titulo,
     preference_id: pref.id,
     checkout_url: checkoutUrl,
+    checkout_url_sandbox: checkoutUrlSandbox,
+
     public_key: publicKey ?? null,
     mp_account: mpAccount,
   });
