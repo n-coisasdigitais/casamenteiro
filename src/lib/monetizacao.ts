@@ -214,6 +214,8 @@ export type CheckoutResposta = {
   titulo: string;
   preference_id: string;
   checkout_url: string;
+  checkout_url_sandbox?: string | null;
+
   public_key: string | null;
   aviso?: string | null;
   mp_account?: { id?: string | number | null; nickname?: string | null; is_test?: boolean } | null;
