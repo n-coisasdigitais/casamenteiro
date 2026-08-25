@@ -1,33 +1,38 @@
-# Pagamento da reserva de R$ 7.360 em sandbox
+# Corrigir Checkout Pro da reserva em sandbox
 
-## O que aconteceu
+## Diagnóstico confirmado
 
-A reserva de 08/10/2026 (Studio Flor de Liz) foi criada em modo **corretagem**, com:
+A configuração das contas agora está correta:
 
-- piso do fornecedor: R$ 6.400
-- comissão da plataforma: R$ 960
-- total ao casal: R$ 7.360
-- ambiente gravado: **sandbox**
+- fornecedor reconectado como vendedor de teste, conta MP `3589887094`;
+- a nova preferência `3589887094-f3825e75-b9ca-44b9-b4bf-22f19490e5f3` foi criada pelo vendedor correto;
+- reserva de R$ 7.360 registrada como `sandbox`;
+- pagamento acessado pelo comprador de teste diferente do vendedor.
 
-Como o casal usado é um usuário demo, a preferência foi criada com as **credenciais de teste** (`MP_ACCESS_TOKEN_TEST`) e com split para a conta do fornecedor (collector `3589887092`).
+O erro restante está na seleção do link devolvido pelo Mercado Pago. Hoje `mp-checkout` escolhe sempre `pref.init_point` antes de `pref.sandbox_init_point`, inclusive quando a reserva está em sandbox. O token do novo redirecionamento confirma o efeito: `sandbox: false`.
 
-O link de checkout, porém, foi aberto em uma sessão de **conta real** do Mercado Pago: o token do URL de erro traz `sandbox: false` e o desafio `EMAIL_VALIDATION` da conta real (`sub 3589881038`). Pagar uma cobrança de vendedor de teste com conta real é bloqueado pelo Mercado Pago, e o retorno genérico é justamente "Ops, tente novamente". O código de e-mail copiado do painel de developers não se aplica a esse desafio.
+A tentativa anterior de usar `init_point` contornava um loop causado por sessão de conta real. Agora que vendedor e comprador de teste estão corretamente separados e o checkout é aberto em janela anônima, devemos voltar ao link próprio de sandbox.
 
-## Como testar corretamente (sem mudanças de código)
+## Implementação
 
-1. Confirmar no painel de developers do Mercado Pago que existe um **usuário de teste COMPRADOR**, criado na mesma aplicação e país (Brasil) das credenciais de teste — é o e-mail já guardado em `MP_TEST_BUYER_EMAIL`.
-2. Verificar que a conta conectada do fornecedor (`3589887092`) também é um **usuário de teste VENDEDOR** da mesma aplicação. Se ela for uma conta real, o split de teste nunca vai concluir: nesse caso o fornecedor demo precisa reconectar o Mercado Pago logado no usuário de teste vendedor.
-3. Abrir o link de pagamento em **janela anônima**, sem nenhuma sessão do Mercado Pago ativa.
-4. Entrar com as credenciais do **comprador de teste** (usuário e senha gerados no painel), nunca com a conta pessoal.
-5. Pagar com **cartão de teste**, por exemplo: Mastercard 5031 4332 1540 6351, CVV 123, validade 11/30, titular `APRO`, CPF 12345678909.
-6. Após aprovar, acompanhar a reserva em "Minhas reservas": o webhook deve mudar `mp_status` para aprovado e a reserva para confirmada. Se demorar, usar o botão de verificação manual de pagamento.
+1. Em `mp-checkout`, selecionar o link por ambiente:
+   - sandbox: `sandbox_init_point`, com fallback para `init_point` somente se o MP não devolver o link de teste;
+   - produção: somente `init_point`.
+2. Corrigir o campo de auditoria `link_usado` em `payment_intents` para registrar o link realmente selecionado.
+3. Manter inalterados o split, o valor (R$ 6.400 ao fornecedor + R$ 960 de comissão), o comprador configurado e o webhook.
+4. Publicar novamente apenas a função `mp-checkout`.
 
-## Pontos de atenção
+## Validação
 
-- Comprador e vendedor precisam ser usuários de teste **diferentes** e da **mesma aplicação**; o mesmo usuário não pode pagar a si mesmo.
-- Contas de teste costumam não ter saldo em conta; usar sempre cartão de teste.
-- Enquanto o ambiente da reserva for `sandbox`, nenhum valor real é movimentado — o R$ 7.360 não será cobrado de ninguém.
+1. Gerar uma nova preferência para a reserva, evitando reutilizar a tentativa que já nasceu com o link incorreto.
+2. Confirmar na resposta do checkout que:
+   - `ambiente = sandbox`;
+   - a URL escolhida é `sandbox_init_point`;
+   - a conta vendedora é `3589887094` e está identificada como teste.
+3. Abrir o checkout em janela anônima, entrar com o comprador de teste e usar cartão de teste.
+4. Confirmar que o pagamento deixa de cair no redirect de erro com `sandbox: false`.
+5. Verificar que o webhook aprova a reserva e atualiza o registro financeiro; se houver atraso, validar também a reconciliação manual.
 
-## Escopo
+## Produção
 
-Nenhuma alteração de código nesta etapa: você optou por não adicionar avisos ou bloqueios de ambiente na tela de pagamento por enquanto.
+O fluxo de produção continuará usando `init_point` e as credenciais reais, sem mudança de comportamento.
