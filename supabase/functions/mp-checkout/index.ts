@@ -490,17 +490,14 @@ Deno.serve(async (req) => {
     return json({ error: "Falha ao criar checkout no Mercado Pago", detalhe: pref?.message ?? null, ambiente }, 502);
   }
 
-  // O Mercado Pago devolve URLs distintas para teste e produção. Usar o
-  // init_point em uma cobrança sandbox faz o checkout reautenticar como conta
-  // real e rejeitar até usuários/cartões de teste corretamente configurados.
-  const checkoutUrl = ambiente === "sandbox"
-    ? pref.sandbox_init_point || pref.init_point || null
-    : pref.init_point || null;
-  const linkUsado = ambiente === "sandbox" && pref.sandbox_init_point
-    ? "sandbox_init_point"
-    : pref.init_point
-      ? "init_point"
-      : null;
+  // O domínio sandbox.mercadopago.com.br entra em loop de login (ERR_TOO_MANY_REDIRECTS)
+  // quando o navegador tem cookies de outra conta. Por isso o link principal é sempre
+  // o init_point (com credenciais de teste ele já abre em ambiente de teste) e o
+  // sandbox_init_point fica como alternativa opcional na tela de pagamento.
+  const checkoutUrl = pref.init_point || pref.sandbox_init_point || null;
+  const checkoutUrlSandbox = ambiente === "sandbox" ? pref.sandbox_init_point || null : null;
+  const linkUsado = pref.init_point ? "init_point" : pref.sandbox_init_point ? "sandbox_init_point" : null;
+
 
   await admin.from("payment_intents").insert({
     tipo,
