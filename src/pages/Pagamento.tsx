@@ -189,9 +189,25 @@ export default function Pagamento() {
                 >
                   Pagar com Mercado Pago
                 </Button>
+                {checkout.ambiente === "sandbox" && checkout.checkout_url_sandbox && (
+                  <p className="text-xs text-muted-foreground">
+                    Se o pagamento falhar, tente o{" "}
+                    <a
+                      className="underline"
+                      href={checkout.checkout_url_sandbox}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      link alternativo de sandbox
+                    </a>{" "}
+                    — abra sempre em janela anônima (o domínio de sandbox entra em loop de login se houver
+                    cookies de outra conta Mercado Pago).
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <ShieldCheck className="h-3 w-3" /> Você será levado ao ambiente seguro do Mercado Pago.
                 </p>
+
               </>
             ) : (
               <p className="text-sm text-destructive">
