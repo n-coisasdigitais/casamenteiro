@@ -466,9 +466,9 @@ Deno.serve(async (req) => {
       items: [{ id: referenciaId, title: titulo, quantity: 1, currency_id: "BRL", unit_price: valor }],
       ...(comissao > 0 ? { marketplace_fee: comissao } : {}),
       ...(testBuyerEmail ? { payer: { email: testBuyerEmail } } : {}),
-      ...(ambiente === "sandbox"
-        ? { payment_methods: { excluded_payment_types: [{ id: "account_money" }] } }
-        : {}),
+      // Obs.: o Mercado Pago não permite excluir "account_money" (erro
+      // "account_money cannot be excluded"), então não filtramos meios de pagamento.
+
       external_reference: externalReference,
       back_urls: (() => {
         const sep = retorno.includes("?") ? "&" : "?";
