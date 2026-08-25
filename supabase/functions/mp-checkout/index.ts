@@ -120,34 +120,40 @@ Deno.serve(async (req) => {
       }
       valor = Number(reserva.taxa_cancelamento || 0);
       titulo = `Taxa de cancelamento de reserva — ${nomeFornecedor}`;
-    } else if (reserva.modo_cobranca === "corretagem") {
-      if (!(await flagLiberada("corretagem_datas_ociosas"))) {
-        return json({ error: "Este pagamento ainda não está liberado." }, 403);
-      }
-      valor = Number(reserva.valor_ofertado || 0);
-      comissao = Number(reserva.comissao_plataforma || 0);
-      marketplaceAccount = (reserva as any).supplier?.mp_account_id ?? null;
-      titulo = `Reserva de data — ${nomeFornecedor}`;
-      if (!marketplaceAccount) return json({ error: "Fornecedor sem conta Mercado Pago vinculada" }, 400);
-      const conexao = await obterTokenFornecedor(admin, reserva.supplier_id);
-      if (conexao.erro || !conexao.accessToken) {
-        return json({ error: conexao.erro ?? "Fornecedor sem conta Mercado Pago vinculada" }, 400);
-      }
-      collectorToken = conexao.accessToken;
     } else {
-      // taxa_reserva: o fornecedor paga a taxa da plataforma (sem split)
+      // Quem está pagando? Se for o fornecedor dono da reserva, é sempre a TAXA da plataforma
+      // (nunca o valor cheio da reserva, que é pago pelo casal na corretagem).
       const { data: fornecedor } = await admin
         .from("suppliers")
         .select("user_id")
         .eq("id", reserva.supplier_id)
         .maybeSingle();
-      if (fornecedor?.user_id !== userId) {
+      const ehFornecedor = fornecedor?.user_id === userId;
+
+      if (ehFornecedor) {
+        if (reserva.taxa_status === "paga") return json({ error: "Esta taxa já foi paga." }, 400);
+        valor = Number(reserva.taxa_plataforma || 0);
+        if (valor <= 0) return json({ error: "Não há taxa pendente para esta reserva." }, 400);
+        titulo = `Taxa de reserva de data — ${new Date(reserva.promo_date + "T00:00:00").toLocaleDateString("pt-BR")}`;
+      } else if (reserva.modo_cobranca === "corretagem") {
+        if (!(await flagLiberada("corretagem_datas_ociosas"))) {
+          return json({ error: "Este pagamento ainda não está liberado." }, 403);
+        }
+        valor = Number(reserva.valor_ofertado || 0);
+        comissao = Number(reserva.comissao_plataforma || 0);
+        marketplaceAccount = (reserva as any).supplier?.mp_account_id ?? null;
+        titulo = `Reserva de data — ${nomeFornecedor}`;
+        if (!marketplaceAccount) return json({ error: "Fornecedor sem conta Mercado Pago vinculada" }, 400);
+        const conexao = await obterTokenFornecedor(admin, reserva.supplier_id);
+        if (conexao.erro || !conexao.accessToken) {
+          return json({ error: conexao.erro ?? "Fornecedor sem conta Mercado Pago vinculada" }, 400);
+        }
+        collectorToken = conexao.accessToken;
+      } else {
         return json({ error: "Apenas o fornecedor responsável pode pagar a taxa desta reserva." }, 403);
       }
-      if (reserva.taxa_status === "paga") return json({ error: "Esta taxa já foi paga." }, 400);
-      valor = Number(reserva.taxa_plataforma || 0);
-      titulo = `Taxa de reserva de data — ${new Date(reserva.promo_date + "T00:00:00").toLocaleDateString("pt-BR")}`;
     }
+
   } else if (tipo === "assinatura") {
     if (!(await flagLiberada("assinatura_fornecedor")))
       return json({ error: "Este pagamento ainda não está liberado." }, 403);
