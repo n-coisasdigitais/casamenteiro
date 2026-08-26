@@ -29,6 +29,7 @@ export default function SupplierAreaEditor({ supplierId, inline = false, onSaved
   const [usaRaio, setUsaRaio] = useState(false);
   const [raioKm, setRaioKm] = useState(50);
   const [cidadePrincipal, setCidadePrincipal] = useState<string>("");
+  const [ufPorCidade, setUfPorCidade] = useState<Record<string, string>>({});
 
   useEffect(() => {
     (async () => {
@@ -110,7 +111,8 @@ export default function SupplierAreaEditor({ supplierId, inline = false, onSaved
         <CityAutocomplete
           value={novaCidade}
           onChange={(c) => setNovaCidade(c)}
-          onSelect={(c) => {
+          onSelect={(c, uf) => {
+            if (uf) setUfPorCidade((p) => ({ ...p, [c]: uf }));
             adicionarCidade(c);
           }}
           fonte="brasil"
@@ -130,7 +132,8 @@ export default function SupplierAreaEditor({ supplierId, inline = false, onSaved
                 }}
               >
                 <MapPin className="w-3 h-3" />
-                {c}
+                {c}{ufPorCidade[c] ? ` — ${ufPorCidade[c]}` : ""}
+
                 <button
                   type="button"
                   onClick={() => removerCidade(c)}
