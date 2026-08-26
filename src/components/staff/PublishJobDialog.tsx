@@ -52,6 +52,7 @@ export default function PublishJobDialog({
     setHoraFim(job.hora_fim || "");
     setLocal(job.local || "");
     setCidade(job.cidade || "");
+    setEstado(job.estado || "");
     setValor(job.valor_turno ?? "");
     setDescricao(job.observacoes || "");
     setPub(job.is_public !== false);
@@ -64,7 +65,7 @@ export default function PublishJobDialog({
     const payload: any = {
       funcao, data,
       hora_inicio: horaIni || null, hora_fim: horaFim || null,
-      local: local || null, cidade: cidade || null,
+      local: local || null, cidade: cidade || null, estado: estado || null,
       valor_turno: Number(valor), observacoes: descricao || null,
       is_public: pub,
     };
@@ -96,7 +97,7 @@ export default function PublishJobDialog({
       supabase.functions.invoke("send-job-match-emails", { body: { job_id: novoId } }).catch(() => {});
     }
     setOpen(false);
-    setFuncao(""); setData(""); setHoraIni(""); setHoraFim(""); setLocal(""); setCidade(""); setValor(""); setDescricao("");
+    setFuncao(""); setData(""); setHoraIni(""); setHoraFim(""); setLocal(""); setCidade(""); setEstado(""); setValor(""); setDescricao("");
     onCreated?.();
   };
 
