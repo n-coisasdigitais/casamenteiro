@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FUNCOES_STAFF } from "@/lib/staff";
-import CityAutocomplete from "@/components/CityAutocomplete";
+import CityStateSelect from "@/components/CityStateSelect";
 
 export default function PublishJobDialog({
   supplierId,
@@ -39,6 +39,7 @@ export default function PublishJobDialog({
   const [horaFim, setHoraFim] = useState("");
   const [local, setLocal] = useState("");
   const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
   const [valor, setValor] = useState<number | "">("");
   const [descricao, setDescricao] = useState("");
   const [pub, setPub] = useState(true);

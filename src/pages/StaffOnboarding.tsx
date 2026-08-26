@@ -15,7 +15,7 @@ import SEO from "@/components/SEO";
 import { FUNCOES_STAFF, slugify } from "@/lib/staff";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import StaffPhotoUpload from "@/components/staff/StaffPhotoUpload";
-import CityAutocomplete from "@/components/CityAutocomplete";
+import CityStateSelect from "@/components/CityStateSelect";
 
 export default function StaffOnboarding() {
   const { user } = useAuth();
