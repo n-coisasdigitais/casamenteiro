@@ -81,6 +81,7 @@ export default function CityAutocomplete({
   fonte = "fornecedores",
   mostrarContinuarMesmoAssim = true,
   className = "",
+  uf = null,
 }: Props) {
   const [query, setQuery] = useState(value);
   const [sugestoes, setSugestoes] = useState<Sugestao[]>([]);
@@ -102,17 +103,11 @@ export default function CityAutocomplete({
       const termo = query.trim();
       if (fonte === "brasil") {
         try {
-          if (!municipiosCache) {
-            const res = await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome");
-            const data = (await res.json()) as MunicipioIbge[];
-            municipiosCache = data.map((m) => ({
-              cidade: m.nome,
-              estado: m.microrregiao?.mesorregiao?.UF?.sigla || null,
-            }));
-          }
+          const municipios = await carregarMunicipios();
           const termoNormalizado = termo.toLocaleLowerCase("pt-BR");
           setSugestoes(
-            municipiosCache
+            municipios
+              .filter((m) => (uf ? m.estado === uf : true))
               .filter((m) => m.cidade.toLocaleLowerCase("pt-BR").includes(termoNormalizado))
               .sort((a, b) => {
                 const aStart = a.cidade.toLocaleLowerCase("pt-BR").startsWith(termoNormalizado) ? 0 : 1;
@@ -124,11 +119,9 @@ export default function CityAutocomplete({
           setLoading(false);
           return;
         } catch {
-          const { data } = await supabase
-            .from("cidades_coordenadas")
-            .select("cidade, estado")
-            .ilike("cidade", `%${termo}%`)
-            .limit(20);
+          let q = supabase.from("cidades_coordenadas").select("cidade, estado").ilike("cidade", `%${termo}%`);
+          if (uf) q = q.eq("estado", uf);
+          const { data } = await q.limit(20);
           setSugestoes((data || []) as Sugestao[]);
           setLoading(false);
           return;
@@ -140,11 +133,13 @@ export default function CityAutocomplete({
       if (error) {
         setSugestoes([]);
       } else {
-        setSugestoes((data || []) as Sugestao[]);
+        const lista = (data || []) as Sugestao[];
+        setSugestoes(uf ? lista.filter((s) => s.estado === uf) : lista);
       }
     }, 250);
     return () => clearTimeout(t);
-  }, [fonte, query, touched]);
+  }, [fonte, query, touched, uf]);
+
 
   // Fecha ao clicar fora
   useEffect(() => {
