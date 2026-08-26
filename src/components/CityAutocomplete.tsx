@@ -12,9 +12,42 @@ type MunicipioIbge = {
       UF?: { sigla?: string };
     };
   };
+  "regiao-imediata"?: {
+    "regiao-intermediaria"?: {
+      UF?: { sigla?: string };
+    };
+  };
 };
 
+const CACHE_KEY = "ibge_municipios_v1";
 let municipiosCache: Sugestao[] | null = null;
+
+const ufDoMunicipio = (m: MunicipioIbge): string | null =>
+  m.microrregiao?.mesorregiao?.UF?.sigla ||
+  m["regiao-imediata"]?.["regiao-intermediaria"]?.UF?.sigla ||
+  null;
+
+async function carregarMunicipios(): Promise<Sugestao[]> {
+  if (municipiosCache) return municipiosCache;
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      municipiosCache = JSON.parse(cached) as Sugestao[];
+      if (municipiosCache?.length) return municipiosCache;
+    }
+  } catch {
+    /* ignora cache inválido */
+  }
+  const res = await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome");
+  const data = (await res.json()) as MunicipioIbge[];
+  municipiosCache = data.map((m) => ({ cidade: m.nome, estado: ufDoMunicipio(m) }));
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(municipiosCache));
+  } catch {
+    /* quota cheia: segue só com cache em memória */
+  }
+  return municipiosCache;
+}
 
 interface Props {
   value: string;
@@ -29,7 +62,10 @@ interface Props {
   fonte?: FonteCidades;
   mostrarContinuarMesmoAssim?: boolean;
   className?: string;
+  /** Quando informado, filtra as sugestões apenas para esta UF. */
+  uf?: string | null;
 }
+
 
 /**
  * Autocomplete de cidades baseado em fornecedores aprovados.
