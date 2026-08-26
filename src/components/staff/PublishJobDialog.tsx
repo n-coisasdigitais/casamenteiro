@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FUNCOES_STAFF } from "@/lib/staff";
-import CityAutocomplete from "@/components/CityAutocomplete";
+import CityStateSelect from "@/components/CityStateSelect";
 
 export default function PublishJobDialog({
   supplierId,
@@ -39,6 +39,7 @@ export default function PublishJobDialog({
   const [horaFim, setHoraFim] = useState("");
   const [local, setLocal] = useState("");
   const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
   const [valor, setValor] = useState<number | "">("");
   const [descricao, setDescricao] = useState("");
   const [pub, setPub] = useState(true);
@@ -51,6 +52,7 @@ export default function PublishJobDialog({
     setHoraFim(job.hora_fim || "");
     setLocal(job.local || "");
     setCidade(job.cidade || "");
+    setEstado(job.estado || "");
     setValor(job.valor_turno ?? "");
     setDescricao(job.observacoes || "");
     setPub(job.is_public !== false);
@@ -63,7 +65,7 @@ export default function PublishJobDialog({
     const payload: any = {
       funcao, data,
       hora_inicio: horaIni || null, hora_fim: horaFim || null,
-      local: local || null, cidade: cidade || null,
+      local: local || null, cidade: cidade || null, estado: estado || null,
       valor_turno: Number(valor), observacoes: descricao || null,
       is_public: pub,
     };
@@ -95,7 +97,7 @@ export default function PublishJobDialog({
       supabase.functions.invoke("send-job-match-emails", { body: { job_id: novoId } }).catch(() => {});
     }
     setOpen(false);
-    setFuncao(""); setData(""); setHoraIni(""); setHoraFim(""); setLocal(""); setCidade(""); setValor(""); setDescricao("");
+    setFuncao(""); setData(""); setHoraIni(""); setHoraFim(""); setLocal(""); setCidade(""); setEstado(""); setValor(""); setDescricao("");
     onCreated?.();
   };
 
@@ -117,20 +119,14 @@ export default function PublishJobDialog({
             <div><Label>Início</Label><Input type="time" value={horaIni} onChange={e => setHoraIni(e.target.value)} /></div>
             <div><Label>Fim</Label><Input type="time" value={horaFim} onChange={e => setHoraFim(e.target.value)} /></div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label>Cidade</Label>
-              <CityAutocomplete
-                fonte="brasil"
-                mostrarContinuarMesmoAssim={false}
-                value={cidade}
-                placeholder="Digite e selecione"
-                onChange={(c) => setCidade(c)}
-                onSelect={(c) => setCidade(c)}
-              />
-            </div>
-            <div><Label>Local</Label><Input value={local} onChange={e => setLocal(e.target.value)} placeholder="Ex.: Salão Aurora" /></div>
-          </div>
+          <CityStateSelect
+            cidade={cidade}
+            estado={estado}
+            onChange={(c, uf) => { setCidade(c); setEstado(uf); }}
+            placeholderCidade="Digite e selecione"
+          />
+          <div><Label>Local</Label><Input value={local} onChange={e => setLocal(e.target.value)} placeholder="Ex.: Salão Aurora" /></div>
+
           <div><Label>Valor do turno (R$)</Label><Input type="number" value={valor} onChange={e => setValor(e.target.value === "" ? "" : Number(e.target.value))} /></div>
           <div><Label>Descrição</Label><Textarea rows={3} value={descricao} onChange={e => setDescricao(e.target.value)} /></div>
           <label className="flex items-center gap-2 text-sm">

@@ -15,7 +15,7 @@ import SEO from "@/components/SEO";
 import { FUNCOES_STAFF, slugify } from "@/lib/staff";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import StaffPhotoUpload from "@/components/staff/StaffPhotoUpload";
-import CityAutocomplete from "@/components/CityAutocomplete";
+import CityStateSelect from "@/components/CityStateSelect";
 
 export default function StaffOnboarding() {
   const { user } = useAuth();
@@ -116,21 +116,13 @@ export default function StaffOnboarding() {
               <Input value={telefone} onChange={e => setTelefone(formatPhoneBR(e.target.value))} placeholder="(11) 99999-9999" />
               <p className="text-xs text-muted-foreground mt-1">Fica oculto até você aceitar uma vaga.</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Cidade</Label>
-                <CityAutocomplete
-                  fonte="brasil"
-                  mostrarContinuarMesmoAssim={false}
-                  value={cidade}
-                  placeholder="Digite e selecione sua cidade"
-                  onChange={(c) => setCidade(c)}
-                  onSelect={(c, uf) => { setCidade(c); if (uf) setEstado(uf); }}
-                />
-                <p className="text-xs text-muted-foreground mt-1">Selecione uma cidade da lista oficial.</p>
-              </div>
-              <div><Label>Estado (UF)</Label><Input value={estado} readOnly placeholder="Preenchido pela cidade" /></div>
-            </div>
+            <CityStateSelect
+              cidade={cidade}
+              estado={estado}
+              onChange={(c, uf) => { setCidade(c); setEstado(uf); }}
+              placeholderCidade="Digite e selecione sua cidade"
+            />
+
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Raio de atendimento (km)</Label><Input type="number" value={raio} onChange={e => setRaio(Number(e.target.value))} /></div>
               <div><Label>Valor mínimo por turno (R$)</Label><Input type="number" value={valorMin} onChange={e => setValorMin(e.target.value === "" ? "" : Number(e.target.value))} /></div>
