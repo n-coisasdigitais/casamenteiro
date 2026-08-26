@@ -117,20 +117,14 @@ export default function PublishJobDialog({
             <div><Label>Início</Label><Input type="time" value={horaIni} onChange={e => setHoraIni(e.target.value)} /></div>
             <div><Label>Fim</Label><Input type="time" value={horaFim} onChange={e => setHoraFim(e.target.value)} /></div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label>Cidade</Label>
-              <CityAutocomplete
-                fonte="brasil"
-                mostrarContinuarMesmoAssim={false}
-                value={cidade}
-                placeholder="Digite e selecione"
-                onChange={(c) => setCidade(c)}
-                onSelect={(c) => setCidade(c)}
-              />
-            </div>
-            <div><Label>Local</Label><Input value={local} onChange={e => setLocal(e.target.value)} placeholder="Ex.: Salão Aurora" /></div>
-          </div>
+          <CityStateSelect
+            cidade={cidade}
+            estado={estado}
+            onChange={(c, uf) => { setCidade(c); setEstado(uf); }}
+            placeholderCidade="Digite e selecione"
+          />
+          <div><Label>Local</Label><Input value={local} onChange={e => setLocal(e.target.value)} placeholder="Ex.: Salão Aurora" /></div>
+
           <div><Label>Valor do turno (R$)</Label><Input type="number" value={valor} onChange={e => setValor(e.target.value === "" ? "" : Number(e.target.value))} /></div>
           <div><Label>Descrição</Label><Textarea rows={3} value={descricao} onChange={e => setDescricao(e.target.value)} /></div>
           <label className="flex items-center gap-2 text-sm">
