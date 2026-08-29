@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { traduzirErroAuth } from "@/lib/authErrors";
 import { getStoredReferral } from "@/lib/referral";
 import SEO from "@/components/SEO";
+import { analytics } from "@/lib/analytics";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 
 export default function Auth() {
@@ -188,6 +189,7 @@ export default function Auth() {
         if (error) throw error;
         // Quando o e-mail já existe, o Supabase retorna um usuário sem identities.
         const jaExistia = !!data.user && (data.user.identities?.length ?? 0) === 0;
+        if (!jaExistia) analytics.signUp(accountType);
         setSignupSent({ email, jaExistia });
         setPassword("");
         setFullName("");
@@ -202,6 +204,7 @@ export default function Auth() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        analytics.login();
       }
     } catch (error: any) {
       toast({

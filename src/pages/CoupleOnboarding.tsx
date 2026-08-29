@@ -2,6 +2,7 @@ import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +95,7 @@ export default function CoupleOnboarding() {
             : `Casamento em ${simulacao.cidade || "minha cidade"}`;
           await criarPlano(simulacao.id, simulacao.resultado as SimRes, nomePlano, weddingDate);
           toast({ title: "Tudo pronto!", description: "Seu plano foi montado com base na sua simulação." });
+          analytics.onboardingComplete("couple");
           navigate("/meu-casamento/plano");
           return;
         } catch (e: any) {
@@ -102,6 +104,7 @@ export default function CoupleOnboarding() {
       }
 
       toast({ title: "Tudo pronto!", description: "Vamos encontrar os melhores fornecedores para você." });
+      analytics.onboardingComplete("couple");
       navigate("/dashboard");
     } catch (error: any) {
       toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });

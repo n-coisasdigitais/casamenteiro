@@ -8,6 +8,7 @@ import { calcularSimulacao, type Estilo } from "@/lib/simulador";
 import { Loader2, Heart, ArrowLeft } from "lucide-react";
 import CityAutocomplete from "@/components/CityAutocomplete";
 import { supabase } from "@/integrations/supabase/client";
+import { analytics } from "@/lib/analytics";
 
 const GUEST_OPTIONS = [
   { letter: "A", label: "Até 50 pessoas — íntimo e especial", value: 50 },
@@ -71,6 +72,7 @@ export default function Simulador() {
           resultado: { resumo: r.resumo, plano: r.plano, alertas: r.alertas },
         }),
       );
+      analytics.formSubmit("simulador", { num_convidados: convidados, cidade: cidade.trim(), estilo });
       toast({ title: "Seu plano está pronto!", description: "Veja abaixo os detalhes." });
       if (r.simulacaoId) {
         navigate(`/simulador/resultado?id=${r.simulacaoId}`);
