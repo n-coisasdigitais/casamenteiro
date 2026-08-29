@@ -37,6 +37,7 @@ import QuoteRequestForm from "@/components/QuoteRequestForm";
 import PromoDatesInline from "@/components/reservas/PromoDatesInline";
 import SupplierMap from "@/components/SupplierMap";
 import { buildWhatsAppLink } from "@/lib/phone";
+import { analytics } from "@/lib/analytics";
 import SEO from "@/components/SEO";
 import { absoluteUrl, breadcrumbJsonLd, priceRangeLabel, truncate } from "@/lib/seo";
 import UserMenu from "@/components/UserMenu";
@@ -509,6 +510,7 @@ export default function SupplierProfile() {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="Conversar no WhatsApp"
+                            onClick={() => analytics.contactCtaClick({ supplier_id: supplier.id, origem: "whatsapp" })}
                           >
                             <MessageCircle className="h-5 w-5" />
                           </a>

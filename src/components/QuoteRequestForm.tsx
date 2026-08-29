@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,6 +121,8 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
       }
     }
 
+    analytics.formSubmit("pedido_orcamento", { supplier_id: supplierId });
+    analytics.contactCtaClick({ supplier_id: supplierId, origem: "form_orcamento" });
     toast({ title: "Orçamento solicitado!", description: `Seu pedido foi enviado para ${supplierName}.` });
     setOpen(false);
     setMessage("");

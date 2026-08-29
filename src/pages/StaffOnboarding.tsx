@@ -2,6 +2,7 @@ import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,6 +101,7 @@ export default function StaffOnboarding() {
     setLoading(false);
     if (error) return toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Perfil salvo!" });
+    analytics.onboardingComplete("staff");
     navigate("/profissional/painel");
   };
 

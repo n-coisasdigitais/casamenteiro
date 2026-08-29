@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { trackPageView } from "@/lib/analytics";
 
 type Props = {
   title: string;
@@ -47,6 +49,13 @@ function setJsonLd(data?: Record<string, any> | Record<string, any>[]) {
  * Use one per page near the top of the JSX tree.
  */
 export default function SEO({ title, description, canonical, ogImage, noIndex, jsonLd }: Props) {
+  const location = useLocation();
+
+  // Camada 3 — page_view por rota, já com o título correto da página.
+  useEffect(() => {
+    trackPageView(location.pathname + location.search, title);
+  }, [location.pathname, location.search, title]);
+
   useEffect(() => {
     document.title = title;
     if (description) {

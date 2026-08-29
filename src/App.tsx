@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { FeatureFlagsProvider } from "@/contexts/FeatureFlagsContext";
 import FlagGate from "@/components/FlagGate";
+import CookieConsent from "@/components/CookieConsent";
 import RequireAccountType from "@/components/RequireAccountType";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
@@ -110,6 +111,7 @@ const App = () => (
         <FeatureFlagsProvider>
           <AuthProvider>
             <DemoBanner />
+            <CookieConsent />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/explorar" element={<Explore />} />

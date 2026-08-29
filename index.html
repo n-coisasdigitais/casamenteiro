@@ -9,6 +9,41 @@
     <meta name="theme-color" content="#c8543a" />
     <link rel="canonical" href="https://www.casamenteiro.com.br/" />
 
+    <!-- ================= Camada 1: tags de terceiros =================
+         Não depende do React. Novas tags (Meta Pixel, Hotjar, Clarity…)
+         devem ser adicionadas logo abaixo deste bloco. -->
+    <script>
+      // Cole aqui o measurement ID do GA4 (formato G-XXXXXXXXXX).
+      window.__GA_ID__ = "G-XXXXXXXXXX";
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { window.dataLayer.push(arguments); }
+      window.gtag = gtag;
+
+      // Consent Mode v2 — tudo negado até o usuário decidir no banner.
+      gtag("consent", "default", {
+        analytics_storage: "denied",
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied",
+        functionality_storage: "granted",
+        security_storage: "granted",
+        wait_for_update: 500
+      });
+      gtag("js", new Date());
+
+      (function () {
+        var id = window.__GA_ID__;
+        if (!id || id.indexOf("G-") !== 0 || id.indexOf("XXXX") !== -1) return;
+        gtag("config", id, { send_page_view: false }); // page_view é enviado por rota (SEO.tsx)
+        var s = document.createElement("script");
+        s.async = true;
+        s.src = "https://www.googletagmanager.com/gtag/js?id=" + id;
+        document.head.appendChild(s);
+      })();
+    </script>
+    <!-- =============== fim camada 1 =============== -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">

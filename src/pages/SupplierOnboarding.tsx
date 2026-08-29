@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
+import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -313,6 +314,7 @@ export default function SupplierOnboarding() {
         supplier_id: supplierId, acao: "submitted",
       });
       toast({ title: "Cadastro enviado!", description: "Vamos revisar e te avisar em até 48h." });
+      analytics.onboardingComplete("supplier");
       navigate("/fornecedor/painel", { replace: true });
     } catch (e: any) {
       toast({ title: "Erro ao enviar", description: traduzirErro(e), variant: "destructive" });
