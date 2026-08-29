@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { Heart, ArrowLeft } from "lucide-react";
 
+import { CookiePreferencesLink } from "@/components/CookieConsent";
+
 export default function Privacidade() {
   return (
     <div className="min-h-screen bg-beige">
@@ -70,6 +72,9 @@ export default function Privacidade() {
           <p>Contato: <a href="mailto:privacidade@casamenteiro.com.br" className="text-primary underline">privacidade@casamenteiro.com.br</a>.</p>
         </section>
       </main>
+      <div className="container mx-auto max-w-3xl px-4 pb-10">
+        <CookiePreferencesLink />
+      </div>
     </div>
   );
 }
