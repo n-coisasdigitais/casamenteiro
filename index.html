@@ -15,8 +15,9 @@
     <!-- ================= Camada 1: tags de terceiros =================
          Não depende do React. Novas tags (Meta Pixel, Hotjar, Clarity…)
          devem ser adicionadas logo abaixo deste bloco. -->
+    <!-- Google tag (gtag.js) — carregada estaticamente para ser detectável -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ES0SV5B8V4"></script>
     <script>
-      // Cole aqui o measurement ID do GA4 (formato G-XXXXXXXXXX).
       window.__GA_ID__ = "G-ES0SV5B8V4";
 
       window.dataLayer = window.dataLayer || [];
@@ -34,16 +35,9 @@
         wait_for_update: 500
       });
       gtag("js", new Date());
-
-      (function () {
-        var id = window.__GA_ID__;
-        if (!id || id.indexOf("G-") !== 0 || id.indexOf("XXXX") !== -1) return;
-        gtag("config", id, { send_page_view: false }); // page_view é enviado por rota (SEO.tsx)
-        var s = document.createElement("script");
-        s.async = true;
-        s.src = "https://www.googletagmanager.com/gtag/js?id=" + id;
-        document.head.appendChild(s);
-      })();
+      // page_view inicial enviado pela própria tag (necessário para a
+      // detecção do GA/Tag Assistant). Trocas de rota são enviadas em SEO.tsx.
+      gtag("config", window.__GA_ID__);
     </script>
 
     <!-- =============== fim camada 1 =============== -->

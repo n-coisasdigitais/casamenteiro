@@ -125,7 +125,10 @@ export function trackEvent(
   gtag("event", name, params);
 }
 
-let ultimoPath: string | null = null;
+// A tag já envia o page_view do primeiro carregamento (config em index.html).
+// Guardamos o path inicial para não duplicar.
+let ultimoPath: string | null =
+  typeof window !== "undefined" ? window.location.pathname + window.location.search : null;
 
 export function trackPageView(path: string, title?: string) {
   if (typeof window === "undefined") return;
