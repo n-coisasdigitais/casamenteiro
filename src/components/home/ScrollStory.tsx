@@ -11,10 +11,13 @@ export type Bloco = {
 };
 
 /**
- * Narrativa curta de dor -> solução (estilo MindMarket): poucos beats, imagem
- * que troca e texto que entra pela lateral. Enxuto de propósito — a pessoa
- * precisa LER; o resto da home (tabs de funcionalidades) é estático.
- * Cada beat dura ~120vh (bem menos que os 200vh antigos).
+ * Narrativa curta de dor -> solução: poucos beats, imagem que troca e texto
+ * que entra pela lateral. Cada beat dura ~120vh.
+ *
+ * Correção do bug de "beat some / beats se misturam":
+ * as janelas de cada beat agora são MONOTÔNICAS e só vizinhos se cruzam
+ * (crossfade limpo). Imagem e texto trocam no MESMO limite, cobrindo
+ * 0 -> 1 sem buracos e sem keyframes duplicados.
  */
 export default function ScrollStory({ blocos }: { blocos: Bloco[]; onCTA?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -26,6 +29,8 @@ export default function ScrollStory({ blocos }: { blocos: Bloco[]; onCTA?: () =>
     target: ref,
     offset: ["start start", "end end"],
   });
+
+  if (beats === 0) return null;
 
   if (reduce) {
     // Sem animação: empilha os beats de forma legível (acessibilidade)
@@ -79,6 +84,40 @@ export default function ScrollStory({ blocos }: { blocos: Bloco[]; onCTA?: () =>
   );
 }
 
+/**
+ * Janela do beat `index` como keyframes ESTRITAMENTE crescentes em [0,1].
+ * `left`/`right` são as bordas do beat; o crossfade tem meia-largura `half`
+ * e é centrado em cada borda, então o fade-out de um beat coincide
+ * exatamente com o fade-in do seguinte (só vizinhos se cruzam).
+ */
+function beatWindow(index: number, total: number) {
+  const w = 1 / total;
+  const half = (w * 0.5) / 2; // crossfade = 50% de uma janela
+  const left = index * w;
+  const right = (index + 1) * w;
+  return {
+    inStart: left - half,
+    inEnd: left + half,
+    outStart: right - half,
+    outEnd: right + half,
+    center: left + w / 2,
+    left,
+    right,
+  };
+}
+
+/** Keyframes de opacidade [range, output] com bordas tratadas p/ 1º e último beat. */
+function opacityKeyframes(index: number, total: number) {
+  const w = beatWindow(index, total);
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+
+  if (isFirst && isLast) return { range: [0, 1], out: [1, 1] }; // beat único
+  if (isFirst) return { range: [0, w.outStart, w.outEnd], out: [1, 1, 0] };
+  if (isLast) return { range: [w.inStart, w.inEnd, 1], out: [0, 1, 1] };
+  return { range: [w.inStart, w.inEnd, w.outStart, w.outEnd], out: [0, 1, 1, 0] };
+}
+
 function ImageLayer({
   index,
   total,
@@ -92,20 +131,11 @@ function ImageLayer({
   alt: string;
   progress: MotionValue<number>;
 }) {
-  const span = 1 / total;
-  const start = index / total;
-  const swapStart = start + span * 0.7;
-  const swapEnd = start + span * 0.95;
+  const w = beatWindow(index, total);
+  const { range, out } = opacityKeyframes(index, total);
 
-  const isFirst = index === 0;
-  const isLast = index === total - 1;
-
-  const opacity = useTransform(
-    progress,
-    [Math.max(0, start - span * 0.05), start, swapStart, swapEnd],
-    [isFirst ? 1 : 0, 1, 1, isLast ? 1 : 0],
-  );
-  const scale = useTransform(progress, [start, start + span], [1.06, 1.0]);
+  const opacity = useTransform(progress, range, out);
+  const scale = useTransform(progress, [w.left, w.right], [1.06, 1.0]);
 
   return (
     <motion.img
@@ -129,18 +159,18 @@ function TextLayer({
   bloco: Bloco;
   progress: MotionValue<number>;
 }) {
-  const span = 1 / total;
-  const start = index / total;
-  const inEnd = start + span * 0.22;
-  const outStart = start + span * 0.62;
-  const outEnd = start + span * 0.95;
-  const mid = start + span * 0.4;
+  const w = beatWindow(index, total);
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  const { range, out } = opacityKeyframes(index, total);
+
+  const opacity = useTransform(progress, range, out);
 
   const sideRight = index % 2 === 1;
-  const fromX = sideRight ? 80 : -80;
-
-  const opacity = useTransform(progress, [start, start, inEnd, outStart, outEnd], [0, 0, 1, 1, 0]);
-  const x = useTransform(progress, [start, mid, outEnd], [fromX, 0, sideRight ? -24 : 24]);
+  // 1º beat entra sem deslize (já está visível ao carregar).
+  const fromX = isFirst ? 0 : sideRight ? 80 : -80;
+  const driftX = isFirst ? 0 : sideRight ? -24 : 24;
+  const x = useTransform(progress, [isFirst ? 0 : w.inStart, w.center, isLast ? 1 : w.outEnd], [fromX, 0, driftX]);
 
   const num = String(index + 1).padStart(2, "0");
   const textCol = "hsl(48, 27%, 98%)";
