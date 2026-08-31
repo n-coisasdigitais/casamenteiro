@@ -26,6 +26,21 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/vagas</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/casais</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/quanto-custa-casar</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/termos</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
@@ -104,5 +119,20 @@
     <loc>https://www.casamenteiro.com.br/categoria/video</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/casais/ana-e-bruno-teste</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/casais/nosso-casamento</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/casais/nosso-casamento-ca0a</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 </urlset>

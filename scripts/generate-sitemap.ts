@@ -19,6 +19,9 @@ const staticEntries: SitemapEntry[] = [
   { path: "/buscar", changefreq: "daily", priority: "0.8" },
   { path: "/fornecedor", changefreq: "weekly", priority: "0.7" },
   { path: "/simulador", changefreq: "monthly", priority: "0.6" },
+  { path: "/vagas", changefreq: "daily", priority: "0.7" },
+  { path: "/casais", changefreq: "weekly", priority: "0.6" },
+  { path: "/quanto-custa-casar", changefreq: "weekly", priority: "0.8" },
   { path: "/termos", changefreq: "yearly", priority: "0.3" },
   { path: "/privacidade", changefreq: "yearly", priority: "0.3" },
 ];
@@ -53,6 +56,37 @@ async function loadDynamic(): Promise<SitemapEntry[]> {
       priority: "0.8",
     });
   });
+
+  // perfis públicos de casais
+  const { data: casais } = await sb
+    .from("couple_public_profiles")
+    .select("slug")
+    .eq("publico", true)
+    .limit(500);
+  (casais || []).forEach((c: any) => {
+    if (c.slug) out.push({ path: `/casais/${c.slug}`, changefreq: "monthly", priority: "0.5" });
+  });
+
+  // páginas de conteúdo "quanto custa casar em [cidade]"
+  const { data: locais } = await sb
+    .from("suppliers")
+    .select("city, state")
+    .eq("status", "approved");
+  const cidades = new Set<string>();
+  (locais || []).forEach((s: any) => {
+    if (!s.city) return;
+    const slug = [s.city, s.state || ""]
+      .join(" ")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    if (slug) cidades.add(slug);
+  });
+  cidades.forEach((slug) =>
+    out.push({ path: `/quanto-custa-casar-em/${slug}`, changefreq: "monthly", priority: "0.7" }),
+  );
 
   return out;
 }
