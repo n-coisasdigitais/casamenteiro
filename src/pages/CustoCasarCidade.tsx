@@ -143,9 +143,9 @@ export default function CustoCasarCidade() {
         jsonLd={[
           faq,
           breadcrumbJsonLd([
-            { name: "Início", url: absoluteUrl("/") },
-            { name: "Quanto custa casar", url: absoluteUrl("/quanto-custa-casar") },
-            { name: rotulo, url: absoluteUrl(`/quanto-custa-casar-em/${slug}`) },
+            { name: "Início", path: "/" },
+            { name: "Quanto custa casar", path: "/quanto-custa-casar" },
+            { name: rotulo, path: `/quanto-custa-casar-em/${slug}` },
           ]),
         ]}
       />
