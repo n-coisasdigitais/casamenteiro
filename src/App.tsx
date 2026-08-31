@@ -81,6 +81,8 @@ import DemoLanding from "./pages/DemoLanding";
 import DemoBanner from "./components/DemoBanner";
 import StaffLanding from "./pages/StaffLanding";
 import Vagas from "./pages/Vagas";
+import CustoCasarIndex from "./pages/CustoCasarIndex";
+import CustoCasarCidade from "./pages/CustoCasarCidade";
 import StaffOnboarding from "./pages/StaffOnboarding";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffPublicProfile from "./pages/StaffPublicProfile";
