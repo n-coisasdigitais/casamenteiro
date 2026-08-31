@@ -280,6 +280,8 @@ const App = () => (
                   </FlagGate>
                 }
               />
+              <Route path="/quanto-custa-casar" element={<CustoCasarIndex />} />
+              <Route path="/quanto-custa-casar-em/:cidade" element={<CustoCasarCidade />} />
               <Route
                 path="/profissional/login"
                 element={
