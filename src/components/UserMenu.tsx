@@ -11,7 +11,7 @@ import {
 import {
   Heart, Search, Settings, LogOut, CheckSquare, Users, DollarSign, Store,
   LayoutDashboard, MessageSquareQuote, CalendarDays, ShieldCheck, UserCircle,
-  Briefcase, FileText,
+  Briefcase, FileText, FlaskConical,
 } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
@@ -83,6 +83,12 @@ export default function UserMenu() {
               <Link to="/admin" className="cursor-pointer">
                 <ShieldCheck className="mr-2 h-4 w-4" />
                 Painel Admin
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/demo" className="cursor-pointer">
+                <FlaskConical className="mr-2 h-4 w-4" />
+                Modo demonstração
               </Link>
             </DropdownMenuItem>
           </>
