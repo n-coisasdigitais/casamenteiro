@@ -1,5 +1,28 @@
-import { useRef } from "react";
-import { motion, useScroll, useTransform, useReducedMotion, MotionValue } from "framer-motion";
+import { useRef, useState } from "react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useReducedMotion,
+  useMotionValueEvent,
+  MotionValue,
+} from "framer-motion";
+
+/**
+ * Ponte MotionValue -> style inline.
+ *
+ * O framer-motion v12 renderiza MotionValues de opacidade via WAAPI
+ * (element.animate()), que nesta versão NÃO sincroniza com useScroll de
+ * alvo (bug: a opacidade fica presa num estado antigo enquanto o scroll
+ * anda — as imagens acompanham porque scale/transform usam style inline).
+ * Convertendo o MotionValue em número via state, a opacidade vira style
+ * inline e acompanha o scroll no mesmo ritmo do scale.
+ */
+function useInlineOpacity(value: MotionValue<number>) {
+  const [v, setV] = useState(() => value.get());
+  useMotionValueEvent(value, "change", (nv) => setV(nv));
+  return v;
+}
 
 export type Bloco = {
   foto_url: string;
