@@ -338,7 +338,59 @@ export default function SupplierOnboarding() {
   const renderCampo = (c: Campo) => {
     const v = respostas[c.id];
     const set = (val: any) => setRespostas((r) => ({ ...r, [c.id]: val }));
+
+    // Campos base de localização: usam a base oficial do IBGE
+    const campoEstado = campos.find((x) => x.chave === "estado");
+    const campoCidade = campos.find((x) => x.chave === "cidade");
+    const ufAtual: string = (campoEstado ? respostas[campoEstado.id] : "") || "";
+
+    if (c.chave === "estado") {
+      return (
+        <Select
+          value={ufAtual || undefined}
+          onValueChange={(uf) => {
+            setRespostas((r) => ({
+              ...r,
+              [c.id]: uf,
+              ...(campoCidade ? { [campoCidade.id]: "" } : {}),
+            }));
+          }}
+        >
+          <SelectTrigger><SelectValue placeholder="Selecione a UF" /></SelectTrigger>
+          <SelectContent className="max-h-72">
+            {UFS_BRASIL.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      );
+    }
+
+    if (c.chave === "cidade") {
+      return (
+        <div>
+          <CityAutocomplete
+            fonte="brasil"
+            uf={ufAtual || null}
+            mostrarContinuarMesmoAssim={false}
+            value={v || ""}
+            placeholder="Digite e selecione a cidade"
+            onChange={(cidade) => set(cidade)}
+            onSelect={(cidade, uf) =>
+              setRespostas((r) => ({
+                ...r,
+                [c.id]: cidade,
+                ...(campoEstado && uf ? { [campoEstado.id]: uf } : {}),
+              }))
+            }
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Selecione uma cidade da lista oficial (IBGE).
+          </p>
+        </div>
+      );
+    }
+
     switch (c.tipo) {
+
       case "texto":
         return <Input value={v || ""} onChange={(e) => set(e.target.value)} />;
       case "textarea":
