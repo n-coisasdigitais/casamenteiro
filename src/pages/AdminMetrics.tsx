@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, ExternalLink, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { semDemo } from "@/lib/demoScope";
+import { isDemoSession, semDemo } from "@/lib/demoScope";
 
 export default function AdminMetrics() {
   const { user, loading: authLoading } = useAuth();
@@ -62,7 +62,7 @@ export default function AdminMetrics() {
       setSuppliers(scopedSuppliers.map((sup: any) => ({ ...sup, ...(contatoPorId.get(sup.id) || {}) })));
       setQuotes((qz.data || []).filter((item: any) => supplierIds.has(item.supplier_id)));
       setContracts((cs.data || []).filter((item: any) => supplierIds.has(item.supplier_id) && coupleIds.has(item.couple_id)));
-      setSims(si.data || []);
+      setSims((si.data || []).filter((item: any) => item.couple_id ? coupleIds.has(item.couple_id) : !isDemoSession()));
       setReviews((rv.data || []).filter((item: any) => supplierIds.has(item.supplier_id)));
       setLoading(false);
       carregarLiquidez();
