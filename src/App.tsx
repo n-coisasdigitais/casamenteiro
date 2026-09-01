@@ -86,7 +86,6 @@ import CustoCasarCidade from "./pages/CustoCasarCidade";
 import StaffOnboarding from "./pages/StaffOnboarding";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffPublicProfile from "./pages/StaffPublicProfile";
-import AdminPlatformPrices from "./pages/AdminPlatformPrices";
 import AdminPlanos from "./pages/AdminPlanos";
 import AdminPrecos from "./pages/AdminPrecos";
 import AdminCupons from "./pages/AdminCupons";
