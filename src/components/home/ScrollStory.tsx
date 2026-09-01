@@ -94,26 +94,28 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA?
   }
 
   return (
-    <div ref={ref} style={{ height: `${sectionVh}vh`, position: "relative" }}>
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
-        {blocos.map((b, i) => (
-          <ImageLayer key={i} index={i} total={beats} src={b.foto_url} alt={b.frase} progress={scrollYProgress} />
-        ))}
+<div ref={ref} style={{ height: `${sectionVh}vh`, position: "relative" }}>
+      <div className="sticky top-0 h-screen w-full bg-black">
+        <div className="absolute inset-0 overflow-hidden">
+          {blocos.map((b, i) => (
+            <ImageLayer key={i} index={i} total={beats} src={b.foto_url} alt={b.frase} progress={scrollYProgress} />
+          ))}
 
-        <div
-          className="absolute inset-0 z-10 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(180deg, hsl(0 0% 0% / 0.55) 0%, hsl(0 0% 0% / 0.3) 40%, hsl(0 0% 0% / 0.65) 100%)",
-          }}
-        />
+          <div
+            className="absolute inset-0 z-10 pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(180deg, hsl(0 0% 0% / 0.55) 0%, hsl(0 0% 0% / 0.3) 40%, hsl(0 0% 0% / 0.65) 100%)",
+            }}
+          />
 
-        {blocos.map((b, i) => (
-          <TextLayer key={i} index={i} total={beats} bloco={b} progress={scrollYProgress} />
-        ))}
+          {blocos.map((b, i) => (
+            <TextLayer key={i} index={i} total={beats} bloco={b} progress={scrollYProgress} />
+          ))}
 
-        {/* CTA fixo: sempre visível durante todo o hero, não depende do scroll */}
-        <div className="absolute inset-x-0 bottom-8 md:bottom-12 z-30 px-6 md:px-16 pointer-events-none">{Cta}</div>
+          {/* CTA fixo: sempre visível durante todo o hero, não depende do scroll */}
+          <div className="absolute inset-x-0 bottom-8 md:bottom-12 z-30 px-6 md:px-16 pointer-events-none">{Cta}</div>
+        </div>
       </div>
     </div>
   );
