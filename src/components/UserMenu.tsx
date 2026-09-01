@@ -85,6 +85,12 @@ export default function UserMenu() {
                 Painel Admin
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/demo" className="cursor-pointer">
+                <FlaskConical className="mr-2 h-4 w-4" />
+                Modo demonstração
+              </Link>
+            </DropdownMenuItem>
           </>
         )}
         <DropdownMenuSeparator />
