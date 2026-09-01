@@ -233,8 +233,13 @@ export default function Home() {
         {/* Dobra 1 — Hero full-bleed (imagem monetizável) */}
         <HomeHero heroImage={heroImage} />
 
-        {/* Dobra 2 — Narrativa curta dor -> solução */}
-        <ScrollStory blocos={blocos as any} />
+{/* Dobra 2 — Narrativa curta dor -> solução
+            key={blocos.length}: o framer-motion v12 assa os keyframes das
+            animações (WAAPI) na MONTAGEM. Se os blocos trocarem de 3 (fallback)
+            para 4 (banco) sem remontar, os beats 0–2 mantêm janelas de 3 beats
+            e o beat 3 entra por cima no fim do hero (texto/imagem duplicados).
+            Remontar garante que todas as animações nascem com o mesmo total. */}
+        <ScrollStory key={blocos.length} blocos={blocos as any} />
 
         {/* Dobra 3 — Funcionalidades em tabs por público (legível, estático) */}
         <section className="py-24 px-4" style={{ background: "hsl(var(--color-bg))" }} id="recursos">

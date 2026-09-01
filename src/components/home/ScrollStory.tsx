@@ -1,5 +1,28 @@
-import { useRef } from "react";
-import { motion, useScroll, useTransform, useReducedMotion, MotionValue } from "framer-motion";
+import { useRef, useState } from "react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useReducedMotion,
+  useMotionValueEvent,
+  MotionValue,
+} from "framer-motion";
+
+/**
+ * Ponte MotionValue -> style inline.
+ *
+ * O framer-motion v12 renderiza MotionValues de opacidade via WAAPI
+ * (element.animate()), que nesta versão NÃO sincroniza com useScroll de
+ * alvo (bug: a opacidade fica presa num estado antigo enquanto o scroll
+ * anda — as imagens acompanham porque scale/transform usam style inline).
+ * Convertendo o MotionValue em número via state, a opacidade vira style
+ * inline e acompanha o scroll no mesmo ritmo do scale.
+ */
+function useInlineOpacity(value: MotionValue<number>) {
+  const [v, setV] = useState(() => value.get());
+  useMotionValueEvent(value, "change", (nv) => setV(nv));
+  return v;
+}
 
 export type Bloco = {
   foto_url: string;
@@ -94,26 +117,28 @@ export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA?
   }
 
   return (
-    <div ref={ref} style={{ height: `${sectionVh}vh`, position: "relative" }}>
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
-        {blocos.map((b, i) => (
-          <ImageLayer key={i} index={i} total={beats} src={b.foto_url} alt={b.frase} progress={scrollYProgress} />
-        ))}
+<div ref={ref} style={{ height: `${sectionVh}vh`, position: "relative" }}>
+      <div className="sticky top-0 h-screen w-full bg-black">
+        <div className="absolute inset-0 overflow-hidden">
+          {blocos.map((b, i) => (
+            <ImageLayer key={i} index={i} total={beats} src={b.foto_url} alt={b.frase} progress={scrollYProgress} />
+          ))}
 
-        <div
-          className="absolute inset-0 z-10 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(180deg, hsl(0 0% 0% / 0.55) 0%, hsl(0 0% 0% / 0.3) 40%, hsl(0 0% 0% / 0.65) 100%)",
-          }}
-        />
+          <div
+            className="absolute inset-0 z-10 pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(180deg, hsl(0 0% 0% / 0.55) 0%, hsl(0 0% 0% / 0.3) 40%, hsl(0 0% 0% / 0.65) 100%)",
+            }}
+          />
 
-        {blocos.map((b, i) => (
-          <TextLayer key={i} index={i} total={beats} bloco={b} progress={scrollYProgress} />
-        ))}
+          {blocos.map((b, i) => (
+            <TextLayer key={i} index={i} total={beats} bloco={b} progress={scrollYProgress} />
+          ))}
 
-        {/* CTA fixo: sempre visível durante todo o hero, não depende do scroll */}
-        <div className="absolute inset-x-0 bottom-8 md:bottom-12 z-30 px-6 md:px-16 pointer-events-none">{Cta}</div>
+          {/* CTA fixo: sempre visível durante todo o hero, não depende do scroll */}
+          <div className="absolute inset-x-0 bottom-8 md:bottom-12 z-30 px-6 md:px-16 pointer-events-none">{Cta}</div>
+        </div>
       </div>
     </div>
   );
@@ -159,16 +184,17 @@ function ImageLayer({
   alt: string;
   progress: MotionValue<number>;
 }) {
-  const w = beatWindow(index, total);
+const w = beatWindow(index, total);
   const { range, out } = opacityKeyframes(index, total);
   const opacity = useTransform(progress, range, out);
   const scale = useTransform(progress, [w.left, w.right], [1.06, 1.0]);
+  const opacityInline = useInlineOpacity(opacity);
   return (
     <motion.img
       src={src}
       alt={alt}
       loading={index < 2 ? "eager" : "lazy"}
-      style={{ opacity, scale }}
+      style={{ opacity: opacityInline, scale }}
       className="absolute inset-0 w-full h-full object-cover"
     />
   );
@@ -188,8 +214,9 @@ function TextLayer({
   const w = beatWindow(index, total);
   const isFirst = index === 0;
   const isLast = index === total - 1;
-  const { range, out } = opacityKeyframes(index, total);
+const { range, out } = opacityKeyframes(index, total);
   const opacity = useTransform(progress, range, out);
+  const opacityInline = useInlineOpacity(opacity);
 
   const sideRight = index % 2 === 1;
   const fromX = isFirst ? 0 : sideRight ? 80 : -80;
@@ -202,8 +229,8 @@ function TextLayer({
   const textShadow = "0 2px 14px hsl(0 0% 0% / 0.55), 0 1px 3px hsl(0 0% 0% / 0.4)";
 
   return (
-    <motion.div
-      style={{ opacity }}
+<motion.div
+      style={{ opacity: opacityInline }}
       className={`absolute inset-0 z-20 flex px-6 md:px-16 pointer-events-none items-center ${sideRight ? "justify-end" : "justify-start"}`}
     >
       <motion.div style={{ x }} className="max-w-md md:max-w-lg">
