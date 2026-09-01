@@ -50,16 +50,20 @@ export default function AdminMetrics() {
         (supabase.from("home_simulacoes" as any) as any).select("id, criado_em"),
         supabase.from("reviews").select("id, rating, created_at"),
       ]);
+      const scopedSuppliers = (s.data || []) as any[];
+      const scopedCouples = (c.data || []) as any[];
+      const supplierIds = new Set(scopedSuppliers.map((item: any) => item.id));
+      const coupleIds = new Set(scopedCouples.map((item: any) => item.id));
       setProfiles(p.data || []);
-      setCouples(c.data || []);
+      setCouples(scopedCouples);
       const { data: contatos } = await supabase.rpc("admin_suppliers_contacts");
       const contatoPorId = new Map<string, any>();
       (contatos || []).forEach((c: any) => contatoPorId.set(c.id, c));
-      setSuppliers(((s.data || []) as any[]).map((sup: any) => ({ ...sup, ...(contatoPorId.get(sup.id) || {}) })));
-      setQuotes(qz.data || []);
-      setContracts(cs.data || []);
+      setSuppliers(scopedSuppliers.map((sup: any) => ({ ...sup, ...(contatoPorId.get(sup.id) || {}) })));
+      setQuotes((qz.data || []).filter((item: any) => supplierIds.has(item.supplier_id)));
+      setContracts((cs.data || []).filter((item: any) => supplierIds.has(item.supplier_id) && coupleIds.has(item.couple_id)));
       setSims(si.data || []);
-      setReviews(rv.data || []);
+      setReviews((rv.data || []).filter((item: any) => supplierIds.has(item.supplier_id)));
       setLoading(false);
       carregarLiquidez();
     });
@@ -78,7 +82,8 @@ export default function AdminMetrics() {
       semDemo(supabase.from("suppliers").select("city, is_demo")).eq("status", "approved"),
     ]);
 
-    const quotesArr = (qzAll.data || []) as any[];
+    const supplierIds = new Set(((supAll.data || []) as any[]).map((s: any) => s.id));
+    const quotesArr = ((qzAll.data || []) as any[]).filter((q: any) => supplierIds.has(q.supplier_id));
     const supUserById = new Map<string, string>();
     (supAll.data || []).forEach((s: any) => { if (s.user_id) supUserById.set(s.id, s.user_id); });
 
@@ -125,7 +130,7 @@ export default function AdminMetrics() {
     const taxaResposta24h = totalQuotes ? Math.round((em24h / totalQuotes) * 100) : 0;
 
     // % fora_da_plataforma
-    const csRows = (csAll.data || []) as any[];
+    const csRows = ((csAll.data || []) as any[]).filter((row: any) => !row.supplier_id || supplierIds.has(row.supplier_id));
     const fora = csRows.filter((r) => r.kanban_status === "fora_da_plataforma").length;
     const pctFora = csRows.length ? Math.round((fora / csRows.length) * 100) : 0;
 

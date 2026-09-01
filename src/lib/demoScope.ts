@@ -51,7 +51,7 @@ export function isDemoSession(): boolean {
 }
 
 /** Aplica exclusivamente o ambiente ativo à consulta. */
-export function semDemo<T extends { eq: (col: string, val: unknown) => T }>(query: T): T {
+export function semDemo(query: any): any {
   return query.eq("is_demo", isDemoSession());
 }
 

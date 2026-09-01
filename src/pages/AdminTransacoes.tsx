@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { semDemo } from "@/lib/demoScope";
 
 export default function AdminTransacoes() {
   const { user, loading: authLoading } = useAuth();
@@ -27,12 +28,14 @@ export default function AdminTransacoes() {
         (supabase.from("home_simulacoes" as any) as any).select("*").order("criado_em", { ascending: false }),
         supabase.from("quotes").select("*").order("created_at", { ascending: false }),
         supabase.from("couple_suppliers").select("*").eq("status", "contracted").order("contracted_at", { ascending: false }),
-        supabase.from("suppliers").select("id, company_name"),
-        supabase.from("couples").select("id, partner_name, user_id"),
+        semDemo(supabase.from("suppliers").select("id, company_name, is_demo")),
+        semDemo(supabase.from("couples").select("id, partner_name, user_id, is_demo")),
       ]);
-      setSims(simsRes.data || []);
-      setQuotes(quotesRes.data || []);
-      setContracted(contractsRes.data || []);
+      const supplierIds = new Set((supRes.data || []).map((s: any) => s.id));
+      const coupleIds = new Set((coupleRes.data || []).map((c: any) => c.id));
+      setSims((simsRes.data || []).filter((s: any) => !s.couple_id || coupleIds.has(s.couple_id)));
+      setQuotes((quotesRes.data || []).filter((q: any) => supplierIds.has(q.supplier_id) && coupleIds.has(q.couple_id)));
+      setContracted((contractsRes.data || []).filter((c: any) => supplierIds.has(c.supplier_id) && coupleIds.has(c.couple_id)));
       setSuppliersMap(Object.fromEntries((supRes.data || []).map((s: any) => [s.id, s])));
       setCouplesMap(Object.fromEntries((coupleRes.data || []).map((c: any) => [c.id, c])));
       setLoading(false);

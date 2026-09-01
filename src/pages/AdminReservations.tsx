@@ -21,6 +21,7 @@ import {
   type TaxaStatus,
 } from "@/lib/reservas";
 import { formatBRL } from "@/lib/platformPricing";
+import { isDemoSession } from "@/lib/demoScope";
 
 type Row = {
   id: string;
@@ -58,8 +59,10 @@ export default function AdminReservations() {
     const { data } = await (supabase
       .from("idle_date_reservations" as any)
       .select(
-        "id, promo_date, status, taxa_plataforma, taxa_status, solicitada_em, supplier_id, suppliers(company_name, city), couples(partner_name, wedding_city)",
+        "id, promo_date, status, taxa_plataforma, taxa_status, solicitada_em, supplier_id, suppliers!inner(company_name, city, is_demo), couples!inner(partner_name, wedding_city, is_demo)",
       )
+      .eq("suppliers.is_demo", isDemoSession())
+      .eq("couples.is_demo", isDemoSession())
       .order("solicitada_em", { ascending: false })
       .limit(500) as any);
     setRows((data as Row[]) || []);
