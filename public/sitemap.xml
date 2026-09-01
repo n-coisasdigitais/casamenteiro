@@ -51,17 +51,17 @@
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/categoria/bolos-doces</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://www.casamenteiro.com.br/categoria/buffet</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/categoria/cerimonialista</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/categoria/bolos-doces</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -121,6 +121,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/a8ebd07a-da3b-456f-a7a2-c4431fe535fa</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/casais/ana-e-bruno-teste</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -134,5 +140,10 @@
     <loc>https://www.casamenteiro.com.br/casais/nosso-casamento-ca0a</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/belo-horizonte-mg</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
