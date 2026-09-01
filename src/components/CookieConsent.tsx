@@ -43,8 +43,9 @@ export default function CookieConsent() {
       <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card text-card-foreground shadow-lg p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
         <Cookie className="h-6 w-6 text-primary shrink-0 hidden sm:block" />
         <p className="text-sm text-muted-foreground flex-1">
-          Usamos cookies para entender como você usa o Casamenteiro e melhorar sua experiência.
-          Você pode aceitar ou recusar a qualquer momento.{" "}
+          Usamos cookies para melhorar sua experiência. Os necessários garantem o funcionamento
+          do site e a contagem anônima de visitas; os demais só com o seu aceite. Você pode mudar
+          a qualquer momento.{" "}
           <Link to="/privacidade" className="underline hover:text-foreground">
             Política de Privacidade
           </Link>
@@ -52,10 +53,10 @@ export default function CookieConsent() {
         </p>
         <div className="flex gap-2 shrink-0">
           <Button variant="outline" className="rounded-full flex-1 sm:flex-none" onClick={() => decidir("denied")}>
-            Rejeitar
+            Apenas necessários
           </Button>
           <Button className="rounded-full flex-1 sm:flex-none" onClick={() => decidir("granted")}>
-            Aceitar
+            Aceitar todos
           </Button>
         </div>
       </div>
