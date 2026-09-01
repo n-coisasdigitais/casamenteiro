@@ -16,6 +16,10 @@ import { ArrowLeft, ArrowRight, Check, Heart, Upload, X, Loader2 } from "lucide-
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import { traduzirErroAuth } from "@/lib/authErrors";
 import SEO from "@/components/SEO";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import CityAutocomplete from "@/components/CityAutocomplete";
+import { UFS_BRASIL } from "@/components/CityStateSelect";
+
 
 type Categoria = { id: string; name: string; slug: string; icon: string | null };
 type Campo = {
