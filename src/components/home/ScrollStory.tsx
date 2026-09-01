@@ -11,15 +11,17 @@ export type Bloco = {
 };
 
 /**
- * Narrativa curta de dor -> solução: poucos beats, imagem que troca e texto
- * que entra pela lateral. Cada beat dura ~120vh.
+ * Scroll-story: foto que troca + texto que entra pela lateral, dirigido pelo scroll.
  *
- * Correção do bug de "beat some / beats se misturam":
- * as janelas de cada beat agora são MONOTÔNICAS e só vizinhos se cruzam
- * (crossfade limpo). Imagem e texto trocam no MESMO limite, cobrindo
- * 0 -> 1 sem buracos e sem keyframes duplicados.
+ * Correção do bug "beat some / beats se misturam": as janelas de cada beat são
+ * MONOTÔNICAS e só vizinhos se cruzam (crossfade limpo). Imagem e texto trocam
+ * no MESMO limite, cobrindo 0 -> 1 sem buracos e sem keyframes duplicados.
+ *
+ * IMPORTANTE: este componente só funciona com UMA instância no DOM. Se o
+ * hero aparecer duplicado (prerender estático + React), conserte a duplicação
+ * primeiro — senão duas cópias vão se sobrepor por mais correta que a lógica seja.
  */
-export default function ScrollStory({ blocos }: { blocos: Bloco[]; onCTA?: () => void }) {
+export default function ScrollStory({ blocos, onCTA }: { blocos: Bloco[]; onCTA?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const beats = blocos.length;
@@ -31,6 +33,35 @@ export default function ScrollStory({ blocos }: { blocos: Bloco[]; onCTA?: () =>
   });
 
   if (beats === 0) return null;
+
+  const Cta = (
+    <div className="pointer-events-auto flex flex-wrap items-center gap-3">
+      {onCTA ? (
+        <button
+          onClick={onCTA}
+          className="rounded-full px-7 py-3.5 text-base font-semibold transition-transform hover:scale-[1.03]"
+          style={{ background: "hsl(var(--color-primary))", color: "hsl(48 27% 98%)" }}
+        >
+          Simular meu casamento
+        </button>
+      ) : (
+        <a
+          href="/simulador"
+          className="rounded-full px-7 py-3.5 text-base font-semibold transition-transform hover:scale-[1.03]"
+          style={{ background: "hsl(var(--color-primary))", color: "hsl(48 27% 98%)" }}
+        >
+          Simular meu casamento
+        </a>
+      )}
+      <a
+        href="/explorar"
+        className="rounded-full px-7 py-3.5 text-base font-semibold"
+        style={{ border: "1px solid hsl(48 27% 98% / 0.6)", color: "hsl(48 27% 98%)" }}
+      >
+        Ver fornecedores
+      </a>
+    </div>
+  );
 
   if (reduce) {
     // Sem animação: empilha os beats de forma legível (acessibilidade)
@@ -49,10 +80,11 @@ export default function ScrollStory({ blocos }: { blocos: Bloco[]; onCTA?: () =>
                   {b.frase}
                 </h2>
                 {b.subtexto && (
-                  <p className="text-lg" style={{ color: "hsl(48 30% 96%)" }}>
+                  <p className="text-lg mb-6" style={{ color: "hsl(48 30% 96%)" }}>
                     {b.subtexto}
                   </p>
                 )}
+                {i === 0 && Cta}
               </div>
             </div>
           </div>
@@ -72,24 +104,22 @@ export default function ScrollStory({ blocos }: { blocos: Bloco[]; onCTA?: () =>
           className="absolute inset-0 z-10 pointer-events-none"
           style={{
             background:
-              "linear-gradient(180deg, hsl(0 0% 0% / 0.55) 0%, hsl(0 0% 0% / 0.3) 40%, hsl(0 0% 0% / 0.6) 100%)",
+              "linear-gradient(180deg, hsl(0 0% 0% / 0.55) 0%, hsl(0 0% 0% / 0.3) 40%, hsl(0 0% 0% / 0.65) 100%)",
           }}
         />
 
         {blocos.map((b, i) => (
           <TextLayer key={i} index={i} total={beats} bloco={b} progress={scrollYProgress} />
         ))}
+
+        {/* CTA fixo: sempre visível durante todo o hero, não depende do scroll */}
+        <div className="absolute inset-x-0 bottom-8 md:bottom-12 z-30 px-6 md:px-16 pointer-events-none">{Cta}</div>
       </div>
     </div>
   );
 }
 
-/**
- * Janela do beat `index` como keyframes ESTRITAMENTE crescentes em [0,1].
- * `left`/`right` são as bordas do beat; o crossfade tem meia-largura `half`
- * e é centrado em cada borda, então o fade-out de um beat coincide
- * exatamente com o fade-in do seguinte (só vizinhos se cruzam).
- */
+/** Janela do beat `index` como keyframes estritamente crescentes em [0,1]. */
 function beatWindow(index: number, total: number) {
   const w = 1 / total;
   const half = (w * 0.5) / 2; // crossfade = 50% de uma janela
@@ -106,13 +136,11 @@ function beatWindow(index: number, total: number) {
   };
 }
 
-/** Keyframes de opacidade [range, output] com bordas tratadas p/ 1º e último beat. */
 function opacityKeyframes(index: number, total: number) {
   const w = beatWindow(index, total);
   const isFirst = index === 0;
   const isLast = index === total - 1;
-
-  if (isFirst && isLast) return { range: [0, 1], out: [1, 1] }; // beat único
+  if (isFirst && isLast) return { range: [0, 1], out: [1, 1] };
   if (isFirst) return { range: [0, w.outStart, w.outEnd], out: [1, 1, 0] };
   if (isLast) return { range: [w.inStart, w.inEnd, 1], out: [0, 1, 1] };
   return { range: [w.inStart, w.inEnd, w.outStart, w.outEnd], out: [0, 1, 1, 0] };
@@ -133,10 +161,8 @@ function ImageLayer({
 }) {
   const w = beatWindow(index, total);
   const { range, out } = opacityKeyframes(index, total);
-
   const opacity = useTransform(progress, range, out);
   const scale = useTransform(progress, [w.left, w.right], [1.06, 1.0]);
-
   return (
     <motion.img
       src={src}
@@ -163,11 +189,9 @@ function TextLayer({
   const isFirst = index === 0;
   const isLast = index === total - 1;
   const { range, out } = opacityKeyframes(index, total);
-
   const opacity = useTransform(progress, range, out);
 
   const sideRight = index % 2 === 1;
-  // 1º beat entra sem deslize (já está visível ao carregar).
   const fromX = isFirst ? 0 : sideRight ? 80 : -80;
   const driftX = isFirst ? 0 : sideRight ? -24 : 24;
   const x = useTransform(progress, [isFirst ? 0 : w.inStart, w.center, isLast ? 1 : w.outEnd], [fromX, 0, driftX]);
@@ -180,9 +204,7 @@ function TextLayer({
   return (
     <motion.div
       style={{ opacity }}
-      className={`absolute inset-0 z-20 flex px-6 md:px-16 pointer-events-none items-center ${
-        sideRight ? "justify-end" : "justify-start"
-      }`}
+      className={`absolute inset-0 z-20 flex px-6 md:px-16 pointer-events-none items-center ${sideRight ? "justify-end" : "justify-start"}`}
     >
       <motion.div style={{ x }} className="max-w-md md:max-w-lg">
         <p className="label-ui mb-4" style={{ color: "hsl(var(--color-primary))" }}>
