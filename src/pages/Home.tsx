@@ -155,7 +155,8 @@ export default function Home() {
     (async () => {
       const { data } = await (supabase
         .from("subscription_plans" as any)
-        .select("slug, nome, descricao, preco_mensal, beneficios, destaque_busca, ordem")
+        .select("slug, nome, descricao, preco_mensal, preco_anual, beneficios, destaque_busca, ordem")
+        .eq("ativo", true)
         .order("ordem") as any);
       if (data && data.length) setPlanos(data as any[]);
     })();
