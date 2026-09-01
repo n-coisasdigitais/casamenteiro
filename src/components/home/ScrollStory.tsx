@@ -184,16 +184,17 @@ function ImageLayer({
   alt: string;
   progress: MotionValue<number>;
 }) {
-  const w = beatWindow(index, total);
+const w = beatWindow(index, total);
   const { range, out } = opacityKeyframes(index, total);
   const opacity = useTransform(progress, range, out);
   const scale = useTransform(progress, [w.left, w.right], [1.06, 1.0]);
+  const opacityInline = useInlineOpacity(opacity);
   return (
     <motion.img
       src={src}
       alt={alt}
       loading={index < 2 ? "eager" : "lazy"}
-      style={{ opacity, scale }}
+      style={{ opacity: opacityInline, scale }}
       className="absolute inset-0 w-full h-full object-cover"
     />
   );
