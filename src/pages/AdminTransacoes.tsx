@@ -7,8 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { semDemo } from "@/lib/demoScope";
-import { isDemoSession } from "@/lib/demoScope";
+import { isDemoSession, semDemo } from "@/lib/demoScope";
 
 export default function AdminTransacoes() {
   const { user, loading: authLoading } = useAuth();
