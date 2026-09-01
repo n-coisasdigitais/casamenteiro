@@ -3,6 +3,8 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { attributeReferralConversion, getStoredReferralCode } from "@/lib/referral";
+import { setDemoSession } from "@/lib/demoScope";
+
 
 type Profile = {
   id: string;
