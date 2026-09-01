@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import UserMenu from "@/components/UserMenu";
 import SEO from "@/components/SEO";
 import { absoluteUrl, itemListJsonLd, breadcrumbJsonLd } from "@/lib/seo";
-import {
 import { demoValues } from "@/lib/demoScope";
+import {
   Heart,
   Search,
   Building,

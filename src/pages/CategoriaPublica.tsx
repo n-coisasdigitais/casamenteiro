@@ -6,8 +6,8 @@ import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { absoluteUrl, breadcrumbJsonLd, itemListJsonLd, truncate } from "@/lib/seo";
-import {
 import { demoValues } from "@/lib/demoScope";
+import {
   Heart,
   Star,
   Building,
