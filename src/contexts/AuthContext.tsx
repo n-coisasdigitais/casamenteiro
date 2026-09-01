@@ -49,6 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("user_id", userId)
       .maybeSingle();
     setProfile(data);
+    setDemoSession(!!data?.is_demo);
+
     const { data: adminCheck } = await supabase.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
