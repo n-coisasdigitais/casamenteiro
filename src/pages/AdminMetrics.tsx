@@ -47,7 +47,7 @@ export default function AdminMetrics() {
         semDemo(supabase.from("suppliers").select("id, company_name, city, state, status, featured, rating, review_count, created_at, category_id, is_demo, categories(name)")).order("created_at", { ascending: false }),
         supabase.from("quotes").select("id, supplier_id, couple_id, status, kanban_status, created_at"),
         supabase.from("couple_suppliers").select("id, supplier_id, couple_id, final_value, contract_value, contracted_at").eq("status", "contracted"),
-        (supabase.from("home_simulacoes" as any) as any).select("id, criado_em"),
+        (supabase.from("home_simulacoes" as any) as any).select("id, couple_id, criado_em"),
         supabase.from("reviews").select("id, supplier_id, rating, created_at"),
       ]);
       const scopedSuppliers = (s.data || []) as any[];

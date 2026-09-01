@@ -11,6 +11,7 @@ import { formatBRL } from "@/lib/platformPricing";
 import { CORRETAGEM_STATUS_LEDGER } from "@/lib/corretagem";
 import { formatarData } from "@/lib/reservas";
 import { CalendarRange } from "lucide-react";
+import { isDemoSession } from "@/lib/demoScope";
 
 type Row = {
   id: string;
@@ -42,8 +43,10 @@ export default function AdminCommissionLedger() {
     let q = supabase
       .from("commission_ledger" as any)
       .select(
-        "id, reservation_id, piso, valor_ofertado, comissao, status, mp_payment_id, ambiente, paid_at, created_at, suppliers(company_name, city), couples(partner_name), idle_date_reservations(promo_date)",
+        "id, reservation_id, piso, valor_ofertado, comissao, status, mp_payment_id, ambiente, paid_at, created_at, suppliers!inner(company_name, city, is_demo), couples!inner(partner_name, is_demo), idle_date_reservations(promo_date)",
       )
+      .eq("suppliers.is_demo", isDemoSession())
+      .eq("couples.is_demo", isDemoSession())
       .order("created_at", { ascending: false })
       .limit(500) as any;
     if (ambiente !== "todos") q = q.eq("ambiente", ambiente);
