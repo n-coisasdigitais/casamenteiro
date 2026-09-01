@@ -229,8 +229,8 @@ const { range, out } = opacityKeyframes(index, total);
   const textShadow = "0 2px 14px hsl(0 0% 0% / 0.55), 0 1px 3px hsl(0 0% 0% / 0.4)";
 
   return (
-    <motion.div
-      style={{ opacity }}
+<motion.div
+      style={{ opacity: opacityInline }}
       className={`absolute inset-0 z-20 flex px-6 md:px-16 pointer-events-none items-center ${sideRight ? "justify-end" : "justify-start"}`}
     >
       <motion.div style={{ x }} className="max-w-md md:max-w-lg">
