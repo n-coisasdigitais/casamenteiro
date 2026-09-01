@@ -214,8 +214,9 @@ function TextLayer({
   const w = beatWindow(index, total);
   const isFirst = index === 0;
   const isLast = index === total - 1;
-  const { range, out } = opacityKeyframes(index, total);
+const { range, out } = opacityKeyframes(index, total);
   const opacity = useTransform(progress, range, out);
+  const opacityInline = useInlineOpacity(opacity);
 
   const sideRight = index % 2 === 1;
   const fromX = isFirst ? 0 : sideRight ? 80 : -80;
