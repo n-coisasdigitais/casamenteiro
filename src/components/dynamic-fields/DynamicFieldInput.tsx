@@ -3,6 +3,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import CityAutocomplete from "@/components/CityAutocomplete";
+import { UFS_BRASIL } from "@/components/CityStateSelect";
 
 export type CampoTipo =
   | "texto"
@@ -30,10 +33,42 @@ type Props = {
   campo: Campo;
   value: any;
   onChange: (v: any) => void;
+  /** UF selecionada (para filtrar cidades do IBGE). */
+  uf?: string | null;
+  /** Chamado quando a cidade é escolhida e traz a UF junto. */
+  onUfChange?: (uf: string) => void;
 };
 
-export default function DynamicFieldInput({ campo, value, onChange }: Props) {
+export default function DynamicFieldInput({ campo, value, onChange, uf, onUfChange }: Props) {
   const [draft, setDraft] = useState("");
+
+  if (campo.chave === "estado") {
+    return (
+      <Select value={(value as string) || undefined} onValueChange={(v) => onChange(v)}>
+        <SelectTrigger><SelectValue placeholder="Selecione a UF" /></SelectTrigger>
+        <SelectContent className="max-h-72">
+          {UFS_BRASIL.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  if (campo.chave === "cidade") {
+    return (
+      <div>
+        <CityAutocomplete
+          fonte="brasil"
+          uf={uf || null}
+          mostrarContinuarMesmoAssim={false}
+          value={value || ""}
+          placeholder="Digite e selecione a cidade"
+          onChange={(c) => onChange(c)}
+          onSelect={(c, ufSel) => { onChange(c); if (ufSel) onUfChange?.(ufSel); }}
+        />
+        <p className="text-xs text-muted-foreground mt-1">Selecione uma cidade da lista oficial (IBGE).</p>
+      </div>
+    );
+  }
 
   switch (campo.tipo) {
     case "texto":

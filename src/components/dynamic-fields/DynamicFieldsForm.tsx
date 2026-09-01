@@ -124,6 +124,9 @@ export default function DynamicFieldsForm({ supplierId, categoryId }: Props) {
     );
   }
 
+  const campoEstado = campos.find((c) => c.chave === "estado");
+  const campoCidade = campos.find((c) => c.chave === "cidade");
+
   return (
     <div className="space-y-5">
       {campos.map((c) => (
@@ -149,7 +152,17 @@ export default function DynamicFieldsForm({ supplierId, categoryId }: Props) {
           <DynamicFieldInput
             campo={c}
             value={respostas[c.id]}
-            onChange={(v) => setRespostas((r) => ({ ...r, [c.id]: v }))}
+            uf={campoEstado ? respostas[campoEstado.id] : null}
+            onUfChange={(u) =>
+              campoEstado && setRespostas((r) => ({ ...r, [campoEstado.id]: u }))
+            }
+            onChange={(v) =>
+              setRespostas((r) => ({
+                ...r,
+                [c.id]: v,
+                ...(c.chave === "estado" && campoCidade ? { [campoCidade.id]: "" } : {}),
+              }))
+            }
           />
         </div>
       ))}
