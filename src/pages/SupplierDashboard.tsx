@@ -703,7 +703,7 @@ export default function SupplierDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background overflow-x-hidden">
       <WelcomeModal tipo="supplier" />
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16 px-4">
@@ -718,10 +718,15 @@ export default function SupplierDashboard() {
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex items-start">
         <SupplierSidebar active={dest} onChange={(d) => goDest(d)} items={destinations} />
 
-        <main className="flex-1 min-w-0 px-4 py-8 pb-24 md:pb-8 max-w-4xl mx-auto w-full">
+        <main
+          className="flex-1 min-w-0 px-4 py-8 md:pb-8 max-w-4xl mx-auto w-full"
+          style={isMobile ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)" } : undefined}
+        >
+
+
           <div className="mb-4">
             <TrialBanner supplierId={supplier.id} />
           </div>
