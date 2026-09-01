@@ -88,6 +88,7 @@ import StaffDashboard from "./pages/StaffDashboard";
 import StaffPublicProfile from "./pages/StaffPublicProfile";
 import AdminPlatformPrices from "./pages/AdminPlatformPrices";
 import AdminPlanos from "./pages/AdminPlanos";
+import AdminPrecos from "./pages/AdminPrecos";
 import AdminCupons from "./pages/AdminCupons";
 import FornecedorIndicacoes from "./pages/FornecedorIndicacoes";
 import CapturarIndicacaoFornecedor from "./pages/CapturarIndicacaoFornecedor";
@@ -567,7 +568,7 @@ const App = () => (
                 path="/admin/tabela-precos"
                 element={
                   <AdminLayout>
-                    <AdminPlatformPrices />
+                    <AdminPrecos />
                   </AdminLayout>
                 }
               />
@@ -583,7 +584,7 @@ const App = () => (
                 path="/admin/planos"
                 element={
                   <AdminLayout>
-                    <AdminPlanos />
+                    <AdminPrecos />
                   </AdminLayout>
                 }
               />
