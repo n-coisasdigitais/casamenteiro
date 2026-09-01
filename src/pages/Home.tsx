@@ -155,7 +155,8 @@ export default function Home() {
     (async () => {
       const { data } = await (supabase
         .from("subscription_plans" as any)
-        .select("slug, nome, descricao, preco_mensal, beneficios, destaque_busca, ordem")
+        .select("slug, nome, descricao, preco_mensal, preco_anual, beneficios, destaque_busca, ordem")
+        .eq("ativo", true)
         .order("ordem") as any);
       if (data && data.length) setPlanos(data as any[]);
     })();
@@ -358,11 +359,36 @@ export default function Home() {
                         ) : (
                           <>
                             <span className="text-3xl font-bold" style={{ color: "hsl(var(--color-dark))" }}>
-                              R$ {Number(p.preco_mensal).toLocaleString("pt-BR")}
+                              {Number(p.preco_mensal).toLocaleString("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                              })}
                             </span>
                             <span className="text-sm" style={{ color: "hsl(var(--color-text-muted))" }}>
                               /mês
                             </span>
+                            {Number(p.preco_anual) > 0 && (
+                              <p className="text-xs mt-1" style={{ color: "hsl(var(--color-text-muted))" }}>
+                                ou{" "}
+                                {Number(p.preco_anual).toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                                /ano
+                                {Number(p.preco_mensal) * 12 > Number(p.preco_anual) && (
+                                  <span
+                                    className="ml-1 font-semibold"
+                                    style={{ color: "hsl(var(--color-primary))" }}
+                                  >
+                                    (economize{" "}
+                                    {Math.round(
+                                      (1 - Number(p.preco_anual) / (Number(p.preco_mensal) * 12)) * 100,
+                                    )}
+                                    %)
+                                  </span>
+                                )}
+                              </p>
+                            )}
                           </>
                         )}
                       </div>

@@ -95,9 +95,12 @@ function aplicar(template: string, rota: Rota): string {
     .replace(/\s*<meta name="twitter:(?:title|description|image)"[^>]*>/g, "");
 
   html = html.replace("</head>", `  ${metas}\n  </head>`);
+  // O bloco estático existe para crawlers/scrapers sem JS, mas não pode piscar
+  // como "HTML sem estilo" para o visitante: fica fora da viewport até o React
+  // montar (o main.tsx limpa o #root antes de renderizar).
   html = html.replace(
     /<div id="root"><\/div>/,
-    `<div id="root">${rota.body}</div>`,
+    `<div id="root"><div data-prerender="1" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden">${rota.body}</div></div>`,
   );
   return html;
 }
