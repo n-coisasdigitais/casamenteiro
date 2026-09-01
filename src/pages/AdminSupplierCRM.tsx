@@ -15,6 +15,7 @@ import { ArrowLeft, Send, Search, ExternalLink, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { baixarCsv } from "@/lib/csv";
+import { semDemo } from "@/lib/demoScope";
 
 const PAGE_SIZE = 20;
 
@@ -28,7 +29,7 @@ function SupplierList() {
   const [page, setPage] = useState(0);
 
   useEffect(() => {
-    supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`).order("created_at", { ascending: false }).then(({ data }) => {
+    semDemo(supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`)).order("created_at", { ascending: false }).then(({ data }) => {
       setSuppliers(data || []);
     });
   }, []);
@@ -121,7 +122,7 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
 
   useEffect(() => {
     (async () => {
-      const { data: sup } = await supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`).eq("id", supplierId).maybeSingle();
+      const { data: sup } = await semDemo(supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`)).eq("id", supplierId).maybeSingle();
       if (!sup) { setLoading(false); return; }
       const [quotes, contracts, views, reviews, leads] = await Promise.all([
         supabase.from("quotes").select("*").eq("supplier_id", supplierId).order("created_at", { ascending: false }),

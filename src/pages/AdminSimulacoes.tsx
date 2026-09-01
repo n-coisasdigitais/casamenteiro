@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Search, TrendingUp, Users, MapPin, Calculator } from "lucide-react";
+import { isDemoSession, semDemo } from "@/lib/demoScope";
 
 const fmtBRL = (n: number) => "R$ " + Number(n || 0).toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 
@@ -32,11 +33,12 @@ export default function AdminSimulacoes() {
         navigate("/");
         return;
       }
-      const { data: rows } = await (supabase
-        .from("home_simulacoes" as any)
-        .select("*")
-        .order("criado_em", { ascending: false }) as any);
-      setItems(rows || []);
+      const [{ data: rows }, { data: couples }] = await Promise.all([
+        (supabase.from("home_simulacoes" as any) as any).select("*").order("criado_em", { ascending: false }),
+        semDemo(supabase.from("couples").select("id, is_demo")),
+      ]);
+      const coupleIds = new Set((couples || []).map((c: any) => c.id));
+      setItems((rows || []).filter((row: any) => row.couple_id ? coupleIds.has(row.couple_id) : !isDemoSession()));
       setLoading(false);
     });
   }, [user, authLoading, navigate]);

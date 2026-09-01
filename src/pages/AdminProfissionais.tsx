@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { FileText, ShieldCheck, Search } from "lucide-react";
 import { TIPOS_DOC, verificacaoLabel } from "@/components/staff/StaffDocumentsTab";
+import { semDemo } from "@/lib/demoScope";
 
 export default function AdminProfissionais() {
   const { toast } = useToast();
@@ -20,13 +21,18 @@ export default function AdminProfissionais() {
   const [obs, setObs] = useState<Record<string, string>>({});
 
   const load = async () => {
-    const { data } = await (supabase.from("staff_profiles" as any) as any)
-      .select("*").order("created_at", { ascending: false });
-    setRows(data || []);
+    const [{ data }, { data: profiles }] = await Promise.all([
+      (supabase.from("staff_profiles" as any) as any).select("*").order("created_at", { ascending: false }),
+      semDemo(supabase.from("profiles").select("user_id, is_demo")),
+    ]);
+    const userIds = new Set((profiles || []).map((p: any) => p.user_id));
+    const scopedRows = (data || []).filter((row: any) => userIds.has(row.user_id));
+    setRows(scopedRows);
     const { data: dd } = await (supabase.from("staff_documents" as any) as any)
       .select("*").order("created_at", { ascending: false });
     const map: Record<string, any[]> = {};
-    (dd || []).forEach((d: any) => { (map[d.staff_id] ||= []).push(d); });
+    const staffIds = new Set(scopedRows.map((row: any) => row.id));
+    (dd || []).filter((d: any) => staffIds.has(d.staff_id)).forEach((d: any) => { (map[d.staff_id] ||= []).push(d); });
     setDocs(map);
   };
 

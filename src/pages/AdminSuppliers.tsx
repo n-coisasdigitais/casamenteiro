@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Heart, ArrowLeft, Save, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isDemoSession, semDemo } from "@/lib/demoScope";
 
 type Sup = {
   id: string; company_name: string; city: string|null; state: string|null;
@@ -44,13 +45,14 @@ export default function AdminSuppliers() {
   const load = async () => {
     setLoading(true);
     const [{ data: sup }, { data: ct }, { data: contatos }] = await Promise.all([
-      supabase.from("suppliers").select("id,company_name,city,state,instagram,website,price_min,price_max,status,is_demo,featured,category_id").order("created_at", { ascending: false }),
+      semDemo(supabase.from("suppliers").select("id,company_name,city,state,instagram,website,price_min,price_max,status,is_demo,featured,category_id")).order("created_at", { ascending: false }),
       supabase.from("categories").select("id,name").order("name"),
       supabase.rpc("admin_suppliers_contacts"),
     ]);
     const contatoPorId = new Map<string, any>();
     (contatos || []).forEach((c: any) => contatoPorId.set(c.id, c));
     setRows(((sup as any) || []).map((s: any) => ({ ...s, ...(contatoPorId.get(s.id) || {}) })));
+    setFilter(isDemoSession() ? "demo" : "real");
     setCats(ct || []); setLoading(false);
     setDirty(new Set()); setSelected(new Set());
   };

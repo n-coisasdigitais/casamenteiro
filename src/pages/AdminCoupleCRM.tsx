@@ -14,6 +14,7 @@ import { ArrowLeft, Send, Search, Calendar, MapPin, Users, Wallet, Download } fr
 import { useToast } from "@/hooks/use-toast";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { baixarCsv } from "@/lib/csv";
+import { semDemo } from "@/lib/demoScope";
 
 const PAGE_SIZE = 20;
 
@@ -37,8 +38,8 @@ function CoupleList() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from("couples").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("*").eq("account_type", "couple"),
+      semDemo(supabase.from("couples").select("*")).order("created_at", { ascending: false }),
+      semDemo(supabase.from("profiles").select("*")).eq("account_type", "couple"),
     ]).then(([c, p]) => {
       setCouples(c.data || []);
       setProfiles(Object.fromEntries((p.data || []).map((x: any) => [x.user_id, x])));
@@ -166,7 +167,7 @@ function CoupleDetail({ coupleId }: { coupleId: string }) {
 
   useEffect(() => {
     (async () => {
-      const { data: couple } = await supabase.from("couples").select("*").eq("id", coupleId).maybeSingle();
+      const { data: couple } = await semDemo(supabase.from("couples").select("*")).eq("id", coupleId).maybeSingle();
       if (!couple) { setLoading(false); return; }
       const [prof, tasks, guests, budget, payments, cs, qz] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", couple.user_id).maybeSingle(),

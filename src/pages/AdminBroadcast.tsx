@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { semDemo } from "@/lib/demoScope";
 
 export default function AdminBroadcast() {
   const { user, loading: authLoading } = useAuth();
@@ -30,7 +31,7 @@ export default function AdminBroadcast() {
     supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(async ({ data }) => {
       if (!data) { navigate("/"); return; }
       setOk(true);
-      const { data: profs } = await supabase.from("profiles").select("account_type");
+      const { data: profs } = await semDemo(supabase.from("profiles").select("account_type, is_demo"));
       setCounts({
         couples: (profs || []).filter((p: any) => p.account_type === "couple").length,
         suppliers: (profs || []).filter((p: any) => p.account_type === "supplier").length,

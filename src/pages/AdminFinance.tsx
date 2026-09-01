@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, ArrowLeft, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isDemoSession } from "@/lib/demoScope";
 
 export default function AdminFinance() {
   const { user, loading: authLoading } = useAuth();
@@ -29,7 +30,8 @@ export default function AdminFinance() {
 
   const load = async () => {
     const { data } = await supabase.from("supplier_leads")
-      .select("*, suppliers(company_name)")
+      .select("*, suppliers!inner(company_name, is_demo)")
+      .eq("suppliers.is_demo", isDemoSession())
       .order("created_at", { ascending: false }).limit(200);
     setLeads((data as any) || []);
   };

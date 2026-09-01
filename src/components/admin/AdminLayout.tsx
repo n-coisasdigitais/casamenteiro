@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
 import UserMenu from "@/components/UserMenu";
+import { isDemoSession, setAdminDemoScope } from "@/lib/demoScope";
 
 import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
@@ -151,6 +152,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [checked, setChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [demoScope, setDemoScope] = useState(() => isDemoSession());
+
+  const changeScope = (demo: boolean) => {
+    setAdminDemoScope(demo);
+    setDemoScope(demo);
+    window.location.reload();
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -177,6 +185,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <SidebarTrigger className="shrink-0" />
             <span className="text-sm font-medium text-muted-foreground truncate">Painel administrativo</span>
             <div className="ml-auto flex items-center gap-2">
+              <div className="flex items-center rounded-md border p-0.5" aria-label="Ambiente de dados">
+                <Button type="button" size="sm" variant={!demoScope ? "default" : "ghost"} className="h-7 px-2" onClick={() => changeScope(false)}>
+                  Dados reais
+                </Button>
+                <Button type="button" size="sm" variant={demoScope ? "default" : "ghost"} className="h-7 px-2" onClick={() => changeScope(true)}>
+                  Dados demo
+                </Button>
+              </div>
               <UserMenu />
             </div>
           </header>

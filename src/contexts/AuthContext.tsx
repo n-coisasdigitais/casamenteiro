@@ -3,7 +3,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { attributeReferralConversion, getStoredReferralCode } from "@/lib/referral";
-import { setDemoSession } from "@/lib/demoScope";
+import { clearDemoScope, setDemoSession } from "@/lib/demoScope";
 
 
 type Profile = {
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setIsAdmin(false);
-          setDemoSession(false);
+          clearDemoScope();
         }
         setLoading(false);
       }
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setIsAdmin(false);
-    setDemoSession(false);
+    clearDemoScope();
   };
 
   return (

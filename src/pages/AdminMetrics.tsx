@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, ExternalLink, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { isDemoSession, semDemo } from "@/lib/demoScope";
 
 export default function AdminMetrics() {
   const { user, loading: authLoading } = useAuth();
@@ -41,24 +42,28 @@ export default function AdminMetrics() {
     supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(async ({ data }) => {
       if (!data) { navigate("/"); return; }
       const [p, c, s, qz, cs, si, rv] = await Promise.all([
-        supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("couples").select("*").order("created_at", { ascending: false }),
-        supabase.from("suppliers").select("id, company_name, city, state, status, featured, rating, review_count, created_at, category_id, categories(name)").order("created_at", { ascending: false }),
-        supabase.from("quotes").select("id, status, kanban_status, created_at"),
-        supabase.from("couple_suppliers").select("id, final_value, contract_value, contracted_at").eq("status", "contracted"),
-        (supabase.from("home_simulacoes" as any) as any).select("id, criado_em"),
-        supabase.from("reviews").select("id, rating, created_at"),
+        semDemo(supabase.from("profiles").select("*")).order("created_at", { ascending: false }),
+        semDemo(supabase.from("couples").select("*")).order("created_at", { ascending: false }),
+        semDemo(supabase.from("suppliers").select("id, company_name, city, state, status, featured, rating, review_count, created_at, category_id, is_demo, categories(name)")).order("created_at", { ascending: false }),
+        supabase.from("quotes").select("id, supplier_id, couple_id, status, kanban_status, created_at"),
+        supabase.from("couple_suppliers").select("id, supplier_id, couple_id, final_value, contract_value, contracted_at").eq("status", "contracted"),
+        (supabase.from("home_simulacoes" as any) as any).select("id, couple_id, criado_em"),
+        supabase.from("reviews").select("id, supplier_id, rating, created_at"),
       ]);
+      const scopedSuppliers = (s.data || []) as any[];
+      const scopedCouples = (c.data || []) as any[];
+      const supplierIds = new Set(scopedSuppliers.map((item: any) => item.id));
+      const coupleIds = new Set(scopedCouples.map((item: any) => item.id));
       setProfiles(p.data || []);
-      setCouples(c.data || []);
+      setCouples(scopedCouples);
       const { data: contatos } = await supabase.rpc("admin_suppliers_contacts");
       const contatoPorId = new Map<string, any>();
       (contatos || []).forEach((c: any) => contatoPorId.set(c.id, c));
-      setSuppliers(((s.data || []) as any[]).map((sup: any) => ({ ...sup, ...(contatoPorId.get(sup.id) || {}) })));
-      setQuotes(qz.data || []);
-      setContracts(cs.data || []);
-      setSims(si.data || []);
-      setReviews(rv.data || []);
+      setSuppliers(scopedSuppliers.map((sup: any) => ({ ...sup, ...(contatoPorId.get(sup.id) || {}) })));
+      setQuotes((qz.data || []).filter((item: any) => supplierIds.has(item.supplier_id)));
+      setContracts((cs.data || []).filter((item: any) => supplierIds.has(item.supplier_id) && coupleIds.has(item.couple_id)));
+      setSims((si.data || []).filter((item: any) => item.couple_id ? coupleIds.has(item.couple_id) : !isDemoSession()));
+      setReviews((rv.data || []).filter((item: any) => supplierIds.has(item.supplier_id)));
       setLoading(false);
       carregarLiquidez();
     });
@@ -72,12 +77,13 @@ export default function AdminMetrics() {
       supabase.from("quotes").select("id, supplier_id, created_at"),
       supabase.from("quote_proposals").select("quote_id, sender_id, created_at"),
       supabase.from("quote_messages").select("quote_id, sender_id, created_at"),
-      supabase.from("suppliers").select("id, user_id"),
-      supabase.from("couple_suppliers").select("kanban_status"),
-      supabase.from("suppliers").select("city").eq("status", "approved"),
+      semDemo(supabase.from("suppliers").select("id, user_id, is_demo")),
+      supabase.from("couple_suppliers").select("supplier_id, kanban_status"),
+      semDemo(supabase.from("suppliers").select("city, is_demo")).eq("status", "approved"),
     ]);
 
-    const quotesArr = (qzAll.data || []) as any[];
+    const supplierIds = new Set(((supAll.data || []) as any[]).map((s: any) => s.id));
+    const quotesArr = ((qzAll.data || []) as any[]).filter((q: any) => supplierIds.has(q.supplier_id));
     const supUserById = new Map<string, string>();
     (supAll.data || []).forEach((s: any) => { if (s.user_id) supUserById.set(s.id, s.user_id); });
 
@@ -124,7 +130,7 @@ export default function AdminMetrics() {
     const taxaResposta24h = totalQuotes ? Math.round((em24h / totalQuotes) * 100) : 0;
 
     // % fora_da_plataforma
-    const csRows = (csAll.data || []) as any[];
+    const csRows = ((csAll.data || []) as any[]).filter((row: any) => !row.supplier_id || supplierIds.has(row.supplier_id));
     const fora = csRows.filter((r) => r.kanban_status === "fora_da_plataforma").length;
     const pctFora = csRows.length ? Math.round((fora / csRows.length) * 100) : 0;
 

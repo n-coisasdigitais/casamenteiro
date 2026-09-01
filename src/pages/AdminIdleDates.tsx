@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, ArrowLeft, Sparkles, Megaphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatarData } from "@/lib/reservas";
+import { isDemoSession, semDemo } from "@/lib/demoScope";
 
 type Casal = { id: string; partner_name: string | null; wedding_city: string | null; data_pretendida: string | null };
 type PromoDate = { id: string; supplier_id: string; date: string; discount_pct: number | null; suppliers?: { company_name?: string | null; city?: string | null; category_id?: string | null } | null };
@@ -22,14 +23,15 @@ export default function AdminIdleDates() {
   const [tab, setTab] = useState<"casais" | "datas" | "cruzamento">("casais");
 
   const load = async () => {
-    const { data: c } = await (supabase.from("couples")
-      .select("id, partner_name, wedding_city, data_pretendida")
+    const { data: c } = await (semDemo(supabase.from("couples")
+      .select("id, partner_name, wedding_city, data_pretendida, is_demo"))
       .eq("quer_datas_ociosas", true)
       .order("data_pretendida", { ascending: true, nullsFirst: false }) as any);
     setCasais((c as any[]) || []);
 
     const { data: p } = await (supabase.from("supplier_promo_dates" as any)
-      .select("id, supplier_id, date, discount_pct, suppliers(company_name, city, category_id)")
+      .select("id, supplier_id, date, discount_pct, suppliers!inner(company_name, city, category_id, is_demo)")
+      .eq("suppliers.is_demo", isDemoSession())
       .gte("date", new Date().toISOString().slice(0, 10))
       .order("date", { ascending: true })
       .limit(200) as any);
