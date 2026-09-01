@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Check, X, MapPin, ExternalLink, Phone, Instagram } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { semDemo } from "@/lib/demoScope";
 
 export default function AdminFornecedorAprovacao() {
   const { user } = useAuth();
@@ -30,8 +31,8 @@ export default function AdminFornecedorAprovacao() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from("suppliers")
-      .select(`${SUPPLIER_COLS}, categories(name)`)
+    const { data } = await semDemo(supabase.from("suppliers")
+      .select(`${SUPPLIER_COLS}, categories(name)`))
       .order("created_at", { ascending: false });
     setSuppliers(data || []);
     setLoading(false);

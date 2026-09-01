@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, MapPin, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { semDemo } from "@/lib/demoScope";
 
 export default function AdminPanel() {
   const { toast } = useToast();
@@ -21,7 +22,7 @@ export default function AdminPanel() {
 
   const loadSuppliers = async () => {
     setLoading(true);
-    let query = supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`).order("created_at", { ascending: false });
+    const query = semDemo(supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`)).order("created_at", { ascending: false });
     
     // Note: we can't filter by status here due to RLS allowing admin to see all
     const { data } = await query;

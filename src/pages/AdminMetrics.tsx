@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, ExternalLink, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { semDemo } from "@/lib/demoScope";
 
 export default function AdminMetrics() {
   const { user, loading: authLoading } = useAuth();
@@ -41,9 +42,9 @@ export default function AdminMetrics() {
     supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(async ({ data }) => {
       if (!data) { navigate("/"); return; }
       const [p, c, s, qz, cs, si, rv] = await Promise.all([
-        supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("couples").select("*").order("created_at", { ascending: false }),
-        supabase.from("suppliers").select("id, company_name, city, state, status, featured, rating, review_count, created_at, category_id, categories(name)").order("created_at", { ascending: false }),
+        semDemo(supabase.from("profiles").select("*")).order("created_at", { ascending: false }),
+        semDemo(supabase.from("couples").select("*")).order("created_at", { ascending: false }),
+        semDemo(supabase.from("suppliers").select("id, company_name, city, state, status, featured, rating, review_count, created_at, category_id, is_demo, categories(name)")).order("created_at", { ascending: false }),
         supabase.from("quotes").select("id, status, kanban_status, created_at"),
         supabase.from("couple_suppliers").select("id, final_value, contract_value, contracted_at").eq("status", "contracted"),
         (supabase.from("home_simulacoes" as any) as any).select("id, criado_em"),
@@ -72,9 +73,9 @@ export default function AdminMetrics() {
       supabase.from("quotes").select("id, supplier_id, created_at"),
       supabase.from("quote_proposals").select("quote_id, sender_id, created_at"),
       supabase.from("quote_messages").select("quote_id, sender_id, created_at"),
-      supabase.from("suppliers").select("id, user_id"),
+      semDemo(supabase.from("suppliers").select("id, user_id, is_demo")),
       supabase.from("couple_suppliers").select("kanban_status"),
-      supabase.from("suppliers").select("city").eq("status", "approved"),
+      semDemo(supabase.from("suppliers").select("city, is_demo")).eq("status", "approved"),
     ]);
 
     const quotesArr = (qzAll.data || []) as any[];

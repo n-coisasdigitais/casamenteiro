@@ -6,6 +6,7 @@
  * (usuário com `profile.is_demo`) tudo continua visível.
  */
 const STORAGE_KEY = "mgd_demo_session";
+const ADMIN_SCOPE_KEY = "mgd_admin_demo_scope";
 
 let cached = false;
 
@@ -18,8 +19,29 @@ export function setDemoSession(v: boolean) {
   }
 }
 
+/** Define explicitamente qual conjunto de dados o administrador está consultando. */
+export function setAdminDemoScope(v: boolean) {
+  try {
+    sessionStorage.setItem(ADMIN_SCOPE_KEY, v ? "1" : "0");
+  } catch {
+    /* noop */
+  }
+}
+
+export function clearDemoScope() {
+  cached = false;
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(ADMIN_SCOPE_KEY);
+  } catch {
+    /* noop */
+  }
+}
+
 export function isDemoSession(): boolean {
   try {
+    const adminScope = sessionStorage.getItem(ADMIN_SCOPE_KEY);
+    if (adminScope !== null) return adminScope === "1";
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (raw !== null) return raw === "1";
   } catch {
@@ -28,12 +50,12 @@ export function isDemoSession(): boolean {
   return cached;
 }
 
-/** Aplica o filtro `is_demo = false` quando a sessão não é de demonstração. */
+/** Aplica exclusivamente o ambiente ativo à consulta. */
 export function semDemo<T extends { eq: (col: string, val: unknown) => T }>(query: T): T {
-  return isDemoSession() ? query : query.eq("is_demo", false);
+  return query.eq("is_demo", isDemoSession());
 }
 
 /** Valores aceitos para `is_demo` conforme a sessão atual (uso com `.in()`). */
 export function demoValues(): boolean[] {
-  return isDemoSession() ? [true, false] : [false];
+  return [isDemoSession()];
 }

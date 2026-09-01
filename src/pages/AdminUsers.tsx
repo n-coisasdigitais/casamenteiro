@@ -12,6 +12,7 @@ import { Heart, Search, ShieldCheck, ShieldOff, Ban, RotateCcw, Trash2, ArrowLef
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { baixarCsv } from "@/lib/csv";
+import { semDemo } from "@/lib/demoScope";
 
 const PAGE_SIZE = 25;
 
@@ -23,6 +24,7 @@ type Row = {
   suspended_reason: string | null;
   created_at: string;
   is_admin: boolean;
+  is_demo: boolean;
 };
 
 export default function AdminUsers() {
@@ -48,8 +50,8 @@ export default function AdminUsers() {
   }, [user, authLoading]);
 
   const load = async () => {
-    const { data: profiles } = await (supabase.from("profiles") as any)
-      .select("user_id, full_name, account_type, suspended, suspended_reason, created_at")
+    const { data: profiles } = await semDemo((supabase.from("profiles") as any)
+      .select("user_id, full_name, account_type, suspended, suspended_reason, created_at, is_demo"))
       .order("created_at", { ascending: false });
     const { data: roles } = await supabase.from("user_roles").select("user_id, role").eq("role", "admin");
     const adminSet = new Set((roles || []).map((r: any) => r.user_id));
