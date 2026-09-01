@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { absoluteUrl, breadcrumbJsonLd, itemListJsonLd, truncate } from "@/lib/seo";
 import {
+import { demoValues } from "@/lib/demoScope";
   Heart,
   Star,
   Building,
@@ -257,6 +258,7 @@ export default function CategoriaPublica() {
         { count: "exact" },
       )
       .eq("status", "approved")
+        .in("is_demo", demoValues())
       .eq("category_id", cat.id)
       .order("featured", { ascending: false })
       .order("rating", { ascending: false, nullsFirst: false })
@@ -330,6 +332,7 @@ export default function CategoriaPublica() {
           .select("id, company_name, city, profile_photo_url, categories(name, icon)")
           .eq("id", pick.supplier_id)
           .eq("status", "approved")
+        .in("is_demo", demoValues())
           .maybeSingle();
         if (sup) {
           setHeroDestaque(buildFromSupplier(sup, pick.imagem_url));
@@ -341,6 +344,7 @@ export default function CategoriaPublica() {
         .from("suppliers")
         .select("id, company_name, city, profile_photo_url, categories(name, icon)")
         .eq("status", "approved")
+        .in("is_demo", demoValues())
         .eq("featured", true)
         .eq("category_id", category.id)
         .order("rating", { ascending: false, nullsFirst: false })

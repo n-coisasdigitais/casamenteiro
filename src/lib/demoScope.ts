@@ -32,3 +32,8 @@ export function isDemoSession(): boolean {
 export function semDemo<T extends { eq: (col: string, val: unknown) => T }>(query: T): T {
   return isDemoSession() ? query : query.eq("is_demo", false);
 }
+
+/** Valores aceitos para `is_demo` conforme a sessão atual (uso com `.in()`). */
+export function demoValues(): boolean[] {
+  return isDemoSession() ? [true, false] : [false];
+}
