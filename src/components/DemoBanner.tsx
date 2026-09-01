@@ -28,7 +28,7 @@ export default function DemoBanner() {
 
   const handleExit = async () => {
     await signOut();
-    navigate("/demo", { replace: true });
+    navigate("/login", { replace: true });
   };
 
   if (collapsed) {
