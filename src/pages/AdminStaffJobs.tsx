@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { isDemoSession } from "@/lib/demoScope";
 
 const STATUS_LABEL: Record<string, string> = {
   aberta: "Publicada",
@@ -27,7 +28,8 @@ export default function AdminStaffJobs() {
   const load = async () => {
     setLoading(true);
     let query = (supabase.from("staff_jobs" as any) as any)
-      .select("*, supplier:suppliers(id, company_name, city), applications:staff_applications(id, status)")
+      .select("*, supplier:suppliers!inner(id, company_name, city, is_demo), applications:staff_applications(id, status)")
+      .eq("supplier.is_demo", isDemoSession())
       .order("created_at", { ascending: false })
       .limit(200);
     if (status !== "todos") query = query.eq("status", status);

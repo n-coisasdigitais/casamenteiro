@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, ArrowLeft, Trash2, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isDemoSession } from "@/lib/demoScope";
 
 export default function AdminReviews() {
   const { user, loading: authLoading } = useAuth();
@@ -37,7 +38,8 @@ export default function AdminReviews() {
     // NÃO usar embed profiles:user_id — não há FK declarada e o embed derruba a query inteira.
     const { data, error } = await supabase
       .from("reviews")
-      .select("*, suppliers(company_name)")
+      .select("*, suppliers!inner(company_name, is_demo)")
+      .eq("suppliers.is_demo", isDemoSession())
       .order("created_at", { ascending: false })
       .limit(500);
     if (error) {
