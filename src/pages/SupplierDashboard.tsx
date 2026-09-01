@@ -723,8 +723,9 @@ export default function SupplierDashboard() {
 
         <main
           className="flex-1 min-w-0 px-4 py-8 md:pb-8 max-w-4xl mx-auto w-full"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)" }}
+          style={isMobile ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)" } : undefined}
         >
+
 
           <div className="mb-4">
             <TrialBanner supplierId={supplier.id} />
