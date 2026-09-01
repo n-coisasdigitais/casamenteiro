@@ -75,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setIsAdmin(false);
+          setDemoSession(false);
         }
         setLoading(false);
       }
@@ -98,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setIsAdmin(false);
+    setDemoSession(false);
   };
 
   return (
