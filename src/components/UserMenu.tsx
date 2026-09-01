@@ -11,7 +11,7 @@ import {
 import {
   Heart, Search, Settings, LogOut, CheckSquare, Users, DollarSign, Store,
   LayoutDashboard, MessageSquareQuote, CalendarDays, ShieldCheck, UserCircle,
-  Briefcase, FileText,
+  Briefcase, FileText, FlaskConical,
 } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
