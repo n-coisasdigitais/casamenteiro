@@ -5280,6 +5280,7 @@ export type Database = {
         Args: { _autor_id: string; _autor_tipo: string; _job_id: string }
         Returns: boolean
       }
+      purge_platform_events: { Args: { _meses?: number }; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
