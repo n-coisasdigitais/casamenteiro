@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
+import UserMenu from "@/components/UserMenu";
+
 import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
   Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
@@ -174,7 +176,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <header className="h-14 flex items-center gap-2 border-b bg-card px-3 sticky top-0 z-30">
             <SidebarTrigger className="shrink-0" />
             <span className="text-sm font-medium text-muted-foreground truncate">Painel administrativo</span>
+            <div className="ml-auto flex items-center gap-2">
+              <UserMenu />
+            </div>
           </header>
+
           <main className="flex-1 min-w-0 w-full overflow-x-auto">{children}</main>
         </div>
       </div>

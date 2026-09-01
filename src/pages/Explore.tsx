@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import UserMenu from "@/components/UserMenu";
 import SEO from "@/components/SEO";
 import { absoluteUrl, itemListJsonLd, breadcrumbJsonLd } from "@/lib/seo";
+import { demoValues } from "@/lib/demoScope";
 import {
   Heart,
   Search,
@@ -377,6 +378,7 @@ const Explore = () => {
           .select("id, company_name, city, profile_photo_url, categories(name, icon)")
           .eq("id", supplierId)
           .eq("status", "approved")
+        .in("is_demo", demoValues())
           .maybeSingle();
         if (!sup) return null;
         return {
@@ -398,6 +400,7 @@ const Explore = () => {
           .from("suppliers")
           .select("id, company_name, city, profile_photo_url, categories(name, icon)")
           .eq("status", "approved")
+        .in("is_demo", demoValues())
           .eq("featured", true)
           .order("rating", { ascending: false, nullsFirst: false })
           .limit(1);
@@ -453,6 +456,7 @@ const Explore = () => {
           "id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url, is_principal)",
         )
         .eq("status", "approved")
+        .in("is_demo", demoValues())
         .order("featured", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(12);
@@ -469,6 +473,7 @@ const Explore = () => {
               "id, company_name, city, state, rating, review_count, price_min, guest_min, guest_max, featured, categories(name), supplier_photos(photo_url, is_principal)",
             )
             .eq("status", "approved")
+        .in("is_demo", demoValues())
             .eq("category_id", c.id)
             .order("featured", { ascending: false })
             .order("created_at", { ascending: false })

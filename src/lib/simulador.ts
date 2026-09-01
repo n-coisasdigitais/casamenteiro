@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 import { supabase } from "@/integrations/supabase/client";
 import { buildWhatsAppLink } from "@/lib/phone";
+import { demoValues } from "@/lib/demoScope";
 
 export type Estilo = "intimista" | "elegante" | "grandioso";
 
@@ -223,6 +224,7 @@ async function buscarFornecedores(
       "id, company_name, city, state, profile_photo_url, price_min, price_max, featured, rating, accepts_idle_dates, idle_discount_pct, status, category_id, guest_min, guest_max, cidades_atendidas, raio_atendimento_km, lat, lng, pricing_model",
     )
     .eq("status", "approved")
+        .in("is_demo", demoValues())
     .eq("category_id", catId)
     .limit(100);
 

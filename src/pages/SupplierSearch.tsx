@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import SupplierSearchMap from "@/components/SupplierSearchMap";
 import BulkContactDialog, { type BulkSupplier } from "@/components/BulkContactDialog";
+import { demoValues } from "@/lib/demoScope";
 
 type Category = { id: string; name: string; slug: string };
 
@@ -148,6 +149,7 @@ export default function SupplierSearch() {
       .from("suppliers")
       .select(`${SUPPLIER_COLS}, categories(name), supplier_photos(photo_url, is_principal)`)
       .eq("status", "approved")
+        .in("is_demo", demoValues())
       .order("featured", { ascending: false })
       .order("rating", { ascending: false, nullsFirst: false });
 

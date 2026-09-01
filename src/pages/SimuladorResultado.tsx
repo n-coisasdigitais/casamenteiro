@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToastAction } from "@/components/ui/toast";
 import SEO from "@/components/SEO";
+import { demoValues } from "@/lib/demoScope";
 
 const estiloLabel: Record<Estilo, string> = {
   intimista: "intimista",
@@ -131,6 +132,7 @@ export default function SimuladorResultado() {
         .from("suppliers")
         .select("id", { count: "exact", head: true })
         .eq("status", "approved")
+        .in("is_demo", demoValues())
         .ilike("city", `%${sim.cidade}%`);
       setCidadeSemFornecedor((count || 0) === 0);
     })();

@@ -3,6 +3,8 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { attributeReferralConversion, getStoredReferralCode } from "@/lib/referral";
+import { setDemoSession } from "@/lib/demoScope";
+
 
 type Profile = {
   id: string;
@@ -49,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("user_id", userId)
       .maybeSingle();
     setProfile(data);
+    setDemoSession(!!data?.is_demo);
+
     const { data: adminCheck } = await supabase.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
@@ -71,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setIsAdmin(false);
+          setDemoSession(false);
         }
         setLoading(false);
       }
@@ -94,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setIsAdmin(false);
+    setDemoSession(false);
   };
 
   return (
