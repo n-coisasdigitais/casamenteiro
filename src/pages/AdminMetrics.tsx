@@ -45,10 +45,10 @@ export default function AdminMetrics() {
         semDemo(supabase.from("profiles").select("*")).order("created_at", { ascending: false }),
         semDemo(supabase.from("couples").select("*")).order("created_at", { ascending: false }),
         semDemo(supabase.from("suppliers").select("id, company_name, city, state, status, featured, rating, review_count, created_at, category_id, is_demo, categories(name)")).order("created_at", { ascending: false }),
-        supabase.from("quotes").select("id, status, kanban_status, created_at"),
-        supabase.from("couple_suppliers").select("id, final_value, contract_value, contracted_at").eq("status", "contracted"),
+        supabase.from("quotes").select("id, supplier_id, couple_id, status, kanban_status, created_at"),
+        supabase.from("couple_suppliers").select("id, supplier_id, couple_id, final_value, contract_value, contracted_at").eq("status", "contracted"),
         (supabase.from("home_simulacoes" as any) as any).select("id, criado_em"),
-        supabase.from("reviews").select("id, rating, created_at"),
+        supabase.from("reviews").select("id, supplier_id, rating, created_at"),
       ]);
       const scopedSuppliers = (s.data || []) as any[];
       const scopedCouples = (c.data || []) as any[];
@@ -78,7 +78,7 @@ export default function AdminMetrics() {
       supabase.from("quote_proposals").select("quote_id, sender_id, created_at"),
       supabase.from("quote_messages").select("quote_id, sender_id, created_at"),
       semDemo(supabase.from("suppliers").select("id, user_id, is_demo")),
-      supabase.from("couple_suppliers").select("kanban_status"),
+      supabase.from("couple_suppliers").select("supplier_id, kanban_status"),
       semDemo(supabase.from("suppliers").select("city, is_demo")).eq("status", "approved"),
     ]);
 
