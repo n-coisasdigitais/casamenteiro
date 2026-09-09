@@ -95,15 +95,17 @@ export default function SupplierProfile() {
         setSupplier(data);
         setLoading(false);
         if (data?.category_id) {
-          supabase
-            .from("suppliers")
-            .select(`${SUPPLIER_COLS}, categories(name), supplier_photos(photo_url, is_principal)`)
-            .eq("status", "approved")
-            .eq("category_id", data.category_id)
-            .neq("id", id)
+          semDemo(
+            supabase
+              .from("suppliers")
+              .select(`${SUPPLIER_COLS}, categories(name), supplier_photos(photo_url, is_principal)`)
+              .eq("status", "approved")
+              .eq("category_id", data.category_id)
+              .neq("id", id)
+          )
             .order("rating", { ascending: false, nullsFirst: false })
             .limit(4)
-            .then(({ data: recs }) => setRecommendations(recs || []));
+            .then(({ data: recs }: any) => setRecommendations(recs || []));
         }
       });
 
