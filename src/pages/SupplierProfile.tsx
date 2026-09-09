@@ -2,6 +2,7 @@ import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
+import { semDemo } from "@/lib/demoScope";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
