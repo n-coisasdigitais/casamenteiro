@@ -1,7 +1,5 @@
 # Roadmap
 
-- [ ] Corrigir classificação do fornecedor N COISAS FOTOGRAFIA
-- [ ] Tornar o escopo real/demo estrito
-- [ ] Adicionar alternância de ambiente no admin
-- [ ] Aplicar escopo às telas administrativas principais
-- [ ] Validar ambiente real e ambiente demo
+- [x] Revisar avisos de segurança do banco (linter) e corrigir funções/views
+- [x] Página "Seja fornecedor" mais forte (plano grátis, como funcionam orçamentos, cadastro rápido)
+- [x] Aviso visível de dados de demonstração
