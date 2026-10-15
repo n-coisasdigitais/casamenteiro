@@ -28,7 +28,7 @@ const COUPLE_FEATURES = [
   },
   {
     icon: Search,
-    title: "Busca estilo Airbnb",
+    title: "Busca fácil",
     desc: "Mapa + lista com filtros por cidade, categoria, preço e avaliação.",
   },
   {

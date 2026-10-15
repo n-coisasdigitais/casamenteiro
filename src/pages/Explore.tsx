@@ -69,7 +69,7 @@ const formatPrice = (n: number | null) => {
   return `R$ ${n}`;
 };
 
-// Card GRANDE vertical (estilo Airbnb ampliado): foto larga 4:3 + infos.
+// Card GRANDE vertical (busca ampliada): foto larga 4:3 + infos.
 function ExploreCard({ s }: { s: Supplier }) {
   const _fotos = s.supplier_photos || [];
   const photo = (_fotos.find((p: any) => p.is_principal) || _fotos[0])?.photo_url;
@@ -520,7 +520,7 @@ const Explore = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO title={seoTitle} description={seoDescription} canonical={absoluteUrl(canonicalPath)} jsonLd={seoJsonLd} />
-      {/* Header — Airbnb-style */}
+      {/* Header — busca com mapa e filtros */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="container py-3 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 shrink-0">
