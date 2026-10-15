@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { isDemoSession, setAdminDemoScope } from "@/lib/demoScope";
 import { AlertTriangle, ChevronDown, ChevronUp, X } from "lucide-react";
 
 export default function DemoBanner() {
-  const { isDemo, signOut } = useAuth();
+  const { isDemo: isDemoUser, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  // Mostra o aviso também quando o admin está navegando no conjunto de dados demo.
+  const isDemo = isDemoUser || isDemoSession();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return sessionStorage.getItem("demo_banner_collapsed") === "1";
@@ -27,6 +30,11 @@ export default function DemoBanner() {
   if (!isDemo) return null;
 
   const handleExit = async () => {
+    if (isAdmin && !isDemoUser) {
+      setAdminDemoScope(false);
+      window.location.reload();
+      return;
+    }
     await signOut();
     navigate("/login", { replace: true });
   };
