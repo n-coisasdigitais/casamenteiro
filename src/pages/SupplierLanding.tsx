@@ -13,6 +13,7 @@ import TrustSection from "@/components/supplier/landing/TrustSection";
 import VendorCTASection from "@/components/supplier/landing/VendorCTASection";
 import PlatformFeatures from "@/components/shared/PlatformFeatures";
 import { DEFAULT_LANDING, SupplierLandingConfig } from "@/lib/supplierLandingConfig";
+import QuickStartSection from "@/components/supplier/landing/QuickStartSection";
 
 export default function SupplierLanding() {
   const [cfg, setCfg] = useState<SupplierLandingConfig>(DEFAULT_LANDING);
@@ -63,6 +64,7 @@ export default function SupplierLanding() {
       <main>
         <VendorHero cfg={cfg.hero} />
         <HowItWorksSection cfg={cfg.how} />
+        <QuickStartSection />
         <WhyTimeline cfg={cfg.why} />
         <PlatformFeatures variant="supplier" />
         <TrustSection cfg={cfg.trust} />
