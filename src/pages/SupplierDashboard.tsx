@@ -99,6 +99,7 @@ export default function SupplierDashboard() {
   const [reservasPendentes, setReservasPendentes] = useState(0);
   const vagasEnabled = useFeatureFlag("vagas", false);
   const reservasEnabled = useFeatureFlag("reserva_datas_ociosas", false);
+  const agendaEnabled = useFeatureFlag("agenda_integracao", false);
   const crmEnabled = useFeatureFlag("crm_fornecedor", true);
 
   const [companyName, setCompanyName] = useState("");
@@ -686,7 +687,7 @@ export default function SupplierDashboard() {
           {businessSub === "disponibilidade" && (
             <div className="space-y-4">
               <AvailabilityCalendar supplierId={supplier.id} />
-              <CalendarConnections supplierId={supplier.id} />
+              {agendaEnabled && <CalendarConnections supplierId={supplier.id} />}
               <PromoDatesManager supplierId={supplier.id} />
             </div>
           )}

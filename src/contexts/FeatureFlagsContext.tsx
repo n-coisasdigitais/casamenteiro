@@ -24,7 +24,8 @@ export type FeatureFlagKey =
   | "avaliacoes_plataforma"
   | "assinatura_fornecedor"
   | "destaque_pago"
-  | "checkout_transparente";
+  | "checkout_transparente"
+  | "agenda_integracao";
 
 // Defaults espelham o seed da migration — evita flicker enquanto carrega.
 export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
@@ -51,6 +52,7 @@ export const FEATURE_FLAG_DEFAULTS: Record<string, boolean> = {
   assinatura_fornecedor: false,
   destaque_pago: false,
   checkout_transparente: true,
+  agenda_integracao: false,
 };
 
 type Ctx = {
