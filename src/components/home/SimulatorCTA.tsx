@@ -1,5 +1,5 @@
 import { traduzirErro } from "@/lib/errorMessages";
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Check, Leaf, Sparkles, PartyPopper, Calendar as CalIcon } from "lucide-react";
@@ -32,11 +32,19 @@ const PRAZO_OPTIONS = [
   { letter: "D", label: "Mais de 2 anos / ainda não sei", value: 36 },
 ];
 
-const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
+type SimulatorCTAProps = {
+  /** Só o card, sem a seção de tela cheia (usado dentro da nova Home). */
+  embedded?: boolean;
+  /** Etapa inicial: 0 = boas-vindas, 1 = já abre na pergunta 1. */
+  initialStep?: number;
+};
+
+const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = false, initialStep = 0 }, ref) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [step, setStep] = useState(0); // 0 welcome, 1..5 questions, 6 done
+  const [step, setStep] = useState(initialStep); // 0 welcome, 1..5 questions, 6 done
+  const cardRef = useRef<HTMLDivElement>(null);
   const [orcamento, setOrcamento] = useState(20000);
   const [convidados, setConvidados] = useState<number | null>(null);
   const [cidade, setCidade] = useState("");
@@ -109,6 +117,13 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Enter") return;
+      // Na Home, só responde ao Enter com o formulário visível e sem foco em link/botão de outra seção.
+      if (embedded) {
+        const r = cardRef.current?.getBoundingClientRect();
+        if (!r || r.bottom < 0 || r.top > window.innerHeight) return;
+        const alvo = e.target as HTMLElement | null;
+        if (alvo && alvo !== document.body && !cardRef.current?.contains(alvo)) return;
+      }
       if (step === 0) goTo(1);
       else if (step === 1) goTo(2);
       else if (step === 3 && cidade.trim().length > 1) goTo(4);
@@ -117,7 +132,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, cidade]);
+  }, [step, cidade, embedded]);
 
   const stepVariants = {
     enter: { opacity: 0, y: 28 },
@@ -125,17 +140,24 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
     exit: { opacity: 0, y: -28 },
   };
 
+  const Wrapper: any = embedded ? "div" : "section";
+
   return (
-    <section
-      ref={ref}
-      className="relative min-h-screen flex items-center px-4 py-16 md:py-20"
-      style={{
-        background:
-          "linear-gradient(180deg, hsl(30, 10%, 12%) 0%, hsl(30, 12%, 18%) 40%, hsl(36, 25%, 93%) 100%)",
-      }}
+    <Wrapper
+      ref={ref as any}
+      className={embedded ? "w-full" : "relative min-h-screen flex items-center px-4 py-16 md:py-20"}
+      style={
+        embedded
+          ? undefined
+          : {
+              background:
+                "linear-gradient(180deg, hsl(30, 10%, 12%) 0%, hsl(30, 12%, 18%) 40%, hsl(36, 25%, 93%) 100%)",
+            }
+      }
     >
-      <div className="max-w-2xl mx-auto w-full">
+      <div className={embedded ? "w-full" : "max-w-2xl mx-auto w-full"}>
         <div
+          ref={cardRef}
           className="relative overflow-hidden flex flex-col"
           style={{
             background: "hsl(var(--color-bg))",
@@ -437,7 +459,7 @@ const SimulatorCTA = forwardRef<HTMLElement>((_, ref) => {
         .sim-range::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:22px; height:22px; border-radius:50%; background:hsl(var(--color-primary)); cursor:pointer; border:3px solid hsl(var(--color-bg)); box-shadow:0 0 0 2px hsl(var(--color-primary)); }
         .sim-range::-moz-range-thumb { width:22px; height:22px; border-radius:50%; background:hsl(var(--color-primary)); cursor:pointer; border:3px solid hsl(var(--color-bg)); box-shadow:0 0 0 2px hsl(var(--color-primary)); }
       `}</style>
-    </section>
+    </Wrapper>
   );
 });
 
