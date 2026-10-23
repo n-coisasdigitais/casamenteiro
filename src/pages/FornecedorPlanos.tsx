@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { formatBRL } from "@/lib/platformPricing";
 import SupplierShell from "@/components/supplier/SupplierShell";
+import DestaquesHomeFornecedor from "@/components/destaques/DestaquesHomeFornecedor";
 import {
   listarPlanos,
   assinaturaAtual,
@@ -25,6 +26,7 @@ import {
   DESTAQUE_STATUS_LABEL,
   PACOTES_DESTAQUE,
   listarPacotesDestaque,
+  ehEspacoHome,
   type Plano,
   type Assinatura,
   type PacoteDestaque,
@@ -47,6 +49,7 @@ export default function FornecedorPlanos() {
   const cuponsOn = useFeatureFlag("cupons", false);
 
   const [supplierId, setSupplierId] = useState<string | null>(null);
+  const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [pacotes, setPacotes] = useState<PacoteDestaque[]>([]);
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
@@ -67,12 +70,13 @@ export default function FornecedorPlanos() {
       return;
     }
     (async () => {
-      const { data: fornecedor } = await supabase.from("suppliers").select("id").eq("user_id", user.id).maybeSingle();
+      const { data: fornecedor } = await supabase.from("suppliers").select("id, category_id").eq("user_id", user.id).maybeSingle();
       if (!fornecedor) {
         setCarregando(false);
         return;
       }
       setSupplierId(fornecedor.id);
+      setCategoriaId((fornecedor as any).category_id ?? null);
       setBeneficios(await beneficiosPendentes(fornecedor.id));
       const [ps, a, pk] = await Promise.all([listarPlanos(), assinaturaAtual(fornecedor.id), listarPacotesDestaque()]);
       setPlanos(ps);
@@ -354,7 +358,7 @@ export default function FornecedorPlanos() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-3">
-              {pacotes.map((pac) => (
+              {pacotes.filter((pac) => !ehEspacoHome(pac.escopo)).map((pac) => (
                 <Card key={pac.id}>
                   <CardHeader>
                     <CardTitle className="text-base">{pac.label}</CardTitle>
@@ -416,6 +420,15 @@ export default function FornecedorPlanos() {
             </Card>
           )}
         </section>
+
+        {destaqueOn && supplierId && user && (
+          <DestaquesHomeFornecedor
+            supplierId={supplierId}
+            userId={user.id}
+            categoriaId={categoriaId}
+            pacotes={pacotes.filter((p) => ehEspacoHome(p.escopo))}
+          />
+        )}
       </div>
     </SupplierShell>
   );

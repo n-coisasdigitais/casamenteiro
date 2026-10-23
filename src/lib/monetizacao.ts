@@ -47,7 +47,22 @@ export type PacoteDestaque = {
   valor: number;
   ativo: boolean;
   ordem: number;
+  /** categoria | cidade | home (legado) | home_hero | home_story | home_form | home_categoria */
+  escopo?: string;
+  max_vagas?: number;
+  formato_imagem?: string | null;
+  exclusivo?: boolean;
 };
+
+/** Espaços pagos da Home (exigem imagem aprovada). */
+export const ESPACOS_HOME: Record<string, { nome: string; descricao: string }> = {
+  home_hero: { nome: "Home — Destaque Hero", descricao: "Sua foto em tela cheia na abertura da Home, com legenda e link para o seu perfil." },
+  home_story: { nome: "Home — Destaque dos Stories", descricao: "Um story vertical com o seu nome, selo Patrocinado e botão para o seu perfil." },
+  home_form: { nome: "Home — Destaque do Formulário", descricao: "Sua foto acima do simulador, onde os casais começam o planejamento." },
+  home_categoria: { nome: "Home — Destaque das Categorias", descricao: "Sua foto no bloco da sua categoria na Home, com selo Destaque." },
+};
+
+export const ehEspacoHome = (escopo?: string | null) => !!escopo && (escopo in ESPACOS_HOME || escopo === "home");
 
 /** Fallback usado apenas se o admin ainda não cadastrou pacotes. */
 export const PACOTES_DESTAQUE = [
@@ -57,12 +72,14 @@ export const PACOTES_DESTAQUE = [
 ];
 
 export async function listarPacotesDestaque(incluirInativos = false): Promise<PacoteDestaque[]> {
-  let q = supabase
-    .from("featured_packages" as any)
-    .select("id, label, dias, valor, ativo, ordem")
-    .order("ordem", { ascending: true }) as any;
-  if (!incluirInativos) q = q.eq("ativo", true);
-  const { data } = await q;
+  const montar = (cols: string) => {
+    let q = supabase.from("featured_packages" as any).select(cols).order("ordem", { ascending: true }) as any;
+    if (!incluirInativos) q = q.eq("ativo", true);
+    return q;
+  };
+  // colunas novas (migração home_destaques); se ainda não existirem, cai para as antigas
+  let { data, error } = await montar("id, label, dias, valor, ativo, ordem, escopo, max_vagas, formato_imagem, exclusivo");
+  if (error) ({ data } = await montar("id, label, dias, valor, ativo, ordem"));
   return ((data as any[]) ?? []).map((p) => ({
     ...p,
     valor: Number(p.valor),
@@ -198,9 +215,25 @@ export async function criarCompraDestaque(opts: {
   supplierId: string;
   dias: number;
   valor: number;
+  /** Campos dos destaques da Home (opcionais para os pacotes antigos). */
+  escopo?: string;
+  packageId?: string;
+  exclusivo?: boolean;
+  imagemUrl?: string | null;
+  legenda?: string | null;
+  linkDestino?: string | null;
+  categoriaId?: string | null;
 }): Promise<{ id: string | null; erro?: string }> {
+  const row: Record<string, unknown> = { supplier_id: opts.supplierId, dias: opts.dias, valor: opts.valor, status: "pendente" };
+  if (opts.escopo) row.escopo = opts.escopo;
+  if (opts.packageId) row.package_id = opts.packageId;
+  if (opts.exclusivo) row.exclusivo = true;
+  if (opts.imagemUrl) row.imagem_url = opts.imagemUrl;
+  if (opts.legenda) row.legenda = opts.legenda;
+  if (opts.linkDestino) row.link_destino = opts.linkDestino;
+  if (opts.categoriaId) row.escopo_categoria_id = opts.categoriaId;
   const { data, error } = await (supabase.from("featured_purchases" as any) as any)
-    .insert({ supplier_id: opts.supplierId, dias: opts.dias, valor: opts.valor, status: "pendente" })
+    .insert(row)
     .select("id")
     .maybeSingle();
   if (error) return { id: null, erro: error.message };
@@ -266,3 +299,22 @@ export async function iniciarCheckout(
   return { data: data as CheckoutResposta, erro: null as string | null };
 }
 
+
+/** Vagas livres agora num espaço da Home (RPC da migração home_destaques). */
+export async function vagasDestaque(escopo: string, categoriaId?: string | null): Promise<number | null> {
+  const { data, error } = await (supabase.rpc as any)("vagas_destaque_disponiveis", {
+    p_escopo: escopo,
+    p_categoria: categoriaId ?? null,
+  });
+  if (error) return null;
+  return Number(data);
+}
+
+/** Envia a imagem do destaque para o bucket `destaques/<user_id>/...` e devolve a URL pública. */
+export async function enviarImagemDestaque(userId: string, file: File): Promise<{ url: string | null; erro?: string }> {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from("destaques").upload(path, file, { upsert: false, contentType: file.type });
+  if (error) return { url: null, erro: error.message };
+  return { url: supabase.storage.from("destaques").getPublicUrl(path).data.publicUrl };
+}

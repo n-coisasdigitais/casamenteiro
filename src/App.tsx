@@ -40,6 +40,7 @@ import AdminCategoriaCampos from "./pages/AdminCategoriaCampos";
 import AdminFornecedorAprovacao from "./pages/AdminFornecedorAprovacao";
 import AdminCidades from "./pages/AdminCidades";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
+import AdminHomeDestaques from "./pages/AdminHomeDestaques";
 import AdminFornecedorLanding from "./pages/AdminFornecedorLanding";
 import AdminLandingEmails from "./pages/AdminLandingEmails";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
@@ -390,6 +391,14 @@ const App = () => (
                 element={
                   <AdminLayout>
                     <AdminHomeConfig />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/home-destaques"
+                element={
+                  <AdminLayout>
+                    <AdminHomeDestaques />
                   </AdminLayout>
                 }
               />

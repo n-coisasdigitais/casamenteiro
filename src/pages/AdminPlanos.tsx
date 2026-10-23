@@ -40,6 +40,9 @@ type PacoteRow = {
   ativo: boolean;
   ordem: number;
   escopo: string;
+  max_vagas?: number;
+  formato_imagem?: string | null;
+  exclusivo?: boolean;
 };
 
 const planoVazio = (): PlanoRow => ({
@@ -149,6 +152,13 @@ export default function AdminPlanos() {
       ativo: pac.ativo,
       ordem: Number(pac.ordem || 0),
       escopo: pac.escopo || "categoria",
+      ...(pac.escopo?.startsWith("home")
+        ? {
+            max_vagas: Number(pac.max_vagas || 3),
+            formato_imagem: pac.formato_imagem || null,
+            exclusivo: !!pac.exclusivo,
+          }
+        : {}),
     };
     const q = pac.id
       ? await (supabase.from("featured_packages" as any) as any).update(payload).eq("id", pac.id)
@@ -451,8 +461,12 @@ function PacoteEditor({
             className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
           >
             <option value="categoria">Topo da categoria</option>
-            <option value="home">Header da home (premium)</option>
             <option value="cidade">Por cidade</option>
+            <option value="home_hero">Home — Destaque Hero</option>
+            <option value="home_story">Home — Destaque dos Stories</option>
+            <option value="home_form">Home — Destaque do Formulário</option>
+            <option value="home_categoria">Home — Destaque das Categorias</option>
+            <option value="home">Header da home (antigo = Hero)</option>
           </select>
         </div>
         <div>
@@ -482,6 +496,22 @@ function PacoteEditor({
             </Button>
           )}
         </div>
+        {p.escopo?.startsWith("home") && (
+          <div className="md:col-span-6 grid gap-3 border-t pt-3 md:grid-cols-[120px,180px,auto] md:items-end">
+            <div>
+              <Label className="text-xs">Vagas simultâneas</Label>
+              <Input type="number" min={1} value={p.max_vagas ?? 3} onChange={(e) => setP({ ...p, max_vagas: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label className="text-xs">Formato da imagem (px)</Label>
+              <Input value={p.formato_imagem ?? ""} onChange={(e) => setP({ ...p, formato_imagem: e.target.value })} placeholder="2400x1350" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={!!p.exclusivo} onCheckedChange={(v) => setP({ ...p, exclusivo: v })} />
+              <Label className="text-xs">Exclusivo (ocupa todas as vagas, sem rotação)</Label>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

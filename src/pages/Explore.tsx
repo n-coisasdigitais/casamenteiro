@@ -360,7 +360,7 @@ const Explore = () => {
 
       let q = (supabase.from("featured_purchases" as any) as any)
         .select("supplier_id, imagem_url, escopo, escopo_categoria_id, inicio, fim, status")
-        .eq("status", "pago")
+        .in("status", ["ativo", "pago"])
         .lte("inicio", hoje)
         .gte("fim", hoje);
 

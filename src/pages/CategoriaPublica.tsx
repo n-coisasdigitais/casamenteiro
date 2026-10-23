@@ -309,7 +309,7 @@ export default function CategoriaPublica() {
       const hoje = new Date().toISOString();
       const { data: compras } = await (supabase.from("featured_purchases" as any) as any)
         .select("supplier_id, imagem_url, status, inicio, fim")
-        .eq("status", "pago")
+        .in("status", ["ativo", "pago"])
         .eq("escopo", "categoria")
         .eq("escopo_categoria_id", category.id)
         .lte("inicio", hoje)
