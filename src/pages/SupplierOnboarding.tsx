@@ -1,6 +1,6 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
 import { analytics } from "@/lib/analytics";
@@ -56,7 +56,8 @@ export default function SupplierOnboarding() {
 
   // Etapa 0 — conta
   const [signupName, setSignupName] = useState("");
-  const [signupEmail, setSignupEmail] = useState("");
+  const [searchParamsEmail] = useSearchParams();
+  const [signupEmail, setSignupEmail] = useState(() => (searchParamsEmail.get("email") || "").trim().slice(0, 254));
   const [signupPass, setSignupPass] = useState("");
   const [signupAcceptTerms, setSignupAcceptTerms] = useState(false);
 

@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ExternalLink, Loader2, Plus, Save, Trash2, Upload, ArrowUp, ArrowDown } from "lucide-react";
+import LandingFornecedorV2Abas from "@/components/admin/LandingFornecedorV2Abas";
 import { DEFAULT_LANDING, SupplierLandingConfig, HowStep, WhyItem, TestimonialItem, TrustPillar } from "@/lib/supplierLandingConfig";
 
 export default function AdminFornecedorLanding() {
@@ -31,7 +32,15 @@ export default function AdminFornecedorLanding() {
         .maybeSingle() as any);
       if (data) {
         setRowId(data.id);
-        setCfg({ ...DEFAULT_LANDING, ...(data.config as any) });
+        const salvo = data.config as any;
+        setCfg({
+          ...DEFAULT_LANDING,
+          ...salvo,
+          lead: { ...DEFAULT_LANDING.lead, ...(salvo.lead ?? {}) },
+          painel: { ...DEFAULT_LANDING.painel, ...(salvo.painel ?? {}) },
+          planos: { ...DEFAULT_LANDING.planos, ...(salvo.planos ?? {}) },
+          faq: { ...DEFAULT_LANDING.faq, ...(salvo.faq ?? {}) },
+        });
       }
       setLoading(false);
     })();
@@ -91,6 +100,10 @@ export default function AdminFornecedorLanding() {
             <TabsTrigger value="why">Por que anunciar</TabsTrigger>
             <TabsTrigger value="trust">Prova social</TabsTrigger>
             <TabsTrigger value="testimonials">Depoimentos</TabsTrigger>
+            <TabsTrigger value="lead">Pedido certo</TabsTrigger>
+            <TabsTrigger value="painel">Painel</TabsTrigger>
+            <TabsTrigger value="planos">Planos (textos)</TabsTrigger>
+            <TabsTrigger value="faq">Dúvidas</TabsTrigger>
             <TabsTrigger value="cta">CTA final</TabsTrigger>
           </TabsList>
 
@@ -101,6 +114,8 @@ export default function AdminFornecedorLanding() {
               <div><Label>Link do botão</Label><Input value={cfg.navbar.cta_href} onChange={(e) => update("navbar", { cta_href: e.target.value })} /></div>
             </Card>
           </TabsContent>
+
+          <LandingFornecedorV2Abas cfg={cfg} setCfg={setCfg} />
 
           {/* HERO */}
           <TabsContent value="hero" className="mt-6">

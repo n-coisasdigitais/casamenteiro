@@ -59,26 +59,36 @@ type Ctx = {
   flags: Record<string, boolean>;
   loading: boolean;
   reload: () => Promise<void>;
+  /** key -> mostrar como "Em breve" quando desligada (padrão true) */
+  emBreve: Record<string, boolean>;
 };
 
 const FeatureFlagsContext = createContext<Ctx>({
   flags: FEATURE_FLAG_DEFAULTS,
   loading: true,
   reload: async () => {},
+  emBreve: {},
 });
 
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   const [flags, setFlags] = useState<Record<string, boolean>>(FEATURE_FLAG_DEFAULTS);
   const [loading, setLoading] = useState(true);
+  const [emBreve, setEmBreve] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
-    const { data } = await (supabase.from("feature_flags" as any).select("key, enabled") as any);
+    // em_breve vem da migração fornecedor_landing; se a coluna ainda não existir, cai para a consulta antiga
+    let res: any = await (supabase.from("feature_flags" as any).select("key, enabled, em_breve") as any);
+    if (res.error) res = await (supabase.from("feature_flags" as any).select("key, enabled") as any);
+    const data = res.data;
     if (data && Array.isArray(data)) {
       const next = { ...FEATURE_FLAG_DEFAULTS };
+      const eb: Record<string, boolean> = {};
       (data as any[]).forEach((row) => {
         next[row.key] = !!row.enabled;
+        eb[row.key] = row.em_breve !== false;
       });
       setFlags(next);
+      setEmBreve(eb);
     }
     setLoading(false);
   }, []);
@@ -88,7 +98,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   }, [load]);
 
   return (
-    <FeatureFlagsContext.Provider value={{ flags, loading, reload: load }}>
+    <FeatureFlagsContext.Provider value={{ flags, loading, reload: load, emBreve }}>
       {children}
     </FeatureFlagsContext.Provider>
   );
@@ -110,4 +120,23 @@ export function useFeatureFlag(key: string, defaultValue = true): boolean {
 
 export function useReloadFeatureFlags() {
   return useContext(FeatureFlagsContext).reload;
+}
+export type FeatureStatus = "ativo" | "em_breve" | "oculto";
+
+/**
+ * Estado público de uma funcionalidade para páginas de divulgação:
+ * ligada = "ativo"; desligada com em_breve (padrão) = "em_breve"; desligada sem em_breve = "oculto".
+ * Sem chave = sempre "ativo".
+ */
+export function useFeatureStatus() {
+  const { flags, emBreve } = useContext(FeatureFlagsContext);
+  return useCallback(
+    (key?: string | null): FeatureStatus => {
+      if (!key) return "ativo";
+      const on = key in flags ? flags[key] : (FEATURE_FLAG_DEFAULTS[key] ?? true);
+      if (on) return "ativo";
+      return emBreve[key] === false ? "oculto" : "em_breve";
+    },
+    [flags, emBreve],
+  );
 }

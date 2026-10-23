@@ -1,35 +1,38 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Heart, Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import SEO from "@/components/SEO";
 import { absoluteUrl, SITE_URL } from "@/lib/seo";
-import VendorNavbar from "@/components/supplier/landing/VendorNavbar";
-import VendorHero from "@/components/supplier/landing/VendorHero";
-import HowItWorksSection from "@/components/supplier/landing/HowItWorksSection";
-import WhyTimeline from "@/components/supplier/WhyTimeline";
-import TestimonialsSection from "@/components/supplier/landing/TestimonialsSection";
-import TrustSection from "@/components/supplier/landing/TrustSection";
-import VendorCTASection from "@/components/supplier/landing/VendorCTASection";
-import PlatformFeatures from "@/components/shared/PlatformFeatures";
-import { DEFAULT_LANDING, SupplierLandingConfig } from "@/lib/supplierLandingConfig";
-import QuickStartSection from "@/components/supplier/landing/QuickStartSection";
+import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_LANDING, type SupplierLandingConfig } from "@/lib/supplierLandingConfig";
+import { carregarDadosFornecedor, DADOS_PADRAO, type DadosFornecedor } from "@/lib/fornecedorLanding";
+import {
+  ComoFunciona,
+  CtaFornecedor,
+  DepoimentosFornecedor,
+  DuvidasFornecedor,
+  HeroFornecedor,
+  PainelFornecedor,
+  PedidoCerto,
+  PlanosFornecedor,
+} from "@/components/supplier/landing/v2/FornecedorSecoes";
+import { Thread } from "@/components/home/v3/parts";
+import { HomeFooterV3 } from "@/components/home/v3/FinalAndFooter";
+import "@/components/home/v3/home-v3.css";
+import "@/components/supplier/landing/v2/fornecedor-v2.css";
 
+/**
+ * /fornecedor — página de aquisição de fornecedores, em capítulos:
+ * Hero → 01 O pedido certo → 02 Como funciona → 03 Painel → 04 Quanto custa
+ * → depoimentos (> 3) → dúvidas → CTA (abre o cadastro na aba Fornecedor com o e-mail).
+ *
+ * Textos: Admin › Landing Fornecedor (fornecedor_landing_config).
+ * Valores e funcionalidades: tabelas (planos, pacotes, preços, settings, feature flags).
+ */
 export default function SupplierLanding() {
   const [cfg, setCfg] = useState<SupplierLandingConfig>(DEFAULT_LANDING);
-  const [planos, setPlanos] = useState<any[]>([]);
+  const [dados, setDados] = useState<DadosFornecedor>(DADOS_PADRAO);
 
   useEffect(() => {
-    (async () => {
-      const { data } = await (supabase
-        .from("subscription_plans" as any)
-        .select("slug, nome, descricao, preco_mensal, beneficios, destaque_busca, ordem")
-        .order("ordem") as any);
-      if (data && data.length) setPlanos(data as any[]);
-    })();
-  }, []);
-
-  useEffect(() => {
+    let vivo = true;
     (async () => {
       const { data } = await (supabase
         .from("fornecedor_landing_config" as any)
@@ -37,17 +40,30 @@ export default function SupplierLanding() {
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle() as any);
-      if (data?.config) {
-        setCfg({ ...DEFAULT_LANDING, ...(data.config as any) });
+      if (vivo && data?.config) {
+        const salvo = data.config as Partial<SupplierLandingConfig>;
+        // seções novas que ainda não foram salvas no admin usam o padrão
+        setCfg({
+          ...DEFAULT_LANDING,
+          ...salvo,
+          lead: { ...DEFAULT_LANDING.lead, ...(salvo.lead ?? {}) },
+          painel: { ...DEFAULT_LANDING.painel, ...(salvo.painel ?? {}) },
+          planos: { ...DEFAULT_LANDING.planos, ...(salvo.planos ?? {}) },
+          faq: { ...DEFAULT_LANDING.faq, ...(salvo.faq ?? {}) },
+        });
       }
     })();
+    carregarDadosFornecedor().then((d) => vivo && setDados(d));
+    return () => {
+      vivo = false;
+    };
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="home-v3 min-h-screen">
       <SEO
         title="Casamenteiro — Para fornecedores de casamento"
-        description="Conecte seu serviço a casais com orçamento definido e data marcada. Cadastro gratuito, leads qualificados e visibilidade real."
+        description="Receba pedidos de orçamento de casais com data, cidade, convidados e orçamento definidos. Plano gratuito para sempre, sem comissão sobre seus contratos."
         canonical={absoluteUrl("/fornecedor")}
         jsonLd={{
           "@context": "https://schema.org",
@@ -55,118 +71,21 @@ export default function SupplierLanding() {
           serviceType: "Plataforma para fornecedores de casamento",
           provider: { "@type": "Organization", name: "Casamenteiro", url: SITE_URL },
           areaServed: "BR",
-          description:
-            "Cadastro gratuito de fornecedores: receba pedidos de orçamento de casais com data marcada e orçamento definido.",
+          description: "Cadastro gratuito de fornecedores: receba pedidos de orçamento de casais com data marcada e orçamento definido.",
         }}
       />
-
-      <VendorNavbar cfg={cfg.navbar} />
       <main>
-        <VendorHero cfg={cfg.hero} />
-        <HowItWorksSection cfg={cfg.how} />
-        <QuickStartSection />
-        <WhyTimeline cfg={cfg.why} />
-        <PlatformFeatures variant="supplier" />
-        <TrustSection cfg={cfg.trust} />
-        <TestimonialsSection cfg={cfg.testimonials} />
-
-        {planos.length > 0 && (
-          <section className="py-20 px-4 bg-muted/40" id="planos">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-12">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Planos</p>
-                <h2 className="text-3xl md:text-4xl font-bold mb-3">Comece grátis, cresça quando quiser</h2>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Cadastro sem custo para receber pedidos. Evolua para mais visibilidade e ferramentas conforme fecha
-                  casamentos.
-                </p>
-              </div>
-              <div className="grid md:grid-cols-3 gap-5">
-                {planos.map((p) => {
-                  const destaque = p.destaque_busca;
-                  const beneficios: string[] = Array.isArray(p.beneficios) ? p.beneficios : [];
-                  const gratis = Number(p.preco_mensal) === 0;
-                  return (
-                    <div
-                      key={p.slug}
-                      className={`rounded-2xl p-6 border flex flex-col bg-background ${destaque ? "border-primary border-2 shadow-lg" : "border-border"}`}
-                    >
-                      {destaque && (
-                        <span className="self-start mb-3 text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full bg-primary text-primary-foreground">
-                          Mais completo
-                        </span>
-                      )}
-                      <h3 className="text-xl font-bold">{p.nome}</h3>
-                      <p className="text-sm text-muted-foreground mt-1 mb-4">{p.descricao}</p>
-                      <div className="mb-5">
-                        {gratis ? (
-                          <span className="text-3xl font-bold">Grátis</span>
-                        ) : (
-                          <>
-                            <span className="text-3xl font-bold">
-                              R$ {Number(p.preco_mensal).toLocaleString("pt-BR")}
-                            </span>
-                            <span className="text-sm text-muted-foreground">/mês</span>
-                          </>
-                        )}
-                      </div>
-                      <ul className="space-y-2 mb-6 flex-1">
-                        {beneficios.map((b, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm">
-                            <Check className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <Link
-                        to="/fornecedor/cadastro"
-                        className={`rounded-full py-2.5 text-center font-medium text-sm transition hover:opacity-90 ${destaque ? "bg-primary text-primary-foreground" : "border border-border text-foreground"}`}
-                      >
-                        {gratis ? "Começar grátis" : `Assinar ${p.nome}`}
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-center text-sm text-muted-foreground mt-8">
-                Quer aparecer no topo da vitrine? Combine seu plano com os pacotes de{" "}
-                <strong>destaque na busca e na home</strong>.
-              </p>
-            </div>
-          </section>
-        )}
-
-        <VendorCTASection cfg={cfg.cta} />
+        <HeroFornecedor cfg={cfg} dados={dados} />
+        <PedidoCerto cfg={cfg} />
+        <Thread />
+        <ComoFunciona cfg={cfg} dados={dados} />
+        <PainelFornecedor cfg={cfg} />
+        <PlanosFornecedor cfg={cfg} dados={dados} />
+        <DepoimentosFornecedor cfg={cfg} dados={dados} />
+        <DuvidasFornecedor cfg={cfg} dados={dados} />
+        <CtaFornecedor cfg={cfg} dados={dados} />
       </main>
-
-      <footer className="py-8 px-4 border-t border-border">
-        <div className="container flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Heart className="h-3.5 w-3.5 text-primary fill-primary" />
-            <span>© {new Date().getFullYear()} Casamenteiro</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/privacidade" className="hover:text-foreground">
-              Política de privacidade
-            </Link>
-            <Link to="/termos" className="hover:text-foreground">
-              Termos
-            </Link>
-          </div>
-          <p className="flex items-center gap-1.5">
-            Desenvolvido com carinho pela
-            <a
-              href="https://ncoisas.digital/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-foreground"
-            >
-              N Coisas Digitais
-            </a>
-            <Heart className="h-3 w-3 text-primary fill-primary" />
-          </p>
-        </div>
-      </footer>
+      <HomeFooterV3 />
     </div>
   );
 }

@@ -1,0 +1,10 @@
+/* Página /fornecedor v2 — usa os tokens da Home (.home-v3) e acrescenta só o que é dela */
+@keyframes fv-lead { 0%,6% { opacity: 0; transform: translateY(24px) scale(.96); } 12%,88% { opacity: 1; transform: none; } 96%,100% { opacity: 0; transform: translateY(-12px); } }
+@keyframes fv-ping { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(2.4); opacity: 0; } }
+.home-v3 .fv-lead { animation: fv-lead 9s cubic-bezier(.2,.7,.2,1) infinite; }
+.home-v3 .fv-lead-2 { animation-delay: .9s; }
+.home-v3 .fv-lead-3 { animation-delay: 1.8s; }
+.home-v3 .fv-ping { animation: fv-ping 1.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .home-v3 .fv-lead { opacity: 1; transform: none; }
+}
