@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { FeatureFlagsProvider } from "@/contexts/FeatureFlagsContext";
 import FlagGate from "@/components/FlagGate";
 import CookieConsent from "@/components/CookieConsent";
+import BackToTop from "@/components/BackToTop";
 import RequireAccountType from "@/components/RequireAccountType";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
@@ -116,6 +117,7 @@ const App = () => (
           <AuthProvider>
             <DemoBanner />
             <CookieConsent />
+            <BackToTop />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/explorar" element={<Explore />} />
