@@ -226,7 +226,7 @@ export default function Simulador() {
                             className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold flex-shrink-0"
                             style={{
                               background: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-secondary))",
-                              color: sel ? "hsl(var(--color-bg))" : "hsl(var(--color-text-muted))",
+                              color: "hsl(var(--color-bg))",
                             }}
                           >
                             {g.letter}
