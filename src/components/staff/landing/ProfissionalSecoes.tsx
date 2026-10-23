@@ -90,11 +90,12 @@ function NavProfissional({ status }: { status: FeatureStatus }) {
         <div role="dialog" aria-modal="true" aria-label="Menu" className="fixed inset-0 z-[60] lg:hidden" style={{ background: "rgba(20,14,10,.45)" }} onClick={() => setAberto(false)}>
           <div className="flex flex-col rounded-b-[28px] bg-white px-6 pb-7 pt-3" onClick={(e) => e.stopPropagation()}>
             <div className="flex min-h-[56px] items-center justify-between">
-              <span className="text-[20px] font-extrabold">casamenteiro<span style={{ color: "var(--hv-terracota)" }}>.</span></span>
-              <button type="button" onClick={() => setAberto(false)} aria-label="Fechar menu" className="inline-flex h-11 w-11 items-center justify-center rounded-full border" style={{ borderColor: "var(--hv-line)" }}>
+              <Link to="/" onClick={() => setAberto(false)} className="text-[20px] font-extrabold" style={{ color: "var(--hv-ink)" }}>casamenteiro<span style={{ color: "var(--hv-terracota)" }}>.</span></Link>
+              <button type="button" onClick={() => setAberto(false)} aria-label="Fechar menu" className="inline-flex h-11 w-11 items-center justify-center rounded-full border" style={{ borderColor: "var(--hv-line)", color: "var(--hv-ink)" }}>
                 <X className="h-5 w-5" />
               </button>
             </div>
+            <Link to="/" onClick={() => setAberto(false)} className="flex min-h-[56px] items-center border-b text-[20px] font-bold" style={{ borderColor: "#f2eee8", color: "var(--hv-ink)" }}>Página inicial</Link>
             {ANCORAS.map((a) => (
               <a key={a.href} href={a.href} onClick={() => setAberto(false)} className="flex min-h-[56px] items-center border-b text-[20px] font-bold" style={{ borderColor: "#f2eee8", color: "var(--hv-ink)" }}>{a.label}</a>
             ))}
