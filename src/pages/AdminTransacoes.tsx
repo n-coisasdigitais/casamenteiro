@@ -138,6 +138,64 @@ export default function AdminTransacoes() {
               </CardContent></Card>
             ))}
           </TabsContent>
+
+          <TabsContent value="assinaturas" className="space-y-2">
+            {subs.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma assinatura ainda.</p>}
+            {subs.map((s) => {
+              const faturas = invoices.filter((i) => i.subscription_id === s.id);
+              return (
+                <Card key={s.id}><CardContent className="p-3 space-y-2 text-sm">
+                  <div className="flex justify-between flex-wrap gap-2">
+                    <div>
+                      <p className="font-medium">{suppliersMap[s.supplier_id]?.company_name || "Fornecedor"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Plano: {plansMap[s.plan_id]?.nome || "—"} · {s.ciclo === "anual" ? "Anual" : "Mensal"} · {s.ambiente === "demo" ? "Demo" : "Produção"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Período: {s.current_period_start ? new Date(s.current_period_start).toLocaleDateString("pt-BR") : "—"} → {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString("pt-BR") : "—"}
+                        {s.cancelada_em && ` · Cancelada em ${new Date(s.cancelada_em).toLocaleDateString("pt-BR")}`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">R$ {Number(s.valor || 0).toLocaleString("pt-BR")}</p>
+                      <Badge variant={s.status === "active" ? "default" : "outline"}>{fmtStatus(s.status)}</Badge>
+                    </div>
+                  </div>
+                  {faturas.length > 0 && (
+                    <div className="border-t border-border pt-2 space-y-1">
+                      {faturas.map((f) => (
+                        <p key={f.id} className="text-xs text-muted-foreground flex justify-between">
+                          <span>Fatura {new Date(f.periodo_inicio).toLocaleDateString("pt-BR")} → {new Date(f.periodo_fim).toLocaleDateString("pt-BR")}</span>
+                          <span>R$ {Number(f.valor || 0).toLocaleString("pt-BR")} · {fmtStatus(f.status)}{f.pago_em ? ` em ${new Date(f.pago_em).toLocaleDateString("pt-BR")}` : ""}</span>
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </CardContent></Card>
+              );
+            })}
+          </TabsContent>
+
+          <TabsContent value="destaques" className="space-y-2">
+            {destaques.length === 0 && <p className="text-sm text-muted-foreground">Nenhum destaque comprado ainda.</p>}
+            {destaques.map((d) => (
+              <Card key={d.id}><CardContent className="p-3 flex justify-between flex-wrap gap-2 text-sm">
+                <div>
+                  <p className="font-medium">{suppliersMap[d.supplier_id]?.company_name || "Fornecedor"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {d.escopo || "—"}{d.escopo_cidade ? ` · ${d.escopo_cidade}` : ""} · {d.dias} dias · {d.ambiente === "demo" ? "Demo" : "Produção"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {d.inicio ? new Date(d.inicio).toLocaleDateString("pt-BR") : "—"} → {d.fim ? new Date(d.fim).toLocaleDateString("pt-BR") : "—"} · Comprado em {new Date(d.created_at).toLocaleDateString("pt-BR")}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">R$ {Number(d.valor || 0).toLocaleString("pt-BR")}</p>
+                  <Badge variant={d.status === "paid" ? "default" : "outline"}>{fmtStatus(d.status)}</Badge>
+                </div>
+              </CardContent></Card>
+            ))}
+          </TabsContent>
         </Tabs>
       </div>
     </div>
