@@ -25,6 +25,7 @@ type FeatureFlagRow = {
   grupo: string;
   essencial: boolean;
   description: string | null;
+  em_breve?: boolean;
 };
 
 const GRUPO_ORDER = ["Aquisição", "Casal", "Fornecedor", "Social", "Geral"];
