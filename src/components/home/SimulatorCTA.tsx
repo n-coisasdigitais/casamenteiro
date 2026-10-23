@@ -259,7 +259,7 @@ const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = fa
                               className="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold flex-shrink-0"
                               style={{
                                 background: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-secondary))",
-                                color: sel ? "hsl(var(--color-bg))" : "hsl(var(--color-text-muted))",
+                                color: "hsl(var(--color-bg))",
                               }}
                             >
                               {g.letter}
@@ -399,7 +399,7 @@ const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = fa
                               }}
                             >
                               <span className="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold"
-                                style={{ background: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-secondary))", color: sel ? "hsl(var(--color-bg))" : "hsl(var(--color-text-muted))" }}>
+                                style={{ background: sel ? "hsl(var(--color-primary))" : "hsl(var(--color-secondary))", color: "hsl(var(--color-bg))" }}>
                                 {p.letter}
                               </span>
                               {p.label}
