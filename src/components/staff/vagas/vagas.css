@@ -1,0 +1,20 @@
+/* /vagas — tons da página. Troque o bloco ativo para mudar a cor de fundo. */
+.vg-page {
+  /* Areia (padrão): quente e leve, combina com a Home */
+  --vg-bg: #faf5ef;
+  --vg-topo: #f3e7da;
+  --vg-linha: #e9ddd0;
+  --vg-acento: #b85c38;
+}
+.vg-page[data-tom="rose"] {
+  --vg-bg: #fbf5f3;
+  --vg-topo: #f6e4df;
+  --vg-linha: #ecd9d3;
+  --vg-acento: #b0505e;
+}
+.vg-page[data-tom="salvia"] {
+  --vg-bg: #f5f8f6;
+  --vg-topo: #e3eee8;
+  --vg-linha: #d5e3db;
+  --vg-acento: #3b6656;
+}

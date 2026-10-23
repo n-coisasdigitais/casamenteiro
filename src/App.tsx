@@ -42,6 +42,7 @@ import AdminCidades from "./pages/AdminCidades";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminHomeDestaques from "./pages/AdminHomeDestaques";
 import AdminFornecedorLanding from "./pages/AdminFornecedorLanding";
+import AdminProfissionalLanding from "./pages/AdminProfissionalLanding";
 import AdminLandingEmails from "./pages/AdminLandingEmails";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
 import AdminTransacoes from "./pages/AdminTransacoes";
@@ -267,14 +268,8 @@ const App = () => (
               <Route path="/fornecedor" element={<SupplierLanding />} />
               <Route path="/fornecedor/login" element={<Auth />} />
               <Route path="/fornecedor/cadastro" element={<SupplierOnboarding />} />
-              <Route
-                path="/profissional"
-                element={
-                  <FlagGate flag="vagas">
-                    <StaffLanding />
-                  </FlagGate>
-                }
-              />
+              {/* sem FlagGate: com "vagas" desligado a página vira lista de espera ("Em breve") */}
+              <Route path="/profissional" element={<StaffLanding />} />
               <Route
                 path="/vagas"
                 element={
@@ -399,6 +394,14 @@ const App = () => (
                 element={
                   <AdminLayout>
                     <AdminHomeDestaques />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/profissional-landing"
+                element={
+                  <AdminLayout>
+                    <AdminProfissionalLanding />
                   </AdminLayout>
                 }
               />

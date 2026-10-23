@@ -68,6 +68,7 @@ const groups = [
       { title: "Home", url: "/admin/home-config", icon: HomeIcon },
       { title: "Home — destaques e imagens", url: "/admin/home-destaques", icon: HomeIcon },
       { title: "Landing Fornecedor", url: "/admin/fornecedor-landing", icon: Building2 },
+      { title: "Landing Profissional", url: "/admin/profissional-landing", icon: Users },
       { title: "E-mails do CTA", url: "/admin/fornecedor-emails", icon: Mail },
       { title: "Tarefas padrão", url: "/admin/tarefas-padrao", icon: ListChecks },
       { title: "Edição em massa", url: "/admin/fornecedores", icon: Building2 },

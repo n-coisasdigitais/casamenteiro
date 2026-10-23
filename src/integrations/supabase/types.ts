@@ -2613,6 +2613,27 @@ export type Database = {
         }
         Relationships: []
       }
+      profissional_landing_config: {
+        Row: {
+          config: Json
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       quote_messages: {
         Row: {
           attachment_url: string | null
@@ -5292,6 +5313,10 @@ export type Database = {
       }
       expirar_monetizacao: { Args: never; Returns: undefined }
       expire_idle_reservations: { Args: never; Returns: number }
+      fornecedor_tem_recurso: {
+        Args: { p_recurso: string; p_supplier: string }
+        Returns: boolean
+      }
       generate_couple_profile_slug: {
         Args: { _nome: string; _wedding_date: string }
         Returns: string

@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { destinoProfissional } from "@/lib/vagaPendente";
 import { supabase } from "@/integrations/supabase/client";
 import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
@@ -102,7 +103,8 @@ export default function StaffOnboarding() {
     if (error) return toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Perfil salvo!" });
     analytics.onboardingComplete("staff");
-    navigate("/profissional/painel");
+    // se veio de uma vaga (/vagas), volta para ela com o botão de candidatura pronto
+    navigate(destinoProfissional());
   };
 
   return (
