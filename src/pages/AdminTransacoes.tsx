@@ -18,18 +18,26 @@ export default function AdminTransacoes() {
   const [contracted, setContracted] = useState<any[]>([]);
   const [suppliersMap, setSuppliersMap] = useState<Record<string, any>>({});
   const [couplesMap, setCouplesMap] = useState<Record<string, any>>({});
+  const [subs, setSubs] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [destaques, setDestaques] = useState<any[]>([]);
+  const [plansMap, setPlansMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate("/login"); return; }
     supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(async ({ data }) => {
       if (!data) { navigate("/"); return; }
-      const [simsRes, quotesRes, contractsRes, supRes, coupleRes] = await Promise.all([
+      const [simsRes, quotesRes, contractsRes, supRes, coupleRes, subsRes, invoicesRes, destaquesRes, plansRes] = await Promise.all([
         (supabase.from("home_simulacoes" as any) as any).select("*").order("criado_em", { ascending: false }),
         supabase.from("quotes").select("*").order("created_at", { ascending: false }),
         supabase.from("couple_suppliers").select("*").eq("status", "contracted").order("contracted_at", { ascending: false }),
         semDemo(supabase.from("suppliers").select("id, company_name, is_demo")),
         semDemo(supabase.from("couples").select("id, partner_name, user_id, is_demo")),
+        supabase.from("supplier_subscriptions").select("*").order("created_at", { ascending: false }),
+        supabase.from("subscription_invoices").select("*").order("created_at", { ascending: false }),
+        supabase.from("featured_purchases").select("*").order("created_at", { ascending: false }),
+        supabase.from("subscription_plans").select("id, nome, slug"),
       ]);
       const supplierIds = new Set((supRes.data || []).map((s: any) => s.id));
       const coupleIds = new Set((coupleRes.data || []).map((c: any) => c.id));
