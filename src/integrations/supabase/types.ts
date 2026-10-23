@@ -3627,6 +3627,39 @@ export type Database = {
         }
         Relationships: []
       }
+      suporte_reportes: {
+        Row: {
+          anexo_path: string | null
+          assunto: string
+          created_at: string
+          descricao: string
+          id: string
+          origem: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          anexo_path?: string | null
+          assunto: string
+          created_at?: string
+          descricao: string
+          id?: string
+          origem?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          anexo_path?: string | null
+          assunto?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          origem?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       supplier_attachments: {
         Row: {
           created_at: string

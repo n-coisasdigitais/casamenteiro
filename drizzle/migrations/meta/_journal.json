@@ -29,6 +29,13 @@
       "when": 1792719438540,
       "tag": "0003_secoes_home_escopo_ampliar",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792753581552,
+      "tag": "0004_suporte_reportes",
+      "breakpoints": true
     }
   ]
 }
