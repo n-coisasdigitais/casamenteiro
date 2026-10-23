@@ -84,6 +84,9 @@ export default function AdminTransacoes() {
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Contratos</p><p className="text-2xl font-bold">{contracted.length}</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Conversão sim→orc</p><p className="text-2xl font-bold">{conversaoOrc}%</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">GMV fechado</p><p className="text-2xl font-bold">R$ {totalGmv.toLocaleString("pt-BR")}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Assinaturas ativas</p><p className="text-2xl font-bold">{subsAtivas}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Receita assinaturas</p><p className="text-2xl font-bold">R$ {receitaAssinaturas.toLocaleString("pt-BR")}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Receita destaques</p><p className="text-2xl font-bold">R$ {receitaDestaques.toLocaleString("pt-BR")}</p></CardContent></Card>
         </div>
         <p className="text-xs text-muted-foreground">Conversão orçamento → contrato: <strong>{conversaoFech}%</strong></p>
 
@@ -92,6 +95,8 @@ export default function AdminTransacoes() {
             <TabsTrigger value="contratos">Contratos ({contracted.length})</TabsTrigger>
             <TabsTrigger value="orcamentos">Orçamentos ({quotes.length})</TabsTrigger>
             <TabsTrigger value="simulacoes">Simulações ({sims.length})</TabsTrigger>
+            <TabsTrigger value="assinaturas">Assinaturas ({subs.length})</TabsTrigger>
+            <TabsTrigger value="destaques">Destaques ({destaques.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contratos" className="space-y-2">
