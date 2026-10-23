@@ -509,7 +509,17 @@ export default function SupplierDashboard() {
       );
     }
     if (dest === "vagas" && vagasEnabled) {
-      return <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />;
+      return (
+        <PlanGate
+          supplierId={supplier.id}
+          feature="vagas_equipe"
+          titulo="Equipe e vagas"
+          descricao="Publique vagas e convide garçons, cozinha, bar e limpeza para os seus eventos. Disponível nos planos pagos."
+          minHeight={320}
+        >
+          <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />
+        </PlanGate>
+      );
     }
     if (dest === "ajuda") {
       return <AjudaTab origem="fornecedor" />;

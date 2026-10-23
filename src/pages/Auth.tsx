@@ -1,6 +1,7 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { destinoProfissional } from "@/lib/vagaPendente";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,7 +77,8 @@ export default function Auth() {
           if (!sp?.cidade || !sp?.consentimento_lgpd) {
             navigate("/profissional/onboarding", { replace: true });
           } else {
-            navigate("/profissional/painel", { replace: true });
+            // volta para a vaga em que clicou antes do login, se houver
+            navigate(destinoProfissional(), { replace: true });
           }
           return;
         }
