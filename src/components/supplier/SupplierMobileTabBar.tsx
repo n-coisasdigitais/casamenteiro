@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Store, Users, Star } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Users, Star, LifeBuoy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { SupplierDestination } from "./SupplierSidebar";
@@ -25,13 +25,14 @@ export default function SupplierMobileTabBar({
   ];
   if (vagasEnabled) items.push({ key: "vagas", label: "Vagas", icon: Users });
   else items.push({ key: "avaliacoes", label: "Avaliações", icon: Star });
+  items.push({ key: "ajuda", label: "Ajuda", icon: LifeBuoy });
 
   return (
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-5">
         {items.map((it) => {
           const Icon = it.icon;
           const isActive = active === it.key;
