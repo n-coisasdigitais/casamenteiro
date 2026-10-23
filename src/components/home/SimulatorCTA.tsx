@@ -202,7 +202,7 @@ const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = fa
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                className="absolute inset-0 flex flex-col justify-center px-7 md:px-14 py-12"
+                className="absolute inset-0 flex flex-col justify-center px-7 md:px-14 py-8 md:py-12"
               >
                 {step === 0 && (
                   <div className="text-center flex flex-col items-center">
@@ -473,6 +473,10 @@ const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = fa
       </div>
 
       <style>{`
+        .sim-card { min-height: 540px; }
+        @media (max-width: 767px) {
+          .sim-card { min-height: 660px; }
+        }
         .sim-range { -webkit-appearance:none; appearance:none; height:4px; background:hsl(var(--color-border)); border-radius:2px; outline:none; cursor:pointer; }
         .sim-range::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:22px; height:22px; border-radius:50%; background:hsl(var(--color-primary)); cursor:pointer; border:3px solid hsl(var(--color-bg)); box-shadow:0 0 0 2px hsl(var(--color-primary)); }
         .sim-range::-moz-range-thumb { width:22px; height:22px; border-radius:50%; background:hsl(var(--color-primary)); cursor:pointer; border:3px solid hsl(var(--color-bg)); box-shadow:0 0 0 2px hsl(var(--color-primary)); }
