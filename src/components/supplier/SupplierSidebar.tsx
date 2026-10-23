@@ -1,9 +1,9 @@
-import { LayoutDashboard, MessageSquare, Store, Users, Star, Sparkles, Receipt, CalendarRange } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Store, Users, Star, Sparkles, Receipt, CalendarRange, LifeBuoy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-export type SupplierDestination = "painel" | "orcamentos" | "negocio" | "reservas" | "vagas" | "avaliacoes";
+export type SupplierDestination = "painel" | "orcamentos" | "negocio" | "reservas" | "vagas" | "avaliacoes" | "ajuda";
 
 type Item = {
   key: SupplierDestination;
@@ -29,6 +29,7 @@ export function getSupplierDestinations(opts: {
     items.push({ key: "reservas", label: "Reservas", icon: CalendarRange, badge: opts.reservasPendentes || null });
   if (opts.vagasEnabled) items.push({ key: "vagas", label: "Equipe e vagas", icon: Users });
   items.push({ key: "avaliacoes", label: "Avaliações", icon: Star });
+  items.push({ key: "ajuda", label: "Ajuda", icon: LifeBuoy });
   return items;
 }
 

@@ -58,6 +58,7 @@ import SupplierActionCards from "@/components/supplier/SupplierActionCards";
 import SupplierLeadsCRM from "@/components/supplier/SupplierLeadsCRM";
 import PlanGate, { TrialBanner } from "@/components/plan/PlanGate";
 import MinhaAssinaturaCard from "@/components/plan/MinhaAssinaturaCard";
+import AjudaTab from "@/components/AjudaTab";
 import MercadoPagoConnectCard from "@/components/supplier/MercadoPagoConnectCard";
 
 type Category = { id: string; name: string; slug?: string | null };
@@ -509,6 +510,9 @@ export default function SupplierDashboard() {
     }
     if (dest === "vagas" && vagasEnabled) {
       return <SupplierStaffTab supplierId={supplier.id} companyName={supplier.company_name} />;
+    }
+    if (dest === "ajuda") {
+      return <AjudaTab origem="fornecedor" />;
     }
     if (dest === "reservas" && reservasEnabled) {
       return (
