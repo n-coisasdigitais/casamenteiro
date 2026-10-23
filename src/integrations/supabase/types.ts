@@ -1486,14 +1486,49 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_events: {
+        Row: {
+          created_at: string
+          id: number
+          purchase_id: string
+          sessao: string | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          purchase_id: string
+          sessao?: string | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          purchase_id?: string
+          sessao?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_events_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "featured_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       featured_packages: {
         Row: {
           ativo: boolean
           created_at: string
           dias: number
           escopo: string
+          exclusivo: boolean
+          formato_imagem: string | null
           id: string
           label: string
+          max_vagas: number
           ordem: number
           updated_at: string
           valor: number
@@ -1503,8 +1538,11 @@ export type Database = {
           created_at?: string
           dias?: number
           escopo?: string
+          exclusivo?: boolean
+          formato_imagem?: string | null
           id?: string
           label: string
+          max_vagas?: number
           ordem?: number
           updated_at?: string
           valor?: number
@@ -1514,8 +1552,11 @@ export type Database = {
           created_at?: string
           dias?: number
           escopo?: string
+          exclusivo?: boolean
+          formato_imagem?: string | null
           id?: string
           label?: string
+          max_vagas?: number
           ordem?: number
           updated_at?: string
           valor?: number
@@ -1530,11 +1571,19 @@ export type Database = {
           escopo: string
           escopo_categoria_id: string | null
           escopo_cidade: string | null
+          exclusivo: boolean
           fim: string | null
+          foco_desktop: string
+          foco_mobile: string
           id: string
+          imagem_motivo_recusa: string | null
+          imagem_status: string
           imagem_url: string | null
           inicio: string | null
+          legenda: string | null
+          link_destino: string | null
           mp_payment_id: string | null
+          package_id: string | null
           status: string
           supplier_id: string
           updated_at: string
@@ -1547,11 +1596,19 @@ export type Database = {
           escopo?: string
           escopo_categoria_id?: string | null
           escopo_cidade?: string | null
+          exclusivo?: boolean
           fim?: string | null
+          foco_desktop?: string
+          foco_mobile?: string
           id?: string
+          imagem_motivo_recusa?: string | null
+          imagem_status?: string
           imagem_url?: string | null
           inicio?: string | null
+          legenda?: string | null
+          link_destino?: string | null
           mp_payment_id?: string | null
+          package_id?: string | null
           status?: string
           supplier_id: string
           updated_at?: string
@@ -1564,17 +1621,32 @@ export type Database = {
           escopo?: string
           escopo_categoria_id?: string | null
           escopo_cidade?: string | null
+          exclusivo?: boolean
           fim?: string | null
+          foco_desktop?: string
+          foco_mobile?: string
           id?: string
+          imagem_motivo_recusa?: string | null
+          imagem_status?: string
           imagem_url?: string | null
           inicio?: string | null
+          legenda?: string | null
+          link_destino?: string | null
           mp_payment_id?: string | null
+          package_id?: string | null
           status?: string
           supplier_id?: string
           updated_at?: string
           valor?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "featured_purchases_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "featured_packages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "featured_purchases_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -2446,7 +2518,9 @@ export type Database = {
       platform_reviews: {
         Row: {
           aprovado: boolean
+          autor_detalhe: string | null
           autor_nome: string | null
+          autor_tipo: string
           comentario: string | null
           couple_id: string | null
           created_at: string
@@ -2458,7 +2532,9 @@ export type Database = {
         }
         Insert: {
           aprovado?: boolean
+          autor_detalhe?: string | null
           autor_nome?: string | null
+          autor_tipo?: string
           comentario?: string | null
           couple_id?: string | null
           created_at?: string
@@ -2470,7 +2546,9 @@ export type Database = {
         }
         Update: {
           aprovado?: boolean
+          autor_detalhe?: string | null
           autor_nome?: string | null
+          autor_tipo?: string
           comentario?: string | null
           couple_id?: string | null
           created_at?: string
@@ -2959,38 +3037,58 @@ export type Database = {
       secoes_home: {
         Row: {
           ativo: boolean
+          categoria_id: string | null
           criado_em: string
           escopo: string
+          foco_desktop: string
+          foco_mobile: string
           foto_url: string
           frase: string
           id: string
+          link_destino: string | null
           ordem: number
           subtexto: string | null
           supplier_id: string | null
         }
         Insert: {
           ativo?: boolean
+          categoria_id?: string | null
           criado_em?: string
           escopo?: string
+          foco_desktop?: string
+          foco_mobile?: string
           foto_url: string
           frase: string
           id?: string
+          link_destino?: string | null
           ordem?: number
           subtexto?: string | null
           supplier_id?: string | null
         }
         Update: {
           ativo?: boolean
+          categoria_id?: string | null
           criado_em?: string
           escopo?: string
+          foco_desktop?: string
+          foco_mobile?: string
           foto_url?: string
           frase?: string
           id?: string
+          link_destino?: string | null
           ordem?: number
           subtexto?: string | null
           supplier_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "secoes_home_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       simulated_budgets: {
         Row: {
@@ -5225,6 +5323,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      home_destaques_ativos: {
+        Args: never
+        Returns: {
+          categoria_id: string
+          categoria_nome: string
+          categoria_slug: string
+          escopo: string
+          exclusivo: boolean
+          foco_desktop: string
+          foco_mobile: string
+          id: string
+          imagem_url: string
+          legenda: string
+          link_destino: string
+          supplier_id: string
+          supplier_nome: string
+        }[]
+      }
       is_demo_user: { Args: { _user_id: string }; Returns: boolean }
       is_job_applicant: { Args: { _job_id: string }; Returns: boolean }
       is_supplier_of_my_job: {
@@ -5307,6 +5423,10 @@ export type Database = {
         }
         Returns: Json
       }
+      registrar_evento_destaque: {
+        Args: { p_purchase: string; p_sessao?: string; p_tipo: string }
+        Returns: undefined
+      }
       registrar_minha_indicacao_fornecedor: {
         Args: { _codigo: string }
         Returns: Json
@@ -5341,6 +5461,10 @@ export type Database = {
         Returns: undefined
       }
       supplier_tem_acesso: { Args: { _supplier_id: string }; Returns: boolean }
+      vagas_destaque_disponiveis: {
+        Args: { p_categoria?: string; p_escopo: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

@@ -8,6 +8,20 @@
       "when": 1792085124222,
       "tag": "0000_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792717807821,
+      "tag": "0001_home_storytelling_destaques",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792717830012,
+      "tag": "0002_destaques_storage_policies",
+      "breakpoints": true
     }
   ]
 }
