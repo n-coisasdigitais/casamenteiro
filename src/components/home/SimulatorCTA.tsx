@@ -2,7 +2,7 @@ import { traduzirErro } from "@/lib/errorMessages";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Check, Leaf, Sparkles, PartyPopper, Calendar as CalIcon } from "lucide-react";
+import { ArrowLeft, Check, Leaf, Sparkles, PartyPopper, Calendar as CalIcon, Maximize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -158,11 +158,10 @@ const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = fa
       <div className={embedded ? "w-full" : "max-w-2xl mx-auto w-full"}>
         <div
           ref={cardRef}
-          className="relative overflow-hidden flex flex-col"
+          className="sim-card relative overflow-hidden flex flex-col"
           style={{
             background: "hsl(var(--color-bg))",
             borderRadius: 20,
-            minHeight: 540,
             boxShadow: "0 30px 80px -40px hsl(var(--color-dark) / 0.25)",
             border: "1px solid hsl(var(--color-border))",
           }}
@@ -175,6 +174,25 @@ const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = fa
             />
           </div>
 
+          {/* Ver em tela cheia (apenas no card embutido) */}
+          {embedded && (
+            <button
+              onClick={() => navigate("/simulador")}
+              aria-label="Ver em tela cheia"
+              title="Ver em tela cheia"
+              className="absolute right-3 top-4 z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition hover:opacity-90"
+              style={{
+                background: "hsl(var(--color-bg) / 0.85)",
+                color: "hsl(var(--color-text-muted))",
+                border: "1px solid hsl(var(--color-border))",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              <Maximize2 size={14} />
+              Tela cheia
+            </button>
+          )}
+
           <div className="relative flex-1">
             <AnimatePresence mode="wait">
               <motion.div
@@ -184,7 +202,7 @@ const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = fa
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                className="absolute inset-0 flex flex-col justify-center px-7 md:px-14 py-12"
+                className="absolute inset-0 flex flex-col justify-center px-7 md:px-14 py-8 md:py-12"
               >
                 {step === 0 && (
                   <div className="text-center flex flex-col items-center">
@@ -455,6 +473,10 @@ const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = fa
       </div>
 
       <style>{`
+        .sim-card { min-height: 540px; }
+        @media (max-width: 767px) {
+          .sim-card { min-height: 660px; }
+        }
         .sim-range { -webkit-appearance:none; appearance:none; height:4px; background:hsl(var(--color-border)); border-radius:2px; outline:none; cursor:pointer; }
         .sim-range::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:22px; height:22px; border-radius:50%; background:hsl(var(--color-primary)); cursor:pointer; border:3px solid hsl(var(--color-bg)); box-shadow:0 0 0 2px hsl(var(--color-primary)); }
         .sim-range::-moz-range-thumb { width:22px; height:22px; border-radius:50%; background:hsl(var(--color-primary)); cursor:pointer; border:3px solid hsl(var(--color-bg)); box-shadow:0 0 0 2px hsl(var(--color-primary)); }
