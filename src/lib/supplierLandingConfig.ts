@@ -145,7 +145,7 @@ export const DEFAULT_LANDING: SupplierLandingConfig = {
     eyebrow: "Capítulo 04 · Quanto custa",
     title_pre: "Comece grátis. Cresça quando",
     title_em: "fechar.",
-    subtitle: "Sem comissão sobre os seus contratos. Comece no plano gratuito, ganhe {teste_dias} dias de plano pago por nossa conta e só pague se decidir assinar.",
+    subtitle: "Comece no plano gratuito, sem mensalidade, e experimente o plano completo por {teste_dias} dias após a aprovação. Depois, continue no gratuito ou escolha um plano pago. Sem assinatura automática.",
     destaques_titulo: "Apareça na Home, onde o casal começa.",
     destaques_texto: "Sua foto com o selo “Patrocinado” e link para o seu perfil. Vagas limitadas que se revezam, com relatório de visualizações e cliques.",
     reserva_titulo: "Reserva de data ociosa",
@@ -154,8 +154,9 @@ export const DEFAULT_LANDING: SupplierLandingConfig = {
   faq: {
     title: "Dúvidas comuns",
     items: [
-      { id: "f1", q: "Preciso pagar para anunciar?", a: "Não. O plano gratuito não tem mensalidade e já recebe pedidos de orçamento. Nada é cobrado sem você clicar em “Assinar”." },
-      { id: "f2", q: "Como funcionam os dias de plano pago grátis?", a: "Quando seu cadastro é aprovado, você ganha {teste_dias} dias com todos os recursos dos planos pagos, sem custo. Quando esse período acaba, você continua no plano gratuito, sem nenhuma cobrança. Para manter os recursos, é só assinar." },
+      { id: "f1", q: "Preciso pagar para anunciar?", a: "Não. O plano gratuito continua gratuito, sem mensalidade, e permite receber pedidos de orçamento. O fim do teste do plano completo não transforma seu cadastro em uma assinatura paga." },
+      { id: "f2", q: "Por quanto tempo posso experimentar o plano completo?", a: "Após a aprovação do cadastro, você tem {teste_dias} dias para experimentar o plano completo sem custo. Esse prazo vale para o teste dos recursos pagos, não para o plano gratuito." },
+      { id: "f7", q: "O que acontece quando o teste termina?", a: "Se você não contratar um plano pago, seu cadastro passa para o plano gratuito, sem cobrança. Os recursos exclusivos dos planos pagos deixam de ficar disponíveis, mas o plano gratuito continua sem mensalidade. Para manter os recursos completos, você pode escolher e contratar um plano pago." },
       { id: "f3", q: "A plataforma cobra comissão?", a: "Não. Não cobramos comissão sobre os seus contratos. A única taxa é de {taxa_reserva} quando você aprova a reserva de uma data ociosa." },
       { id: "f4", q: "E se o casal cancelar a reserva?", a: "O casal pode cancelar sem custo em até {carencia_dias} dias. Depois desse prazo, o custo do cancelamento fica com o casal, para não prejudicar a sua agenda." },
       { id: "f5", q: "Em quanto tempo meu perfil vai ao ar?", a: "Uma pessoa da equipe revisa seu cadastro em até {aprovacao_horas}h. Se faltar alguma informação, avisamos por e-mail." },
@@ -164,10 +165,10 @@ export const DEFAULT_LANDING: SupplierLandingConfig = {
   },
   cta: {
     eyebrow: "Comece agora",
-    title: "Bora fechar mais casamentos?",
-    subtitle: "Plano gratuito, sem mensalidade, e {teste_dias} dias de plano pago por nossa conta. Deixe seu e-mail e comece o cadastro.",
+    title: "Anuncie grátis. Comece com o plano completo.",
+    subtitle: "Experimente o plano completo por {teste_dias} dias após a aprovação. Depois, continue no plano gratuito, sem mensalidade, ou escolha um plano pago. Deixe seu e-mail e comece o cadastro.",
     button_label: "Garantir meu acesso →",
     redirect_path: "/fornecedor/cadastro",
-    footnote: "✓ Gratuito para começar  ·  ✓ Aprovação em 24h  ·  ✓ Sem surpresas",
+    footnote: "✓ Sem cartão para começar  ·  ✓ Sem assinatura automática  ·  ✓ O gratuito continua grátis",
   },
 };
