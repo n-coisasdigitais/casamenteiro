@@ -46,6 +46,10 @@ export default function AdminTransacoes() {
       setContracted((contractsRes.data || []).filter((c: any) => supplierIds.has(c.supplier_id) && coupleIds.has(c.couple_id)));
       setSuppliersMap(Object.fromEntries((supRes.data || []).map((s: any) => [s.id, s])));
       setCouplesMap(Object.fromEntries((coupleRes.data || []).map((c: any) => [c.id, c])));
+      setSubs((subsRes.data || []).filter((s: any) => supplierIds.has(s.supplier_id)));
+      setInvoices((invoicesRes.data || []).filter((i: any) => supplierIds.has(i.supplier_id)));
+      setDestaques((destaquesRes.data || []).filter((d: any) => supplierIds.has(d.supplier_id)));
+      setPlansMap(Object.fromEntries((plansRes.data || []).map((p: any) => [p.id, p])));
       setLoading(false);
     });
   }, [user, authLoading, navigate]);
