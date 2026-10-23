@@ -59,6 +59,11 @@ export default function AdminTransacoes() {
   const totalGmv = contracted.reduce((s, r) => s + Number(r.final_value || r.contract_value || 0), 0);
   const conversaoOrc = sims.length ? Math.round((quotes.length / sims.length) * 100) : 0;
   const conversaoFech = quotes.length ? Math.round((contracted.length / quotes.length) * 100) : 0;
+  const receitaAssinaturas = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.valor || 0), 0);
+  const receitaDestaques = destaques.filter((d) => d.status === "paid").reduce((s, d) => s + Number(d.valor || 0), 0);
+  const subsAtivas = subs.filter((s) => s.status === "active").length;
+  const statusLabel: Record<string, string> = { active: "Ativa", canceled: "Cancelada", past_due: "Vencida", trialing: "Teste", paid: "Pago", pending: "Pendente", refunded: "Reembolsado", expired: "Expirado" };
+  const fmtStatus = (s: string) => statusLabel[s] || s;
 
   return (
     <div className="min-h-screen bg-background">
