@@ -560,6 +560,10 @@ export default function StaffDashboard() {
           <TabsContent value="documentos">
             <StaffDocumentsTab staff={staff} onChanged={load} />
           </TabsContent>
+
+          <TabsContent value="ajuda">
+            <AjudaTab origem="profissional" />
+          </TabsContent>
         </Tabs>
       </div>
 
