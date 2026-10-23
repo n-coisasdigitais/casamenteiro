@@ -1,0 +1,2 @@
+ALTER TABLE public.secoes_home DROP CONSTRAINT IF EXISTS secoes_home_escopo_check;
+ALTER TABLE public.secoes_home ADD CONSTRAINT secoes_home_escopo_check CHECK (escopo IN ('home','explore','home_hero','home_story','home_form','home_categoria'));
