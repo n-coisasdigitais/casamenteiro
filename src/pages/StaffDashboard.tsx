@@ -19,6 +19,7 @@ import { Heart, Calendar, Star, ShieldCheck, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import StaffDocumentsTab, { verificacaoLabel } from "@/components/staff/StaffDocumentsTab";
 import StaffChatDialog from "@/components/staff/StaffChatDialog";
+import AjudaTab from "@/components/AjudaTab";
 
 /**
  * Deriva a tag exibida no card da candidatura.
@@ -343,6 +344,7 @@ export default function StaffDashboard() {
             <TabsTrigger value="agenda">Minha agenda</TabsTrigger>
             <TabsTrigger value="avaliacoes">Avaliações</TabsTrigger>
             <TabsTrigger value="documentos">Documentos</TabsTrigger>
+            <TabsTrigger value="ajuda">Ajuda</TabsTrigger>
           </TabsList>
 
           <TabsContent value="convites" className="space-y-3">
