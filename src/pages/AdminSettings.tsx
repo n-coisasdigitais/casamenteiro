@@ -25,6 +25,7 @@ type FeatureFlagRow = {
   grupo: string;
   essencial: boolean;
   description: string | null;
+  em_breve?: boolean;
 };
 
 const GRUPO_ORDER = ["Aquisição", "Casal", "Fornecedor", "Social", "Geral"];
@@ -44,6 +45,7 @@ export default function AdminSettings() {
   const [antecedencia, setAntecedencia] = useState(15);
   const [suporteEmail, setSuporteEmail] = useState("");
   const [trialDias, setTrialDias] = useState(60);
+  const [aprovacaoHoras, setAprovacaoHoras] = useState(24);
 
   const loadFlags = async () => {
     const { data } = await (supabase.from("feature_flags" as any).select("*").order("grupo").order("label") as any);
@@ -60,17 +62,18 @@ export default function AdminSettings() {
       if (row?.value) setDist({ ...DEFAULTS, ...(row.value as any) });
       const { data: cfgs } = await (supabase.from("system_settings" as any)
         .select("key, value")
-        .in("key", ["cancelamento_carencia_dias", "reserva_antecedencia_min_dias", "suporte_email", "trial_dias"]) as any);
+        .in("key", ["cancelamento_carencia_dias", "reserva_antecedencia_min_dias", "suporte_email", "trial_dias", "fornecedor_aprovacao_horas"]) as any);
       for (const c of (cfgs as any[]) ?? []) {
         if (c.key === "suporte_email") {
           const email = String(c.value?.email ?? "");
           if (email) setSuporteEmail(email);
           continue;
         }
-        const n = Number(c.value?.dias ?? c.value);
+        const n = Number(c.value?.dias ?? c.value?.horas ?? c.value);
         if (!Number.isFinite(n)) continue;
         if (c.key === "cancelamento_carencia_dias") setCarencia(n);
         else if (c.key === "trial_dias") setTrialDias(n);
+        else if (c.key === "fornecedor_aprovacao_horas") setAprovacaoHoras(n);
         else setAntecedencia(n);
       }
       await loadFlags();
@@ -110,10 +113,19 @@ export default function AdminSettings() {
     const rows = [
       { key: "suporte_email", value: { email }, description: "E-mail que recebe os reportes da aba Ajuda" },
       { key: "trial_dias", value: { dias: Number(trialDias) }, description: "Dias de teste gratuito após a aprovação do fornecedor" },
+      { key: "fornecedor_aprovacao_horas", value: { horas: Number(aprovacaoHoras) }, description: "Prazo máximo, em horas, para aprovar um novo cadastro de fornecedor." },
     ].map(r => ({ ...r, updated_by: user!.id, updated_at: new Date().toISOString() }));
     const { error } = await (supabase.from("system_settings" as any) as any).upsert(rows);
     if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     else toast({ title: "Configurações salvas" });
+  };
+
+  const setEmBreve = async (flag: FeatureFlagRow, emBreve: boolean) => {
+    const { error } = await (supabase.from("feature_flags" as any) as any).update({ em_breve: emBreve }).eq("key", flag.key);
+    if (error) { toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" }); return; }
+    setFlags((fs) => fs.map((f) => (f.key === flag.key ? { ...f, em_breve: emBreve } : f)));
+    reloadFlags?.();
+    toast({ title: emBreve ? "Vai aparecer como “Em breve”" : "Não vai aparecer nas páginas públicas", description: flag.label });
   };
 
   const applyFlagChange = async (flag: FeatureFlagRow, enabled: boolean) => {
@@ -231,6 +243,12 @@ export default function AdminSettings() {
                         {flag.description && (
                           <p className="text-sm text-muted-foreground mt-0.5">{flag.description}</p>
                         )}
+                        {!flag.enabled && (
+                          <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                            <Switch checked={flag.em_breve !== false} onCheckedChange={(v) => setEmBreve(flag, v)} aria-label={`Mostrar ${flag.label} como Em breve`} />
+                            Mostrar como “Em breve” na Home e na página de fornecedores
+                          </label>
+                        )}
                       </div>
                       <Switch
                         checked={flag.enabled}
@@ -246,7 +264,7 @@ export default function AdminSettings() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-1">Suporte e período de teste</h2>
+          <h2 className="text-lg font-semibold mb-1">Suporte e fornecedores novos</h2>
           <p className="text-sm text-muted-foreground mb-4">
             O e-mail de suporte recebe os reportes enviados na aba "Ajuda" dos painéis. O período de teste vale para fornecedores aprovados a partir de agora — quem já está em teste mantém a data original.
           </p>
@@ -258,6 +276,10 @@ export default function AdminSettings() {
             <div className="flex items-center gap-3">
               <Label className="w-64">Teste gratuito do fornecedor (dias)</Label>
               <Input type="number" min={0} className="w-24" value={trialDias} onChange={e => setTrialDias(Number(e.target.value))} />
+            </div>
+            <div className="flex items-center gap-3">
+              <Label className="w-64">Prazo de aprovação do cadastro (horas)</Label>
+              <Input type="number" min={1} className="w-24" value={aprovacaoHoras} onChange={e => setAprovacaoHoras(Number(e.target.value))} />
             </div>
             <Button onClick={salvarConfigGerais} size="sm"><Save className="h-4 w-4 mr-1" /> Salvar</Button>
           </div>

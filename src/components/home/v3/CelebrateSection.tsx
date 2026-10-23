@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { CalendarCheck, Gift, Heart, ListChecks, Mail, MessageCircle, PieChart, Users, UsersRound } from "lucide-react";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useFeatureStatus, type FeatureStatus } from "@/contexts/FeatureFlagsContext";
+import EmBreveBadge from "@/components/shared/EmBreveBadge";
 import { ChapterLabel } from "./parts";
 
 type Card = {
@@ -12,20 +13,19 @@ type Card = {
   tom?: "escuro" | "pessego" | "salvia";
   largo?: boolean;
   extra?: React.ReactNode;
+  /** feature flag do recurso; desligada aparece com "Em breve" (ou some, se o admin escolher) */
+  flag?: string;
 };
 
 /**
  * Passo 3 · Celebrem — "Do sim ao sim, sem planilha": o que o casal ganha no painel.
- * Cada bloco respeita a feature flag do recurso (não promete o que está desligado).
+ * Cada bloco olha a feature flag do recurso: ligada aparece normal; desligada aparece
+ * com o selo "Em breve" (padrão) ou some, conforme a opção "Em breve" no admin.
  */
 export default function CelebrateSection() {
-  const rsvp = useFeatureFlag("rsvp_convidados", true);
-  const pedidos = useFeatureFlag("pedido_orcamento", true);
-  const reservas = useFeatureFlag("reserva_datas_ociosas", true);
-  const perfil = useFeatureFlag("perfil_social_casal", false);
-  const indicacoes = useFeatureFlag("indicacoes", false);
+  const status = useFeatureStatus();
 
-  const cards: Card[] = [
+  const todos: Card[] = [
     {
       key: "orc",
       icon: PieChart,
@@ -43,13 +43,16 @@ export default function CelebrateSection() {
     },
     { key: "tar", icon: ListChecks, label: "Checklist", titulo: "Tarefas prontas, na ordem certa.", texto: "Do noivado à festa, com prazos sugeridos." },
     { key: "conv", icon: Users, label: "Convidados", titulo: "Lista organizada por grupo e mesa.", texto: "Quem vem, quem falta responder, quem leva acompanhante." },
-    ...(rsvp ? [{ key: "rsvp", icon: Mail, label: "Convites com RSVP", titulo: "Mandem o link. A confirmação cai sozinha na lista.", tom: "pessego" as const }] : []),
-    ...(pedidos ? [{ key: "msg", icon: MessageCircle, label: "Mensagens", titulo: "Um chat com cada fornecedor.", texto: "Adeus, 8 grupos de WhatsApp." }] : []),
-    ...(reservas ? [{ key: "res", icon: CalendarCheck, label: "Reservas e pagamento", titulo: "Reservem a data e paguem com comprovante.", tom: "salvia" as const }] : []),
+    { key: "rsvp", flag: "rsvp_convidados", icon: Mail, label: "Convites com RSVP", titulo: "Mandem o link. A confirmação cai sozinha na lista.", tom: "pessego" },
+    { key: "msg", flag: "pedido_orcamento", icon: MessageCircle, label: "Mensagens", titulo: "Um chat com cada fornecedor.", texto: "Adeus, 8 grupos de WhatsApp." },
+    { key: "res", flag: "reserva_datas_ociosas", icon: CalendarCheck, label: "Reservas e pagamento", titulo: "Reservem a data e paguem com comprovante.", tom: "salvia" },
     { key: "forn", icon: Heart, label: "Meus fornecedores", titulo: "Favoritos, contratados e propostas num lugar." },
-    ...(perfil ? [{ key: "perfil", icon: UsersRound, label: "Perfil do casal", titulo: "Contem a história de vocês e conheçam casais que casam no mesmo dia.", largo: true }] : []),
-    ...(indicacoes ? [{ key: "ind", icon: Gift, label: "Indicações", titulo: "Indiquem amigos e ganhem benefícios." }] : []),
+    { key: "perfil", flag: "perfil_social_casal", icon: UsersRound, label: "Perfil do casal", titulo: "Contem a história de vocês e conheçam casais que casam no mesmo dia.", largo: true },
+    { key: "ind", flag: "indicacoes", icon: Gift, label: "Indicações", titulo: "Indiquem amigos e ganhem benefícios." },
   ];
+  const cards = todos
+    .map((c) => ({ ...c, st: status(c.flag) as FeatureStatus }))
+    .filter((c) => c.st !== "oculto");
 
   return (
     <section id="celebrar" aria-labelledby="plan-title" className="relative scroll-mt-20 overflow-hidden px-6 py-28" style={{ background: "var(--hv-ink)", color: "var(--hv-cream)" }}>
@@ -83,8 +86,11 @@ export default function CelebrateSection() {
             const Icon = c.icon;
             return (
               <div key={c.key} className={`hv-lift flex min-w-0 flex-col gap-2.5 rounded-[26px] p-7 ${c.largo ? "sm:col-span-2" : ""}`} style={{ background: bg, color: fg }}>
-                <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-[14px]" style={{ background: fundoIcone }}>
-                  <Icon className="h-[26px] w-[26px]" style={{ color: corIcone }} />
+                <span className="flex items-start justify-between gap-3">
+                  <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-[14px]" style={{ background: fundoIcone }}>
+                    <Icon className="h-[26px] w-[26px]" style={{ color: corIcone }} />
+                  </span>
+                  {c.st === "em_breve" && <EmBreveBadge escuro={c.tom !== "pessego"} />}
                 </span>
                 <span className="text-[13px] font-bold uppercase" style={{ letterSpacing: ".06em", color: corLabel }}>
                   {c.label}

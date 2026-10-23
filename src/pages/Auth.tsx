@@ -34,7 +34,8 @@ export default function Auth() {
 
   const [mode, setMode] = useState<"login" | "signup">(isLogin ? "login" : "signup");
   const [accountType, setAccountType] = useState(defaultType);
-  const [email, setEmail] = useState("");
+  // e-mail vindo da página /fornecedor (CTA "Garantir meu acesso") já chega preenchido
+  const [email, setEmail] = useState(() => (searchParams.get("email") || "").trim().slice(0, 254));
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
