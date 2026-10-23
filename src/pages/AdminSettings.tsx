@@ -42,6 +42,8 @@ export default function AdminSettings() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [carencia, setCarencia] = useState(7);
   const [antecedencia, setAntecedencia] = useState(15);
+  const [suporteEmail, setSuporteEmail] = useState("");
+  const [trialDias, setTrialDias] = useState(60);
 
   const loadFlags = async () => {
     const { data } = await (supabase.from("feature_flags" as any).select("*").order("grupo").order("label") as any);
@@ -58,11 +60,17 @@ export default function AdminSettings() {
       if (row?.value) setDist({ ...DEFAULTS, ...(row.value as any) });
       const { data: cfgs } = await (supabase.from("system_settings" as any)
         .select("key, value")
-        .in("key", ["cancelamento_carencia_dias", "reserva_antecedencia_min_dias"]) as any);
+        .in("key", ["cancelamento_carencia_dias", "reserva_antecedencia_min_dias", "suporte_email", "trial_dias"]) as any);
       for (const c of (cfgs as any[]) ?? []) {
+        if (c.key === "suporte_email") {
+          const email = String(c.value?.email ?? "");
+          if (email) setSuporteEmail(email);
+          continue;
+        }
         const n = Number(c.value?.dias ?? c.value);
         if (!Number.isFinite(n)) continue;
         if (c.key === "cancelamento_carencia_dias") setCarencia(n);
+        else if (c.key === "trial_dias") setTrialDias(n);
         else setAntecedencia(n);
       }
       await loadFlags();
