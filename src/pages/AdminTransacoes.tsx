@@ -18,18 +18,26 @@ export default function AdminTransacoes() {
   const [contracted, setContracted] = useState<any[]>([]);
   const [suppliersMap, setSuppliersMap] = useState<Record<string, any>>({});
   const [couplesMap, setCouplesMap] = useState<Record<string, any>>({});
+  const [subs, setSubs] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [destaques, setDestaques] = useState<any[]>([]);
+  const [plansMap, setPlansMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate("/login"); return; }
     supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(async ({ data }) => {
       if (!data) { navigate("/"); return; }
-      const [simsRes, quotesRes, contractsRes, supRes, coupleRes] = await Promise.all([
+      const [simsRes, quotesRes, contractsRes, supRes, coupleRes, subsRes, invoicesRes, destaquesRes, plansRes] = await Promise.all([
         (supabase.from("home_simulacoes" as any) as any).select("*").order("criado_em", { ascending: false }),
         supabase.from("quotes").select("*").order("created_at", { ascending: false }),
         supabase.from("couple_suppliers").select("*").eq("status", "contracted").order("contracted_at", { ascending: false }),
         semDemo(supabase.from("suppliers").select("id, company_name, is_demo")),
         semDemo(supabase.from("couples").select("id, partner_name, user_id, is_demo")),
+        supabase.from("supplier_subscriptions").select("*").order("created_at", { ascending: false }),
+        supabase.from("subscription_invoices").select("*").order("created_at", { ascending: false }),
+        supabase.from("featured_purchases").select("*").order("created_at", { ascending: false }),
+        supabase.from("subscription_plans").select("id, nome, slug"),
       ]);
       const supplierIds = new Set((supRes.data || []).map((s: any) => s.id));
       const coupleIds = new Set((coupleRes.data || []).map((c: any) => c.id));
@@ -38,6 +46,10 @@ export default function AdminTransacoes() {
       setContracted((contractsRes.data || []).filter((c: any) => supplierIds.has(c.supplier_id) && coupleIds.has(c.couple_id)));
       setSuppliersMap(Object.fromEntries((supRes.data || []).map((s: any) => [s.id, s])));
       setCouplesMap(Object.fromEntries((coupleRes.data || []).map((c: any) => [c.id, c])));
+      setSubs((subsRes.data || []).filter((s: any) => supplierIds.has(s.supplier_id)));
+      setInvoices((invoicesRes.data || []).filter((i: any) => supplierIds.has(i.supplier_id)));
+      setDestaques((destaquesRes.data || []).filter((d: any) => supplierIds.has(d.supplier_id)));
+      setPlansMap(Object.fromEntries((plansRes.data || []).map((p: any) => [p.id, p])));
       setLoading(false);
     });
   }, [user, authLoading, navigate]);
@@ -47,6 +59,11 @@ export default function AdminTransacoes() {
   const totalGmv = contracted.reduce((s, r) => s + Number(r.final_value || r.contract_value || 0), 0);
   const conversaoOrc = sims.length ? Math.round((quotes.length / sims.length) * 100) : 0;
   const conversaoFech = quotes.length ? Math.round((contracted.length / quotes.length) * 100) : 0;
+  const receitaAssinaturas = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.valor || 0), 0);
+  const receitaDestaques = destaques.filter((d) => d.status === "paid").reduce((s, d) => s + Number(d.valor || 0), 0);
+  const subsAtivas = subs.filter((s) => s.status === "active").length;
+  const statusLabel: Record<string, string> = { active: "Ativa", canceled: "Cancelada", past_due: "Vencida", trialing: "Teste", paid: "Pago", pending: "Pendente", refunded: "Reembolsado", expired: "Expirado" };
+  const fmtStatus = (s: string) => statusLabel[s] || s;
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,6 +84,9 @@ export default function AdminTransacoes() {
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Contratos</p><p className="text-2xl font-bold">{contracted.length}</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Conversão sim→orc</p><p className="text-2xl font-bold">{conversaoOrc}%</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">GMV fechado</p><p className="text-2xl font-bold">R$ {totalGmv.toLocaleString("pt-BR")}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Assinaturas ativas</p><p className="text-2xl font-bold">{subsAtivas}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Receita assinaturas</p><p className="text-2xl font-bold">R$ {receitaAssinaturas.toLocaleString("pt-BR")}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Receita destaques</p><p className="text-2xl font-bold">R$ {receitaDestaques.toLocaleString("pt-BR")}</p></CardContent></Card>
         </div>
         <p className="text-xs text-muted-foreground">Conversão orçamento → contrato: <strong>{conversaoFech}%</strong></p>
 
@@ -75,6 +95,8 @@ export default function AdminTransacoes() {
             <TabsTrigger value="contratos">Contratos ({contracted.length})</TabsTrigger>
             <TabsTrigger value="orcamentos">Orçamentos ({quotes.length})</TabsTrigger>
             <TabsTrigger value="simulacoes">Simulações ({sims.length})</TabsTrigger>
+            <TabsTrigger value="assinaturas">Assinaturas ({subs.length})</TabsTrigger>
+            <TabsTrigger value="destaques">Destaques ({destaques.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contratos" className="space-y-2">
@@ -113,6 +135,64 @@ export default function AdminTransacoes() {
                 <Button variant="outline" size="sm" asChild>
                   <Link to={`/simulador/resultado?id=${s.id}`}>Ver</Link>
                 </Button>
+              </CardContent></Card>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="assinaturas" className="space-y-2">
+            {subs.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma assinatura ainda.</p>}
+            {subs.map((s) => {
+              const faturas = invoices.filter((i) => i.subscription_id === s.id);
+              return (
+                <Card key={s.id}><CardContent className="p-3 space-y-2 text-sm">
+                  <div className="flex justify-between flex-wrap gap-2">
+                    <div>
+                      <p className="font-medium">{suppliersMap[s.supplier_id]?.company_name || "Fornecedor"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Plano: {plansMap[s.plan_id]?.nome || "—"} · {s.ciclo === "anual" ? "Anual" : "Mensal"} · {s.ambiente === "demo" ? "Demo" : "Produção"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Período: {s.current_period_start ? new Date(s.current_period_start).toLocaleDateString("pt-BR") : "—"} → {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString("pt-BR") : "—"}
+                        {s.cancelada_em && ` · Cancelada em ${new Date(s.cancelada_em).toLocaleDateString("pt-BR")}`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">R$ {Number(s.valor || 0).toLocaleString("pt-BR")}</p>
+                      <Badge variant={s.status === "active" ? "default" : "outline"}>{fmtStatus(s.status)}</Badge>
+                    </div>
+                  </div>
+                  {faturas.length > 0 && (
+                    <div className="border-t border-border pt-2 space-y-1">
+                      {faturas.map((f) => (
+                        <p key={f.id} className="text-xs text-muted-foreground flex justify-between">
+                          <span>Fatura {new Date(f.periodo_inicio).toLocaleDateString("pt-BR")} → {new Date(f.periodo_fim).toLocaleDateString("pt-BR")}</span>
+                          <span>R$ {Number(f.valor || 0).toLocaleString("pt-BR")} · {fmtStatus(f.status)}{f.pago_em ? ` em ${new Date(f.pago_em).toLocaleDateString("pt-BR")}` : ""}</span>
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </CardContent></Card>
+              );
+            })}
+          </TabsContent>
+
+          <TabsContent value="destaques" className="space-y-2">
+            {destaques.length === 0 && <p className="text-sm text-muted-foreground">Nenhum destaque comprado ainda.</p>}
+            {destaques.map((d) => (
+              <Card key={d.id}><CardContent className="p-3 flex justify-between flex-wrap gap-2 text-sm">
+                <div>
+                  <p className="font-medium">{suppliersMap[d.supplier_id]?.company_name || "Fornecedor"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {d.escopo || "—"}{d.escopo_cidade ? ` · ${d.escopo_cidade}` : ""} · {d.dias} dias · {d.ambiente === "demo" ? "Demo" : "Produção"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {d.inicio ? new Date(d.inicio).toLocaleDateString("pt-BR") : "—"} → {d.fim ? new Date(d.fim).toLocaleDateString("pt-BR") : "—"} · Comprado em {new Date(d.created_at).toLocaleDateString("pt-BR")}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">R$ {Number(d.valor || 0).toLocaleString("pt-BR")}</p>
+                  <Badge variant={d.status === "paid" ? "default" : "outline"}>{fmtStatus(d.status)}</Badge>
+                </div>
               </CardContent></Card>
             ))}
           </TabsContent>
