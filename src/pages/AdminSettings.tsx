@@ -101,6 +101,21 @@ export default function AdminSettings() {
     else toast({ title: "Regras de reserva salvas" });
   };
 
+  const salvarConfigGerais = async () => {
+    const email = suporteEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "E-mail inválido", description: "Confira o e-mail de suporte.", variant: "destructive" });
+      return;
+    }
+    const rows = [
+      { key: "suporte_email", value: { email }, description: "E-mail que recebe os reportes da aba Ajuda" },
+      { key: "trial_dias", value: { dias: Number(trialDias) }, description: "Dias de teste gratuito após a aprovação do fornecedor" },
+    ].map(r => ({ ...r, updated_by: user!.id, updated_at: new Date().toISOString() }));
+    const { error } = await (supabase.from("system_settings" as any) as any).upsert(rows);
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
+    else toast({ title: "Configurações salvas" });
+  };
+
   const applyFlagChange = async (flag: FeatureFlagRow, enabled: boolean) => {
     const { error } = await (supabase.from("feature_flags" as any) as any).upsert({
       key: flag.key, enabled, label: flag.label, grupo: flag.grupo,
@@ -227,6 +242,24 @@ export default function AdminSettings() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold mb-1">Suporte e período de teste</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            O e-mail de suporte recebe os reportes enviados na aba "Ajuda" dos painéis. O período de teste vale para fornecedores aprovados a partir de agora — quem já está em teste mantém a data original.
+          </p>
+          <div className="space-y-3 border rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <Label className="w-64">E-mail de suporte</Label>
+              <Input type="email" className="flex-1" value={suporteEmail} onChange={e => setSuporteEmail(e.target.value)} placeholder="ola@ncoisas.digital" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Label className="w-64">Teste gratuito do fornecedor (dias)</Label>
+              <Input type="number" min={0} className="w-24" value={trialDias} onChange={e => setTrialDias(Number(e.target.value))} />
+            </div>
+            <Button onClick={salvarConfigGerais} size="sm"><Save className="h-4 w-4 mr-1" /> Salvar</Button>
           </div>
         </section>
 
