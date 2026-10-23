@@ -1456,6 +1456,7 @@ export type Database = {
       feature_flags: {
         Row: {
           description: string | null
+          em_breve: boolean
           enabled: boolean
           essencial: boolean
           grupo: string
@@ -1466,6 +1467,7 @@ export type Database = {
         }
         Insert: {
           description?: string | null
+          em_breve?: boolean
           enabled?: boolean
           essencial?: boolean
           grupo?: string
@@ -1476,6 +1478,7 @@ export type Database = {
         }
         Update: {
           description?: string | null
+          em_breve?: boolean
           enabled?: boolean
           essencial?: boolean
           grupo?: string

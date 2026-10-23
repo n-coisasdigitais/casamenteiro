@@ -107,12 +107,12 @@ async function taxaReserva(): Promise<number | null> {
 async function settings() {
   const { data } = await (supabase.from("system_settings" as any) as any)
     .select("key, value")
-    .in("key", ["cancelamento_carencia_dias", "fornecedor_teste_dias", "fornecedor_aprovacao_horas"]);
+    .in("key", ["cancelamento_carencia_dias", "trial_dias", "fornecedor_aprovacao_horas"]);
   const m: Record<string, any> = {};
   ((data as any[]) ?? []).forEach((r) => (m[r.key] = r.value));
   return {
     carenciaDias: numero(m.cancelamento_carencia_dias, "dias", DADOS_PADRAO.carenciaDias),
-    testeDias: numero(m.fornecedor_teste_dias, "dias", DADOS_PADRAO.testeDias),
+    testeDias: numero(m.trial_dias, "dias", DADOS_PADRAO.testeDias),
     aprovacaoHoras: numero(m.fornecedor_aprovacao_horas, "horas", DADOS_PADRAO.aprovacaoHoras),
   };
 }
