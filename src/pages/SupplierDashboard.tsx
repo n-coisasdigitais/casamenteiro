@@ -28,6 +28,7 @@ import {
   CalendarDays,
   MapPin,
   Star,
+  ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteConversation from "@/components/QuoteConversation";
@@ -60,6 +61,9 @@ import PlanGate, { TrialBanner } from "@/components/plan/PlanGate";
 import MinhaAssinaturaCard from "@/components/plan/MinhaAssinaturaCard";
 import AjudaTab from "@/components/AjudaTab";
 import MercadoPagoConnectCard from "@/components/supplier/MercadoPagoConnectCard";
+import { AgendaMes, PerfilCompleto, type PassoPerfil } from "@/components/supplier/PainelExtras";
+import { useSupplierPlan } from "@/hooks/usePlanFeature";
+import "@/components/supplier/painel-v2.css";
 
 type Category = { id: string; name: string; slug?: string | null };
 
@@ -98,6 +102,7 @@ export default function SupplierDashboard() {
   const [quotesFilter, setQuotesFilter] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState<string | null>(null);
   const [reservasPendentes, setReservasPendentes] = useState(0);
+  const [prioridades, setPrioridades] = useState<number | null>(null);
   const vagasEnabled = useFeatureFlag("vagas", false);
   const reservasEnabled = useFeatureFlag("reserva_datas_ociosas", false);
   const agendaEnabled = useFeatureFlag("agenda_integracao", false);
@@ -430,20 +435,50 @@ export default function SupplierDashboard() {
     return quotes;
   })();
 
+  const descricaoOk = (supplier.description || "").trim().length >= 80;
+  const passosPerfil: PassoPerfil[] = [
+    { key: "fotos", label: photos.length >= 5 ? "Fotos do portfólio" : `Adicionar fotos (${photos.length}/5)`, feito: photos.length >= 5, onClick: () => goDest("negocio", { sub: "fotos" }) },
+    { key: "capa", label: "Foto de destaque", feito: photos.some((p) => p.is_principal) || !!supplier.cover_photo_url, onClick: () => goDest("negocio", { sub: "fotos" }) },
+    { key: "descricao", label: descricaoOk ? "Descrição dos serviços" : "Escrever a descrição dos serviços", feito: descricaoOk, onClick: () => goDest("negocio", { sub: "perfil" }) },
+    { key: "contato", label: phone ? "WhatsApp de contato" : "Informar WhatsApp de contato", feito: !!phone && isValidPhoneBR(phone), onClick: () => goDest("negocio", { sub: "perfil" }) },
+    { key: "area", label: "Cidades que você atende", feito: (supplier.cidades_atendidas?.length ?? 0) > 0 || !!supplier.raio_atendimento_km, onClick: () => goDest("negocio", { sub: "atendimento" }) },
+  ];
+  const titulos: Record<SupplierDestination, string> = {
+    painel: "",
+    orcamentos: "Orçamentos",
+    negocio: "Meu negócio",
+    reservas: "Reservas",
+    vagas: "Equipe e vagas",
+    avaliacoes: "Avaliações",
+    ajuda: "Ajuda",
+  };
+  const hora = new Date().getHours();
+  const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+  const iniciais = (supplier.company_name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
+
   const renderContent = () => {
     if (dest === "painel") {
       return (
-        <div className="space-y-6">
-          <SupplierActionCards
-            supplierId={supplier.id}
-            supplierUserId={user!.id}
-            onGoToQuotes={(filter) => goDest("orcamentos", { filter: filter || null, inner: "kanban" })}
-          />
-          <SupplierMetrics supplierId={supplier.id} />
-          <div className="mt-4">
-            <MinhaAssinaturaCard supplierId={supplier.id} />
+        <div className="flex flex-col gap-4 lg:gap-5">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-5">
+            <SupplierActionCards
+              supplierId={supplier.id}
+              supplierUserId={user?.id ?? ""}
+              onGoToQuotes={(filter) => goDest("orcamentos", { filter: filter || null, inner: "kanban" })}
+              reservasPendentes={reservasEnabled ? reservasPendentes : 0}
+              onGoToReservas={reservasEnabled ? () => goDest("reservas") : undefined}
+              onTotal={setPrioridades}
+            />
+            <PerfilCompleto passos={passosPerfil} />
           </div>
-          <MercadoPagoConnectCard supplierId={supplier.id} />
+          <SupplierMetrics supplierId={supplier.id} />
+          <div className="grid gap-4 lg:grid-cols-2 lg:gap-5">
+            <AgendaMes supplierId={supplier.id} onGerenciar={() => goDest("negocio", { sub: "disponibilidade" })} />
+            <div className="flex min-w-0 flex-col gap-4">
+              <MinhaAssinaturaCard supplierId={supplier.id} />
+              <MercadoPagoConnectCard supplierId={supplier.id} />
+            </div>
+          </div>
         </div>
       );
     }
@@ -718,15 +753,22 @@ export default function SupplierDashboard() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background overflow-x-hidden">
+    <div className="painel-v2 min-h-[100dvh] overflow-x-hidden" style={{ background: "hsl(var(--background))", color: "var(--pv-ink)" }}>
       <WelcomeModal tipo="supplier" />
-      <header className="bg-card border-b border-border sticky top-0 z-40">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="text-lg font-bold">Casamenteiro</span>
+      <header className="sticky top-0 z-40 border-b backdrop-blur" style={{ background: "rgba(248,243,237,.9)", borderColor: "var(--pv-line)" }}>
+        <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
+          <Link to="/" className="text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--pv-ink)" }}>
+            casamenteiro<span style={{ color: "var(--pv-terracota)" }}>.</span>
           </Link>
           <div className="flex items-center gap-2">
+            <Link
+              to={`/fornecedor/${supplier.id}`}
+              target="_blank"
+              className="hidden h-10 items-center gap-2 rounded-full border bg-white px-4 text-sm font-semibold sm:inline-flex"
+              style={{ borderColor: "#d9c9b8", color: "var(--pv-ink)" }}
+            >
+              Ver meu perfil <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
             <NotificationsBell />
             <UserMenu />
           </div>
@@ -734,20 +776,57 @@ export default function SupplierDashboard() {
       </header>
 
       <div className="flex items-start">
-        <SupplierSidebar active={dest} onChange={(d) => goDest(d)} items={destinations} />
+        <SupplierSidebar
+          active={dest}
+          onChange={(d) => goDest(d)}
+          items={destinations}
+          cabecalho={
+            <div className="mb-2.5 flex items-center gap-2.5 rounded-[14px] border bg-white p-2.5" style={{ borderColor: "var(--pv-line)" }}>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] text-sm font-extrabold" style={{ background: "linear-gradient(135deg,#f2b98a,#d9905a)", color: "#1f1d1b" }}>
+                {iniciais}
+              </span>
+              <span className="min-w-0">
+                <b className="block truncate text-sm" style={{ color: "var(--pv-ink)" }}>{supplier.company_name}</b>
+                <small className="block truncate text-xs" style={{ color: "var(--pv-muted)" }}>
+                  {[cat?.name, supplier.city].filter(Boolean).join(" · ") || "Seu negócio"}
+                </small>
+              </span>
+            </div>
+          }
+          rodape={<PlanoLateral supplierId={supplier.id} />}
+        />
 
         <main
-          className="flex-1 min-w-0 px-4 py-8 md:pb-8 max-w-4xl mx-auto w-full"
-          style={isMobile ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)" } : undefined}
+          className="mx-auto w-full min-w-0 max-w-[1180px] flex-1 px-4 py-7 md:px-7 md:pb-10"
+          style={isMobile ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 5.5rem)" } : undefined}
         >
-
-
-          <div className="mb-4">
-            <TrialBanner supplierId={supplier.id} />
-          </div>
-          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-            <h1 className="text-2xl font-bold">Painel do Fornecedor</h1>
-            {statusInfo && (
+          {dest !== "painel" && (
+            <div className="mb-4 md:hidden">
+              <TrialBanner supplierId={supplier.id} />
+            </div>
+          )}
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0">
+              {dest === "painel" ? (
+                <>
+                  <h1 className="m-0 text-[clamp(24px,2.6vw,30px)] font-extrabold leading-tight" style={{ letterSpacing: "-0.035em", color: "var(--pv-ink)" }}>
+                    {saudacao}, <em className="pv-serif" style={{ color: "var(--pv-clay)" }}>{supplier.company_name}.</em>
+                  </h1>
+                  <p className="pv-num m-0 mt-1 text-[15px]" style={{ color: "var(--pv-body)" }}>
+                    {prioridades == null
+                      ? "Aqui está o resumo do seu negócio."
+                      : prioridades === 0
+                        ? "Nada pendente por hoje."
+                        : `Você tem ${prioridades} ${prioridades > 1 ? "coisas" : "coisa"} para resolver hoje.`}
+                  </p>
+                </>
+              ) : (
+                <h1 className="m-0 text-[clamp(24px,2.6vw,30px)] font-extrabold leading-tight" style={{ letterSpacing: "-0.035em", color: "var(--pv-ink)" }}>
+                  {titulos[dest]}
+                </h1>
+              )}
+            </div>
+            {statusInfo && supplier.status !== "approved" && (
               <Badge variant={statusInfo.variant} className="flex items-center gap-1">
                 <statusInfo.icon className="h-3 w-3" />
                 {statusInfo.label}
@@ -832,7 +911,8 @@ export default function SupplierDashboard() {
           {isMobile && dest === "painel" && (
             <button
               onClick={() => goDest("avaliacoes")}
-              className="mt-6 w-full text-left text-sm underline text-muted-foreground"
+              className="mt-6 w-full text-left text-sm font-semibold"
+              style={{ color: "var(--pv-clay)" }}
             >
               Ver avaliações →
             </button>
@@ -874,7 +954,7 @@ export default function SupplierDashboard() {
           ) : null;
         return isMobile ? (
           <Sheet open={threadOpen} onOpenChange={handleOpenChange}>
-            <SheetContent side="bottom" className="h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
+            <SheetContent side="bottom" className="painel-v2 h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
               <SheetHeader className="px-4 py-3 border-b border-border text-left">
                 <SheetTitle className="text-base">Orçamento</SheetTitle>
               </SheetHeader>
@@ -882,16 +962,56 @@ export default function SupplierDashboard() {
             </SheetContent>
           </Sheet>
         ) : (
-          <Dialog open={threadOpen} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col p-0 gap-0">
-              <DialogHeader className="px-4 py-3 border-b border-border">
-                <DialogTitle className="text-base">Orçamento</DialogTitle>
-              </DialogHeader>
+          <Sheet open={threadOpen} onOpenChange={handleOpenChange}>
+            <SheetContent side="right" className="painel-v2 flex h-[100dvh] w-full flex-col gap-0 p-0 sm:max-w-[560px]">
+              <SheetHeader className="border-b border-border px-5 py-4 text-left">
+                <SheetTitle className="text-lg font-bold">
+                  Pedido de orçamento
+                  {selectedQuote?.event_date && (
+                    <span className="ml-2 text-sm font-medium text-muted-foreground">
+                      {new Date(selectedQuote.event_date).toLocaleDateString("pt-BR")}
+                      {selectedQuote?.guest_count ? ` · ${selectedQuote.guest_count} convidados` : ""}
+                    </span>
+                  )}
+                </SheetTitle>
+              </SheetHeader>
               {body}
-            </DialogContent>
-          </Dialog>
+            </SheetContent>
+          </Sheet>
         );
       })()}
+    </div>
+  );
+}
+
+/** Bloco do plano no rodapé do menu lateral (teste, assinatura ou gratuito). */
+function PlanoLateral({ supplierId }: { supplierId: string }) {
+  const { plano, carregando } = useSupplierPlan(supplierId);
+  if (carregando || !plano) return null;
+  let titulo = "Plano gratuito";
+  let texto = "Assine para liberar CRM, equipe e mais recursos.";
+  let pct: number | null = null;
+  if (plano.emTrial && plano.trialEndsAt) {
+    const resta = Math.max(0, Math.ceil((new Date(plano.trialEndsAt).getTime() - Date.now()) / 864e5));
+    titulo = plano.nome ? `Plano ${plano.nome}` : "Plano pago grátis";
+    texto = `${resta} ${resta === 1 ? "dia" : "dias"} de teste restantes`;
+    pct = Math.min(100, Math.max(4, 100 - (resta / 60) * 100));
+  } else if (plano.temAssinatura) {
+    titulo = plano.nome ? `Plano ${plano.nome}` : "Plano ativo";
+    texto = plano.cancelada ? "Cancelado: vale até o fim do período pago." : "Assinatura ativa.";
+  }
+  return (
+    <div className="flex flex-col gap-2 rounded-[14px] p-3.5 text-[13px]" style={{ background: "var(--pv-sage-soft)", color: "var(--pv-body)" }}>
+      <b className="text-sm" style={{ color: "var(--pv-ink)" }}>{titulo}</b>
+      <span className="pv-num">{texto}</span>
+      {pct != null && (
+        <span className="block h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(74,124,106,.18)" }}>
+          <span className="block h-full rounded-full transition-[width] duration-1000" style={{ width: `${pct}%`, background: "var(--pv-sage)" }} />
+        </span>
+      )}
+      <Link to="/fornecedor/planos" className="self-start font-semibold hover:underline" style={{ color: "var(--pv-clay)" }}>
+        {plano.temAssinatura ? "Gerenciar plano" : "Ver planos"}
+      </Link>
     </div>
   );
 }
