@@ -163,6 +163,16 @@ export default function SupplierDashboard() {
     }
   }, [supplier, searchParams]);
 
+  // No celular as abas rolam de lado: traz a aba ativa para a área visível.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      document
+        .querySelectorAll<HTMLElement>('.painel-v2 [role="tablist"] [role="tab"][data-state="active"]')
+        .forEach((el) => el.scrollIntoView({ block: "nearest", inline: "center" }));
+    }, 120);
+    return () => clearTimeout(t);
+  }, [dest, businessSub, quotesInnerTab]);
+
   // Indicação de fornecedor: registra a atribuição uma única vez, quando o indicado entra no painel.
   useEffect(() => {
     if (!supplier) return;
