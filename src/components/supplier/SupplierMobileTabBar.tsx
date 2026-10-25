@@ -1,10 +1,9 @@
 import { LayoutDashboard, MessageSquare, Store, Users, Star, LifeBuoy } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import type { SupplierDestination } from "./SupplierSidebar";
 
 type Item = { key: SupplierDestination; label: string; icon: any; badge?: number | null; alert?: boolean };
 
+/** Barra inferior do painel no celular (mesmos destinos do menu lateral). */
 export default function SupplierMobileTabBar({
   active,
   onChange,
@@ -29,31 +28,38 @@ export default function SupplierMobileTabBar({
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      aria-label="Seções"
+      className="fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur md:hidden"
+      style={{
+        background: "rgba(255,255,255,.94)",
+        borderColor: "var(--pv-line)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
     >
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-5 px-1">
         {items.map((it) => {
           const Icon = it.icon;
           const isActive = active === it.key;
           return (
             <button
               key={it.key}
+              type="button"
               onClick={() => onChange(it.key)}
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] relative",
-                isActive ? "text-primary" : "text-muted-foreground"
-              )}
+              aria-current={isActive ? "page" : undefined}
+              className="relative flex h-[58px] flex-col items-center justify-center gap-1 text-[11px] font-semibold"
+              style={{ color: isActive ? "var(--pv-clay)" : "var(--pv-muted)" }}
             >
               <span className="relative">
-                <Icon className={cn("h-5 w-5", it.alert && !isActive && "text-destructive")} />
+                <Icon className="h-[22px] w-[22px]" strokeWidth={1.8} aria-hidden="true" />
                 {it.badge ? (
-                  <Badge className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 text-[10px]">{it.badge}</Badge>
+                  <span className="pv-num absolute -right-2.5 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[10px] font-bold text-white" style={{ background: "var(--pv-clay)" }}>
+                    {it.badge}
+                  </span>
                 ) : it.alert ? (
-                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-destructive" />
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full" style={{ background: "var(--pv-terracota)" }} />
                 ) : null}
               </span>
-              <span className="truncate max-w-full">{it.label}</span>
+              <span className="max-w-full truncate">{it.label}</span>
             </button>
           );
         })}

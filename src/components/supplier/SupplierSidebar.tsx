@@ -1,7 +1,5 @@
 import { LayoutDashboard, MessageSquare, Store, Users, Star, Sparkles, Receipt, CalendarRange, LifeBuoy } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 export type SupplierDestination = "painel" | "orcamentos" | "negocio" | "reservas" | "vagas" | "avaliacoes" | "ajuda";
 
@@ -33,57 +31,73 @@ export function getSupplierDestinations(opts: {
   return items;
 }
 
+/** Menu lateral do painel do fornecedor (desktop). */
 export default function SupplierSidebar({
   active,
   onChange,
   items,
+  cabecalho,
+  rodape,
 }: {
   active: SupplierDestination;
   onChange: (d: SupplierDestination) => void;
   items: Item[];
+  /** bloco com o nome e a categoria do negócio */
+  cabecalho?: React.ReactNode;
+  /** bloco do plano / período de teste */
+  rodape?: React.ReactNode;
 }) {
+  const linkCls =
+    "flex h-[42px] w-full items-center gap-3 rounded-[11px] px-3 text-left text-[15px] font-medium transition-colors hover:bg-white/60";
   return (
-    <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-border bg-card">
-      <nav className="p-3 space-y-1 sticky top-16">
+    <div className="hidden w-[248px] shrink-0 self-stretch border-r md:block" style={{ background: "var(--pv-side)", borderColor: "var(--pv-line)" }}>
+    <aside
+      className="sticky top-16 flex h-[calc(100dvh-4rem)] flex-col gap-1.5 overflow-y-auto px-3 pb-4 pt-4"
+      aria-label="Menu do fornecedor"
+    >
+      {cabecalho}
+      <nav className="flex flex-col gap-0.5" aria-label="Seções">
         {items.map((it) => {
           const Icon = it.icon;
           const isActive = active === it.key;
           return (
             <button
               key={it.key}
+              type="button"
               onClick={() => onChange(it.key)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left transition-colors",
-                isActive ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-foreground",
-              )}
+              aria-current={isActive ? "page" : undefined}
+              className={`pv-nav-btn ${linkCls}`}
+              style={
+                isActive
+                  ? { background: "#fff", color: "var(--pv-ink)", fontWeight: 650, boxShadow: "0 0 0 1px var(--pv-line)" }
+                  : { color: "var(--pv-body)" }
+              }
             >
-              <Icon className={cn("h-4 w-4 shrink-0", it.alert && "text-destructive")} />
+              <Icon className="h-[19px] w-[19px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
               <span className="flex-1 truncate">{it.label}</span>
               {it.badge ? (
-                <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                <span className="pv-num grid h-5 min-w-[22px] place-items-center rounded-full px-1.5 text-xs font-bold text-white" style={{ background: "var(--pv-clay)" }}>
                   {it.badge}
-                </Badge>
+                </span>
               ) : it.alert ? (
-                <span className="h-2 w-2 rounded-full bg-destructive" aria-label="Requer atenção" />
+                <span className="h-2 w-2 rounded-full" style={{ background: "var(--pv-terracota)" }} aria-label="Requer atenção" />
               ) : null}
             </button>
           );
         })}
-        <Link
-          to="/fornecedor/planos"
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-muted text-foreground"
-        >
-          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+        <div className="my-2 h-px" style={{ background: "var(--pv-line)" }} />
+        <Link to="/fornecedor/planos" className={linkCls} style={{ color: "var(--pv-body)" }}>
+          <Sparkles className="h-[19px] w-[19px] shrink-0" strokeWidth={1.8} style={{ color: "var(--pv-clay)" }} aria-hidden="true" />
           <span className="flex-1 truncate">Planos e destaques</span>
         </Link>
-        <Link
-          to="/fornecedor/faturas"
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-muted text-foreground"
-        >
-          <Receipt className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <Link to="/fornecedor/faturas" className={linkCls} style={{ color: "var(--pv-body)" }}>
+          <Receipt className="h-[19px] w-[19px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
           <span className="flex-1 truncate">Faturas e pagamentos</span>
         </Link>
       </nav>
+      <div className="flex-1" />
+      {rodape}
     </aside>
+    </div>
   );
 }

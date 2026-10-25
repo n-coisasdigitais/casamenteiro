@@ -1,0 +1,91 @@
+/*
+ * Painel do fornecedor (v2) — mesmo vocabulário visual da Home v3.
+ * Os tokens do shadcn são redefinidos só dentro de .painel-v2, então Cards, Buttons,
+ * Tabs, Inputs e Badges das abas existentes herdam o visual novo sem mudar de lógica.
+ */
+.painel-v2 {
+  --background: 33 52% 96%;      /* #f8f3ed */
+  --foreground: 30 7% 12%;       /* #1f1d1b */
+  --card: 0 0% 100%;
+  --card-foreground: 30 7% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 30 7% 12%;
+  --primary: 23 69% 39%;         /* #a9551f — contraste AA com branco */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 31 56% 93%;       /* #f6ede3 */
+  --secondary-foreground: 30 7% 12%;
+  --muted: 31 45% 94%;
+  --muted-foreground: 30 8% 38%;
+  --accent: 31 56% 93%;
+  --accent-foreground: 30 7% 12%;
+  --border: 31 37% 87%;          /* #eadfd3 */
+  --input: 31 30% 80%;
+  --ring: 23 69% 39%;
+  --radius: 0.9rem;
+
+  --pv-ink: #1f1d1b;
+  --pv-body: #5e564e;
+  --pv-muted: #8a8178;
+  --pv-side: #f3eadf;
+  --pv-line: #eadfd3;
+  --pv-clay: #a9551f;
+  --pv-terracota: #d9905a;
+  --pv-peach: #f2b98a;
+  --pv-sand: #f6ede3;
+  --pv-sage: #4a7c6a;
+  --pv-sage-soft: #e3eee8;
+  --pv-amber-soft: #fbefd9;
+  --pv-rose-soft: #f8e3de;
+  --pv-ok: #2f7a5b;
+  --pv-warn: #a86a12;
+  --pv-err: #b4412d;
+  --pv-shadow: 0 1px 2px rgba(60, 40, 20, 0.04), 0 6px 20px rgba(60, 40, 20, 0.05);
+  --pv-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.painel-v2 .pv-serif { font-family: Fraunces, Georgia, serif; font-style: italic; font-weight: 600; }
+.painel-v2 .pv-num { font-variant-numeric: tabular-nums; }
+
+/* cartões das abas existentes: sombra leve e cantos maiores */
+.painel-v2 .rounded-lg.border.bg-card { border-radius: 20px; box-shadow: var(--pv-shadow); }
+
+.painel-v2 .pv-panel {
+  background: #fff;
+  border: 1px solid var(--pv-line);
+  border-radius: 20px;
+  box-shadow: var(--pv-shadow);
+}
+
+/* entrada dos blocos */
+.painel-v2 .pv-enter { animation: pv-enter 0.6s var(--pv-ease) both; }
+@keyframes pv-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.painel-v2 .pv-lift { transition: transform 0.2s var(--pv-ease), box-shadow 0.2s; }
+.painel-v2 .pv-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(60, 40, 20, 0.09); }
+
+/* linha que sai da lista ao concluir */
+.painel-v2 .pv-task-out { opacity: 0; transform: translateX(24px); transition: opacity 0.38s var(--pv-ease), transform 0.38s var(--pv-ease); }
+
+/* gráfico pequeno e anel */
+.painel-v2 .pv-spark-line { stroke-dasharray: 400; stroke-dashoffset: 400; animation: pv-draw 1.4s var(--pv-ease) forwards; }
+@keyframes pv-draw { to { stroke-dashoffset: 0; } }
+.painel-v2 .pv-ring { transition: stroke-dashoffset 1.2s var(--pv-ease); }
+
+/* esqueleto */
+.painel-v2 .pv-skel { position: relative; overflow: hidden; background: var(--pv-sand); border-radius: 12px; }
+.painel-v2 .pv-skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent); animation: pv-shim 1.1s infinite; }
+@keyframes pv-shim { to { transform: translateX(100%); } }
+
+/* menu lateral */
+.painel-v2 .pv-nav-btn { position: relative; }
+.painel-v2 .pv-nav-btn[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--pv-clay); }
+
+/* no celular, botões com texto longo quebram linha em vez de vazar */
+@media (max-width: 640px) {
+  .painel-v2 button.whitespace-nowrap, .painel-v2 a.whitespace-nowrap { white-space: normal; height: auto; min-height: 2.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .painel-v2 *, .painel-v2 *::before, .painel-v2 *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .painel-v2 .pv-spark-line { stroke-dashoffset: 0; }
+}
