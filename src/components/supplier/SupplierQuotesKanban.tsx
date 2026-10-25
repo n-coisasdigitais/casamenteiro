@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, Calendar, Users as UsersIcon, DollarSign } from "lucide-react";
+import { Calendar, Users as UsersIcon } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -17,12 +14,12 @@ import {
 
 type KanbanStatus = "enviado" | "respondido" | "negociando" | "fechado" | "recusado";
 
-const COLUMNS: { key: KanbanStatus; label: string; color: string }[] = [
-  { key: "enviado", label: "Novos", color: "bg-muted" },
-  { key: "respondido", label: "Respondidos", color: "bg-blue-50 dark:bg-blue-950/30" },
-  { key: "negociando", label: "Negociando", color: "bg-amber-50 dark:bg-amber-950/30" },
-  { key: "fechado", label: "Fechados", color: "bg-green-50 dark:bg-green-950/30" },
-  { key: "recusado", label: "Recusados", color: "bg-red-50 dark:bg-red-950/30" },
+const COLUMNS: { key: KanbanStatus; label: string; dot: string }[] = [
+  { key: "enviado", label: "Novos", dot: "var(--pv-terracota)" },
+  { key: "respondido", label: "Respondidos", dot: "#c2a03c" },
+  { key: "negociando", label: "Negociando", dot: "var(--pv-clay)" },
+  { key: "fechado", label: "Fechados", dot: "var(--pv-ok)" },
+  { key: "recusado", label: "Recusados", dot: "#b9ada1" },
 ];
 
 type Props = {
@@ -31,6 +28,15 @@ type Props = {
   onChange: () => void;
 };
 
+function haQuanto(iso: string) {
+  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3600000);
+  if (h < 1) return "agora";
+  if (h < 24) return `há ${h} h`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? "ontem" : `há ${d} dias`;
+}
+
+/** Funil de orçamentos em colunas. Arrastar muda o status; o seletor faz o mesmo sem arrastar. */
 export default function SupplierQuotesKanban({ quotes, onOpen, onChange }: Props) {
   const [items, setItems] = useState(quotes);
   useEffect(() => setItems(quotes), [quotes]);
@@ -53,83 +59,77 @@ export default function SupplierQuotesKanban({ quotes, onOpen, onChange }: Props
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="overflow-x-auto pb-2">
-        <div className="grid grid-cols-5 gap-3 min-w-[900px]">
+      <div className="-mx-1 overflow-x-auto px-1 pb-2" style={{ scrollSnapType: "x mandatory" }}>
+        <div className="grid min-w-[1000px] grid-cols-5 gap-3">
           {COLUMNS.map((col) => {
             const list = items.filter((q) => (q.kanban_status || "enviado") === col.key);
             return (
-              <DroppableColumn key={col.key} id={col.key} className={`rounded-lg ${col.color} p-3`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold">{col.label}</h3>
-                  <Badge variant="secondary" className="h-5">
-                    {list.length}
-                  </Badge>
+              <DroppableColumn key={col.key} id={col.key}>
+                <div className="mb-2.5 flex items-center justify-between px-1">
+                  <h3 className="m-0 flex items-center gap-2 text-[12.5px] font-bold uppercase" style={{ letterSpacing: ".06em", color: "var(--pv-body)" }}>
+                    <span className="h-2 w-2 rounded-full" style={{ background: col.dot }} />
+                    {col.label}
+                  </h3>
+                  <span className="pv-num text-xs font-semibold" style={{ color: "var(--pv-muted)" }}>{list.length}</span>
                 </div>
-                <div className="space-y-2">
-                  {list.map((q) => (
-                    <DraggableCard key={q.id} id={q.id}>
-                      <Card className="p-3 space-y-2 hover:shadow-md transition" onClick={() => onOpen(q)}>
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(q.created_at).toLocaleDateString("pt-BR")}
-                          </p>
-                          {q._valor != null && (
-                            <span
-                              className={`text-xs font-semibold flex items-center gap-0.5 ${
-                                q._valor_status === "accepted" ? "text-emerald-700" : "text-foreground"
-                              }`}
-                              title={
-                                q._valor_status === "accepted"
-                                  ? "Valor fechado"
-                                  : q._valor_status === "rejected"
-                                    ? "Proposta recusada"
-                                    : "Última proposta"
-                              }
-                            >
-                              <DollarSign className="h-3 w-3" />
-                              {Number(q._valor).toLocaleString("pt-BR")}
-                            </span>
-                          )}
+                <div className="flex flex-col gap-2">
+                  {list.map((q) => {
+                    const novo = q.status === "pending";
+                    return (
+                      <DraggableCard key={q.id} id={q.id}>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => onOpen(q)}
+                          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen(q))}
+                          className="pv-lift flex flex-col gap-2 rounded-[14px] border bg-white p-3 text-left"
+                          style={{ borderColor: novo ? "var(--pv-terracota)" : "var(--pv-line)" }}
+                          aria-label={`Abrir pedido de ${q.event_date ? new Date(q.event_date).toLocaleDateString("pt-BR") : "orçamento"}`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="pv-num text-xs" style={{ color: "var(--pv-muted)" }}>{haQuanto(q.created_at)}</span>
+                            {novo && (
+                              <span className="rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: "var(--pv-rose-soft)", color: "var(--pv-err)" }}>não lido</span>
+                            )}
+                          </div>
+                          {q.message && <p className="m-0 line-clamp-2 text-[13.5px] leading-snug" style={{ color: "var(--pv-ink)" }}>{q.message}</p>}
+                          <div className="pv-num flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]" style={{ color: "var(--pv-body)" }}>
+                            {q.event_date && (
+                              <span className="inline-flex items-center gap-1">
+                                <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                                {new Date(q.event_date).toLocaleDateString("pt-BR")}
+                              </span>
+                            )}
+                            {q.guest_count && (
+                              <span className="inline-flex items-center gap-1">
+                                <UsersIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                                {q.guest_count} conv.
+                              </span>
+                            )}
+                          </div>
+                          <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+                            <Select value={q.kanban_status || "enviado"} onValueChange={(v) => move(q.id, v as KanbanStatus)}>
+                              <SelectTrigger className="h-8 rounded-lg text-xs" aria-label="Mover para">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {COLUMNS.map((c) => (
+                                  <SelectItem key={c.key} value={c.key}>
+                                    {c.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-                        <p className="text-sm line-clamp-2">{q.message}</p>
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                          {q.event_date && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {new Date(q.event_date).toLocaleDateString("pt-BR")}
-                            </span>
-                          )}
-                          {q.guest_count && (
-                            <span className="flex items-center gap-1">
-                              <UsersIcon className="h-3 w-3" />
-                              {q.guest_count}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={q.kanban_status || "enviado"}
-                            onValueChange={(v) => move(q.id, v as KanbanStatus)}
-                          >
-                            <SelectTrigger className="h-7 text-xs flex-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {COLUMNS.map((c) => (
-                                <SelectItem key={c.key} value={c.key}>
-                                  {c.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onOpen(q)}>
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </Card>
-                    </DraggableCard>
-                  ))}
-                  {list.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">—</p>}
+                      </DraggableCard>
+                    );
+                  })}
+                  {list.length === 0 && (
+                    <p className="m-0 rounded-xl border border-dashed py-5 text-center text-xs" style={{ borderColor: "var(--pv-line)", color: "var(--pv-muted)" }}>
+                      Arraste um pedido para cá
+                    </p>
+                  )}
                 </div>
               </DroppableColumn>
             );
@@ -140,10 +140,18 @@ export default function SupplierQuotesKanban({ quotes, onOpen, onChange }: Props
   );
 }
 
-function DroppableColumn({ id, className, children }: { id: string; className?: string; children: React.ReactNode }) {
+function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <div ref={setNodeRef} className={`${className || ""} ${isOver ? "ring-2 ring-primary" : ""}`}>
+    <div
+      ref={setNodeRef}
+      className="min-h-[200px] rounded-2xl border p-2.5 transition-colors"
+      style={{
+        scrollSnapAlign: "start",
+        background: isOver ? "#fbefe3" : "hsl(var(--background))",
+        borderColor: isOver ? "var(--pv-clay)" : "var(--pv-line)",
+      }}
+    >
       {children}
     </div>
   );
@@ -155,6 +163,8 @@ function DraggableCard({ id, children }: { id: string; children: React.ReactNode
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     opacity: isDragging ? 0.5 : 1,
     cursor: "grab",
+    zIndex: isDragging ? 10 : undefined,
+    position: "relative",
   };
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
