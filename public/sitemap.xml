@@ -133,6 +133,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/2e1d42e9-a412-4577-a7f3-89c9b491296e</loc>
+    <lastmod>2026-10-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/711b66c7-a2f6-431a-9975-f6a3a905a258</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>weekly</changefreq>
@@ -173,6 +179,11 @@
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/belo-horizonte-mg</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/belo-horizonte-e-cidades-metropolitanas-mg</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
