@@ -15,6 +15,8 @@ interface Props {
   staffId: string;
   supplierName?: string;
   onSaved?: () => void;
+  /** nota já escolhida no cartão do painel (1 a 5) */
+  estrelasIniciais?: number;
 }
 
 export default function ReviewSupplierDialog({
@@ -25,9 +27,10 @@ export default function ReviewSupplierDialog({
   staffId,
   supplierName,
   onSaved,
+  estrelasIniciais,
 }: Props) {
   const { toast } = useToast();
-  const [estrelas, setEstrelas] = useState(5);
+  const [estrelas, setEstrelas] = useState(estrelasIniciais ?? 5);
   const [comentario, setComentario] = useState("");
   const [loading, setLoading] = useState(false);
 
