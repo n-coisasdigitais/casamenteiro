@@ -80,6 +80,22 @@
 .painel-v2 .pv-nav-btn { position: relative; }
 .painel-v2 .pv-nav-btn[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--pv-clay); }
 
+/* abas (Meu negócio, Equipe e vagas, Orçamentos): uma linha só, com rolagem lateral no celular
+   em vez de quebrar e ficar por cima do conteúdo */
+.painel-v2 [role="tablist"] {
+  height: auto;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.painel-v2 [role="tablist"]::-webkit-scrollbar { display: none; }
+.painel-v2 [role="tablist"] > [role="tab"] { flex-shrink: 0; scroll-snap-align: start; }
+
 /* no celular, botões com texto longo quebram linha em vez de vazar */
 @media (max-width: 640px) {
   .painel-v2 button.whitespace-nowrap, .painel-v2 a.whitespace-nowrap { white-space: normal; height: auto; min-height: 2.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem; text-align: center; }
