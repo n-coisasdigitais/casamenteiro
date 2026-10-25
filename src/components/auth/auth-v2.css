@@ -1,0 +1,69 @@
+/* Login / cadastro (v2) — mesmo vocabulário visual da Home v3 */
+.auth-v2 {
+  --a-ink: #1f1d1b;
+  --a-body: #5e564e;
+  --a-muted: #8a8178;
+  --a-bg: #faf5ef;
+  --a-surface: #ffffff;
+  --a-line: #e9ddd0;
+  --a-line-strong: #d9c9b8;
+  --a-clay: #a9551f;
+  --a-terracota: #d9905a;
+  --a-sand: #f3e7da;
+  --a-ok: #2f7a5b;
+  --a-err: #b4412d;
+  --a-focus: rgba(169, 85, 31, 0.28);
+  --a-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  color: var(--a-ink);
+  background: var(--a-bg);
+  -webkit-font-smoothing: antialiased;
+}
+.auth-v2 .a-serif { font-family: Fraunces, Georgia, serif; font-style: italic; font-weight: 600; }
+
+/* cena da esquerda */
+.auth-v2 .a-scene { opacity: 0; transform: scale(1.02); transition: opacity 0.6s var(--a-ease), transform 1.2s var(--a-ease); pointer-events: none; }
+.auth-v2 .a-scene.on { opacity: 1; transform: none; pointer-events: auto; }
+.auth-v2 .a-scene.on .a-chip { animation: a-chip 0.7s var(--a-ease) both; }
+.auth-v2 .a-scene.on .a-chip:nth-child(2) { animation-delay: 0.12s; }
+.auth-v2 .a-scene.on .a-chip:nth-child(3) { animation-delay: 0.24s; }
+@keyframes a-chip { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
+.auth-v2 .a-ping { position: relative; }
+.auth-v2 .a-ping::after { content: ""; position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: #d9905a; animation: a-ping 1.8s ease-out infinite; }
+@keyframes a-ping { 0% { box-shadow: 0 0 0 0 rgba(217, 144, 90, 0.6); } 80%, 100% { box-shadow: 0 0 0 10px rgba(217, 144, 90, 0); } }
+
+/* seletor de perfil com indicador deslizante */
+.auth-v2 .a-pill { transition: transform 0.32s var(--a-ease); }
+
+/* campos */
+.auth-v2 .a-input { width: 100%; height: 50px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--a-line-strong); background: var(--a-surface); font-size: 16px; color: var(--a-ink); transition: border-color 0.16s, box-shadow 0.16s; }
+.auth-v2 .a-input::placeholder { color: var(--a-muted); }
+.auth-v2 .a-input:hover { border-color: var(--a-muted); }
+.auth-v2 .a-input:focus { outline: none; border-color: var(--a-clay); box-shadow: 0 0 0 4px var(--a-focus); }
+.auth-v2 .a-field.bad .a-input { border-color: var(--a-err); }
+.auth-v2 .a-field.good .a-input { border-color: var(--a-ok); }
+.auth-v2 .a-shake { animation: a-shake 0.38s var(--a-ease); }
+@keyframes a-shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+.auth-v2 :focus-visible { outline: none; box-shadow: 0 0 0 4px var(--a-focus); }
+
+/* abas Entrar / Criar conta */
+.auth-v2 .a-tab[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 2px; background: var(--a-clay); animation: a-grow 0.32s var(--a-ease); }
+@keyframes a-grow { from { transform: scaleX(0.3); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* botão principal */
+.auth-v2 .a-btn { position: relative; height: 52px; border-radius: 999px; background: var(--a-ink); color: #fff; font-weight: 700; font-size: 16px; overflow: hidden; transition: transform 0.12s ease-out, filter 0.2s; }
+.auth-v2 .a-btn:hover { filter: brightness(1.12); }
+.auth-v2 .a-btn:active { transform: scale(0.98); }
+.auth-v2 .a-btn:disabled { cursor: progress; }
+.auth-v2 .a-spin { width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent; animation: a-rot 0.7s linear infinite; }
+@keyframes a-rot { to { transform: rotate(360deg); } }
+
+/* troca de conteúdo */
+.auth-v2 .a-swap { animation: a-swap 0.32s var(--a-ease); }
+@keyframes a-swap { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.auth-v2 .a-pop { animation: a-pop 0.5s var(--a-ease); }
+@keyframes a-pop { 0% { transform: scale(0.4); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-v2 *, .auth-v2 *::before, .auth-v2 *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
