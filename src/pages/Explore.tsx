@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { resolverCategoriaSlug } from "@/lib/categoriaSlug";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -516,6 +517,12 @@ const Explore = () => {
       ? [itemListJsonLd(featured.slice(0, 10).map((s) => ({ name: s.company_name, path: `/fornecedor/${s.id}` })))]
       : []),
   ];
+
+  // Busca com categoria (?cat= ou o formato antigo ?categoria=) abre a página da categoria,
+  // que é onde os fornecedores daquela categoria são listados.
+  const categoriaPedida = searchParams.get("categoria") || catParam;
+  const slugDestino = categoriaPedida && categories.length ? resolverCategoriaSlug(categoriaPedida, categories) : null;
+  if (slugDestino) return <Navigate to={`/categoria/${slugDestino}`} replace />;
 
   return (
     <div className="min-h-screen bg-background">

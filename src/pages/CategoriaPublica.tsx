@@ -300,7 +300,6 @@ export default function CategoriaPublica() {
     return () => observer.disconnect();
   }, [category, page, hasMore, loading, loadingMore, loadPage]);
 
-  if (notFound) return <Navigate to="/explorar" replace />;
 
   // Hero da categoria: destaque pago dela -> featured dela -> institucional (secoes_home escopo=explore)
   useEffect(() => {
@@ -419,6 +418,9 @@ export default function CategoriaPublica() {
         ),
       ]
     : undefined;
+
+  // fica depois de todos os hooks: retornar antes deles quebra a tela (erro #300 do React)
+  if (notFound) return <Navigate to="/explorar" replace />;
 
   return (
     <div className="min-h-screen bg-background">

@@ -552,7 +552,7 @@ export default function SimuladorResultado() {
               ) : cat.fornecedores.length === 0 ? (
                 <div className="on-green rounded-xl p-4 text-sm" style={{ background: "hsl(var(--color-secondary))" }}>
                   Nenhum fornecedor encontrado nesta faixa em {sim.cidade || "sua cidade"}.{" "}
-                  <Link to={`/buscar?categoria=${cat.slug}`} className="underline font-medium">
+                  <Link to={`/categoria/${cat.slug}`} className="underline font-medium">
                     Ver todos os fornecedores desta categoria →
                   </Link>
                 </div>

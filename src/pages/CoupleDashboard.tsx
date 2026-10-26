@@ -14,6 +14,7 @@ import QuoteConversation from "@/components/QuoteConversation";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import CouplePhotoUpload from "@/components/CouplePhotoUpload";
+import { dueStatus } from "@/lib/taskDueDate";
 
 type CoupleData = {
   id: string;
@@ -125,7 +126,10 @@ export default function CoupleDashboard() {
         .select("*, supplier:suppliers(id, company_name, category_id)")
         .eq("couple_id", coupleId)
         .order("created_at", { ascending: false }),
-      supabase.from("wedding_tasks").select("id, title, due_date, is_completed, sort_order").eq("couple_id", coupleId),
+      supabase
+        .from("wedding_tasks")
+        .select("id, title, due_date, is_completed, sort_order, created_at, seeded_as_backlog")
+        .eq("couple_id", coupleId),
       supabase.from("wedding_guests").select("id, rsvp_status").eq("couple_id", coupleId),
       supabase.from("budget_items").select("final_cost").eq("couple_id", coupleId),
       supabase
@@ -272,7 +276,10 @@ export default function CoupleDashboard() {
   const faltam = linhasCategorias.length - contratados;
 
   const pendentes = tasks.filter((t) => !t.is_completed);
-  const atrasadas = pendentes.filter((t) => t.due_date && t.due_date < hoje);
+  // mesma regra da tela de Tarefas: só é atrasada se venceu depois que o casal começou a usar
+  const estaAtrasada = (t: any) =>
+    dueStatus(t.due_date ? new Date(t.due_date) : null, !!t.is_completed, { createdAt: t.created_at ?? null, seededAsBacklog: !!t.seeded_as_backlog }) === "overdue";
+  const atrasadas = pendentes.filter(estaAtrasada);
   const tarefasSemana = [...pendentes]
     .sort((a, b) => {
       const da = a.due_date || "9999-12-31";
@@ -661,7 +668,7 @@ export default function CoupleDashboard() {
               ) : (
                 <div className="flex flex-col">
                   {tarefasSemana.map((t) => {
-                    const atrasada = t.due_date && t.due_date < hoje;
+                    const atrasada = estaAtrasada(t);
                     return (
                       <div key={t.id} className={`ca-row ca-task flex items-center gap-3 py-2.5 ${saindo[t.id] ? "out" : ""}`}>
                         <button

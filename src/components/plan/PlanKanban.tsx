@@ -146,7 +146,7 @@ export default function PlanKanban({
       if (!ok) return;
       await updateStatus(item, newStatus);
       const goSearch = window.confirm("Quer buscar um substituto agora?");
-      if (goSearch && item.category_slug) navigate(`/buscar?categoria=${item.category_slug}`);
+      if (goSearch && item.category_slug) navigate(`/categoria/${item.category_slug}`);
       return;
     }
     await updateStatus(item, newStatus);
