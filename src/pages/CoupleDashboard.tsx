@@ -1,57 +1,67 @@
 import { traduzirErro } from "@/lib/errorMessages";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Heart,
-  Search,
-  Calendar,
-  Users,
-  DollarSign,
-  Copy,
-  Share2,
-  MessageSquare,
-  Eye,
-  CheckSquare,
-  Store,
-  ArrowRight,
-  Calculator,
-  Image as ImageIcon,
-  Trash2,
-} from "lucide-react";
-import { Star } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Star, Trash2, Pencil, Mail, Wallet, AlertCircle, Search, PartyPopper, Check, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuoteConversation from "@/components/QuoteConversation";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
 import CouplePhotoUpload from "@/components/CouplePhotoUpload";
-import { Textarea } from "@/components/ui/textarea";
 
 type CoupleData = {
   id: string;
   partner_name: string | null;
   couple_role: string | null;
   wedding_date: string | null;
+  wedding_city?: string | null;
   estimated_guests: number | null;
   estimated_budget: number | null;
   invite_code: string | null;
   onboarding_completed: boolean;
+  needed_services?: string[] | null;
   header_photo_url?: string | null;
   header_quote?: string | null;
 };
 
-type TaskSummary = { total: number; completed: number };
-type GuestSummary = { total: number; confirmed: number; pending: number; declined: number };
-type BudgetSummary = { estimated: number; final: number };
+type Categoria = { id: string; name: string; slug: string };
+type Situacao = "ok" | "wip" | "todo";
+type LinhaCategoria = { cat: Categoria; situacao: Situacao; detalhe: string };
+
+/** categorias mostradas quando o casal ainda não escolheu nenhuma */
+const CATEGORIAS_PADRAO = ["espaco", "buffet", "fotografia", "decoracao", "musica-dj", "cerimonialista", "video", "vestido-noiva", "bolos-doces"];
+
+/* ---------- ajudantes ---------- */
+function isoLocal(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+const dataCurta = (iso: string, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }) =>
+  new Date(iso + "T00:00:00").toLocaleDateString("pt-BR", opts).replace(/\./g, "");
+const reais = (v: number) => "R$ " + Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+const reaisCurto = (v: number) =>
+  v >= 1000 ? `R$ ${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : reais(v);
+function haQuanto(iso: string) {
+  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3600000);
+  if (h < 1) return "agora";
+  if (h < 24) return `há ${h} h`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? "ontem" : `há ${d} dias`;
+}
+const iniciais = (s: string) =>
+  (s || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+const CORES_LOGO = ["#c46a5e", "#d9905a", "#4a7c6a", "#a9551f", "#8a6a9e", "#5b7fa6"];
 
 export default function CoupleDashboard() {
   const { user, profile } = useAuth();
@@ -59,19 +69,126 @@ export default function CoupleDashboard() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [couple, setCouple] = useState<CoupleData | null>(null);
-  const [favCount, setFavCount] = useState(0);
   const [quotes, setQuotes] = useState<any[]>([]);
+  const [ultimaMsg, setUltimaMsg] = useState<Record<string, { sender_id: string; created_at: string }>>({});
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [threadOpen, setThreadOpen] = useState(false);
-  const [taskSummary, setTaskSummary] = useState<TaskSummary>({ total: 0, completed: 0 });
-  const [guestSummary, setGuestSummary] = useState<GuestSummary>({ total: 0, confirmed: 0, pending: 0, declined: 0 });
-  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary>({ estimated: 0, final: 0 });
-  const [supplierCount, setSupplierCount] = useState(0);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [saindo, setSaindo] = useState<Record<string, boolean>>({});
+  const [guests, setGuests] = useState<{ total: number; confirmed: number }>({ total: 0, confirmed: 0 });
+  const [budgetFinal, setBudgetFinal] = useState(0);
+  const [coupleSuppliers, setCoupleSuppliers] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [pagamentos, setPagamentos] = useState<any[]>([]);
+  const [simulacoes, setSimulacoes] = useState<any[]>([]);
+  const [verTodasCats, setVerTodasCats] = useState(false);
+  const [verTodosPedidos, setVerTodosPedidos] = useState(false);
+  const [barras, setBarras] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+
   const [avOpen, setAvOpen] = useState(false);
   const [avRating, setAvRating] = useState(5);
   const [avComentario, setAvComentario] = useState("");
   const [avSalvando, setAvSalvando] = useState(false);
   const [avEnviada, setAvEnviada] = useState(false);
+
+  const [coverOpen, setCoverOpen] = useState(false);
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  const [coverQuote, setCoverQuote] = useState<string>("");
+  const [savingCover, setSavingCover] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("couples")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        if (!data.onboarding_completed) {
+          navigate("/onboarding");
+          return;
+        }
+        setCouple(data as any);
+        setCoverPhoto(data.header_photo_url || null);
+        setCoverQuote(data.header_quote || "");
+        loadDashboardData(data.id);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, navigate]);
+
+  const loadDashboardData = async (coupleId: string) => {
+    const [quotesRes, tasksRes, guestsRes, budgetRes, csRes, catRes, payRes, simRes] = await Promise.all([
+      supabase
+        .from("quotes")
+        .select("*, supplier:suppliers(id, company_name, category_id)")
+        .eq("couple_id", coupleId)
+        .order("created_at", { ascending: false }),
+      supabase.from("wedding_tasks").select("id, title, due_date, is_completed, sort_order").eq("couple_id", coupleId),
+      supabase.from("wedding_guests").select("id, rsvp_status").eq("couple_id", coupleId),
+      supabase.from("budget_items").select("final_cost").eq("couple_id", coupleId),
+      supabase
+        .from("couple_suppliers")
+        .select("id, category_id, kanban_status, status, is_external, external_supplier_name, supplier:suppliers(company_name)")
+        .eq("couple_id", coupleId),
+      supabase.from("categories").select("id, name, slug").eq("active", true).order("name"),
+      (supabase.from("budget_payments" as any) as any)
+        .select("id, amount, due_date, status, description, item:budget_items(description, category)")
+        .eq("couple_id", coupleId)
+        .neq("status", "paid")
+        .not("due_date", "is", null)
+        .order("due_date", { ascending: true })
+        .limit(6),
+      (supabase.from("home_simulacoes" as any) as any)
+        .select("*")
+        .or(`couple_id.eq.${coupleId},user_id.eq.${user?.id}`)
+        .order("criado_em", { ascending: false }),
+    ]);
+
+    const qs = quotesRes.data || [];
+    setQuotes(qs);
+    setTasks(tasksRes.data || []);
+    const allGuests = guestsRes.data || [];
+    setGuests({ total: allGuests.length, confirmed: allGuests.filter((g) => g.rsvp_status === "confirmed").length });
+    setBudgetFinal((budgetRes.data || []).reduce((s, b) => s + Number(b.final_cost || 0), 0));
+    setCoupleSuppliers(csRes.data || []);
+    setCategorias((catRes.data || []) as Categoria[]);
+    setPagamentos(((payRes as any).data || []) as any[]);
+    setSimulacoes((simRes as any).data || []);
+
+    // última mensagem de cada pedido: se não foi o casal que mandou, o fornecedor está esperando resposta
+    if (qs.length) {
+      const { data: msgs } = await supabase
+        .from("quote_messages")
+        .select("quote_id, sender_id, created_at")
+        .in(
+          "quote_id",
+          qs.map((q: any) => q.id),
+        )
+        .order("created_at", { ascending: false });
+      const mapa: Record<string, { sender_id: string; created_at: string }> = {};
+      (msgs || []).forEach((m: any) => {
+        if (!mapa[m.quote_id]) mapa[m.quote_id] = m;
+      });
+      setUltimaMsg(mapa);
+    }
+    setTimeout(() => setBarras(true), 150);
+  };
+
+  const concluirTarefa = async (id: string) => {
+    setSaindo((s) => ({ ...s, [id]: true }));
+    const { error } = await supabase
+      .from("wedding_tasks")
+      .update({ is_completed: true, completed_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      setSaindo((s) => ({ ...s, [id]: false }));
+      return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
+    }
+    setTimeout(() => setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, is_completed: true } : t))), 350);
+    toast({ title: "Tarefa concluída" });
+  };
 
   const enviarAvaliacaoPlataforma = async () => {
     if (!user) return;
@@ -93,107 +210,98 @@ export default function CoupleDashboard() {
     setAvEnviada(true);
     setAvComentario("");
   };
-  const [urgentTasks, setUrgentTasks] = useState<any[]>([]);
-  const [simulacoes, setSimulacoes] = useState<any[]>([]);
-  const [coverOpen, setCoverOpen] = useState(false);
-  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
-  const [coverQuote, setCoverQuote] = useState<string>("");
-  const [savingCover, setSavingCover] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("couples")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!data) return;
-        if (!data.onboarding_completed) {
-          navigate("/onboarding");
-          return;
-        }
-        setCouple(data);
-        setCoverPhoto(data.header_photo_url || null);
-        setCoverQuote(data.header_quote || "");
-        loadDashboardData(data.id);
-      });
-  }, [user, navigate]);
-
-  const loadDashboardData = async (coupleId: string) => {
-    // All queries in parallel
-    const [favRes, quotesRes, tasksRes, guestsRes, budgetRes, suppRes, urgentRes, simRes] = await Promise.all([
-      supabase.from("couple_favorites").select("id", { count: "exact", head: true }).eq("couple_id", coupleId),
-      supabase.from("quotes").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }),
-      supabase.from("wedding_tasks").select("id, is_completed").eq("couple_id", coupleId),
-      supabase.from("wedding_guests").select("id, rsvp_status").eq("couple_id", coupleId),
-      supabase.from("budget_items").select("estimated_cost, final_cost").eq("couple_id", coupleId),
-      supabase
-        .from("couple_suppliers")
-        .select("id", { count: "exact", head: true })
-        .eq("couple_id", coupleId)
-        .eq("status", "contracted"),
-      supabase
-        .from("wedding_tasks")
-        .select("id, title, category, is_completed")
-        .eq("couple_id", coupleId)
-        .eq("is_completed", false)
-        .order("sort_order", { ascending: true })
-        .limit(3),
-      (supabase.from("home_simulacoes" as any) as any)
-        .select("*")
-        .or(`couple_id.eq.${coupleId},user_id.eq.${user?.id}`)
-        .order("criado_em", { ascending: false }),
-    ]);
-
-    setFavCount(favRes.count || 0);
-    setQuotes(quotesRes.data || []);
-
-    const allTasks = tasksRes.data || [];
-    setTaskSummary({ total: allTasks.length, completed: allTasks.filter((t) => t.is_completed).length });
-
-    const allGuests = guestsRes.data || [];
-    setGuestSummary({
-      total: allGuests.length,
-      confirmed: allGuests.filter((g) => g.rsvp_status === "confirmed").length,
-      pending: allGuests.filter((g) => g.rsvp_status === "pending").length,
-      declined: allGuests.filter((g) => g.rsvp_status === "declined").length,
-    });
-
-    const allBudget = budgetRes.data || [];
-    setBudgetSummary({
-      estimated: allBudget.reduce((s, b) => s + Number(b.estimated_cost || 0), 0),
-      final: allBudget.reduce((s, b) => s + Number(b.final_cost || 0), 0),
-    });
-
-    setSupplierCount(suppRes.count || 0);
-    setUrgentTasks(urgentRes.data || []);
-    setSimulacoes((simRes as any).data || []);
-  };
-
-  const toggleUrgentTask = async (id: string) => {
-    setUrgentTasks((prev) => prev.filter((t) => t.id !== id));
-    setTaskSummary((prev) => ({ ...prev, completed: prev.completed + 1 }));
-    await supabase
-      .from("wedding_tasks")
-      .update({ is_completed: true, completed_at: new Date().toISOString() })
-      .eq("id", id);
-  };
-
-  const daysUntilWedding = couple?.wedding_date
-    ? Math.ceil((new Date(couple.wedding_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : null;
 
   const copyInviteCode = () => {
-    if (couple?.invite_code) {
-      navigator.clipboard.writeText(couple.invite_code);
-      toast({ title: "Código copiado!", description: "Compartilhe com seu(sua) parceiro(a)." });
-    }
+    if (!couple?.invite_code) return;
+    navigator.clipboard.writeText(couple.invite_code);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+    toast({ title: "Código copiado!", description: "Compartilhe com seu(sua) parceiro(a)." });
   };
+
+  const abrirPedido = (q: any) => {
+    setSelectedQuote(q);
+    setThreadOpen(true);
+  };
+
+  /* ---------- dados derivados ---------- */
+  const hoje = isoLocal(new Date());
+  const em7dias = isoLocal(new Date(Date.now() + 7 * 864e5));
+
+  const categoriaPorId = useMemo(() => new Map(categorias.map((c) => [c.id, c])), [categorias]);
+
+  /** Fornecedores por categoria: contratado, em orçamento ou faltando. */
+  const linhasCategorias: LinhaCategoria[] = useMemo(() => {
+    const ids: string[] = [];
+    const add = (id?: string | null) => {
+      if (id && categoriaPorId.has(id) && !ids.includes(id)) ids.push(id);
+    };
+    coupleSuppliers.forEach((cs) => add(cs.category_id));
+    (couple?.needed_services || []).forEach((id) => add(id));
+    quotes.forEach((q) => add(q.supplier?.category_id));
+    if (ids.length === 0) CATEGORIAS_PADRAO.forEach((slug) => add(categorias.find((c) => c.slug === slug)?.id));
+
+    const linhas = ids.map((id): LinhaCategoria => {
+      const cat = categoriaPorId.get(id)!;
+      const doCat = coupleSuppliers.filter((cs) => cs.category_id === id);
+      const contratado = doCat.find(
+        (cs) => cs.kanban_status === "contratado" || cs.status === "contracted" || cs.kanban_status === "fora_da_plataforma",
+      );
+      if (contratado) {
+        const nome = contratado.supplier?.company_name || contratado.external_supplier_name || "Fornecedor";
+        return { cat, situacao: "ok", detalhe: `${nome} · ${contratado.kanban_status === "fora_da_plataforma" ? "fora da plataforma" : "contratado"}` };
+      }
+      const emAndamento = doCat.filter((cs) => cs.kanban_status === "em_orcamento" || cs.kanban_status === "negociando").length;
+      const pedidos = quotes.filter((q) => q.supplier?.category_id === id && !["rejected", "cancelled"].includes(q.status));
+      const n = Math.max(emAndamento, pedidos.length);
+      if (n > 0) {
+        const respondidos = pedidos.filter((q) => q.status === "answered" || (ultimaMsg[q.id] && ultimaMsg[q.id].sender_id !== user?.id)).length;
+        return {
+          cat,
+          situacao: "wip",
+          detalhe: `${n} ${n === 1 ? "orçamento" : "orçamentos"}${respondidos ? ` · ${respondidos} ${respondidos === 1 ? "respondido" : "respondidos"}` : ""}`,
+        };
+      }
+      return { cat, situacao: "todo", detalhe: "Nenhum pedido ainda" };
+    });
+    const ordem: Record<Situacao, number> = { ok: 0, wip: 1, todo: 2 };
+    return linhas.sort((a, b) => ordem[a.situacao] - ordem[b.situacao]);
+  }, [coupleSuppliers, couple, quotes, categorias, categoriaPorId, ultimaMsg, user]);
+
+  const contratados = linhasCategorias.filter((l) => l.situacao === "ok").length;
+  const faltam = linhasCategorias.length - contratados;
+
+  const pendentes = tasks.filter((t) => !t.is_completed);
+  const atrasadas = pendentes.filter((t) => t.due_date && t.due_date < hoje);
+  const tarefasSemana = [...pendentes]
+    .sort((a, b) => {
+      const da = a.due_date || "9999-12-31";
+      const db = b.due_date || "9999-12-31";
+      if (da !== db) return da > db ? 1 : -1;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    })
+    .slice(0, 3);
+  const tarefasFeitas = tasks.length - pendentes.length;
+
+  const aguardandoVoces = quotes.filter(
+    (q) =>
+      !["accepted", "rejected", "cancelled"].includes(q.status) && ultimaMsg[q.id] && ultimaMsg[q.id].sender_id !== user?.id,
+  );
+  const statusPedido = (q: any): { label: string; tom: "new" | "wait" | "ok" | "off" } => {
+    if (q.status === "accepted") return { label: "Contratado", tom: "ok" };
+    if (q.status === "rejected") return { label: "Recusado", tom: "off" };
+    if (q.status === "cancelled") return { label: "Cancelado", tom: "off" };
+    if (aguardandoVoces.some((x) => x.id === q.id)) return { label: "Nova resposta", tom: "new" };
+    if (q.status === "answered") return { label: "Respondido", tom: "wait" };
+    if (q.status === "viewed") return { label: "Visualizado", tom: "wait" };
+    return { label: "Enviado", tom: "wait" };
+  };
+
+  const pagamentoProximo = pagamentos.find((p) => p.due_date <= em7dias);
 
   if (!couple)
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <p>Carregando...</p>
       </div>
     );
@@ -217,604 +325,676 @@ export default function CoupleDashboard() {
     toast({ title: "Capa atualizada!" });
   };
 
-  const taskPct = taskSummary.total > 0 ? Math.round((taskSummary.completed / taskSummary.total) * 100) : 0;
+  const daysUntilWedding = couple.wedding_date
+    ? Math.ceil((new Date(couple.wedding_date + "T00:00:00").getTime() - Date.now()) / 864e5)
+    : null;
+  const cidade = couple.wedding_city || "";
+  const linkBusca = (slug: string) => `/buscar?cat=${slug}${cidade ? `&loc=${encodeURIComponent(cidade)}` : ""}`;
+
   const budgetPct =
-    couple.estimated_budget && couple.estimated_budget > 0
-      ? Math.round((budgetSummary.final / couple.estimated_budget) * 100)
-      : 0;
-  const guestPct =
-    couple.estimated_guests && couple.estimated_guests > 0
-      ? Math.round((guestSummary.confirmed / couple.estimated_guests) * 100)
-      : 0;
+    couple.estimated_budget && couple.estimated_budget > 0 ? Math.round((budgetFinal / couple.estimated_budget) * 100) : 0;
+  const guestBase = guests.total || couple.estimated_guests || 0;
+  const guestPct = guestBase > 0 ? Math.round((guests.confirmed / guestBase) * 100) : 0;
+  const taskPct = tasks.length > 0 ? Math.round((tarefasFeitas / tasks.length) * 100) : 0;
+  const fornPct = linhasCategorias.length > 0 ? Math.round((contratados / linhasCategorias.length) * 100) : 0;
+
+  /* ---------- próximo passo: uma ação só, por ordem de prioridade ---------- */
+  type Passo = { icone: any; titulo: string; texto: string; acao: string; onClick?: () => void; to?: string };
+  const primeiraFaltando = linhasCategorias.find((l) => l.situacao === "todo");
+  const passo: Passo | null = aguardandoVoces[0]
+    ? {
+        icone: Mail,
+        titulo: `${aguardandoVoces[0].supplier?.company_name || "Um fornecedor"} respondeu seu pedido`,
+        texto: `${categoriaPorId.get(aguardandoVoces[0].supplier?.category_id)?.name || "Orçamento"} · responder rápido ajuda a garantir a data.`,
+        acao: "Ver",
+        onClick: () => abrirPedido(aguardandoVoces[0]),
+      }
+    : pagamentoProximo
+      ? {
+          icone: Wallet,
+          titulo: `Pagamento de ${reais(Number(pagamentoProximo.amount))} ${pagamentoProximo.due_date < hoje ? "atrasado" : `vence ${dataCurta(pagamentoProximo.due_date)}`}`,
+          texto: pagamentoProximo.item?.description || pagamentoProximo.description || "Parcela cadastrada no seu orçamento.",
+          acao: "Ver",
+          to: "/orcamento",
+        }
+      : atrasadas[0]
+        ? {
+            icone: AlertCircle,
+            titulo: atrasadas[0].title,
+            texto: `Tarefa atrasada desde ${dataCurta(atrasadas[0].due_date)}.`,
+            acao: "Tarefas",
+            to: "/tarefas",
+          }
+        : primeiraFaltando
+          ? {
+              icone: Search,
+              titulo: `Peça orçamentos de ${primeiraFaltando.cat.name.toLowerCase()}`,
+              texto: cidade ? `Fornecedores que atendem ${cidade}.` : "Compare preços e disponibilidade para a sua data.",
+              acao: "Buscar",
+              to: linkBusca(primeiraFaltando.cat.slug),
+            }
+          : null;
+
+  const nomes = `${profile?.full_name?.split(" ")[0] || "Casal"}${couple.partner_name ? ` & ${couple.partner_name.split(" ")[0]}` : ""}`;
+  const pedidosVisiveis = verTodosPedidos ? quotes : quotes.slice(0, 3);
+  const catsVisiveis = verTodasCats ? linhasCategorias : linhasCategorias.slice(0, 5);
+
+  const tituloSecao = "m-0 text-base font-bold";
+  const lnk = "text-sm font-bold whitespace-nowrap";
+  const lnkStyle = { color: "var(--ca-clay)" };
+
+  const Indicador = ({ titulo, valor, de, pct, rodape, to, alerta }: { titulo: string; valor: string | number; de?: string; pct: number; rodape: React.ReactNode; to: string; alerta?: boolean }) => (
+    <Link to={to} className="ca-stat ca-card gap-1.5" style={{ padding: 14 }}>
+      <small className="text-[12.5px] font-semibold" style={{ color: "var(--ca-muted)" }}>
+        {titulo}
+      </small>
+      <b className="ca-num text-[22px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--ca-ink)" }}>
+        {valor}
+        {de && (
+          <span className="text-sm font-semibold" style={{ color: "var(--ca-muted)" }}>
+            {" "}
+            {de}
+          </span>
+        )}
+      </b>
+      <div className="ca-bar">
+        <i style={{ width: barras ? `${Math.min(100, pct)}%` : 0, background: alerta ? "var(--ca-warn)" : undefined }} />
+      </div>
+      <span className="text-xs" style={{ color: "var(--ca-body)" }}>
+        {rodape}
+      </span>
+    </Link>
+  );
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />
       <DashboardNav />
 
-      <main className="container px-4 py-8">
-        {/* Header personalizado do casal (foto + frase) */}
-        <div className="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-primary/15 to-secondary/40 min-h-[180px] md:min-h-[240px]">
-          {couple.header_photo_url ? (
-            <>
-              <img
-                src={couple.header_photo_url}
-                alt="Capa do casal"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-            </>
-          ) : (
-            <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top_left,theme(colors.primary/30),transparent_60%),radial-gradient(circle_at_bottom_right,theme(colors.secondary/40),transparent_60%)]" />
-          )}
-          <div className={`relative px-6 py-8 md:py-12 ${couple.header_photo_url ? "text-white" : "text-foreground"}`}>
-            <p className="text-xs uppercase tracking-wider opacity-80">Meu casamento</p>
-            <h1 className="text-3xl md:text-4xl font-serif mt-1">
-              {profile?.full_name || "Casal"}
-              {couple.partner_name && ` & ${couple.partner_name}`}
+      <main className="ca-enter mx-auto flex max-w-[1080px] flex-col gap-4 px-4 pb-10 pt-4 md:px-7 md:pt-6">
+        {/* capa (clara) */}
+        <section className="ca-hero flex items-stretch gap-4 p-[18px] md:p-6" aria-labelledby="nomes-casal">
+          <div className="flex min-w-0 flex-1 flex-col justify-end gap-1.5">
+            <span className="text-xs font-extrabold uppercase" style={{ letterSpacing: ".08em", color: "var(--ca-clay)" }}>
+              Meu casamento
+            </span>
+            <h1 id="nomes-casal" className="ca-serif m-0 text-[30px] md:text-[40px]" style={{ letterSpacing: "-0.02em", lineHeight: 1.1, color: "var(--ca-ink)" }}>
+              {nomes}
             </h1>
-            {couple.header_quote ? (
-              <p className="mt-2 italic max-w-xl text-sm md:text-base">"{couple.header_quote}"</p>
-            ) : (
-              !couple.header_photo_url && (
-                <p className="mt-2 text-sm md:text-base text-muted-foreground max-w-xl">
-                  Adicione uma foto e uma frase do casal para deixar este espaço com a sua cara.
-                </p>
-              )
+            {couple.header_quote && (
+              <p className="m-0 text-sm italic" style={{ color: "var(--ca-body)" }}>
+                "{couple.header_quote}"
+              </p>
             )}
-            {daysUntilWedding !== null && daysUntilWedding > 0 && (
-              <div className="flex items-center gap-2 mt-4">
-                <Calendar className="h-5 w-5" />
-                <span className="text-base md:text-lg">
-                  <strong>{daysUntilWedding}</strong> dias para o grande dia!
+            <div className="ca-num flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm" style={{ color: "var(--ca-body)" }}>
+              {daysUntilWedding !== null && daysUntilWedding > 0 && (
+                <span>
+                  <b className="text-[22px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--ca-clay)" }}>
+                    {daysUntilWedding}
+                  </b>{" "}
+                  {daysUntilWedding === 1 ? "dia" : "dias"}
+                </span>
+              )}
+              {daysUntilWedding === 0 && <b style={{ color: "var(--ca-clay)" }}>É hoje!</b>}
+              <span>
+                {couple.wedding_date
+                  ? dataCurta(couple.wedding_date, { weekday: "short", day: "numeric", month: "long", year: "numeric" })
+                  : "Data a definir"}
+                {cidade ? ` · ${cidade}` : ""}
+              </span>
+            </div>
+          </div>
+          {couple.header_photo_url && (
+            <img
+              src={couple.header_photo_url}
+              alt="Foto do casal"
+              className="hidden h-auto w-[200px] shrink-0 rounded-2xl object-cover sm:block"
+              style={{ maxHeight: 170 }}
+            />
+          )}
+          <button
+            type="button"
+            onClick={() => setCoverOpen(true)}
+            className="absolute right-3 top-3 inline-flex h-[34px] items-center gap-1.5 rounded-full border bg-white/80 px-3 text-[12.5px] font-bold backdrop-blur"
+            style={{ borderColor: "var(--ca-line-strong)", color: "var(--ca-ink)" }}
+          >
+            <Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Capa
+          </button>
+        </section>
+
+        {/* próximo passo */}
+        {passo ? (
+          <section className="ca-next ca-card flex-row items-center gap-3.5" aria-labelledby="h-passo">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px]" style={{ background: "var(--ca-rose-soft)", color: "var(--ca-clay)" }}>
+              <passo.icone className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <small className="block text-xs font-extrabold uppercase" style={{ letterSpacing: ".06em", color: "var(--ca-clay)" }}>
+                Próximo passo
+              </small>
+              <b id="h-passo" className="mt-0.5 block text-base" style={{ letterSpacing: "-0.01em" }}>
+                {passo.titulo}
+              </b>
+              <span className="mt-0.5 block text-[13.5px]" style={{ color: "var(--ca-body)" }}>
+                {passo.texto}
+              </span>
+            </span>
+            {passo.to ? (
+              <Link to={passo.to} className="ca-pill pri shrink-0">
+                {passo.acao}
+              </Link>
+            ) : (
+              <button type="button" onClick={passo.onClick} className="ca-pill pri shrink-0">
+                {passo.acao}
+              </button>
+            )}
+          </section>
+        ) : (
+          <section className="ca-card flex-row items-center gap-3.5">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px]" style={{ background: "var(--ca-sage-soft)", color: "var(--ca-ok)" }}>
+              <PartyPopper className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span>
+              <b className="block text-base">Tudo em dia!</b>
+              <span className="text-[13.5px]" style={{ color: "var(--ca-body)" }}>
+                Nenhuma resposta, pagamento ou tarefa esperando vocês agora.
+              </span>
+            </span>
+          </section>
+        )}
+
+        {/* quatro indicadores, cada um leva para a sua tela */}
+        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          <Indicador titulo="Fornecedores" valor={contratados} de={`de ${linhasCategorias.length}`} pct={fornPct} rodape="contratados" to="/meus-fornecedores" />
+          <Indicador
+            titulo="Orçamento"
+            valor={`${budgetPct}%`}
+            pct={budgetPct}
+            alerta={budgetPct > 100}
+            rodape={couple.estimated_budget ? `${reaisCurto(budgetFinal)} de ${reaisCurto(couple.estimated_budget)}` : "defina o valor total"}
+            to="/orcamento"
+          />
+          <Indicador
+            titulo="Tarefas"
+            valor={tarefasFeitas}
+            de={`de ${tasks.length}`}
+            pct={taskPct}
+            rodape={
+              atrasadas.length ? (
+                <span className="font-bold" style={{ color: "var(--ca-err)" }}>
+                  {atrasadas.length} {atrasadas.length === 1 ? "atrasada" : "atrasadas"}
+                </span>
+              ) : (
+                "concluídas"
+              )
+            }
+            to="/tarefas"
+          />
+          <Indicador titulo="Convidados" valor={guests.confirmed} de={`de ${guestBase}`} pct={guestPct} rodape="confirmados" to="/convidados" />
+        </div>
+
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+          <div className="flex min-w-0 flex-col gap-4">
+            {/* fornecedores por categoria */}
+            <section className="ca-card" aria-labelledby="h-forn">
+              <div className="flex items-center justify-between gap-2">
+                <h2 id="h-forn" className={tituloSecao}>
+                  Seus fornecedores
+                </h2>
+                <span className="text-[13px]" style={{ color: "var(--ca-muted)" }}>
+                  {faltam > 0 ? `faltam ${faltam}` : "tudo contratado"}
                 </span>
               </div>
-            )}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button
-                onClick={() => setCoverOpen(true)}
-                variant={couple.header_photo_url ? "secondary" : "outline"}
-                size="sm"
-              >
-                <ImageIcon className="h-4 w-4 mr-1.5" />
-                Personalizar capa
-              </Button>
-              {(couple.header_photo_url || couple.header_quote) && (
-                <Button
-                  onClick={() => saveCover({ photo: null, quote: null })}
-                  variant={couple.header_photo_url ? "secondary" : "ghost"}
-                  size="sm"
-                  disabled={savingCover}
-                >
-                  <Trash2 className="h-4 w-4 mr-1.5" />
-                  Voltar ao padrão
-                </Button>
+              <div className="flex flex-col">
+                {catsVisiveis.map((l) => (
+                  <div key={l.cat.id} className="ca-row flex items-center gap-3 py-2.5">
+                    <span
+                      className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[10px] text-sm font-extrabold"
+                      style={
+                        l.situacao === "ok"
+                          ? { background: "var(--ca-sage-soft)", color: "var(--ca-ok)" }
+                          : l.situacao === "wip"
+                            ? { background: "var(--ca-amber-soft)", color: "var(--ca-warn)" }
+                            : { background: "var(--ca-bg)", border: "1.5px dashed var(--ca-line-strong)" }
+                      }
+                      aria-hidden="true"
+                    >
+                      {l.situacao === "ok" ? <Check className="h-4 w-4" /> : l.situacao === "wip" ? "…" : ""}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <b className="block text-[14.5px]">{l.cat.name}</b>
+                      <span className="block truncate text-[12.5px]" style={{ color: "var(--ca-body)" }}>
+                        {l.detalhe}
+                      </span>
+                    </span>
+                    {l.situacao === "todo" ? (
+                      <Link to={linkBusca(l.cat.slug)} className="ca-pill pri">
+                        Buscar
+                      </Link>
+                    ) : (
+                      <Link to="/meus-fornecedores" className="ca-pill">
+                        Ver
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {linhasCategorias.length > 5 && (
+                <button type="button" className={`${lnk} self-start`} style={lnkStyle} onClick={() => setVerTodasCats((v) => !v)}>
+                  {verTodasCats ? "Mostrar menos" : `Ver as outras ${linhasCategorias.length - 5} categorias`}
+                </button>
               )}
-            </div>
-          </div>
-        </div>
+            </section>
 
-        {/* Dialog de personalização da capa */}
-        <Dialog open={coverOpen} onOpenChange={setCoverOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Personalizar capa</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Foto de capa</label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Use uma foto do casal ou um ambiente que represente vocês.
+            {/* pedidos de orçamento */}
+            <section className="ca-card" aria-labelledby="h-pedidos">
+              <div className="flex items-center justify-between gap-2">
+                <h2 id="h-pedidos" className={tituloSecao}>
+                  Pedidos de orçamento
+                </h2>
+                {quotes.length > 3 && (
+                  <button type="button" className={lnk} style={lnkStyle} onClick={() => setVerTodosPedidos((v) => !v)}>
+                    {verTodosPedidos ? "Mostrar menos" : `Ver todos (${quotes.length})`}
+                  </button>
+                )}
+              </div>
+              {quotes.length === 0 ? (
+                <p className="m-0 text-sm" style={{ color: "var(--ca-body)" }}>
+                  Vocês ainda não pediram orçamentos.{" "}
+                  <Link to="/buscar" className={lnk} style={lnkStyle}>
+                    Buscar fornecedores
+                  </Link>
                 </p>
-                <CouplePhotoUpload
-                  url={coverPhoto}
-                  fileName="header"
-                  label="Foto de capa"
-                  aspect="aspect-[16/9]"
-                  onUploaded={(u) => setCoverPhoto(u)}
-                />
-                {coverPhoto && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-1 text-destructive"
-                    onClick={() => setCoverPhoto(null)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Remover foto
-                  </Button>
-                )}
-              </div>
-              <div>
-                <label className="text-sm font-medium">Frase do casal</label>
-                <Textarea
-                  value={coverQuote}
-                  onChange={(e) => setCoverQuote(e.target.value)}
-                  placeholder="Ex.: 'Onde você for, irei contigo'"
-                  rows={2}
-                />
-                {coverQuote && (
-                  <Button variant="ghost" size="sm" className="mt-1 text-destructive" onClick={() => setCoverQuote("")}>
-                    Limpar frase
-                  </Button>
-                )}
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="ghost" onClick={() => setCoverOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  disabled={savingCover}
-                  onClick={async () => {
-                    await saveCover();
-                    setCoverOpen(false);
-                  }}
-                >
-                  Salvar capa
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+              ) : (
+                <div className="flex flex-col">
+                  {pedidosVisiveis.map((q, i) => {
+                    const st = statusPedido(q);
+                    const nome = q.supplier?.company_name || "Fornecedor";
+                    const cat = categoriaPorId.get(q.supplier?.category_id)?.name;
+                    const ultima = ultimaMsg[q.id];
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() => abrirPedido(q)}
+                        className="ca-row flex w-full items-center gap-3 py-2.5 text-left"
+                      >
+                        <span
+                          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-extrabold text-white"
+                          style={{ background: CORES_LOGO[i % CORES_LOGO.length] }}
+                          aria-hidden="true"
+                        >
+                          {iniciais(nome)}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <b className="block truncate text-[14.5px]">{nome}</b>
+                          <span className="block truncate text-[12.5px]" style={{ color: "var(--ca-body)" }}>
+                            {[cat, st.tom === "new" && ultima ? `respondeu ${haQuanto(ultima.created_at)}` : `enviado ${haQuanto(q.created_at)}`]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        </span>
+                        <span className={`ca-st ${st.tom}`}>{st.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckSquare className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Tarefas</span>
-              </div>
-              <p className="text-2xl font-bold">
-                {taskSummary.completed}/{taskSummary.total}
-              </p>
-              <Progress value={taskPct} className="mt-2 h-1.5" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Orçamento</span>
-              </div>
-              <p className="text-2xl font-bold">{budgetPct}%</p>
-              <Progress value={budgetPct} className="mt-2 h-1.5" />
-              <p className="text-xs text-muted-foreground mt-1">
-                R$ {budgetSummary.final.toLocaleString("pt-BR")} /{" "}
-                {couple.estimated_budget ? `R$ ${couple.estimated_budget.toLocaleString("pt-BR")}` : "-"}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Convidados</span>
-              </div>
-              <p className="text-2xl font-bold">
-                {guestSummary.confirmed}/{guestSummary.total || couple.estimated_guests || 0}
-              </p>
-              <Progress value={guestPct} className="mt-2 h-1.5" />
-              <p className="text-xs text-muted-foreground mt-1">confirmados</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Store className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Fornecedores</span>
-              </div>
-              <p className="text-2xl font-bold">{supplierCount}</p>
-              <p className="text-xs text-muted-foreground mt-1">contratados</p>
-              <p className="text-xs text-muted-foreground">{favCount} favoritos</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick actions + urgent tasks */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Urgent tasks */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <CheckSquare className="h-5 w-5 text-primary" />
+          <div className="flex min-w-0 flex-col gap-4">
+            {/* tarefas */}
+            <section className="ca-card" aria-labelledby="h-tarefas">
+              <div className="flex items-center justify-between gap-2">
+                <h2 id="h-tarefas" className={tituloSecao}>
                   Próximas tarefas
-                </CardTitle>
-                <Link to="/tarefas" className="text-sm text-primary hover:underline flex items-center gap-1">
-                  Ver todas <ArrowRight className="h-3 w-3" />
+                </h2>
+                <Link to="/tarefas" className={lnk} style={lnkStyle}>
+                  Todas as tarefas
                 </Link>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {urgentTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhuma tarefa pendente 🎉</p>
-              ) : (
-                urgentTasks.map((t) => (
-                  <div key={t.id} className="flex items-center gap-3 py-2">
-                    <Checkbox onCheckedChange={() => toggleUrgentTask(t.id)} />
-                    <span className="text-sm">{t.title}</span>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick actions */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button size="lg" className="h-auto py-5" asChild>
-              <Link to="/buscar">
-                <Search className="mr-2 h-4 w-4" />
-                Buscar fornecedores
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="h-auto py-5" asChild>
-              <Link to="/tarefas">
-                <CheckSquare className="mr-2 h-4 w-4" />
-                Agenda de tarefas
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="h-auto py-5" asChild>
-              <Link to="/convidados">
-                <Users className="mr-2 h-4 w-4" />
-                Convidados
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="h-auto py-5" asChild>
-              <Link to="/orcamento">
-                <DollarSign className="mr-2 h-4 w-4" />
-                Orçamento
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        {/* Budget + Guests widgets */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                Meu Orçamento
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Estimado</p>
-                  <p className="text-lg font-bold">R$ {budgetSummary.estimated.toLocaleString("pt-BR")}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Final</p>
-                  <p className="text-lg font-bold">R$ {budgetSummary.final.toLocaleString("pt-BR")}</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                <Link to="/orcamento">Gerenciar orçamento</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Meus Convidados
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <p className="text-lg font-bold text-primary">{guestSummary.confirmed}</p>
-                  <p className="text-xs text-muted-foreground">Confirmados</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-muted-foreground">{guestSummary.pending}</p>
-                  <p className="text-xs text-muted-foreground">Pendentes</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-destructive">{guestSummary.declined}</p>
-                  <p className="text-xs text-muted-foreground">Recusados</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                <Link to="/convidados">Gerenciar convidados</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Minhas simulações */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-primary" />
-              Minhas simulações ({simulacoes.length})
-            </h2>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/#simulador">Nova simulação</Link>
-            </Button>
-          </div>
-          {simulacoes.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Você ainda não fez nenhuma simulação. Faça uma para descobrir os melhores fornecedores para seu
-                  orçamento.
+              {tarefasSemana.length === 0 ? (
+                <p className="m-0 text-sm" style={{ color: "var(--ca-body)" }}>
+                  Nenhuma tarefa pendente. 🎉
                 </p>
-                <Button asChild>
-                  <Link to="/#simulador">Simular meu casamento</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-3">
-              {simulacoes.map((s) => (
-                <Card key={s.id} className="hover:shadow-md transition-shadow relative">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div
-                        className="min-w-0 cursor-pointer flex-1"
-                        onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}
-                      >
-                        <p className="font-semibold text-sm truncate flex items-center gap-2">
-                          {s.is_active_plan && (
-                            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] h-5">
-                              <Star className="h-3 w-3 mr-0.5" /> Plano ativo
-                            </Badge>
+              ) : (
+                <div className="flex flex-col">
+                  {tarefasSemana.map((t) => {
+                    const atrasada = t.due_date && t.due_date < hoje;
+                    return (
+                      <div key={t.id} className={`ca-row ca-task flex items-center gap-3 py-2.5 ${saindo[t.id] ? "out" : ""}`}>
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={!!saindo[t.id]}
+                          aria-label={`Concluir: ${t.title}`}
+                          onClick={() => !saindo[t.id] && concluirTarefa(t.id)}
+                          className="grid h-6 w-6 shrink-0 place-items-center rounded-lg border-[1.5px] text-white transition-colors"
+                          style={saindo[t.id] ? { background: "var(--ca-ok)", borderColor: "var(--ca-ok)" } : { borderColor: "var(--ca-line-strong)", background: "#fff" }}
+                        >
+                          {saindo[t.id] && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+                        </button>
+                        <span className="min-w-0 flex-1 text-[14.5px]">
+                          {t.title}
+                          {t.due_date && (
+                            <small
+                              className="block text-[12.5px]"
+                              style={atrasada ? { color: "var(--ca-err)", fontWeight: 700 } : { color: "var(--ca-muted)" }}
+                            >
+                              {atrasada ? `atrasada · era para ${dataCurta(t.due_date)}` : `até ${dataCurta(t.due_date, { weekday: "short", day: "numeric", month: "short" })}`}
+                            </small>
                           )}
-                          {s.cidade || "Sua cidade"} · {s.num_convidados} convidados
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          R$ {Number(s.orcamento_total).toLocaleString("pt-BR")} · {s.estilo || "—"}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground mt-1">
-                          {new Date(s.criado_em).toLocaleDateString("pt-BR")}
-                          {s.data_evento &&
-                            ` · evento em ${new Date(s.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}`}
-                        </p>
+                        </span>
                       </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                        {!s.is_active_plan && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-emerald-700 hover:text-emerald-800"
-                            title="Tornar este o plano ativo"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (!couple?.id) return;
-                              if (
-                                !window.confirm(
-                                  "Tornar esta simulação o seu plano ativo? A anterior deixará de ser marcada como ativa, mas seus fornecedores em andamento permanecem no Kanban e devem ser descartados manualmente, se desejar.",
-                                )
-                              )
-                                return;
-                              await (supabase.from("home_simulacoes" as any) as any)
-                                .update({ is_active_plan: false })
-                                .or(`couple_id.eq.${couple.id},user_id.eq.${user?.id}`);
-                              const { data: upd, error } = await (supabase.from("home_simulacoes" as any) as any)
-                                .update({ is_active_plan: true, couple_id: couple.id })
-                                .eq("id", s.id)
-                                .select();
-                              if (error || !upd || upd.length === 0) {
-                                toast({
-                                  title: "Erro",
-                                  description: traduzirErro(error) || "Não foi possível atualizar (verifique permissões).",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-                              setSimulacoes((prev) => prev.map((x) => ({ ...x, is_active_plan: x.id === s.id })));
-                              toast({ title: "Plano ativo atualizado" });
-                            }}
-                          >
-                            <Star className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* pagamentos */}
+            {pagamentos.length > 0 && (
+              <section className="ca-card" aria-labelledby="h-pag">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 id="h-pag" className={tituloSecao}>
+                    Próximos pagamentos
+                  </h2>
+                  <Link to="/orcamento" className={lnk} style={lnkStyle}>
+                    Ver todos
+                  </Link>
+                </div>
+                <div className="flex flex-col">
+                  {pagamentos.slice(0, 3).map((p) => {
+                    const atrasado = p.due_date < hoje;
+                    return (
+                      <div key={p.id} className="ca-row ca-num flex items-center gap-3 py-2.5">
+                        <span className="w-11 shrink-0 rounded-xl py-1.5 text-center" style={{ background: atrasado ? "var(--ca-rose-soft)" : "var(--ca-bg)" }}>
+                          <b className="block text-[17px] leading-none" style={{ color: atrasado ? "var(--ca-err)" : undefined }}>
+                            {new Date(p.due_date + "T00:00:00").getDate()}
+                          </b>
+                          <small className="text-[10.5px] font-bold uppercase" style={{ color: "var(--ca-muted)" }}>
+                            {dataCurta(p.due_date, { month: "short" })}
+                          </small>
+                        </span>
+                        <span className="min-w-0 flex-1 text-sm">
+                          <span className="block truncate">{p.item?.description || p.description || "Pagamento"}</span>
+                          <small className="block text-[12.5px]" style={atrasado ? { color: "var(--ca-err)", fontWeight: 700 } : { color: "var(--ca-muted)" }}>
+                            {atrasado ? "atrasado" : p.item?.category || p.description || "parcela"}
+                          </small>
+                        </span>
+                        <span className="whitespace-nowrap font-extrabold">{reais(Number(p.amount))}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* simulações (recolhido) */}
+            <details className="ca-ex">
+              <summary>
+                Simulações
+                <span className="ml-auto mr-2.5 text-[13px] font-medium" style={{ color: "var(--ca-muted)" }}>
+                  {simulacoes.length}
+                </span>
+              </summary>
+              <div className="flex flex-col gap-2.5 pb-4">
+                {simulacoes.length === 0 && (
+                  <p className="m-0 text-sm" style={{ color: "var(--ca-body)" }}>
+                    Faça uma simulação para descobrir os melhores fornecedores para o seu orçamento.
+                  </p>
+                )}
+                {simulacoes.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between gap-2 rounded-xl px-3 py-2.5" style={{ background: "var(--ca-bg)" }}>
+                    <button type="button" className="min-w-0 flex-1 text-left" onClick={() => navigate(`/simulador/resultado?id=${s.id}`)}>
+                      <b className="text-sm">
+                        {s.cidade || "Sua cidade"} · {s.num_convidados} convidados
+                      </b>
+                      {s.is_active_plan && (
+                        <span className="ml-1.5 rounded-full px-2 py-0.5 text-[11px] font-extrabold" style={{ background: "var(--ca-sage-soft)", color: "var(--ca-ok)" }}>
+                          Plano ativo
+                        </span>
+                      )}
+                      <span className="block text-xs" style={{ color: "var(--ca-body)" }}>
+                        {reais(Number(s.orcamento_total))} · {s.estilo || "—"} · {new Date(s.criado_em).toLocaleDateString("pt-BR")}
+                      </span>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      {!s.is_active_plan && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            const msg = s.is_active_plan
-                              ? "Esta é a simulação que virou seu PLANO ATIVO. Ao excluir, apenas a simulação será removida — seus fornecedores em orçamento, negociação ou contratados continuam no Kanban e devem ser descartados manualmente lá. Continuar?"
-                              : "Excluir esta simulação? Esta ação não pode ser desfeita.";
-                            if (!window.confirm(msg)) return;
-                            const { error } = await (supabase.from("home_simulacoes" as any) as any)
-                              .delete()
-                              .eq("id", s.id);
-                            if (error) {
-                              toast({ title: "Erro ao excluir", description: traduzirErro(error), variant: "destructive" });
+                          className="h-9 w-9"
+                          style={{ color: "var(--ca-ok)" }}
+                          title="Tornar este o plano ativo"
+                          aria-label="Tornar este o plano ativo"
+                          onClick={async () => {
+                            if (!couple?.id) return;
+                            if (
+                              !window.confirm(
+                                "Tornar esta simulação o seu plano ativo? A anterior deixará de ser marcada como ativa, mas seus fornecedores em andamento permanecem no Kanban e devem ser descartados manualmente, se desejar.",
+                              )
+                            )
+                              return;
+                            await (supabase.from("home_simulacoes" as any) as any)
+                              .update({ is_active_plan: false })
+                              .or(`couple_id.eq.${couple.id},user_id.eq.${user?.id}`);
+                            const { data: upd, error } = await (supabase.from("home_simulacoes" as any) as any)
+                              .update({ is_active_plan: true, couple_id: couple.id })
+                              .eq("id", s.id)
+                              .select();
+                            if (error || !upd || upd.length === 0) {
+                              toast({
+                                title: "Erro",
+                                description: traduzirErro(error) || "Não foi possível atualizar (verifique permissões).",
+                                variant: "destructive",
+                              });
                               return;
                             }
-                            setSimulacoes((prev) => prev.filter((x) => x.id !== s.id));
-                            toast({ title: "Simulação excluída" });
+                            setSimulacoes((prev) => prev.map((x) => ({ ...x, is_active_plan: x.id === s.id })));
+                            toast({ title: "Plano ativo atualizado" });
                           }}
-                          title="Excluir simulação"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Star className="h-4 w-4" />
                         </Button>
-                      </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-destructive hover:text-destructive"
+                        title="Excluir simulação"
+                        aria-label="Excluir simulação"
+                        onClick={async () => {
+                          const msg = s.is_active_plan
+                            ? "Esta é a simulação que virou seu PLANO ATIVO. Ao excluir, apenas a simulação será removida — seus fornecedores em orçamento, negociação ou contratados continuam no Kanban e devem ser descartados manualmente lá. Continuar?"
+                            : "Excluir esta simulação? Esta ação não pode ser desfeita.";
+                          if (!window.confirm(msg)) return;
+                          const { error } = await (supabase.from("home_simulacoes" as any) as any).delete().eq("id", s.id);
+                          if (error) {
+                            toast({ title: "Erro ao excluir", description: traduzirErro(error), variant: "destructive" });
+                            return;
+                          }
+                          setSimulacoes((prev) => prev.filter((x) => x.id !== s.id));
+                          toast({ title: "Simulação excluída" });
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+                  </div>
+                ))}
+                <Link to="/#simulador" className="ca-pill self-start">
+                  Nova simulação
+                </Link>
+              </div>
+            </details>
 
-        {/* Quotes */}
-        {quotes.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              Meus Orçamentos ({quotes.length})
-            </h2>
-            <div className="space-y-3">
-              {quotes.map((q) => {
-                const statusMap: Record<
-                  string,
-                  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
-                > = {
-                  pending: { label: "Enviado", variant: "secondary" },
-                  viewed: { label: "Visualizado", variant: "outline" },
-                  answered: { label: "Respondido", variant: "default" },
-                  accepted: { label: "Aceito ✓", variant: "default" },
-                  rejected: { label: "Recusado", variant: "destructive" },
-                  cancelled: { label: "Cancelado", variant: "secondary" },
-                };
-                const st = statusMap[q.status] || statusMap.pending;
-                return (
-                  <Card
-                    key={q.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => {
-                      setSelectedQuote(q);
-                      setThreadOpen(true);
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant={st.variant} className="text-xs">
-                              {st.label}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(q.created_at).toLocaleDateString("pt-BR")}
-                            </span>
-                          </div>
-                          <p className="text-sm line-clamp-2">{q.message}</p>
-                        </div>
-                        <Eye className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            {/* planejar a dois (recolhido) */}
+            {couple.invite_code && (
+              <details className="ca-ex">
+                <summary>
+                  Planejar a dois
+                  <span className="ml-auto mr-2.5 text-[13px] font-medium" style={{ color: "var(--ca-muted)" }}>
+                    código
+                  </span>
+                </summary>
+                <div className="flex flex-col gap-2.5 pb-4 text-sm" style={{ color: "var(--ca-body)" }}>
+                  Mande este código para o(a) parceiro(a) entrar no mesmo painel.
+                  <div className="flex items-center gap-2">
+                    <code
+                      className="grid h-11 flex-1 place-items-center rounded-xl text-lg font-bold"
+                      style={{ background: "var(--ca-bg)", letterSpacing: ".2em", color: "var(--ca-ink)" }}
+                    >
+                      {couple.invite_code}
+                    </code>
+                    <button type="button" className="ca-pill" style={{ height: 44 }} onClick={copyInviteCode}>
+                      {copiado ? (
+                        "Copiado ✓"
+                      ) : (
+                        <>
+                          <Copy className="mr-1.5 h-4 w-4" aria-hidden="true" /> Copiar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </details>
+            )}
+
+            {/* avaliação da plataforma: só depois do primeiro fornecedor contratado */}
+            {contratados > 0 && !avEnviada && (
+              <div className="ca-card flex-row flex-wrap items-center justify-between gap-3" style={{ padding: 14 }}>
+                <span className="text-sm">
+                  <b className="block">Está gostando do Casamenteiro?</b>
+                  <span style={{ color: "var(--ca-body)" }}>Sua avaliação ajuda outros casais.</span>
+                </span>
+                <button type="button" className="ca-pill" onClick={() => setAvOpen(true)}>
+                  Avaliar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* personalizar capa */}
+      <Dialog open={coverOpen} onOpenChange={setCoverOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Personalizar capa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Foto do casal</label>
+              <p className="mb-2 text-xs text-muted-foreground">Aparece ao lado dos nomes, no topo do painel.</p>
+              <CouplePhotoUpload url={coverPhoto} fileName="header" label="Foto de capa" aspect="aspect-[16/9]" onUploaded={(u) => setCoverPhoto(u)} />
+              {coverPhoto && (
+                <Button variant="ghost" size="sm" className="mt-1 text-destructive" onClick={() => setCoverPhoto(null)}>
+                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Remover foto
+                </Button>
+              )}
+            </div>
+            <div>
+              <label className="text-sm font-medium">Frase do casal</label>
+              <Textarea value={coverQuote} onChange={(e) => setCoverQuote(e.target.value)} placeholder="Ex.: 'Onde você for, irei contigo'" rows={2} />
+              {coverQuote && (
+                <Button variant="ghost" size="sm" className="mt-1 text-destructive" onClick={() => setCoverQuote("")}>
+                  Limpar frase
+                </Button>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setCoverOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                disabled={savingCover}
+                onClick={async () => {
+                  await saveCover();
+                  setCoverOpen(false);
+                }}
+              >
+                Salvar capa
+              </Button>
             </div>
           </div>
-        )}
+        </DialogContent>
+      </Dialog>
 
-        {/* Conversa de orçamento */}
-        {isMobile ? (
-          <Sheet open={threadOpen} onOpenChange={setThreadOpen}>
-            <SheetContent side="bottom" className="h-[100dvh] p-0 flex flex-col gap-0 rounded-none">
-              <SheetHeader className="px-4 py-3 border-b border-border text-left">
-                <SheetTitle className="text-base">Conversa sobre orçamento</SheetTitle>
-              </SheetHeader>
-              {selectedQuote && user && couple && (
-                <QuoteConversation
-                  quoteId={selectedQuote.id}
-                  currentUserId={user.id}
-                  isSupplier={false}
-                  coupleId={couple.id}
-                  supplierId={selectedQuote.supplier_id}
-                  onContracted={() => setThreadOpen(false)}
-                />
-              )}
-            </SheetContent>
-          </Sheet>
-        ) : (
-          <Dialog open={threadOpen} onOpenChange={setThreadOpen}>
-            <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col p-0 gap-0">
-              <DialogHeader className="px-4 py-3 border-b border-border">
-                <DialogTitle className="text-base">Conversa sobre orçamento</DialogTitle>
-              </DialogHeader>
-              {selectedQuote && user && couple && (
-                <QuoteConversation
-                  quoteId={selectedQuote.id}
-                  currentUserId={user.id}
-                  isSupplier={false}
-                  coupleId={couple.id}
-                  supplierId={selectedQuote.supplier_id}
-                  onContracted={() => setThreadOpen(false)}
-                />
-              )}
-            </DialogContent>
-          </Dialog>
-        )}
+      {/* avaliação da plataforma */}
+      <Dialog open={avOpen} onOpenChange={setAvOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Como foi sua experiência?</DialogTitle>
+          </DialogHeader>
+          <div className="flex gap-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <button key={i} type="button" onClick={() => setAvRating(i + 1)} aria-label={`${i + 1} estrelas`}>
+                <Star className={`h-7 w-7 ${i < avRating ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+              </button>
+            ))}
+          </div>
+          <Textarea
+            placeholder="Conte o que mais te ajudou no planejamento…"
+            value={avComentario}
+            onChange={(e) => setAvComentario(e.target.value)}
+            maxLength={600}
+            rows={4}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAvOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={enviarAvaliacaoPlataforma} disabled={avSalvando}>
+              {avSalvando ? "Enviando…" : "Enviar avaliação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Invite code */}
-        {couple.invite_code && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Share2 className="h-5 w-5 text-primary" />
-                Vincular conta do(a) parceiro(a)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-3">
-                Compartilhe este código para que seu(sua) parceiro(a) acesse o mesmo painel.
-              </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 px-4 py-2 bg-muted rounded-md font-mono text-lg tracking-widest text-center">
-                  {couple.invite_code}
-                </code>
-                <Button variant="outline" size="icon" onClick={copyInviteCode}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        {!avEnviada && (
-          <Card className="mt-6 border-primary/20 bg-primary/5">
-            <CardContent className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-0.5">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                  ))}
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Está gostando do Casamenteiro?</p>
-                  <p className="text-xs text-muted-foreground">
-                    Sua avaliação ajuda outros casais a confiarem na plataforma.
-                  </p>
-                </div>
-              </div>
-              <Dialog open={avOpen} onOpenChange={setAvOpen}>
-                <Button variant="outline" size="sm" onClick={() => setAvOpen(true)}>
-                  Avaliar o Casamenteiro
-                </Button>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Como foi sua experiência?</DialogTitle>
-                  </DialogHeader>
-                  <div className="flex gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <button key={i} type="button" onClick={() => setAvRating(i + 1)} aria-label={`${i + 1} estrelas`}>
-                        <Star
-                          className={`h-7 w-7 ${i < avRating ? "fill-primary text-primary" : "text-muted-foreground"}`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <Textarea
-                    placeholder="Conte o que mais te ajudou no planejamento…"
-                    value={avComentario}
-                    onChange={(e) => setAvComentario(e.target.value)}
-                    maxLength={600}
-                    rows={4}
-                  />
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setAvOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={enviarAvaliacaoPlataforma} disabled={avSalvando}>
-                      {avSalvando ? "Enviando…" : "Enviar avaliação"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-        )}
-      </main>
+      {/* conversa de orçamento */}
+      {isMobile ? (
+        <Sheet open={threadOpen} onOpenChange={setThreadOpen}>
+          <SheetContent side="bottom" className="flex h-[100dvh] flex-col gap-0 rounded-none p-0">
+            <SheetHeader className="border-b border-border px-4 py-3 text-left">
+              <SheetTitle className="text-base">
+                {selectedQuote?.supplier?.company_name ? `Conversa com ${selectedQuote.supplier.company_name}` : "Conversa sobre orçamento"}
+              </SheetTitle>
+            </SheetHeader>
+            {selectedQuote && user && couple && (
+              <QuoteConversation
+                quoteId={selectedQuote.id}
+                currentUserId={user.id}
+                isSupplier={false}
+                coupleId={couple.id}
+                supplierId={selectedQuote.supplier_id}
+                onContracted={() => setThreadOpen(false)}
+              />
+            )}
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={threadOpen} onOpenChange={setThreadOpen}>
+          <DialogContent className="flex h-[85vh] flex-col gap-0 p-0 sm:max-w-2xl">
+            <DialogHeader className="border-b border-border px-4 py-3">
+              <DialogTitle className="text-base">
+                {selectedQuote?.supplier?.company_name ? `Conversa com ${selectedQuote.supplier.company_name}` : "Conversa sobre orçamento"}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedQuote && user && couple && (
+              <QuoteConversation
+                quoteId={selectedQuote.id}
+                currentUserId={user.id}
+                isSupplier={false}
+                coupleId={couple.id}
+                supplierId={selectedQuote.supplier_id}
+                onContracted={() => setThreadOpen(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

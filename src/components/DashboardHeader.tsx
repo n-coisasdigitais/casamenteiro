@@ -1,24 +1,20 @@
 import { Link } from "react-router-dom";
-import { Heart } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
-import { useAuth } from "@/contexts/AuthContext";
 
+/** Topo das telas do casal. No computador o logo fica no menu lateral (classe .ca-logo-topo some). */
 export default function DashboardHeader() {
-  const { profile } = useAuth();
-  const isSupplier = profile?.account_type === "supplier";
-
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-40">
-      <div className="container flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <Heart className="h-5 w-5 text-primary fill-primary" />
-          <span className="text-lg font-bold">Casamenteiro</span>
+    <header
+      className="sticky top-0 z-20 border-b backdrop-blur"
+      style={{ background: "var(--ca-top-blur, rgba(255,255,255,.95))", borderColor: "var(--ca-line, hsl(var(--border)))" }}
+    >
+      <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-7">
+        <Link to="/" className="ca-logo-topo text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "#1f1d1b" }}>
+          casamenteiro<span style={{ color: "#d9905a" }}>.</span>
         </Link>
+        <span className="flex-1" />
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground hidden sm:inline">
-            Olá, {profile?.full_name || (isSupplier ? "Fornecedor" : "Casal")}
-          </span>
           <NotificationsBell />
           <UserMenu />
         </div>
