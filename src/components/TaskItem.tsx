@@ -1,6 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { ExternalLink, CheckCircle2, Calendar, AlertCircle, Clock, Sparkles } from "lucide-react";
+import { ExternalLink, CheckCircle2, Calendar, AlertCircle, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { dueStatus, formatDueDate } from "@/lib/taskDueDate";
 
@@ -42,58 +41,60 @@ const categoryLabels: Record<string, string> = {
   geral: "Geral",
 };
 
-const priorityVariant: Record<string, "default" | "secondary" | "outline"> = {
-  essential: "default",
-  recommended: "secondary",
-  optional: "outline",
-};
 
 export default function TaskItem({ id, title, category, priority, isCompleted, actionLabel, actionUrl, supplierId, supplierName, dueDate, createdAt, seededAsBacklog, onToggle }: TaskItemProps) {
   const d = dueDate ? new Date(dueDate) : null;
   const status = dueStatus(d, isCompleted, { createdAt: createdAt ?? null, seededAsBacklog });
   const dueChip = (() => {
-    if (status === "overdue") return { icon: AlertCircle, label: `Atrasada — ${formatDueDate(d)}`, cls: "text-destructive" };
-    if (status === "backlog") return { icon: Sparkles, label: "Comece por aqui", cls: "text-muted-foreground" };
-    if (status === "soon")    return { icon: Clock, label: `Em breve — ${formatDueDate(d)}`, cls: "text-amber-700" };
+    if (status === "overdue") return { icon: AlertCircle, label: `atrasada · era para ${formatDueDate(d)}`, cls: "" };
+    if (status === "backlog") return null; // o grupo "Comece por aqui" já diz isso
+    if (status === "soon")    return { icon: Clock, label: `até ${formatDueDate(d)}`, cls: "" };
     if (status === "ok")      return { icon: Calendar, label: formatDueDate(d), cls: "text-muted-foreground" };
     return null;
   })();
+  const interna = actionUrl && actionUrl.startsWith("/");
   return (
-    <div className="flex items-start gap-3 py-3 px-4 rounded-lg hover:bg-muted/50 transition-colors group">
+    <div className="ca-row flex items-center gap-3 py-2.5">
       <Checkbox
         checked={isCompleted}
         onCheckedChange={(checked) => onToggle(id, !!checked)}
-        className="mt-0.5"
+        className="h-5 w-5 rounded-md"
+        aria-label={isCompleted ? `Desmarcar: ${title}` : `Concluir: ${title}`}
       />
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
+      <div className="min-w-0 flex-1">
+        <p
+          className="m-0 text-[14.5px] font-semibold"
+          style={isCompleted ? { color: "var(--ca-muted, #8a8178)", textDecoration: "line-through" } : undefined}
+        >
           {title}
         </p>
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
-          <Badge variant={priorityVariant[priority] || "secondary"} className="text-xs">
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="ca-tag no_plano" title={priority === "essential" ? "Essencial" : undefined}>
             {categoryLabels[category] || category}
-          </Badge>
+          </span>
           {dueChip && (
-            <span className={`inline-flex items-center gap-1 text-xs ${dueChip.cls}`}>
-              <dueChip.icon className="h-3 w-3" /> {dueChip.label}
+            <span className={`inline-flex items-center gap-1 text-xs ${status === "overdue" ? "font-semibold" : ""}`} style={{ color: status === "overdue" ? "var(--ca-err, #b4412d)" : status === "soon" ? "var(--ca-warn, #a86a12)" : "var(--ca-muted, #8a8178)" }}>
+              <dueChip.icon className="h-3 w-3" aria-hidden="true" /> {dueChip.label}
             </span>
           )}
           {supplierId && supplierName && (
-            <Link to={`/fornecedor/${supplierId}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-              <CheckCircle2 className="h-3 w-3" /> Contratado: {supplierName}
+            <Link to={`/fornecedor/${supplierId}`} className="ca-tag contratado inline-flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" aria-hidden="true" /> {supplierName}
             </Link>
-          )}
-          {actionLabel && actionUrl && (
-            <a
-              href={actionUrl}
-              className="text-xs text-primary hover:underline flex items-center gap-1"
-            >
-              {actionLabel}
-              <ExternalLink className="h-3 w-3" />
-            </a>
           )}
         </div>
       </div>
+      {actionLabel && actionUrl && !isCompleted && (
+        interna ? (
+          <Link to={actionUrl} className="shrink-0 text-[13px] font-bold" style={{ color: "var(--ca-clay, #a9551f)" }}>
+            {actionLabel} →
+          </Link>
+        ) : (
+          <a href={actionUrl} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-1 text-[13px] font-bold" style={{ color: "var(--ca-clay, #a9551f)" }}>
+            {actionLabel} <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          </a>
+        )
+      )}
     </div>
   );
 }
