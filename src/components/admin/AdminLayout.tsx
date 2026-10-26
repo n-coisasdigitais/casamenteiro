@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
 import UserMenu from "@/components/UserMenu";
 import { isDemoSession, setAdminDemoScope } from "@/lib/demoScope";
+import "@/components/admin/admin.css";
 
 import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
@@ -19,7 +20,10 @@ import {
   CalendarRange, Sparkles, Tag,
 } from "lucide-react";
 
-const groups = [
+type NavItem = { title: string; url: string; icon: any; end?: boolean; extra?: string[]; badge?: "aprovacao" | "reservas" };
+
+/** Menu em 7 grupos por tarefa (antes: 32 itens com grupos trocados). Todas as rotas continuam acessíveis. */
+const groups: { label: string; items: NavItem[] }[] = [
   {
     label: "Visão geral",
     items: [
@@ -28,53 +32,59 @@ const groups = [
     ],
   },
   {
-    label: "Pessoas",
+    label: "Fila de trabalho",
     items: [
-      { title: "Usuários", url: "/admin/usuarios", icon: Users },
-      { title: "CRM Casais", url: "/admin/casais", icon: Heart },
-      { title: "CRM Fornecedores", url: "/admin/fornecedores-crm", icon: Building2 },
+      { title: "Aprovar fornecedores", url: "/admin/aprovacao", icon: ClipboardCheck, badge: "aprovacao" },
+      { title: "Reservas de datas", url: "/admin/reservas", icon: CalendarRange, badge: "reservas" },
+      { title: "Datas ociosas", url: "/admin/datas-ociosas", icon: Sparkles },
       { title: "Avaliações", url: "/admin/avaliacoes", icon: Star },
       { title: "Avaliações da plataforma", url: "/admin/avaliacoes-plataforma", icon: Star },
+    ],
+  },
+  {
+    label: "Pessoas",
+    items: [
+      { title: "Fornecedores", url: "/admin/fornecedores-crm", icon: Building2, extra: ["/admin/fornecedor/"] },
+      { title: "Casais", url: "/admin/casais", icon: Heart },
+      { title: "Simulações dos casais", url: "/admin/simulacoes", icon: Calculator },
+      { title: "Profissionais", url: "/admin/profissionais", icon: Users },
+      { title: "Vagas", url: "/admin/vagas", icon: ClipboardCheck },
+      { title: "Usuários", url: "/admin/usuarios", icon: Users },
       { title: "Indicações", url: "/admin/indicacoes", icon: Share2 },
+    ],
+  },
+  {
+    label: "Dinheiro",
+    items: [
+      { title: "Financeiro", url: "/admin/financeiro", icon: DollarSign },
+      { title: "Transações", url: "/admin/transacoes", icon: Receipt },
+      { title: "Planos, destaques e taxas", url: "/admin/tabela-precos", icon: Tag },
+      { title: "Cupons e presentes", url: "/admin/cupons", icon: Tag },
+      { title: "Corretagem", url: "/admin/corretagem", icon: Tag },
+      { title: "Webhooks de pagamento", url: "/admin/webhooks", icon: Receipt },
     ],
   },
   {
     label: "Comunicação",
     items: [
-      { title: "Enviar broadcast", url: "/admin/comunicacao", icon: Send },
+      { title: "Enviar mensagem", url: "/admin/comunicacao", icon: Send, end: true },
       { title: "Gatilhos automáticos", url: "/admin/gatilhos", icon: Zap },
-      { title: "Histórico", url: "/admin/comunicacao/historico", icon: History },
+      { title: "Histórico de envios", url: "/admin/comunicacao/historico", icon: History },
+      { title: "E-mails enviados", url: "/admin/emails", icon: Mail },
     ],
   },
   {
-    label: "Financeiro",
-    items: [
-      { title: "Financeiro", url: "/admin/financeiro", icon: DollarSign },
-      { title: "Transações", url: "/admin/transacoes", icon: Receipt },
-      { title: "Simulações", url: "/admin/simulacoes", icon: Calculator },
-      { title: "Preços (planos, destaques e taxas)", url: "/admin/tabela-precos", icon: Tag },
-      { title: "Cupons e presentes", url: "/admin/cupons", icon: Tag },
-      { title: "Reservas", url: "/admin/reservas", icon: CalendarRange },
-      { title: "Datas ociosas", url: "/admin/datas-ociosas", icon: Sparkles },
-      { title: "Corretagem", url: "/admin/corretagem", icon: Tag },
-      { title: "Webhooks", url: "/admin/webhooks", icon: Receipt },
-      { title: "Vagas", url: "/admin/vagas", icon: ClipboardCheck },
-      { title: "Profissionais", url: "/admin/profissionais", icon: ClipboardCheck },
-    ],
-  },
-  {
-    label: "Conteúdo",
+    label: "Conteúdo do site",
     items: [
       { title: "Home", url: "/admin/home-config", icon: HomeIcon },
       { title: "Home — destaques e imagens", url: "/admin/home-destaques", icon: HomeIcon },
-      { title: "Landing Fornecedor", url: "/admin/fornecedor-landing", icon: Building2 },
-      { title: "Landing Profissional", url: "/admin/profissional-landing", icon: Users },
+      { title: "Landing do fornecedor", url: "/admin/fornecedor-landing", icon: Building2 },
+      { title: "Landing do profissional", url: "/admin/profissional-landing", icon: Users },
       { title: "E-mails do CTA", url: "/admin/fornecedor-emails", icon: Mail },
-      { title: "Tarefas padrão", url: "/admin/tarefas-padrao", icon: ListChecks },
-      { title: "Edição em massa", url: "/admin/fornecedores", icon: Building2 },
-      { title: "Aprovar fornecedores", url: "/admin/aprovacao", icon: ClipboardCheck },
-      { title: "Categorias", url: "/admin/categorias", icon: SlidersHorizontal },
+      { title: "Categorias e campos", url: "/admin/categorias", icon: SlidersHorizontal },
       { title: "Cidades", url: "/admin/cidades", icon: MapPin },
+      { title: "Tarefas padrão", url: "/admin/tarefas-padrao", icon: ListChecks },
+      { title: "Edição em massa de fornecedores", url: "/admin/fornecedores", icon: Building2, end: true },
     ],
   },
   {
@@ -82,10 +92,30 @@ const groups = [
     items: [
       { title: "Configurações", url: "/admin/configuracoes", icon: Settings },
       { title: "Auditoria", url: "/admin/auditoria", icon: ScrollText },
-      { title: "Envios de e-mail", url: "/admin/emails", icon: Mail },
     ],
   },
 ];
+
+/** contadores do menu (fila de trabalho) */
+function useContadoresMenu() {
+  const [c, setC] = useState<{ aprovacao: number; reservas: number }>({ aprovacao: 0, reservas: 0 });
+  const { pathname } = useLocation();
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      const [{ count: aprov }, { count: res }] = await Promise.all([
+        (supabase.from("suppliers") as any).select("id", { count: "exact", head: true }).eq("status", "pending").eq("is_demo", isDemoSession()),
+        (supabase.from("idle_date_reservations" as any) as any).select("id", { count: "exact", head: true }).in("status", ["solicitada", "pendente"]),
+      ]);
+      if (vivo) setC({ aprovacao: aprov || 0, reservas: res || 0 });
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [pathname]);
+  return c;
+}
+
 
 function AdminSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
@@ -93,13 +123,22 @@ function AdminSidebar() {
   const { pathname } = useLocation();
   const { signOut } = useAuth();
   const closeMobile = () => { if (isMobile) setOpenMobile(false); };
+  const contadores = useContadoresMenu();
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <Link to="/admin" onClick={closeMobile} className="flex items-center gap-2 px-2 py-1.5">
-          <Heart className="h-5 w-5 text-primary fill-primary shrink-0" />
-          {!collapsed && <span className="text-base font-semibold">Admin</span>}
+          {collapsed ? (
+            <span className="text-[18px] font-extrabold" style={{ color: "var(--ad-terracota)" }}>c.</span>
+          ) : (
+            <span className="whitespace-nowrap text-[18px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--ad-ink)" }}>
+              casamenteiro<span style={{ color: "var(--ad-terracota)" }}>.</span>
+              <small className="ml-1.5 rounded-full px-1.5 py-0.5 align-[2px] text-[10px] font-extrabold uppercase" style={{ letterSpacing: ".08em", color: "var(--ad-clay)", background: "#fdf0e6" }}>
+                admin
+              </small>
+            </span>
+          )}
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -109,13 +148,19 @@ function AdminSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {g.items.map((item) => {
-                  const active = item.end ? pathname === item.url : pathname.startsWith(item.url);
+                  const active = item.end
+                    ? pathname === item.url
+                    : pathname === item.url || pathname.startsWith(item.url + "/") || (item.extra || []).some((e) => pathname.startsWith(e));
+                  const n = item.badge ? contadores[item.badge] : 0;
                   return (
                     <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
                         <NavLink to={item.url} end={item.end} onClick={closeMobile} className="flex items-center gap-2">
                           <item.icon className="h-4 w-4" />
-                          {!collapsed && <span>{item.title}</span>}
+                          {!collapsed && <span className="flex-1 truncate">{item.title}</span>}
+                          {!collapsed && n > 0 && (
+                            <span className={`ad-n ${item.badge === "aprovacao" ? "ad-warn" : "ad-info"}`}>{n}</span>
+                          )}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

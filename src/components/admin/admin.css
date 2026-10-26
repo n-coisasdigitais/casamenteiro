@@ -1,0 +1,77 @@
+/*
+ * Admin (v2): ferramenta da equipe. Mesmo vocabulário dos painéis, mais denso.
+ * Os tokens do shadcn são redefinidos só dentro de .admin-v2.
+ */
+.admin-v2 {
+  --background: 36 22% 96%;        /* #f7f5f2 */
+  --foreground: 30 7% 12%;
+  --card: 0 0% 100%;
+  --primary: 23 69% 39%;           /* #a9551f */
+  --primary-foreground: 0 0% 100%;
+  --ring: 23 69% 39%;
+  --border: 33 22% 89%;            /* #e8e2da */
+  --input: 33 18% 82%;
+  --muted: 33 20% 94%;
+  --muted-foreground: 30 7% 40%;
+  --radius: 0.75rem;
+  --sidebar-background: 33 24% 93%;   /* #f1ede8 */
+  --sidebar-foreground: 30 8% 34%;
+  --sidebar-accent: 0 0% 100%;
+  --sidebar-accent-foreground: 30 7% 12%;
+  --sidebar-border: 33 22% 89%;
+  --sidebar-ring: 23 69% 39%;
+
+  --ad-ink: #1f1d1b;
+  --ad-body: #5e564e;
+  --ad-muted: #8a8178;
+  --ad-bg: #f7f5f2;
+  --ad-line: #e8e2da;
+  --ad-line-strong: #d9d1c7;
+  --ad-clay: #a9551f;
+  --ad-terracota: #d9905a;
+  --ad-ok: #2f7a5b;
+  --ad-ok-soft: #e3eee8;
+  --ad-warn: #a86a12;
+  --ad-warn-soft: #fbefd9;
+  --ad-err: #b4412d;
+  --ad-err-soft: #f8e3de;
+  --ad-info: #3f6290;
+  --ad-info-soft: #e6edf6;
+  --ad-shadow: 0 1px 2px rgba(40, 30, 20, 0.04), 0 4px 14px rgba(40, 30, 20, 0.05);
+  --ad-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  color-scheme: light;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.admin-v2 .ad-num { font-variant-numeric: tabular-nums; }
+.admin-v2 .rounded-lg.border.bg-card { border-radius: 14px; box-shadow: var(--ad-shadow); }
+
+/* menu lateral */
+.admin-v2 [data-sidebar="group-label"] { font-size: 10.5px; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ad-muted); }
+.admin-v2 [data-sidebar="menu-button"] { position: relative; font-size: 13.5px; }
+.admin-v2 [data-sidebar="menu-button"][data-active="true"] { background: #fff; color: var(--ad-ink); font-weight: 650; box-shadow: 0 0 0 1px var(--ad-line); }
+.admin-v2 [data-sidebar="menu-button"][data-active="true"]::before {
+  content: ""; position: absolute; left: -8px; top: 7px; bottom: 7px; width: 3px; border-radius: 0 3px 3px 0; background: var(--ad-clay);
+}
+
+.ad-card { background: #fff; border: 1px solid var(--ad-line); border-radius: 14px; box-shadow: var(--ad-shadow); min-width: 0; }
+.ad-n { display: inline-grid; place-items: center; min-width: 22px; height: 19px; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+.ad-st { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.ad-ok { background: var(--ad-ok-soft); color: var(--ad-ok); }
+.ad-warn { background: var(--ad-warn-soft); color: var(--ad-warn); }
+.ad-err { background: var(--ad-err-soft); color: var(--ad-err); }
+.ad-info { background: var(--ad-info-soft); color: var(--ad-info); }
+.ad-off { background: var(--ad-bg); color: var(--ad-muted); }
+
+.ad-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--ad-line-strong); background: #fff; font-weight: 650; font-size: 12.5px; white-space: nowrap; color: var(--ad-ink); }
+.ad-btn.pri { background: var(--ad-clay); border-color: var(--ad-clay); color: #fff; }
+
+.ad-row + .ad-row { border-top: 1px solid var(--ad-line); }
+.ad-bar { height: 10px; border-radius: 999px; background: var(--ad-bg); overflow: hidden; }
+.ad-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--ad-terracota); transition: width 1s var(--ad-ease); }
+
+.ad-enter > * { animation: ad-enter 0.45s var(--ad-ease) both; }
+.ad-enter > *:nth-child(2) { animation-delay: 0.04s; }
+.ad-enter > *:nth-child(3) { animation-delay: 0.08s; }
+@keyframes ad-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ad-enter > *, .ad-bar > i { animation: none !important; transition: none !important; } }
