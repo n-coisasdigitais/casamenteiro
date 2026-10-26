@@ -120,7 +120,49 @@ export default function PaymentsTab({
         </Card>
       </div>
 
-      <Card>
+      {/* celular: cartões */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {ordered.length === 0 && (
+          <p className="rounded-2xl border border-dashed py-8 text-center text-sm" style={{ borderColor: "var(--ca-line-strong)", color: "var(--ca-body)" }}>
+            Nenhum pagamento ainda. Contrate um fornecedor para registrar parcelas.
+          </p>
+        )}
+        {ordered.map((p) => {
+          const sup = supMap.get(p.supplier_id || "");
+          const st = dueState(p);
+          const atrasado = st.variant === "destructive";
+          return (
+            <div key={p.id} className="ca-card flex-row items-center gap-3" style={{ padding: "12px 14px", opacity: p.status === "paid" ? 0.65 : 1 }}>
+              <span
+                className="w-11 shrink-0 rounded-xl py-1.5 text-center"
+                style={{ background: atrasado ? "var(--ca-rose-soft)" : "var(--ca-bg)", color: atrasado ? "var(--ca-err)" : undefined }}
+              >
+                <b className="ca-num block text-[17px] leading-none">{p.due_date ? new Date(p.due_date + "T00:00:00").getDate() : "—"}</b>
+                <small className="text-[10.5px] font-bold uppercase" style={{ color: "var(--ca-muted)" }}>
+                  {p.due_date ? new Date(p.due_date + "T00:00:00").toLocaleDateString("pt-BR", { month: "short" }).replace(".", "") : ""}
+                </small>
+              </span>
+              <span className="min-w-0 flex-1 text-sm">
+                <b className="block truncate">{sup?.company_name || "Fornecedor"}</b>
+                <small className="block truncate text-[12.5px]" style={{ color: "var(--ca-muted)" }}>
+                  {[sup?.category_name, p.description].filter(Boolean).join(" · ") || "parcela"}
+                </small>
+                <Badge variant={st.variant} className={`mt-1 ${st.className}`}>{st.label}</Badge>
+              </span>
+              <span className="flex shrink-0 flex-col items-end gap-1.5">
+                <b className="ca-num whitespace-nowrap">{fmt(Number(p.amount))}</b>
+                {p.status !== "paid" && (
+                  <button type="button" className="ca-pill" onClick={() => { setPaying(p); setOpen(true); }}>
+                    Marcar pago
+                  </button>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <Card className="hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/30">

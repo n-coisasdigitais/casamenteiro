@@ -1,7 +1,5 @@
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Send, Bell } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 
 export type PlanHeaderData = {
@@ -32,71 +30,71 @@ export default function PlanHeader({
 }) {
   const { coupleName, weddingDate, city, guests, style, orcamentoTotal, cotado, contratado, aPagar, proxVencimento, hasUrgent, newProposals } = data;
 
-  return (
-    <div className="space-y-4">
-      {newProposals && newProposals.length > 0 && (
-        <Card className="p-4 border-amber-300 bg-amber-50 dark:bg-amber-950/30">
-          <div className="flex items-start gap-3">
-            <div className="h-9 w-9 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
-              <Bell className="h-4 w-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-amber-900 dark:text-amber-100">
-                {newProposals.length === 1
-                  ? "Você recebeu uma nova proposta!"
-                  : `Você recebeu ${newProposals.length} novas propostas!`}
-              </p>
-              <ul className="mt-1 space-y-0.5 text-xs text-amber-900/80 dark:text-amber-100/80">
-                {newProposals.slice(0, 3).map((n) => (
-                  <li key={n.id} className="truncate">• {n.title}{n.body ? ` — ${n.body}` : ""}</li>
-                ))}
-              </ul>
-              {onOpenProposals ? (
-                <Button size="sm" variant="outline" className="mt-2 h-7 text-xs border-amber-400 bg-white" onClick={onOpenProposals}>
-                  Ver propostas
-                </Button>
-              ) : (
-                <Button asChild size="sm" variant="outline" className="mt-2 h-7 text-xs border-amber-400 bg-white">
-                  <Link to="/orcamento">Ver propostas</Link>
-                </Button>
-              )}
-            </div>
-          </div>
-        </Card>
-      )}
+  const linhaPlano = [
+    city,
+    guests ? `${guests} convidados` : null,
+    style,
+    weddingDate ? new Date(weddingDate + "T00:00:00").toLocaleDateString("pt-BR") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-serif">
-            {coupleName ? `Casamento ${coupleName}` : "Nosso casamento"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {weddingDate && new Date(weddingDate + "T00:00:00").toLocaleDateString("pt-BR")}
-            {city && ` · ${city}`}
-            {guests ? ` · ${guests} convidados` : ""}
-            {style ? ` · ${style}` : ""}
-          </p>
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0" style={{ flex: "1 1 220px" }}>
+          <h1 className="ca-titulo">Orçamento</h1>
+          <p className="ca-sub">{linhaPlano ? `Plano: ${linhaPlano}` : coupleName ? `Casamento ${coupleName}` : "Nosso casamento"}</p>
         </div>
         {onRequestQuotes && (
-          <Button onClick={onRequestQuotes} size="sm">
-            <Send className="h-3.5 w-3.5 mr-1" /> Solicitar orçamentos
+          <Button onClick={onRequestQuotes} className="h-11 rounded-full">
+            <Send className="mr-1 h-3.5 w-3.5" /> Solicitar orçamentos
           </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MetricCard label="Orçamento do plano" value={fmt(orcamentoTotal)} />
+      {newProposals && newProposals.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3" style={{ background: "var(--ca-amber-soft, #fbefd9)" }}>
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white" style={{ color: "var(--ca-warn, #a86a12)" }}>
+            <Bell className="h-4 w-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="m-0 text-sm font-bold">
+              {newProposals.length === 1 ? "Vocês receberam uma nova proposta" : `Vocês receberam ${newProposals.length} novas propostas`}
+            </p>
+            <p className="m-0 truncate text-[13px]" style={{ color: "var(--ca-body, #5e564e)" }}>
+              {newProposals
+                .slice(0, 2)
+                .map((n) => n.title)
+                .join(" · ")}
+            </p>
+          </div>
+          {onOpenProposals ? (
+            <button type="button" className="ca-pill pri" onClick={onOpenProposals}>
+              Ver proposta
+            </button>
+          ) : (
+            <Link to="/orcamento" className="ca-pill pri">
+              Ver proposta
+            </Link>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+        <MetricCard label="Plano" value={fmt(orcamentoTotal)} />
+        <MetricCard label="Contratado" value={fmt(contratado)} accent="green" />
         <MetricCard
-          label="Cotado até agora"
+          label="Cotado"
           value={fmt(cotado)}
-          accent={cotado > orcamentoTotal && orcamentoTotal > 0 ? "amber" : undefined}
+          accent="amber"
+          subtext={cotado > orcamentoTotal && orcamentoTotal > 0 ? "acima do plano" : undefined}
         />
-        <MetricCard label="Já contratado" value={fmt(contratado)} accent="green" />
         <MetricCard
           label="A pagar"
           value={fmt(aPagar)}
           accent={hasUrgent ? "danger" : undefined}
-          subtext={proxVencimento ? `Próx: ${new Date(proxVencimento.data + "T00:00:00").toLocaleDateString("pt-BR")} · ${proxVencimento.fornecedor}` : undefined}
+          subtext={proxVencimento ? `próx. ${new Date(proxVencimento.data + "T00:00:00").toLocaleDateString("pt-BR", { day: "numeric", month: "short" }).replace(".", "")} · ${proxVencimento.fornecedor}` : undefined}
         />
       </div>
     </div>
@@ -105,14 +103,20 @@ export default function PlanHeader({
 
 function MetricCard({ label, value, accent, subtext }: { label: string; value: string; accent?: "green" | "amber" | "danger"; subtext?: string }) {
   const color =
-    accent === "green" ? "text-emerald-600" :
-    accent === "amber" ? "text-amber-600" :
-    accent === "danger" ? "text-destructive" : "";
+    accent === "green" ? "var(--ca-ok, #2f7a5b)" : accent === "amber" ? "var(--ca-warn, #a86a12)" : accent === "danger" ? "var(--ca-err, #b4412d)" : "var(--ca-ink, #1f1d1b)";
   return (
-    <Card className="p-4">
-      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className={cn("text-2xl font-bold mt-1", color)}>{value}</p>
-      {subtext && <p className="text-xs text-muted-foreground mt-1 truncate">{subtext}</p>}
-    </Card>
+    <div className="ca-card" style={{ padding: "12px 14px", gap: 2 }}>
+      <p className="m-0 text-[12.5px] font-semibold" style={{ color: "var(--ca-muted, #8a8178)" }}>
+        {label}
+      </p>
+      <p className="ca-num m-0 text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em", color }}>
+        {value}
+      </p>
+      {subtext && (
+        <p className="m-0 truncate text-xs" style={{ color: "var(--ca-body, #5e564e)" }}>
+          {subtext}
+        </p>
+      )}
+    </div>
   );
 }
