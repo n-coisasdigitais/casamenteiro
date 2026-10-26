@@ -37,12 +37,20 @@ export type PlanSupplier = {
 };
 
 const COLUMNS: { key: KanbanStatus; label: string; tone: string }[] = [
-  { key: "nao_iniciado", label: "Não iniciado", tone: "bg-muted/50" },
-  { key: "em_orcamento", label: "Em orçamento", tone: "bg-amber-50 dark:bg-amber-950/30" },
-  { key: "negociando", label: "Negociando", tone: "bg-blue-50 dark:bg-blue-950/30" },
-  { key: "contratado", label: "Contratado", tone: "bg-emerald-50 dark:bg-emerald-950/30" },
-  { key: "descartado", label: "Descartado", tone: "bg-rose-50 dark:bg-rose-950/30" },
+  { key: "nao_iniciado", label: "Não iniciado", tone: "bg-[var(--ca-side,#f4f1ec)]" },
+  { key: "em_orcamento", label: "Em orçamento", tone: "bg-[var(--ca-side,#f4f1ec)]" },
+  { key: "negociando", label: "Negociando", tone: "bg-[var(--ca-side,#f4f1ec)]" },
+  { key: "contratado", label: "Contratado", tone: "bg-[var(--ca-side,#f4f1ec)]" },
+  { key: "descartado", label: "Descartado", tone: "bg-[var(--ca-side,#f4f1ec)]" },
 ];
+
+const COR_COLUNA: Record<string, string> = {
+  nao_iniciado: "#b9ada1",
+  em_orcamento: "#d9905a",
+  negociando: "#5b7fa6",
+  contratado: "#2f7a5b",
+  descartado: "#c46a5e",
+};
 
 const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
 
@@ -58,6 +66,8 @@ export default function PlanKanban({
 }) {
   const { toast } = useToast();
   const navigate = useNavigate();
+  // celular: mostra uma etapa por vez, escolhida no topo
+  const [colMobile, setColMobile] = useState<KanbanStatus | null>(null);
   const isMobile = useIsMobile();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -162,19 +172,32 @@ export default function PlanKanban({
   };
 
   if (isMobile) {
+    const colAtual: KanbanStatus =
+      colMobile ??
+      (["em_orcamento", "negociando", "nao_iniciado", "contratado"] as KanbanStatus[]).find((k) => grouped[k]?.length > 0) ??
+      "nao_iniciado";
     return (
       <>
+        <div className="ca-chips mb-3" role="group" aria-label="Etapa do funil">
+          {COLUMNS.map((c) => (
+            <button key={c.key} type="button" className="ca-chip" aria-pressed={colAtual === c.key} onClick={() => setColMobile(c.key)}>
+              {c.label}
+              <b className="ca-num">{grouped[c.key].length}</b>
+            </button>
+          ))}
+        </div>
         <div className="space-y-4">
-          {COLUMNS.map((col) => {
+          {COLUMNS.filter((col) => col.key === colAtual).map((col) => {
             const colItems = grouped[col.key];
-            if (colItems.length === 0) return null;
+            if (colItems.length === 0)
+              return (
+                <p key={col.key} className="rounded-2xl border border-dashed py-8 text-center text-sm" style={{ borderColor: "var(--ca-line-strong)", color: "var(--ca-body)" }}>
+                  Nenhum fornecedor em "{col.label}".
+                </p>
+              );
             return (
-              <div key={col.key} className={cn("rounded-lg p-3", col.tone)}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold">{col.label}</h3>
-                  <Badge variant="secondary" className="h-5">{colItems.length}</Badge>
-                </div>
-                <div className="space-y-2">
+              <div key={col.key}>
+                <div className="space-y-2.5">
                   {colItems.map((item) => (
                     <div key={item.id} className="space-y-2">
                       <KanbanCard
@@ -289,11 +312,14 @@ function Column({ col, items, onEditValue, supplierIdsWithNewProposal, onOpenQuo
   return (
     <div
       ref={setNodeRef}
-      className={cn("rounded-lg p-3 min-h-[200px] transition-colors", col.tone, isOver && "ring-2 ring-primary/60")}
+      className={cn("rounded-2xl p-2.5 min-h-[220px] transition-colors", col.tone, isOver && "ring-2 ring-primary/60")}
     >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold">{col.label}</h3>
-        <Badge variant="secondary" className="h-5">{items.length}</Badge>
+      <div className="mb-2.5 flex items-center justify-between px-1">
+        <h3 className="m-0 flex items-center gap-2 text-[12px] font-bold uppercase" style={{ letterSpacing: ".06em", color: "var(--ca-body, #5e564e)" }}>
+          <span className="h-2 w-2 rounded-full" style={{ background: COR_COLUNA[col.key] }} aria-hidden="true" />
+          {col.label}
+        </h3>
+        <span className="text-xs font-semibold" style={{ color: "var(--ca-muted, #8a8178)" }}>{items.length}</span>
       </div>
       <div className="space-y-2">
         {items.map((item) => (
@@ -339,7 +365,7 @@ function DraggableCard({ item, onEditValue, onOpen }: { item: PlanSupplier; onEd
 
 function KanbanCard({ item, dragging, onEditValue, onOpen }: { item: PlanSupplier; dragging?: boolean; onEditValue?: () => void; onOpen?: () => void }) {
   return (
-    <Card className={cn("p-3 space-y-1.5 cursor-grab active:cursor-grabbing", dragging && "shadow-xl rotate-1")}>
+    <Card className={cn("rounded-[14px] p-3 space-y-1.5 cursor-grab active:cursor-grabbing", dragging && "shadow-xl rotate-1")}>
       <div className="flex items-start gap-1">
         <div className="min-w-0 flex-1">
           {item.category_name && (

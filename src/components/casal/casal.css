@@ -157,3 +157,25 @@ details.ca-grupo > summary::after {
 details.ca-grupo[open] > summary::after { transform: rotate(225deg) translateY(-1px); }
 details.ca-grupo[open] { padding-bottom: 6px; }
 .ca-grupo.atrasadas { border-color: #f0c4b8; background: #fffaf8; }
+
+/* abas planas (Orçamento) */
+.ca-seg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--ca-side); overflow-x: auto; scrollbar-width: none; height: auto; width: 100%; justify-content: flex-start; }
+.ca-seg::-webkit-scrollbar { display: none; }
+.ca-seg > [role="tab"] { flex: 1 0 auto; height: 38px; padding: 0 14px; border-radius: 11px; font-weight: 650; font-size: 13.5px; color: var(--ca-body); }
+.ca-seg > [role="tab"][data-state="active"] { background: #fff; color: var(--ca-ink); box-shadow: 0 1px 3px rgba(60, 30, 20, 0.12); }
+.ca-cnt { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--ca-clay); color: #fff; font-size: 10.5px; font-weight: 800; margin-left: 6px; }
+
+/* resumo de respostas (Convidados) */
+.ca-stack { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: var(--ca-bg); }
+.ca-stack > i { display: block; height: 100%; }
+.ca-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* barra de ações em massa */
+.ca-bulk {
+  position: sticky; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 25; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 12px; border-radius: 16px; background: var(--ca-ink); color: #fff; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
+}
+@media (min-width: 768px) { .ca-bulk { bottom: 20px; } }
+
+/* tabelas dentro do tema do casal */
+body.casal-app table thead tr { background: var(--ca-bg); }

@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Users, Baby, Download, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon, MessageCircle, Mail } from "lucide-react";
+import { Download, MoreHorizontal, Trash2, Edit, Send, Link as LinkIcon, MessageCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
@@ -46,6 +46,13 @@ type Guest = {
 type InviteMap = Record<string, { token: string; sent_at: string | null; opened_at: string | null; responded_at: string | null; rsvp_companions?: number | null }>;
 
 type Group = { id: string; name: string };
+
+/** cores suaves de presença (verde, âmbar e rosé), sem o laranja forte do botão */
+const RSVP_COR: Record<string, string> = {
+  confirmed: "border-transparent bg-[#e3eee8] text-[#2f7a5b]",
+  pending: "border-transparent bg-[#fbefd9] text-[#a86a12]",
+  declined: "border-transparent bg-[#f8e3de] text-[#b4412d]",
+};
 
 export default function WeddingGuests() {
   const { user } = useAuth();
@@ -259,7 +266,7 @@ export default function WeddingGuests() {
     if (filterInvite !== "all") {
       list = list.filter((g) => {
         const inv = invites[g.id];
-        if (filterInvite === "none") return !inv;
+        if (filterInvite === "none") return !inv?.sent_at;
         if (filterInvite === "sent") return inv?.sent_at && !inv?.opened_at;
         if (filterInvite === "opened") return inv?.opened_at && !inv?.responded_at;
         if (filterInvite === "responded") return !!inv?.responded_at;
@@ -308,6 +315,7 @@ export default function WeddingGuests() {
   const totalConfirmedPeople = confirmedGuests.reduce((s, g) => s + 1 + (invites[g.id]?.rsvp_companions || 0), 0);
   const pending = guests.filter((g) => g.rsvp_status === "pending").length;
   const declined = guests.filter((g) => g.rsvp_status === "declined").length;
+  const semConvite = guests.filter((g) => !invites[g.id]?.sent_at).length;
 
   const handleExport = () => {
     const csv = ["Nome,Email,Telefone,Tipo,RSVP,Acompanhantes,Mesa,Grupo"]
@@ -358,151 +366,188 @@ export default function WeddingGuests() {
     <div className="min-h-screen bg-background">
       <DashboardHeader />
       <DashboardNav />
-      <main className="container px-4 py-8">
-        {/* Dashboard header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Meus Convidados</h1>
-        </div>
-
-        {/* KPIs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold">{guests.length}</p>
-            <p className="text-xs text-muted-foreground">Total</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <Users className="h-4 w-4 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">{adults}</p>
-            <p className="text-xs text-muted-foreground">Adultos</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <Baby className="h-4 w-4 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">{children + babies}</p>
-            <p className="text-xs text-muted-foreground">Crianças/Bebês</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-primary">{confirmed}</p>
-            <p className="text-xs text-muted-foreground">Confirmados</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-muted-foreground">{pending}</p>
-            <p className="text-xs text-muted-foreground">Pendentes</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-destructive">{declined}</p>
-            <p className="text-xs text-muted-foreground">Recusados</p>
-          </CardContent></Card>
-        </div>
-
-        {/* Actions bar */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <AddGuestDialog groups={groups} onAdd={addGuest} />
-          <AddGroupDialog onAdd={addGroup} />
-          {coupleId && <ImportGuestsDialog coupleId={coupleId} groups={groups} onImported={() => loadData(coupleId)} />}
-          {selected.size > 0 && (
-            <Button variant="destructive" size="sm" onClick={deleteSelected}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Remover ({selected.size})
+      <main className="ca-pagina ca-enter">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0" style={{ flex: "1 1 220px" }}>
+            <h1 className="ca-titulo">Convidados</h1>
+            <p className="ca-sub ca-num">
+              {guests.length} na lista
+              {couple?.estimated_guests ? ` · meta ${couple.estimated_guests}` : ""}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <AddGuestDialog groups={groups} onAdd={addGuest} />
+            {coupleId && <ImportGuestsDialog coupleId={coupleId} groups={groups} onImported={() => loadData(coupleId)} />}
+            <AddGroupDialog onAdd={addGroup} />
+            <Button variant="outline" size="icon" className="rounded-full" onClick={handleExport} title="Baixar planilha (CSV)" aria-label="Baixar planilha (CSV)">
+              <Download className="h-4 w-4" />
             </Button>
-          )}
-          {selected.size > 0 && (
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                value={bulkTable}
-                onChange={(e) => setBulkTable(e.target.value)}
-                placeholder="Mesa #"
-                className="h-9 w-24"
-              />
-              <Button size="sm" variant="outline" onClick={setTableForSelected}>
-                <Edit className="mr-2 h-4 w-4" />
-                Aplicar mesa ({selected.size})
-              </Button>
+            <GuestListPdfDialog
+              guests={guests.map((g) => ({
+                id: g.id,
+                name: g.name,
+                guest_type: g.guest_type,
+                rsvp_status: g.rsvp_status,
+                table_number: g.table_number,
+                group_id: g.group_id,
+                notes: g.notes ?? null,
+                max_companions: g.max_companions ?? 0,
+                rsvp_companions: invites[g.id]?.rsvp_companions ?? 0,
+              }))}
+              groups={groups}
+              dadosCasal={{
+                nomeCasal: coupleDisplayName,
+                fotoCapaUrl: coupleCoverUrl,
+                dataEvento: couple?.wedding_date ?? null,
+                horario: couple?.ceremony_time ?? null,
+                localCerimonia: [couple?.ceremony_local_nome, couple?.ceremony_address].filter(Boolean).join(" · ") || null,
+                localRecepcao: [couple?.reception_local_nome, couple?.reception_address].filter(Boolean).join(" · ") || null,
+                contatoCerimonial: null,
+                ultimaAtualizacao: guests.reduce<string | null>((acc, g) => {
+                  if (!g.updated_at) return acc;
+                  return !acc || g.updated_at > acc ? g.updated_at : acc;
+                }, null),
+                impressoPor: profile?.full_name ?? null,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* respostas: uma barra só no lugar de 6 cartões */}
+        {guests.length > 0 && (
+          <section className="ca-card ca-num" style={{ gap: 10 }} aria-label="Respostas">
+            <div className="ca-stack" aria-hidden="true">
+              <i style={{ width: `${(confirmed / guests.length) * 100}%`, background: "var(--ca-ok)" }} />
+              <i style={{ width: `${(pending / guests.length) * 100}%`, background: "#f2b98a" }} />
+              <i style={{ width: `${(declined / guests.length) * 100}%`, background: "#d8a49b" }} />
             </div>
-          )}
-          {selected.size > 0 && (
-            <Button size="sm" onClick={sendInvitesEmailBulk} disabled={sendingEmails}>
-              <Mail className="mr-2 h-4 w-4" />
-              {sendingEmails ? "Enviando..." : `Enviar convite por email (${selected.size})`}
-            </Button>
-          )}
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13.5px]" style={{ color: "var(--ca-body)" }}>
+              <button type="button" onClick={() => setFilterRsvp("confirmed")}>
+                <i className="ca-dot" style={{ background: "var(--ca-ok)" }} />
+                <b style={{ color: "var(--ca-ink)" }}>{confirmed}</b> confirmados
+              </button>
+              <button type="button" onClick={() => setFilterRsvp("pending")}>
+                <i className="ca-dot" style={{ background: "#f2b98a" }} />
+                <b style={{ color: "var(--ca-ink)" }}>{pending}</b> sem resposta
+              </button>
+              <button type="button" onClick={() => setFilterRsvp("declined")}>
+                <i className="ca-dot" style={{ background: "#d8a49b" }} />
+                <b style={{ color: "var(--ca-ink)" }}>{declined}</b> não vão
+              </button>
+              <span style={{ color: "var(--ca-muted)" }}>
+                {adults} adultos · {children + babies} crianças/bebês
+              </span>
+            </div>
+            {semConvite > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px]" style={{ background: "var(--ca-rose-soft)" }}>
+                <span>
+                  {semConvite === 1 ? "1 convidado ainda não recebeu o convite." : `${semConvite} convidados ainda não receberam o convite.`}
+                </span>
+                <button type="button" className="ca-pill pri" onClick={() => setFilterInvite("none")}>
+                  Ver quem falta
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* busca e filtros */}
+        <div className="flex gap-2">
+          <Input
+            type="search"
+            placeholder="Buscar convidado"
+            aria-label="Buscar convidado"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-11 flex-1 rounded-xl bg-white"
+          />
           <Select value={groupBy} onValueChange={(v: any) => setGroupBy(v)}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="Agrupar por" /></SelectTrigger>
+            <SelectTrigger className="h-11 w-[150px] rounded-xl bg-white" aria-label="Agrupar">
+              <SelectValue placeholder="Agrupar por" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="group">Por grupo</SelectItem>
               <SelectItem value="table">Por mesa</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filterRsvp} onValueChange={setFilterRsvp}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder="Presença" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas presenças</SelectItem>
-              <SelectItem value="confirmed">Confirmados</SelectItem>
-              <SelectItem value="pending">Pendentes</SelectItem>
-              <SelectItem value="declined">Recusados</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterInvite} onValueChange={setFilterInvite}>
-            <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Convite" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos convites</SelectItem>
-              <SelectItem value="none">Sem convite</SelectItem>
-              <SelectItem value="sent">Enviado</SelectItem>
-              <SelectItem value="opened">Aberto</SelectItem>
-              <SelectItem value="responded">Respondido</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="h-9 w-[120px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos tipos</SelectItem>
-              <SelectItem value="adult">Adulto</SelectItem>
-              <SelectItem value="child">Criança</SelectItem>
-              <SelectItem value="baby">Bebê</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex-1" />
-          <Input
-            placeholder="Buscar convidado..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-64"
-          />
-          <Button variant="outline" size="icon" onClick={handleExport} title="Baixar CSV">
-            <Download className="h-4 w-4" />
-          </Button>
-          <GuestListPdfDialog
-            guests={guests.map((g) => ({
-              id: g.id,
-              name: g.name,
-              guest_type: g.guest_type,
-              rsvp_status: g.rsvp_status,
-              table_number: g.table_number,
-              group_id: g.group_id,
-              notes: g.notes ?? null,
-              max_companions: g.max_companions ?? 0,
-              rsvp_companions: invites[g.id]?.rsvp_companions ?? 0,
-            }))}
-            groups={groups}
-            dadosCasal={{
-              nomeCasal: coupleDisplayName,
-              fotoCapaUrl: coupleCoverUrl,
-              dataEvento: couple?.wedding_date ?? null,
-              horario: couple?.ceremony_time ?? null,
-              localCerimonia: [couple?.ceremony_local_nome, couple?.ceremony_address].filter(Boolean).join(" · ") || null,
-              localRecepcao: [couple?.reception_local_nome, couple?.reception_address].filter(Boolean).join(" · ") || null,
-              contatoCerimonial: null,
-              ultimaAtualizacao: guests.reduce<string | null>((acc, g) => {
-                if (!g.updated_at) return acc;
-                return !acc || g.updated_at > acc ? g.updated_at : acc;
-              }, null),
-              impressoPor: profile?.full_name ?? null,
-            }}
-          />
+        </div>
+        <div className="ca-chips" role="group" aria-label="Filtrar convidados">
+          {[
+            ["all", "Todos", guests.length],
+            ["confirmed", "Confirmados", confirmed],
+            ["pending", "Sem resposta", pending],
+            ["declined", "Não vão", declined],
+          ].map(([v, l, n]) => (
+            <button key={v as string} type="button" className="ca-chip" aria-pressed={filterRsvp === v} onClick={() => setFilterRsvp(v as string)}>
+              {l}
+              <b>{n}</b>
+            </button>
+          ))}
+          <select
+            className="ca-chip"
+            value={filterInvite}
+            onChange={(e) => setFilterInvite(e.target.value)}
+            aria-label="Convite"
+            style={filterInvite !== "all" ? { background: "var(--ca-ink)", color: "#fff", borderColor: "var(--ca-ink)" } : undefined}
+          >
+            <option value="all">Convite: todos</option>
+            <option value="none">Convite não enviado</option>
+            <option value="sent">Enviado</option>
+            <option value="opened">Aberto</option>
+            <option value="responded">Respondido</option>
+          </select>
+          <select
+            className="ca-chip"
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            aria-label="Tipo"
+            style={filterType !== "all" ? { background: "var(--ca-ink)", color: "#fff", borderColor: "var(--ca-ink)" } : undefined}
+          >
+            <option value="all">Tipo: todos</option>
+            <option value="adult">Adultos</option>
+            <option value="child">Crianças</option>
+            <option value="baby">Bebês</option>
+          </select>
         </div>
 
-        {/* Guest table */}
-        <Card>
+        {/* ações em massa: aparecem quando há seleção */}
+        {selected.size > 0 && (
+          <div className="ca-bulk">
+            <b className="mr-auto text-sm">
+              {selected.size} {selected.size === 1 ? "selecionado" : "selecionados"}
+            </b>
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                value={bulkTable}
+                onChange={(e) => setBulkTable(e.target.value)}
+                placeholder="Mesa"
+                aria-label="Número da mesa"
+                className="h-9 w-20 rounded-full border-white/30 bg-white/10 text-white placeholder:text-white/60"
+              />
+              <button type="button" className="ca-pill" style={{ background: "rgba(255,255,255,.12)", borderColor: "rgba(255,255,255,.25)", color: "#fff" }} onClick={setTableForSelected}>
+                Aplicar mesa
+              </button>
+            </div>
+            <button
+              type="button"
+              className="ca-pill"
+              style={{ background: "rgba(255,255,255,.12)", borderColor: "rgba(255,255,255,.25)", color: "#fff" }}
+              onClick={sendInvitesEmailBulk}
+              disabled={sendingEmails}
+            >
+              <Mail className="mr-1.5 h-4 w-4" />
+              {sendingEmails ? "Enviando..." : "Enviar convite por e-mail"}
+            </button>
+            <button type="button" className="ca-pill" style={{ background: "#b4412d", borderColor: "#b4412d", color: "#fff" }} onClick={deleteSelected}>
+              <Trash2 className="mr-1.5 h-4 w-4" />
+              Remover
+            </button>
+          </div>
+        )}
+
+        {/* lista */}
+        <Card className="overflow-hidden rounded-[20px]" style={{ boxShadow: "var(--ca-shadow)", borderColor: "var(--ca-line)" }}>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -677,7 +722,7 @@ function GuestGroupSection({
           <td className="p-3">
             <Select value={g.rsvp_status} onValueChange={(v) => onUpdateRsvp(g.id, v)}>
               <SelectTrigger className="h-8 w-32">
-                <Badge variant={rsvpVariant(g.rsvp_status)} className="text-xs">{rsvpLabel(g.rsvp_status)}</Badge>
+                <Badge variant="outline" className={`text-xs ${RSVP_COR[g.rsvp_status] || RSVP_COR.pending}`}>{rsvpLabel(g.rsvp_status)}</Badge>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="pending">Pendente</SelectItem>
