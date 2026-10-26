@@ -224,12 +224,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
       <SEO title="Admin — Casamenteiro" noIndex />
-      <div className="min-h-screen flex w-full bg-background overflow-x-hidden">
+      <div className="admin-v2 min-h-screen flex w-full bg-background overflow-x-hidden">
         <AdminSidebar />
         <div className="flex-1 flex flex-col min-w-0 w-full">
           <header className="h-14 flex items-center gap-2 border-b bg-card px-3 sticky top-0 z-30">
             <SidebarTrigger className="shrink-0" />
-            <span className="text-sm font-medium text-muted-foreground truncate">Painel administrativo</span>
+            <span className="truncate text-sm font-medium" style={{ color: "var(--ad-muted)" }}>Painel administrativo</span>
             <div className="ml-auto flex items-center gap-2">
               <div className="flex items-center rounded-md border p-0.5" aria-label="Ambiente de dados">
                 <Button type="button" size="sm" variant={!demoScope ? "default" : "ghost"} className="h-7 px-2" onClick={() => changeScope(false)}>
