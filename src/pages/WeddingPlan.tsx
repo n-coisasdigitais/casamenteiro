@@ -49,7 +49,11 @@ export default function WeddingPlan() {
   const [detailItem, setDetailItem] = useState<PlanSupplier | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [budgetSubTab, setBudgetSubTab] = useState<"resumo" | "contato">("resumo");
+  // abas: funil | resumo | pagamentos | lote (aceita ?aba= na URL)
+  const [aba, setAba] = useState<string>(() => {
+    const a = new URLSearchParams(window.location.search).get("aba");
+    return a && ["funil", "resumo", "pagamentos", "lote"].includes(a) ? a : "funil";
+  });
   const [contractOpen, setContractOpen] = useState(false);
   const [contractTarget, setContractTarget] = useState<ContractTarget | null>(null);
   const [negotiateOpen, setNegotiateOpen] = useState(false);
@@ -243,9 +247,7 @@ export default function WeddingPlan() {
   };
   const registerPaymentFromDrawer = () => {
     setDetailOpen(false);
-    // Navega para aba de pagamentos
-    const el = document.querySelector('[data-value="pagamentos"]') as HTMLElement | null;
-    el?.click();
+    setAba("pagamentos");
   };
 
   if (loading) {
@@ -298,33 +300,40 @@ export default function WeddingPlan() {
     newProposals,
   };
 
+  const pagamentosPendentes = payments.filter((p) => p.status !== "paid" && p.due_date && (new Date(p.due_date + "T00:00:00").getTime() - today.getTime()) / 86400000 <= 7).length;
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />
       <DashboardNav />
-      <div className="container px-4 py-6 space-y-6">
+      <div className="ca-pagina ca-enter">
         <PlanHeader data={headerData} onOpenProposals={openFirstNewProposal} />
 
-        <Tabs defaultValue="kanban" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="kanban">Kanban</TabsTrigger>
-            <TabsTrigger value="orcamento">Orçamento</TabsTrigger>
-            <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
+        <Tabs value={aba} onValueChange={setAba} className="w-full">
+          <TabsList className="ca-seg">
+            <TabsTrigger value="funil">Funil</TabsTrigger>
+            <TabsTrigger value="resumo">Por categoria</TabsTrigger>
+            <TabsTrigger value="pagamentos">
+              Pagamentos
+              {pagamentosPendentes > 0 && <span className="ca-cnt">{pagamentosPendentes}</span>}
+            </TabsTrigger>
+            <TabsTrigger value="lote">Pedir em lote</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="kanban" className="mt-6">
-            <div className="flex justify-end mb-3">
-              <Button variant="outline" size="sm" onClick={() => setExternalDialogOpen(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />Adicionar fornecedor externo
+          <TabsContent value="funil" className="mt-4">
+            <div className="mb-3 flex justify-end">
+              <Button variant="outline" className="h-10 rounded-full" onClick={() => setExternalDialogOpen(true)}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Fornecedor de fora
               </Button>
             </div>
             {items.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                Nenhum fornecedor no plano ainda. Faça uma simulação ou adicione fornecedores aos seus favoritos.
+              <div className="rounded-2xl border border-dashed py-12 text-center text-sm" style={{ borderColor: "var(--ca-line-strong)", color: "var(--ca-body)" }}>
+                Nenhum fornecedor no plano ainda. Faça uma simulação ou guarde fornecedores nos favoritos.
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
-                <div className="hidden lg:block sticky top-4">
+              <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[280px_1fr]">
+                <div className="sticky top-20 hidden lg:block">
                   <PlanBudgetSidebar
                     coupleId={coupleId}
                     items={items}
@@ -332,9 +341,6 @@ export default function WeddingPlan() {
                     collapsed={sidebarCollapsed}
                     onToggle={() => setSidebarCollapsed((v) => !v)}
                   />
-                </div>
-                <div className="lg:hidden">
-                  <PlanBudgetSidebar coupleId={coupleId} items={items} planoTotal={orcamentoTotal} />
                 </div>
                 <PlanKanban
                   coupleId={coupleId}
@@ -357,41 +363,39 @@ export default function WeddingPlan() {
             />
           </TabsContent>
 
-          <TabsContent value="orcamento" className="mt-6">
-            <Tabs value={budgetSubTab} onValueChange={(v) => setBudgetSubTab(v as any)}>
-              <TabsList className="grid w-full max-w-sm grid-cols-2 mb-4">
-                <TabsTrigger value="resumo">Resumo</TabsTrigger>
-                <TabsTrigger value="contato">Contatar fornecedores</TabsTrigger>
-              </TabsList>
-              <TabsContent value="resumo">
-                <BudgetTab
-                  items={items}
-                  planoTotal={orcamentoTotal}
-                  quotes={quotes}
-                  quoteIdsWithNewProposal={quoteIdsWithNewProposal}
-                  onOpenQuote={openQuoteDialog}
-                />
-              </TabsContent>
-              <TabsContent value="contato">
-                <BulkContactTab
-                  coupleId={coupleId}
-                  items={items}
-                  onChange={() => load(coupleId)}
-                  contextoMensagem={{
-                    nomeCasal: coupleName,
-                    data: couple?.wedding_date ? new Date(couple.wedding_date + "T00:00:00").toLocaleDateString("pt-BR") : "",
-                    cidade: couple?.wedding_city || "",
-                    convidados: Number(couple?.estimated_guests || 0),
-                  }}
-                />
-              </TabsContent>
-            </Tabs>
+          <TabsContent value="resumo" className="mt-4 space-y-4">
+            <div className="lg:hidden">
+              <PlanBudgetSidebar coupleId={coupleId} items={items} planoTotal={orcamentoTotal} />
+            </div>
+            <BudgetTab
+              items={items}
+              planoTotal={orcamentoTotal}
+              quotes={quotes}
+              quoteIdsWithNewProposal={quoteIdsWithNewProposal}
+              onOpenQuote={openQuoteDialog}
+            />
           </TabsContent>
 
-          <TabsContent value="pagamentos" className="mt-6">
+          <TabsContent value="pagamentos" className="mt-4">
             <PaymentsTab payments={payments} items={items} onChange={() => load(coupleId)} />
           </TabsContent>
+
+          <TabsContent value="lote" className="mt-4">
+            <BulkContactTab
+              coupleId={coupleId}
+              items={items}
+              onChange={() => load(coupleId)}
+              contextoMensagem={{
+                nomeCasal: coupleName,
+                data: couple?.wedding_date ? new Date(couple.wedding_date + "T00:00:00").toLocaleDateString("pt-BR") : "",
+                cidade: couple?.wedding_city || "",
+                convidados: Number(couple?.estimated_guests || 0),
+              }}
+            />
+          </TabsContent>
         </Tabs>
+
+
 
         <Dialog open={!!openQuoteId} onOpenChange={(v) => { if (!v) closeQuoteDialog(); }}>
           <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col p-0 gap-0">
