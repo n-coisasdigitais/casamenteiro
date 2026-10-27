@@ -44,6 +44,44 @@ export type Database = {
         }
         Relationships: []
       }
+      avisos_categoria: {
+        Row: {
+          avisado_em: string | null
+          category_id: string
+          cidade: string | null
+          created_at: string
+          email: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          avisado_em?: string | null
+          category_id: string
+          cidade?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          avisado_em?: string | null
+          category_id?: string
+          cidade?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avisos_categoria_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broadcast_gatilho_execucoes: {
         Row: {
           contexto: Json | null
@@ -4856,6 +4894,7 @@ export type Database = {
           onboarding_completed: boolean
           onboarding_step: number
           phone: string | null
+          preco_por_pessoa: boolean
           price_max: number | null
           price_min: number | null
           pricing_model: string
@@ -4902,6 +4941,7 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
+          preco_por_pessoa?: boolean
           price_max?: number | null
           price_min?: number | null
           pricing_model?: string
@@ -4948,6 +4988,7 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
+          preco_por_pessoa?: boolean
           price_max?: number | null
           price_min?: number | null
           pricing_model?: string
@@ -5438,6 +5479,10 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      destaque_vagas_livres: {
+        Args: { _categoria_id: string; _escopo: string }
+        Returns: number
+      }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
@@ -5611,6 +5656,10 @@ export type Database = {
       }
       recalc_task_due_dates: {
         Args: { _couple_id: string }
+        Returns: undefined
+      }
+      recalcular_preco_fornecedor: {
+        Args: { _supplier_id: string }
         Returns: undefined
       }
       registrar_clique_indicacao_fornecedor: {
