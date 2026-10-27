@@ -1,0 +1,1 @@
+GRANT SELECT (preco_por_pessoa) ON public.suppliers TO anon, authenticated;
