@@ -96,7 +96,21 @@ export async function carregarFornecedores(categoriaId?: string): Promise<Fornec
     .order("created_at", { ascending: false })
     .limit(400);
   if (categoriaId) q = q.eq("category_id", categoriaId);
-  const { data } = await q;
+  const { data, error } = await q;
+  if (error) {
+    // Se alguma coluna nova não estiver liberada para leitura, não deixa a vitrine vazia.
+    console.error("vitrine: falha ao carregar fornecedores", error);
+    let q2 = (supabase.from("suppliers") as any)
+      .select(COLS.replace("preco_por_pessoa, ", ""))
+      .eq("status", "approved")
+      .in("is_demo", demoValues())
+      .order("featured", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(400);
+    if (categoriaId) q2 = q2.eq("category_id", categoriaId);
+    const { data: d2 } = await q2;
+    return comFotos(d2 as any[]);
+  }
   return comFotos(data as any[]);
 }
 
