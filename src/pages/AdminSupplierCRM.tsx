@@ -30,11 +30,11 @@ const emTeste = (s: any) => !!s.trial_ends_at && new Date(s.trial_ends_at).getTi
 const diasTeste = (s: any) => Math.max(0, Math.ceil((new Date(s.trial_ends_at).getTime() - Date.now()) / 864e5));
 
 function Situacao({ s, pagante }: { s: any; pagante: boolean }) {
-  if (s.status === "pending") return <span className="ad-st ad-warn">Aguardando aprovação</span>;
-  if (s.status === "rejected") return <span className="ad-st ad-err">Recusado</span>;
-  if (pagante) return <span className="ad-st ad-ok">Pagante</span>;
-  if (emTeste(s)) return <span className="ad-st ad-info">Teste · {diasTeste(s)} dias</span>;
-  return <span className="ad-st ad-off">Plano grátis</span>;
+  if (s.status === "pending") return <span className="cz-st cz-warn">Aguardando aprovação</span>;
+  if (s.status === "rejected") return <span className="cz-st cz-err">Recusado</span>;
+  if (pagante) return <span className="cz-st cz-ok">Pagante</span>;
+  if (emTeste(s)) return <span className="cz-st cz-info">Teste · {diasTeste(s)} dias</span>;
+  return <span className="cz-st cz-off">Plano grátis</span>;
 }
 
 function SupplierList() {
@@ -137,11 +137,11 @@ function SupplierList() {
           <h1 className="m-0 text-2xl font-extrabold" style={{ letterSpacing: "-0.03em" }}>
             Fornecedores
           </h1>
-          <p className="ad-num m-0 mt-1 text-sm" style={{ color: "var(--ad-body)" }}>
+          <p className="cz-num m-0 mt-1 text-sm" style={{ color: "var(--ad-body)" }}>
             {suppliers.length} cadastrados · {conta("pagante")} pagantes · {conta("teste")} em teste
           </p>
         </div>
-        <button type="button" className="ad-btn" onClick={exportar} disabled={!filtered.length}>
+        <button type="button" className="cz-btn" onClick={exportar} disabled={!filtered.length}>
           <Download className="h-3.5 w-3.5" /> Exportar CSV
         </button>
       </div>
@@ -162,7 +162,7 @@ function SupplierList() {
               }
             >
               {r.l}
-              <span className="ad-num ml-1.5 opacity-60">{conta(r.k)}</span>
+              <span className="cz-num ml-1.5 opacity-60">{conta(r.k)}</span>
             </button>
           ))}
         </div>
@@ -190,7 +190,7 @@ function SupplierList() {
         </div>
       </div>
 
-      <section className="ad-card overflow-hidden">
+      <section className="cz-card overflow-hidden">
         {carregando ? (
           <p className="m-0 p-5 text-sm" style={{ color: "var(--ad-muted)" }}>
             Carregando…
@@ -203,7 +203,7 @@ function SupplierList() {
           <>
             {/* computador: tabela */}
             <div className="hidden overflow-x-auto md:block">
-              <table className="ad-num w-full border-collapse text-[13px]">
+              <table className="cz-num w-full border-collapse text-[13px]">
                 <thead>
                   <tr style={{ background: "#fbfaf8" }}>
                     {["Fornecedor", "Situação", "Contato", "Nota", "Cadastro", ""].map((h) => (
@@ -258,7 +258,7 @@ function SupplierList() {
                         </td>
                         <td className="border-b px-3 py-2.5 text-right" style={{ borderColor: "var(--ad-line)" }}>
                           {s.status === "pending" ? (
-                            <Link to="/admin/aprovacao" className="ad-btn pri" onClick={(e) => e.stopPropagation()}>
+                            <Link to="/admin/aprovacao" className="cz-btn pri" onClick={(e) => e.stopPropagation()}>
                               Revisar
                             </Link>
                           ) : (
@@ -281,7 +281,7 @@ function SupplierList() {
                   key={s.id}
                   type="button"
                   onClick={() => navigate(`/admin/fornecedor/${s.id}`)}
-                  className="ad-row flex w-full items-center gap-3 px-4 py-3 text-left"
+                  className="cz-row flex w-full items-center gap-3 px-4 py-3 text-left"
                 >
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] text-xs font-extrabold text-white" style={{ background: CORES[i % CORES.length] }}>
                     {iniciais(s.company_name)}
@@ -404,7 +404,7 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
               {[sup.categories?.name, sup.city && `${sup.city}${sup.state ? `/${sup.state}` : ""}`].filter(Boolean).join(" · ") || "—"} · cadastrado em {dataBR(sup.created_at)}
             </p>
           </div>
-          <Link to={`/fornecedor/${sup.id}`} target="_blank" className="ad-btn">
+          <Link to={`/fornecedor/${sup.id}`} target="_blank" className="cz-btn">
             <ExternalLink className="h-3.5 w-3.5" /> Ver perfil público
           </Link>
         </div>
@@ -412,9 +412,9 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="ad-num grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
+          <div className="cz-num grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
             {kpis.map(([l, v]) => (
-              <div key={l} className="ad-card px-3.5 py-3">
+              <div key={l} className="cz-card px-3.5 py-3">
                 <small className="block text-[11.5px] font-semibold" style={{ color: "var(--ad-muted)" }}>
                   {l}
                 </small>
@@ -433,35 +433,35 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
             </TabsList>
 
             <TabsContent value="quotes">
-              <section className="ad-card overflow-hidden">
+              <section className="cz-card overflow-hidden">
                 {quotes.length === 0 && (
                   <p className="m-0 p-5 text-sm" style={{ color: "var(--ad-muted)" }}>
                     Nenhum pedido.
                   </p>
                 )}
                 {quotes.map((q: any) => (
-                  <div key={q.id} className="ad-row flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-[13px]">
+                  <div key={q.id} className="cz-row flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-[13px]">
                     <div className="min-w-0 flex-1">
                       <p className="m-0 line-clamp-2">{q.message || "—"}</p>
                       <p className="m-0 text-xs" style={{ color: "var(--ad-muted)" }}>
                         {dataBR(q.created_at)}
                       </p>
                     </div>
-                    <span className={`ad-st ${q.kanban_status === "enviado" ? "ad-warn" : q.kanban_status === "fechado" ? "ad-ok" : "ad-off"}`}>{q.kanban_status || q.status}</span>
+                    <span className={`cz-st ${q.kanban_status === "enviado" ? "cz-warn" : q.kanban_status === "fechado" ? "cz-ok" : "cz-off"}`}>{q.kanban_status || q.status}</span>
                   </div>
                 ))}
               </section>
             </TabsContent>
 
             <TabsContent value="leads">
-              <section className="ad-card overflow-hidden">
+              <section className="cz-card overflow-hidden">
                 {leads.length === 0 && (
                   <p className="m-0 p-5 text-sm" style={{ color: "var(--ad-muted)" }}>
                     Nenhum lead.
                   </p>
                 )}
                 {leads.map((l: any) => (
-                  <div key={l.id} className="ad-row px-4 py-3 text-[13px]">
+                  <div key={l.id} className="cz-row px-4 py-3 text-[13px]">
                     <b className="block">{l.nome_casal || "—"}</b>
                     <span className="block text-xs" style={{ color: "var(--ad-muted)" }}>
                       {l.cidade_evento || "—"} · {l.num_convidados || "?"} conv. · R$ {Number(l.orcamento_total || 0).toLocaleString("pt-BR")} · {l.status_lead} · {dataBR(l.created_at)}
@@ -472,14 +472,14 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
             </TabsContent>
 
             <TabsContent value="reviews">
-              <section className="ad-card overflow-hidden">
+              <section className="cz-card overflow-hidden">
                 {reviews.length === 0 && (
                   <p className="m-0 p-5 text-sm" style={{ color: "var(--ad-muted)" }}>
                     Nenhuma avaliação.
                   </p>
                 )}
                 {reviews.map((r: any) => (
-                  <div key={r.id} className="ad-row px-4 py-3 text-[13px]">
+                  <div key={r.id} className="cz-row px-4 py-3 text-[13px]">
                     <b className="block">
                       ★ {r.rating} {r.title}
                     </b>
@@ -494,7 +494,7 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <section className="ad-card p-4 text-[13px]">
+          <section className="cz-card p-4 text-[13px]">
             <h2 className="m-0 mb-2.5 text-[14px] font-bold">Contato e plano</h2>
             <div className="flex flex-col gap-1.5">
               <span className="inline-flex items-center gap-2">
@@ -515,7 +515,7 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
             </div>
           </section>
 
-          <section className="ad-card flex flex-col gap-2 p-4">
+          <section className="cz-card flex flex-col gap-2 p-4">
             <h2 className="m-0 flex items-center gap-2 text-[14px] font-bold">
               <Send className="h-4 w-4" /> Mensagem para o fornecedor
             </h2>
@@ -524,7 +524,7 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
             </p>
             <Input placeholder="Título" value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} className="bg-white" />
             <Textarea placeholder="Mensagem" value={pushBody} onChange={(e) => setPushBody(e.target.value)} rows={3} className="bg-white" />
-            <button type="button" className="ad-btn pri self-end" onClick={sendPush} disabled={sending || !pushTitle.trim()}>
+            <button type="button" className="cz-btn pri self-end" onClick={sendPush} disabled={sending || !pushTitle.trim()}>
               {sending ? "Enviando…" : "Enviar"}
             </button>
           </section>
@@ -538,7 +538,7 @@ function SupplierDetail({ supplierId }: { supplierId: string }) {
 export default function AdminSupplierCRM() {
   const { id } = useParams();
   return (
-    <div className="ad-enter mx-auto max-w-[1280px] px-4 py-5 md:px-7 md:py-6">
+    <div className="cz-enter mx-auto max-w-[1280px] px-4 py-5 md:px-7 md:py-6">
       {id ? <SupplierDetail supplierId={id} /> : <SupplierList />}
     </div>
   );

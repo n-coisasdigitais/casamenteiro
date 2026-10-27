@@ -159,7 +159,7 @@ function AdminSidebar() {
                           <item.icon className="h-4 w-4" />
                           {!collapsed && <span className="flex-1 truncate">{item.title}</span>}
                           {!collapsed && n > 0 && (
-                            <span className={`ad-n ${item.badge === "aprovacao" ? "ad-warn" : "ad-info"}`}>{n}</span>
+                            <span className={`cz-n ${item.badge === "aprovacao" ? "cz-warn" : "cz-info"}`}>{n}</span>
                           )}
                         </NavLink>
                       </SidebarMenuButton>
