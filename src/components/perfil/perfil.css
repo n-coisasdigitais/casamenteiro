@@ -96,9 +96,13 @@ details.pf-faq[open] summary::after { transform: rotate(45deg); }
 
 /* orçamento */
 .pf-orc { background: #fff; border: 1px solid var(--pf-line); border-radius: 22px; box-shadow: var(--pf-shadow); padding: 22px; display: flex; flex-direction: column; gap: 14px; }
-.pf-campo { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; font-weight: 650; color: var(--pf-body); }
-.pf-campo input, .pf-campo textarea { width: 100%; border: 1px solid var(--pf-line2); border-radius: 12px; background: #fff; font-size: 14.5px; color: var(--pf-ink); padding: 11px 12px; outline: 0; transition: border-color 0.2s, box-shadow 0.2s; font-weight: 400; }
+.pf-campo { min-width: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; font-weight: 650; color: var(--pf-body); }
+.pf-campo input, .pf-campo textarea { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; border: 1px solid var(--pf-line2); border-radius: 12px; background: #fff; font-size: 16px; color: var(--pf-ink); padding: 11px 12px; outline: 0; transition: border-color 0.2s, box-shadow 0.2s; font-weight: 400; }
 .pf-campo input:focus, .pf-campo textarea:focus { border-color: var(--pf-terra); box-shadow: 0 0 0 4px rgba(217, 144, 90, 0.16); }
+/* iPhone: campo de data tem largura própria e estoura a tela; 16px evita o zoom automático ao tocar */
+.pf-campo input[type="date"] { -webkit-appearance: none; appearance: none; display: block; min-height: 46px; line-height: 1.25; text-align: left; }
+.pf-campo input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+.pf-orc { min-width: 0; max-width: 100%; }
 .pf-campo input:disabled { background: var(--pf-bg); color: var(--pf-muted); }
 .pf-campo textarea { resize: vertical; min-height: 92px; line-height: 1.5; }
 .pf-rapido { border: 1px solid var(--pf-line2); background: #fff; border-radius: 999px; height: 30px; padding: 0 11px; font-size: 12.5px; font-weight: 600; color: var(--pf-body); transition: all 0.2s; }
@@ -129,6 +133,9 @@ details.pf-faq[open] summary::after { transform: rotate(45deg); }
 .pf-mini button { flex: 0 0 74px; height: 54px; border-radius: 10px; border: 2px solid transparent; padding: 0; overflow: hidden; opacity: 0.6; transition: opacity 0.2s, border-color 0.2s; }
 .pf-mini button img { width: 100%; height: 100%; object-fit: cover; }
 .pf-mini button.on { opacity: 1; border-color: var(--pf-clay); }
+
+/* folha de orçamento no celular: esconde o X pequeno padrão (há um botão Fechar fixo no topo) */
+.pf-folha > button.absolute { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .pf *, .pf *::before, .pf *::after { animation: none !important; transition: none !important; }

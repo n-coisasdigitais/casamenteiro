@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Heart, MapPin, Star } from "lucide-react";
 import { textoPreco, type FornecedorVitrine } from "@/lib/vitrine";
@@ -22,6 +22,7 @@ export default function CardFornecedor({
 }) {
   const fotos = f.fotos.slice(0, 5);
   const [atual, setAtual] = useState(0);
+  const trilho = useRef<HTMLDivElement>(null);
   const preco = textoPreco(f);
   const temNota = !!f.rating && Number(f.rating) > 0 && !!f.review_count;
   const local = [f.city, f.state].filter(Boolean).join(", ");
@@ -29,15 +30,27 @@ export default function CardFornecedor({
   const mover = (e: React.MouseEvent, d: number) => {
     e.preventDefault();
     e.stopPropagation();
-    setAtual((a) => (a + d + fotos.length) % fotos.length);
+    const t = trilho.current;
+    if (!t) return;
+    const prox = (atual + d + fotos.length) % fotos.length;
+    t.scrollTo({ left: prox * t.clientWidth, behavior: "smooth" });
   };
 
   return (
     <Link to={`/fornecedor/${f.id}`} className="vt-card group">
       <div className="vt-foto">
-        {fotos.map((u, k) => (
-          <img key={u + k} src={u} alt={k === 0 ? f.company_name : ""} loading="lazy" className={k === atual ? "on" : ""} />
-        ))}
+        <div
+          ref={trilho}
+          className="vt-foto-trilho"
+          onScroll={(e) => {
+            const t = e.currentTarget;
+            if (t.clientWidth) setAtual(Math.round(t.scrollLeft / t.clientWidth));
+          }}
+        >
+          {fotos.map((u, k) => (
+            <img key={u + k} src={u} alt={k === 0 ? f.company_name : ""} loading={k === 0 ? "eager" : "lazy"} draggable={false} />
+          ))}
+        </div>
         {destaque && <span className="vt-tagc">Destaque</span>}
         {selo && <span className="vt-tagc" style={{ top: "auto", bottom: 10, background: "var(--vt-ink)" }}>{selo}</span>}
         <button
