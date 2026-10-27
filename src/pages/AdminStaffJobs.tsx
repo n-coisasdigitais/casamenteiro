@@ -60,7 +60,7 @@ export default function AdminStaffJobs() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-[1180px] px-4 py-5 md:px-7 md:py-6 space-y-4">
       <SEO title="Admin — Vagas" noIndex />
       <div>
         <h1 className="text-2xl font-bold">Vagas publicadas</h1>

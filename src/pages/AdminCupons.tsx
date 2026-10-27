@@ -67,7 +67,7 @@ export default function AdminCupons() {
   const [carregando, setCarregando] = useState(true);
   const [cupons, setCupons] = useState<Cupom[]>([]);
   const [beneficios, setBeneficios] = useState<(Beneficio & { supplier_nome?: string })[]>([]);
-  const [fornecedores, setFornecedores] = useState<{ id: string; business_name: string }[]>([]);
+  const [fornecedores, setFornecedores] = useState<{ id: string; company_name: string }[]>([]);
 
   const [aberto, setAberto] = useState(false);
   const [editando, setEditando] = useState<string | null>(null);
@@ -89,20 +89,20 @@ export default function AdminCupons() {
       listarCupons(),
       (supabase
         .from("supplier_credits" as any)
-        .select("*, suppliers(business_name)")
+        .select("*, suppliers(company_name)")
         .order("created_at", { ascending: false })
         .limit(200) as any),
-      supabase.from("suppliers").select("id, business_name").order("business_name").limit(500),
+      supabase.from("suppliers").select("id, company_name").order("company_name").limit(500),
     ]);
     setCupons(cs);
     setBeneficios(
       ((bs?.data as any[]) ?? []).map((b) => ({
         ...b,
         valor: Number(b.valor),
-        supplier_nome: b.suppliers?.business_name,
+        supplier_nome: b.suppliers?.company_name,
       })),
     );
-    setFornecedores(((fs.data as any[]) ?? []) as { id: string; business_name: string }[]);
+    setFornecedores(((fs.data as any[]) ?? []) as { id: string; company_name: string }[]);
     setCarregando(false);
   };
 
@@ -207,23 +207,15 @@ export default function AdminCupons() {
 
   const ativos = useMemo(() => cupons.filter((c) => c.ativo).length, [cupons]);
 
-  if (carregando) {
-    return (
-      <div className="p-8 flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Carregando cupons...
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1180px] space-y-6 px-4 py-5 md:px-7 md:py-6">
       <SEO title="Cupons e presentes | Admin Casamenteiro" noIndex />
 
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold">Cupons e presentes</h1>
           <p className="text-sm text-muted-foreground">
-            {cupons.length} cupons cadastrados · {ativos} ativos. Os benefícios valem a partir da primeira cobrança, depois
+            {carregando ? "Carregando…" : `${cupons.length} cupons cadastrados · ${ativos} ativos.`} Os benefícios valem a partir da primeira cobrança, depois
             do período de teste.
           </p>
         </div>
@@ -242,9 +234,13 @@ export default function AdminCupons() {
         <TabsContent value="cupons" className="pt-4">
           <Card>
             <CardContent className="p-0 divide-y">
-              {cupons.length === 0 && (
+              {carregando ? (
+                <p className="p-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando cupons...
+                </p>
+              ) : cupons.length === 0 ? (
                 <p className="p-8 text-center text-sm text-muted-foreground">Nenhum cupom criado ainda.</p>
-              )}
+              ) : null}
               {cupons.map((c) => (
                 <div key={c.id} className="p-4 flex items-center justify-between gap-3 flex-wrap">
                   <div className="space-y-1">
@@ -297,7 +293,7 @@ export default function AdminCupons() {
                   <SelectContent>
                     {fornecedores.map((f) => (
                       <SelectItem key={f.id} value={f.id}>
-                        {f.business_name}
+                        {f.company_name}
                       </SelectItem>
                     ))}
                   </SelectContent>

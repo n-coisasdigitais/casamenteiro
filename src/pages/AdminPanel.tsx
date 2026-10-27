@@ -40,10 +40,10 @@ const haQuanto = (iso: string) => {
   return h < 24 ? `há ${h} h` : `há ${Math.floor(h / 24)} dias`;
 };
 function variacao(atual: number, anterior: number) {
-  if (!anterior) return atual > 0 ? { txt: "novo no período", cls: "ad-ok" } : null;
+  if (!anterior) return atual > 0 ? { txt: "novo no período", cls: "cz-ok" } : null;
   const pct = Math.round(((atual - anterior) / anterior) * 100);
-  if (pct === 0) return { txt: "igual ao período anterior", cls: "ad-off" };
-  return { txt: `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct)}% vs período anterior`, cls: pct >= 0 ? "ad-ok" : "ad-err" };
+  if (pct === 0) return { txt: "igual ao período anterior", cls: "cz-off" };
+  return { txt: `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct)}% vs período anterior`, cls: pct >= 0 ? "cz-ok" : "cz-err" };
 }
 
 export default function AdminPanel() {
@@ -181,7 +181,7 @@ export default function AdminPanel() {
     ? [
         fila.aprovacao.total > 0 && {
           icone: ClipboardCheck,
-          tom: "ad-warn",
+          tom: "cz-warn",
           titulo: `${fila.aprovacao.total} ${fila.aprovacao.total === 1 ? "fornecedor aguardando" : "fornecedores aguardando"} aprovação`,
           texto: fila.aprovacao.nomes.join(", ") + (fila.aprovacao.total > 3 ? "…" : ""),
           alerta: fila.aprovacao.atrasados > 0 ? `${fila.aprovacao.atrasados} ${fila.aprovacao.atrasados === 1 ? "passou" : "passaram"} de 24 h` : null,
@@ -191,7 +191,7 @@ export default function AdminPanel() {
         },
         fila.reservas > 0 && {
           icone: CalendarRange,
-          tom: "ad-info",
+          tom: "cz-info",
           titulo: `${fila.reservas} ${fila.reservas === 1 ? "reserva de data ociosa" : "reservas de datas ociosas"} sem resposta`,
           texto: "O fornecedor precisa aceitar ou recusar a reserva do casal.",
           acao: "Ver",
@@ -199,7 +199,7 @@ export default function AdminPanel() {
         },
         fila.webhooks.total > 0 && {
           icone: AlertTriangle,
-          tom: "ad-err",
+          tom: "cz-err",
           titulo: `${fila.webhooks.total} ${fila.webhooks.total === 1 ? "aviso de pagamento com problema" : "avisos de pagamento com problema"}`,
           texto: `Últimos 7 dias${fila.webhooks.ultimo ? ` · último ${haQuanto(fila.webhooks.ultimo)}` : ""} · um pagamento pode estar sem baixa.`,
           acao: "Ver",
@@ -207,7 +207,7 @@ export default function AdminPanel() {
         },
         fila.avaliacoes > 0 && {
           icone: Star,
-          tom: "ad-off",
+          tom: "cz-off",
           titulo: `${fila.avaliacoes} ${fila.avaliacoes === 1 ? "avaliação para moderar" : "avaliações para moderar"}`,
           texto: "Avaliações de fornecedores e da plataforma aguardando aprovação.",
           acao: "Moderar",
@@ -215,7 +215,7 @@ export default function AdminPanel() {
         },
         fila.testes > 0 && {
           icone: Hourglass,
-          tom: "ad-warn",
+          tom: "cz-warn",
           titulo: `${fila.testes} ${fila.testes === 1 ? "teste grátis acaba" : "testes grátis acabam"} em 7 dias`,
           texto: "Bom momento para a mensagem de conversão para o plano pago.",
           acao: "Avisar",
@@ -249,14 +249,14 @@ export default function AdminPanel() {
   })();
 
   const Kpi = ({ titulo, valor, linha, sub }: { titulo: string; valor: string; linha?: { txt: string; cls: string } | null; sub?: string }) => (
-    <div className="ad-card flex flex-col gap-1 px-4 py-3.5">
+    <div className="cz-card flex flex-col gap-1 px-4 py-3.5">
       <small className="text-xs font-semibold" style={{ color: "var(--ad-muted)" }}>
         {titulo}
       </small>
-      <b className="ad-num text-[22px] font-extrabold" style={{ letterSpacing: "-0.03em" }}>
+      <b className="cz-num text-[22px] font-extrabold" style={{ letterSpacing: "-0.03em" }}>
         {valor}
       </b>
-      {linha && <span className={`ad-st ${linha.cls} self-start`}>{linha.txt}</span>}
+      {linha && <span className={`cz-st ${linha.cls} self-start`}>{linha.txt}</span>}
       {sub && (
         <span className="text-xs" style={{ color: "var(--ad-muted)" }}>
           {sub}
@@ -266,7 +266,7 @@ export default function AdminPanel() {
   );
 
   return (
-    <div className="ad-enter mx-auto flex max-w-[1180px] flex-col gap-4 px-4 py-5 md:px-7 md:py-6">
+    <div className="cz-enter mx-auto flex max-w-[1180px] flex-col gap-4 px-4 py-5 md:px-7 md:py-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="m-0 text-2xl font-extrabold" style={{ letterSpacing: "-0.03em" }}>
@@ -291,7 +291,7 @@ export default function AdminPanel() {
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <section className="ad-card" aria-labelledby="h-fila">
+        <section className="cz-card" aria-labelledby="h-fila">
           <div className="flex items-center justify-between px-4 pt-3.5">
             <h2 id="h-fila" className="m-0 text-[14.5px] font-bold">
               Precisa de você
@@ -307,7 +307,7 @@ export default function AdminPanel() {
               </div>
             )}
             {itensFila.map((it: any) => (
-              <div key={it.titulo} className="ad-row flex items-center gap-3 py-3">
+              <div key={it.titulo} className="cz-row flex items-center gap-3 py-3">
                 <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[10px] ${it.tom}`}>
                   <it.icone className="h-4 w-4" aria-hidden="true" />
                 </span>
@@ -322,7 +322,7 @@ export default function AdminPanel() {
                     {it.alerta}
                   </span>
                 )}
-                <Link to={it.to} className={`ad-btn ${it.pri ? "pri" : ""}`}>
+                <Link to={it.to} className={`cz-btn ${it.pri ? "pri" : ""}`}>
                   {it.acao}
                 </Link>
               </div>
@@ -330,7 +330,7 @@ export default function AdminPanel() {
           </div>
         </section>
 
-        <section className="ad-card" aria-labelledby="h-funil">
+        <section className="cz-card" aria-labelledby="h-funil">
           <div className="flex items-center justify-between px-4 pt-3.5">
             <h2 id="h-funil" className="m-0 text-[14.5px] font-bold">
               Funil do casal
@@ -339,14 +339,14 @@ export default function AdminPanel() {
               casais que entraram nos últimos {periodo} dias
             </span>
           </div>
-          <div className="ad-num flex flex-col gap-2.5 px-4 pb-4 pt-3">
+          <div className="cz-num flex flex-col gap-2.5 px-4 pb-4 pt-3">
             {etapas.map(([rotulo, k]) => {
               const v = funil ? funil[k] : 0;
               const pct = funil && funil.cadastros ? (v / funil.cadastros) * 100 : 0;
               return (
                 <div key={k} className="grid items-center gap-2.5 text-[13px]" style={{ gridTemplateColumns: "130px 1fr 48px" }}>
                   <span>{rotulo}</span>
-                  <div className="ad-bar">
+                  <div className="cz-bar">
                     <i style={{ width: barras ? `${pct}%` : 0 }} />
                   </div>
                   <b className="text-right">{funil ? v : "–"}</b>

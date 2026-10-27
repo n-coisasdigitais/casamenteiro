@@ -27,6 +27,16 @@ type Row = {
   is_demo: boolean;
 };
 
+/** Só exibição: o valor no banco continua em inglês. */
+const TIPO_CONTA: Record<string, string> = {
+  couple: "Casal",
+  supplier: "Fornecedor",
+  profissional: "Profissional",
+  staff: "Profissional",
+  admin: "Admin",
+};
+const tipoConta = (t?: string | null) => (t ? TIPO_CONTA[t] || t : "—");
+
 export default function AdminUsers() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -34,7 +44,7 @@ export default function AdminUsers() {
   const [ready, setReady] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
-  const [filter, setFilter] = useState<"all" | "couple" | "supplier" | "admin" | "suspended">("all");
+  const [filter, setFilter] = useState<"all" | "couple" | "supplier" | "profissional" | "admin" | "suspended">("all");
   const [page, setPage] = useState(0);
   const impersonationEnabled = useFeatureFlag("admin_impersonation");
   const [impersonating, setImpersonating] = useState<string | null>(null);
@@ -61,7 +71,7 @@ export default function AdminUsers() {
   const filtered = rows.filter(r => {
     if (filter === "suspended" && !r.suspended) return false;
     if (filter === "admin" && !r.is_admin) return false;
-    if ((filter === "couple" || filter === "supplier") && r.account_type !== filter) return false;
+    if ((filter === "couple" || filter === "supplier" || filter === "profissional") && r.account_type !== filter) return false;
     if (q && !(r.full_name || "").toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
@@ -74,7 +84,7 @@ export default function AdminUsers() {
     ["Nome", "Tipo", "Admin", "Suspenso", "Motivo", "Criado em"],
     filtered.map(r => [
       r.full_name || "",
-      r.account_type,
+      tipoConta(r.account_type),
       r.is_admin ? "sim" : "não",
       r.suspended ? "sim" : "não",
       r.suspended_reason || "",
@@ -136,9 +146,9 @@ export default function AdminUsers() {
             <Input placeholder="Buscar por nome..." value={q} onChange={e => setQ(e.target.value)} className="pl-9" />
           </div>
           <div className="flex gap-2 flex-wrap">
-            {(["all","couple","supplier","admin","suspended"] as const).map(f => (
+            {(["all","couple","supplier","profissional","admin","suspended"] as const).map(f => (
               <Button key={f} size="sm" variant={filter === f ? "default" : "outline"} onClick={() => setFilter(f)}>
-                {f === "all" ? "Todos" : f === "couple" ? "Casais" : f === "supplier" ? "Fornecedores" : f === "admin" ? "Admins" : "Suspensos"}
+                {f === "all" ? "Todos" : f === "couple" ? "Casais" : f === "supplier" ? "Fornecedores" : f === "profissional" ? "Profissionais" : f === "admin" ? "Admins" : "Suspensos"}
               </Button>
             ))}
           </div>
@@ -158,9 +168,9 @@ export default function AdminUsers() {
                 <div className="flex-1 min-w-[200px]">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-medium">{r.full_name || "(sem nome)"}</h3>
-                    <Badge variant="secondary">{r.account_type}</Badge>
-                    {r.is_admin && <Badge>admin</Badge>}
-                    {r.suspended && <Badge variant="destructive">suspenso</Badge>}
+                    <Badge variant="secondary">{tipoConta(r.account_type)}</Badge>
+                    {r.is_admin && <Badge>Admin</Badge>}
+                    {r.suspended && <Badge variant="destructive">Suspenso</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">ID: {r.user_id.slice(0,8)}... · Criado {new Date(r.created_at).toLocaleDateString("pt-BR")}</p>
                   {r.suspended_reason && <p className="text-xs text-destructive mt-1">Motivo: {r.suspended_reason}</p>}

@@ -43,7 +43,7 @@
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-.admin-v2 .ad-num { font-variant-numeric: tabular-nums; }
+.admin-v2 .cz-num { font-variant-numeric: tabular-nums; }
 .admin-v2 .rounded-lg.border.bg-card { border-radius: 14px; box-shadow: var(--ad-shadow); }
 
 /* menu lateral */
@@ -54,24 +54,24 @@
   content: ""; position: absolute; left: -8px; top: 7px; bottom: 7px; width: 3px; border-radius: 0 3px 3px 0; background: var(--ad-clay);
 }
 
-.ad-card { background: #fff; border: 1px solid var(--ad-line); border-radius: 14px; box-shadow: var(--ad-shadow); min-width: 0; }
-.ad-n { display: inline-grid; place-items: center; min-width: 22px; height: 19px; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 800; }
-.ad-st { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
-.ad-ok { background: var(--ad-ok-soft); color: var(--ad-ok); }
-.ad-warn { background: var(--ad-warn-soft); color: var(--ad-warn); }
-.ad-err { background: var(--ad-err-soft); color: var(--ad-err); }
-.ad-info { background: var(--ad-info-soft); color: var(--ad-info); }
-.ad-off { background: var(--ad-bg); color: var(--ad-muted); }
+.cz-card { background: #fff; border: 1px solid var(--ad-line); border-radius: 14px; box-shadow: var(--ad-shadow); min-width: 0; }
+.cz-n { display: inline-grid; place-items: center; min-width: 22px; height: 19px; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+.cz-st { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.cz-ok { background: var(--ad-ok-soft); color: var(--ad-ok); }
+.cz-warn { background: var(--ad-warn-soft); color: var(--ad-warn); }
+.cz-err { background: var(--ad-err-soft); color: var(--ad-err); }
+.cz-info { background: var(--ad-info-soft); color: var(--ad-info); }
+.cz-off { background: var(--ad-bg); color: var(--ad-muted); }
 
-.ad-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--ad-line-strong); background: #fff; font-weight: 650; font-size: 12.5px; white-space: nowrap; color: var(--ad-ink); }
-.ad-btn.pri { background: var(--ad-clay); border-color: var(--ad-clay); color: #fff; }
+.cz-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--ad-line-strong); background: #fff; font-weight: 650; font-size: 12.5px; white-space: nowrap; color: var(--ad-ink); }
+.cz-btn.pri { background: var(--ad-clay); border-color: var(--ad-clay); color: #fff; }
 
-.ad-row + .ad-row { border-top: 1px solid var(--ad-line); }
-.ad-bar { height: 10px; border-radius: 999px; background: var(--ad-bg); overflow: hidden; }
-.ad-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--ad-terracota); transition: width 1s var(--ad-ease); }
+.cz-row + .cz-row { border-top: 1px solid var(--ad-line); }
+.cz-bar { height: 10px; border-radius: 999px; background: var(--ad-bg); overflow: hidden; }
+.cz-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--ad-terracota); transition: width 1s var(--ad-ease); }
 
-.ad-enter > * { animation: ad-enter 0.45s var(--ad-ease) both; }
-.ad-enter > *:nth-child(2) { animation-delay: 0.04s; }
-.ad-enter > *:nth-child(3) { animation-delay: 0.08s; }
-@keyframes ad-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .ad-enter > *, .ad-bar > i { animation: none !important; transition: none !important; } }
+.cz-enter > * { animation: cz-enter 0.45s var(--ad-ease) both; }
+.cz-enter > *:nth-child(2) { animation-delay: 0.04s; }
+.cz-enter > *:nth-child(3) { animation-delay: 0.08s; }
+@keyframes cz-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cz-enter > *, .cz-bar > i { animation: none !important; transition: none !important; } }

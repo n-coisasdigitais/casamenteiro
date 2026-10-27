@@ -20,7 +20,7 @@ const MOTIVOS = [
   "Cadastro duplicado",
 ];
 const STATUS_LABEL: Record<string, string> = { pending: "Aguardando", approved: "Aprovado", rejected: "Recusado" };
-const STATUS_TOM: Record<string, string> = { pending: "ad-warn", approved: "ad-ok", rejected: "ad-err" };
+const STATUS_TOM: Record<string, string> = { pending: "cz-warn", approved: "cz-ok", rejected: "cz-err" };
 
 function esperando(desde: string) {
   const h = Math.floor((Date.now() - new Date(desde).getTime()) / 3600000);
@@ -200,7 +200,7 @@ export default function AdminFornecedorAprovacao() {
   const idx = selected ? pendentes.findIndex((s) => s.id === selected.id) : -1;
 
   return (
-    <div className="ad-enter mx-auto flex max-w-[1280px] flex-col gap-4 px-4 py-5 md:px-7 md:py-6">
+    <div className="cz-enter mx-auto flex max-w-[1280px] flex-col gap-4 px-4 py-5 md:px-7 md:py-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="m-0 text-2xl font-extrabold" style={{ letterSpacing: "-0.03em" }}>
@@ -242,7 +242,7 @@ export default function AdminFornecedorAprovacao() {
 
       <div className="grid items-start gap-4 md:grid-cols-[320px_minmax(0,1fr)]">
         {/* fila */}
-        <section className={`ad-card overflow-hidden ${selected ? "hidden md:block" : ""}`} aria-label="Fila">
+        <section className={`cz-card overflow-hidden ${selected ? "hidden md:block" : ""}`} aria-label="Fila">
           {loading ? (
             <p className="m-0 p-5 text-sm" style={{ color: "var(--ad-muted)" }}>
               Carregando…
@@ -260,7 +260,7 @@ export default function AdminFornecedorAprovacao() {
                     key={s.id}
                     type="button"
                     onClick={() => openSupplier(s)}
-                    className="ad-row flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#fbf8f5]"
+                    className="cz-row flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#fbf8f5]"
                     style={ativo ? { background: "#fbf3ec", boxShadow: "inset 3px 0 0 var(--ad-clay)" } : undefined}
                   >
                     <span className="min-w-0 flex-1">
@@ -270,9 +270,9 @@ export default function AdminFornecedorAprovacao() {
                       </span>
                     </span>
                     {s.status === "pending" ? (
-                      <span className={`ad-st ${atrasado(s) ? "ad-err" : "ad-off"}`}>{esperando(desde(s))}</span>
+                      <span className={`cz-st ${atrasado(s) ? "cz-err" : "cz-off"}`}>{esperando(desde(s))}</span>
                     ) : (
-                      <span className={`ad-st ${STATUS_TOM[s.status] || "ad-off"}`}>{STATUS_LABEL[s.status] || s.status}</span>
+                      <span className={`cz-st ${STATUS_TOM[s.status] || "cz-off"}`}>{STATUS_LABEL[s.status] || s.status}</span>
                     )}
                   </button>
                 );
@@ -291,7 +291,7 @@ export default function AdminFornecedorAprovacao() {
                 </button>
                 <h2 className="m-0 flex flex-wrap items-center gap-2 text-xl font-extrabold" style={{ letterSpacing: "-0.02em" }}>
                   {selected.company_name}
-                  <span className={`ad-st ${STATUS_TOM[selected.status] || "ad-off"}`}>{STATUS_LABEL[selected.status] || selected.status}</span>
+                  <span className={`cz-st ${STATUS_TOM[selected.status] || "cz-off"}`}>{STATUS_LABEL[selected.status] || selected.status}</span>
                 </h2>
                 <p className="m-0 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]" style={{ color: "var(--ad-body)" }}>
                   <span>{selected.categories?.name || "sem categoria"}</span>
@@ -305,11 +305,11 @@ export default function AdminFornecedorAprovacao() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Link to={`/fornecedor/${selected.id}`} target="_blank" className="ad-btn">
+                <Link to={`/fornecedor/${selected.id}`} target="_blank" className="cz-btn">
                   <ExternalLink className="h-3.5 w-3.5" /> Ver como o casal vê
                 </Link>
                 {filter === "pending" && pendentes.length > 1 && (
-                  <button type="button" className="ad-btn" onClick={() => openSupplier(pendentes[(idx + 1) % pendentes.length])}>
+                  <button type="button" className="cz-btn" onClick={() => openSupplier(pendentes[(idx + 1) % pendentes.length])}>
                     Próximo <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 )}
@@ -318,7 +318,7 @@ export default function AdminFornecedorAprovacao() {
 
             <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
               <div className="flex min-w-0 flex-col gap-4">
-                <section className="ad-card p-4">
+                <section className="cz-card p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="m-0 text-[14px] font-bold">Fotos</h3>
                     <span className="text-xs" style={{ color: "var(--ad-muted)" }}>
@@ -340,7 +340,7 @@ export default function AdminFornecedorAprovacao() {
                   )}
                 </section>
 
-                <section className="ad-card p-4">
+                <section className="cz-card p-4">
                   <h3 className="m-0 mb-3 text-[14px] font-bold">Dados do cadastro</h3>
                   <dl className="m-0 grid gap-x-5 gap-y-3 text-[13px] sm:grid-cols-2">
                     <div className="sm:col-span-2">
@@ -393,7 +393,7 @@ export default function AdminFornecedorAprovacao() {
                         <dt className="text-[11px] font-bold uppercase" style={{ letterSpacing: ".04em", color: "var(--ad-muted)" }}>
                           Preço e capacidade
                         </dt>
-                        <dd className="ad-num m-0 mt-0.5">
+                        <dd className="cz-num m-0 mt-0.5">
                           {selected.price_min ? `a partir de R$ ${Number(selected.price_min).toLocaleString("pt-BR")}` : ""}
                           {selected.guest_min || selected.guest_max ? ` · ${selected.guest_min || "?"} a ${selected.guest_max || "?"} convidados` : ""}
                         </dd>
@@ -403,13 +403,13 @@ export default function AdminFornecedorAprovacao() {
                 </section>
 
                 {campos.length > 0 && (
-                  <section className="ad-card p-4">
+                  <section className="cz-card p-4">
                     <h3 className="m-0 mb-2 text-[14px] font-bold">Respostas do cadastro da categoria</h3>
                     <div className="text-[13px]">
                       {campos.map((c) => {
                         const r = respostas.find((x) => x.campo_id === c.id);
                         return (
-                          <div key={c.id} className="ad-row grid gap-3 py-2" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1.6fr)" }}>
+                          <div key={c.id} className="cz-row grid gap-3 py-2" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1.6fr)" }}>
                             <span style={{ color: "var(--ad-muted)" }}>
                               {c.label}
                               {c.obrigatorio && <span style={{ color: "var(--ad-err)" }}> *</span>}
@@ -424,7 +424,7 @@ export default function AdminFornecedorAprovacao() {
               </div>
 
               <div className="flex min-w-0 flex-col gap-4">
-                <section className="ad-card overflow-hidden" aria-label="Checklist e decisão">
+                <section className="cz-card overflow-hidden" aria-label="Checklist e decisão">
                   <div className="flex items-center justify-between px-4 pt-3.5">
                     <h3 className="m-0 text-[14px] font-bold">Checklist</h3>
                     <span className="text-xs" style={{ color: "var(--ad-muted)" }}>
@@ -433,8 +433,8 @@ export default function AdminFornecedorAprovacao() {
                   </div>
                   <div className="px-4 pb-2 pt-1">
                     {checklist.map((c) => (
-                      <div key={c.rotulo} className="ad-row flex items-start gap-2.5 py-2.5 text-[13px]">
-                        <span className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full ${c.ok ? "ad-ok" : "ad-warn"}`}>
+                      <div key={c.rotulo} className="cz-row flex items-start gap-2.5 py-2.5 text-[13px]">
+                        <span className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full ${c.ok ? "cz-ok" : "cz-warn"}`}>
                           {c.ok ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
                         </span>
                         <span>
@@ -472,12 +472,12 @@ export default function AdminFornecedorAprovacao() {
                         placeholder="O fornecedor recebe esta mensagem no painel e pode corrigir e reenviar."
                       />
                       <div className="mt-2.5 flex justify-end gap-2">
-                        <button type="button" className="ad-btn" onClick={() => setRecusando(false)}>
+                        <button type="button" className="cz-btn" onClick={() => setRecusando(false)}>
                           Voltar
                         </button>
                         <button
                           type="button"
-                          className="ad-btn"
+                          className="cz-btn"
                           style={{ background: "var(--ad-err)", borderColor: "var(--ad-err)", color: "#fff" }}
                           disabled={!motivo.trim() || salvando}
                           onClick={() => decide("rejected", motivo.trim())}
@@ -497,14 +497,14 @@ export default function AdminFornecedorAprovacao() {
                         </span>
                       )}
                       {selected.status !== "rejected" && (
-                        <button type="button" className="ad-btn" onClick={() => setRecusando(true)} disabled={salvando}>
+                        <button type="button" className="cz-btn" onClick={() => setRecusando(true)} disabled={salvando}>
                           Recusar
                         </button>
                       )}
                       {selected.status !== "approved" && (
                         <button
                           type="button"
-                          className="ad-btn"
+                          className="cz-btn"
                           style={{ background: "var(--ad-ok)", borderColor: "var(--ad-ok)", color: "#fff" }}
                           onClick={() => decide("approved")}
                           disabled={salvando}
@@ -516,7 +516,7 @@ export default function AdminFornecedorAprovacao() {
                   )}
                 </section>
 
-                <section className="ad-card p-4">
+                <section className="cz-card p-4">
                   <h3 className="m-0 mb-2 text-[14px] font-bold">Histórico</h3>
                   {historico.length === 0 ? (
                     <p className="m-0 text-[13px]" style={{ color: "var(--ad-muted)" }}>
@@ -547,7 +547,7 @@ export default function AdminFornecedorAprovacao() {
             </div>
           </div>
         ) : (
-          <div className="ad-card hidden p-10 text-center text-sm md:block" style={{ color: "var(--ad-body)" }}>
+          <div className="cz-card hidden p-10 text-center text-sm md:block" style={{ color: "var(--ad-body)" }}>
             Escolha um cadastro na fila para revisar.
           </div>
         )}

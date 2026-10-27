@@ -60,7 +60,7 @@ export default function AdminWebhooks() {
   useEffect(() => { carregar(); }, [carregar]);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1180px] px-4 py-5 md:px-7 md:py-6 space-y-6">
       <div className="flex items-center gap-2">
         <Webhook className="h-5 w-5 text-primary" />
         <h1 className="text-2xl font-semibold">Tentativas de webhook</h1>
