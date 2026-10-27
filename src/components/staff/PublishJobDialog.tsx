@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { FUNCOES_STAFF } from "@/lib/staff";
 import CityStateSelect from "@/components/CityStateSelect";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 export default function PublishJobDialog({
   supplierId,
@@ -127,7 +128,7 @@ export default function PublishJobDialog({
           />
           <div><Label>Local</Label><Input value={local} onChange={e => setLocal(e.target.value)} placeholder="Ex.: Salão Aurora" /></div>
 
-          <div><Label>Valor do turno (R$)</Label><Input type="number" value={valor} onChange={e => setValor(e.target.value === "" ? "" : Number(e.target.value))} /></div>
+          <div><Label>Valor do turno (R$)</Label><MoedaInput value={valor} onValueChange={(n) => setValor(n == null ? "" : n)} /></div>
           <div><Label>Descrição</Label><Textarea rows={3} value={descricao} onChange={e => setDescricao(e.target.value)} /></div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={pub} onChange={e => setPub(e.target.checked)} />

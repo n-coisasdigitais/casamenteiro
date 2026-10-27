@@ -24,6 +24,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 type KanbanStatus = "enviado" | "respondido" | "negociando" | "fechado" | "recusado";
 
@@ -272,7 +273,7 @@ export default function QuotesKanban({ coupleId }: { coupleId: string }) {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs">Valor (R$)</Label>
-                <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                <MoedaInput value={amount} onValueChange={(n) => setAmount(n == null ? "" : String(n))} className="h-9" />
               </div>
               <div>
                 <Label className="text-xs">Status</Label>

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, X, DollarSign, Percent, Handshake } from "lucide-react";
 import ConfirmFinishTaskDialog from "@/components/ConfirmFinishTaskDialog";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 type Proposal = {
   id: string;
@@ -238,7 +239,7 @@ export default function QuoteProposalPanel({ quoteId, currentUserId, isSupplier,
         <div className="grid grid-cols-3 gap-2">
           <div className="col-span-1">
             <Label className="text-[10px]">Valor (R$)</Label>
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-8 text-sm" />
+            <MoedaInput value={amount} onValueChange={(n) => setAmount(n == null ? "" : String(n))} className="h-8 text-sm" />
           </div>
           <div className="col-span-2">
             <Label className="text-[10px]">Observação</Label>

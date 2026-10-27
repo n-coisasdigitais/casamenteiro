@@ -18,6 +18,7 @@ import { FUNCOES_STAFF, slugify } from "@/lib/staff";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import StaffPhotoUpload from "@/components/staff/StaffPhotoUpload";
 import CityStateSelect from "@/components/CityStateSelect";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 export default function StaffOnboarding() {
   const { user } = useAuth();
@@ -129,7 +130,7 @@ export default function StaffOnboarding() {
 
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Raio de atendimento (km)</Label><Input type="number" value={raio} onChange={e => setRaio(Number(e.target.value))} /></div>
-              <div><Label>Valor mínimo por turno (R$)</Label><Input type="number" value={valorMin} onChange={e => setValorMin(e.target.value === "" ? "" : Number(e.target.value))} /></div>
+              <div><Label>Valor mínimo por turno (R$)</Label><MoedaInput value={valorMin} onValueChange={(n) => setValorMin(n == null ? "" : n)} /></div>
             </div>
             <div>
               <Label>Funções que você desempenha</Label>

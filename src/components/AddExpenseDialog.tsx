@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 const CATEGORIES = [
   "recepção", "cerimônia", "decoração", "buffet", "bebidas", "foto-video",
@@ -95,25 +96,19 @@ export default function AddExpenseDialog({ open, onOpenChange, coupleId, onSucce
           </div>
           <div>
             <Label htmlFor="estimated_cost">Orçamento Estimado (R$) *</Label>
-            <Input
+            <MoedaInput
               id="estimated_cost"
-              type="number"
-              placeholder="0.00"
               value={form.estimated_cost}
-              onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })}
-              step="0.01"
+              onValueChange={(n) => setForm({ ...form, estimated_cost: n == null ? "" : String(n) })}
               required
             />
           </div>
           <div>
             <Label htmlFor="final_cost">Custo Final (R$)</Label>
-            <Input
+            <MoedaInput
               id="final_cost"
-              type="number"
-              placeholder="0.00"
               value={form.final_cost}
-              onChange={(e) => setForm({ ...form, final_cost: e.target.value })}
-              step="0.01"
+              onValueChange={(n) => setForm({ ...form, final_cost: n == null ? "" : String(n) })}
             />
           </div>
           <DialogFooter>

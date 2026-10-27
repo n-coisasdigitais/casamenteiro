@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 export type NegotiateTarget = {
   coupleSupplierId: string;
@@ -69,13 +70,7 @@ export default function NegotiateSupplierDialog({
         <div className="space-y-4">
           <div>
             <Label htmlFor="valor-negociado">Valor proposto / em negociação (R$) *</Label>
-            <Input
-              id="valor-negociado"
-              type="number"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              placeholder="0,00"
-            />
+            <MoedaInput id="valor-negociado" value={valor} onValueChange={(n) => setValor(n == null ? "" : String(n))} />
             <p className="text-xs text-muted-foreground mt-1">
               Use este campo para registrar o valor da contraproposta — mesmo que a negociação tenha acontecido fora da plataforma.
             </p>

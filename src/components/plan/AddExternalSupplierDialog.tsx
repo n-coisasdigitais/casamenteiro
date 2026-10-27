@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 interface Props {
   open: boolean;
@@ -113,7 +114,7 @@ export default function AddExternalSupplierDialog({ open, onOpenChange, coupleId
           </div>
           <div>
             <Label htmlFor="ext-valor">Valor estimado (R$)</Label>
-            <Input id="ext-valor" type="number" value={valorEstimado} onChange={(e) => setValorEstimado(e.target.value)} placeholder="0,00" />
+            <MoedaInput id="ext-valor" value={valorEstimado} onValueChange={(n) => setValorEstimado(n == null ? "" : String(n))} />
           </div>
           <div>
             <Label>Situação atual</Label>

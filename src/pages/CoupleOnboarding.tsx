@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { criarPlano, type SimuladorResultado as SimRes } from "@/lib/simulador";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 type Category = { id: string; name: string; slug: string };
 
@@ -136,25 +137,25 @@ export default function CoupleOnboarding() {
     // Step 2: Date & Guests (omitido se a simulação já cobriu)
     <div key="details" className="space-y-4">
       <h3 className="font-serif text-xl font-semibold">Detalhes do casamento</h3>
-      {!weddingDate && (
+      {!simulacao?.data_evento && (
         <div>
           <Label>Data prevista</Label>
           <Input type="date" value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} />
         </div>
       )}
-      {!estimatedGuests && (
+      {!simulacao?.num_convidados && (
         <div>
           <Label>Número estimado de convidados</Label>
           <Input type="number" placeholder="150" value={estimatedGuests} onChange={(e) => setEstimatedGuests(e.target.value)} />
         </div>
       )}
-      {!estimatedBudget && (
+      {!simulacao?.orcamento_total && (
         <div>
           <Label>Orçamento total estimado (R$)</Label>
-          <Input type="number" placeholder="50000" value={estimatedBudget} onChange={(e) => setEstimatedBudget(e.target.value)} />
+          <MoedaInput placeholder="50.000,00" value={estimatedBudget} onValueChange={(n) => setEstimatedBudget(n == null ? "" : String(n))} />
         </div>
       )}
-      {weddingDate && estimatedGuests && estimatedBudget && (
+      {simulacao?.data_evento && simulacao?.num_convidados && simulacao?.orcamento_total && (
         <p className="text-sm text-muted-foreground">
           Pegamos da sua simulação: <strong>{estimatedGuests}</strong> convidados,{" "}
           orçamento de <strong>R$ {Number(estimatedBudget).toLocaleString("pt-BR")}</strong>
@@ -185,11 +186,12 @@ export default function CoupleOnboarding() {
     // Se temos simulação completa, pulamos o step 3 (serviços) e o step 2 só aparece se faltar algo
     if (!temSimulacao) return allSteps;
     const out = [allSteps[0], allSteps[1]];
-    const faltaAlgo = !weddingDate || !estimatedGuests || !estimatedBudget;
+    // decide pelo que veio da simulação, para o passo não sumir enquanto a pessoa digita
+    const faltaAlgo = !simulacao?.data_evento || !simulacao?.num_convidados || !simulacao?.orcamento_total;
     if (faltaAlgo) out.push(allSteps[2]);
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [temSimulacao, weddingDate, estimatedGuests, estimatedBudget, categories, partnerName, coupleRole, selectedServices]);
+  }, [temSimulacao, simulacao, weddingDate, estimatedGuests, estimatedBudget, categories, partnerName, coupleRole, selectedServices]);
 
   if (bootstrapping) {
     return (

@@ -21,6 +21,7 @@ import CityAutocomplete from "@/components/CityAutocomplete";
 import { UFS_BRASIL } from "@/components/CityStateSelect";
 import RedesSociaisCampos from "@/components/redes/RedesSociaisCampos";
 import ListaOpcoes from "@/components/dynamic-fields/ListaOpcoes";
+import { MoedaInput, ehCampoDinheiro } from "@/components/ui/moeda-input";
 import { carregarRedes, salvarRedes, type Redes } from "@/lib/redesSociais";
 import { MINIMO_DESCRICAO, MINIMO_FOTOS, PENDENCIAS, mensagemCadastroIncompleto, type Pendencia } from "@/lib/pendencias";
 
@@ -428,6 +429,7 @@ export default function SupplierOnboarding() {
       case "textarea":
         return <Textarea value={v || ""} onChange={(e) => set(e.target.value)} rows={4} />;
       case "numero":
+        if (ehCampoDinheiro(c)) return <MoedaInput value={v} onValueChange={set} />;
         return <Input type="number" inputMode="numeric" value={v ?? ""} onChange={(e) => set(e.target.value === "" ? null : Number(e.target.value))} />;
       case "booleano":
         return (
@@ -495,8 +497,8 @@ export default function SupplierOnboarding() {
         const fv = v || {};
         return (
           <div className="grid grid-cols-2 gap-2">
-            <Input type="number" placeholder="De" value={fv.min ?? ""} onChange={(e) => set({ ...fv, min: e.target.value === "" ? null : Number(e.target.value) })} />
-            <Input type="number" placeholder="Até" value={fv.max ?? ""} onChange={(e) => set({ ...fv, max: e.target.value === "" ? null : Number(e.target.value) })} />
+            <MoedaInput placeholder="De" value={fv.min} onValueChange={(n) => set({ ...fv, min: n })} />
+            <MoedaInput placeholder="Até" value={fv.max} onValueChange={(n) => set({ ...fv, max: n })} />
           </div>
         );
       }

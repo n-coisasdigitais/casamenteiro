@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 export default function MarkAsPaidDialog({
   open, onOpenChange, paymentId, defaultAmount, onSuccess,
@@ -53,7 +54,7 @@ export default function MarkAsPaidDialog({
         <div className="space-y-3">
           <div>
             <Label>Valor pago (R$)</Label>
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <MoedaInput value={amount} onValueChange={(n) => setAmount(n == null ? "" : String(n))} />
           </div>
           <div>
             <Label>Data do pagamento</Label>

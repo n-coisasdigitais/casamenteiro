@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Check, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 type Category = { id: string; name: string };
 
@@ -261,15 +262,15 @@ export default function SupplierOnboardingWizard({
                 <Label>
                   {pricingModel === "por_pessoa" ? "A partir de (R$/convidado) *" : "A partir de (R$) *"}
                 </Label>
-                <Input type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value)}
-                  placeholder={pricingModel === "por_pessoa" ? "120" : "3000"} />
+                <MoedaInput value={priceMin} onValueChange={(n) => setPriceMin(n == null ? "" : String(n))}
+                  placeholder={pricingModel === "por_pessoa" ? "120,00" : "3.000,00"} />
               </div>
               <div>
                 <Label>
                   {pricingModel === "por_pessoa" ? "Até (R$/convidado) — opcional" : "Até (R$) — opcional"}
                 </Label>
-                <Input type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value)}
-                  placeholder={pricingModel === "por_pessoa" ? "250" : "15000"} />
+                <MoedaInput value={priceMax} onValueChange={(n) => setPriceMax(n == null ? "" : String(n))}
+                  placeholder={pricingModel === "por_pessoa" ? "250,00" : "15.000,00"} />
               </div>
             </div>
             <label className="flex items-start gap-2 cursor-pointer">

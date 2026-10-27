@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Check, X as XIcon } from "lucide-react";
+import { reais, ehCampoDinheiro } from "@/components/ui/moeda-input";
 
 type Props = {
   supplierId: string;
@@ -112,10 +113,11 @@ function renderValor(it: Item) {
     case "faixa":
       return (
         <span>
-          {v?.min ?? "?"} – {v?.max ?? "?"}
+          {v?.min != null && v?.max != null ? `${reais(v.min)} a ${reais(v.max)}` : v?.min != null ? `a partir de ${reais(v.min)}` : `até ${reais(v?.max)}`}
         </span>
       );
     case "numero":
+      if (ehCampoDinheiro(it)) return <span>{reais(Number(v))}</span>;
       return <span>{Number(v).toLocaleString("pt-BR")}</span>;
     case "textarea":
       return (

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 type Props = {
   open: boolean;
@@ -92,7 +93,7 @@ export default function BudgetManualSetupDialog({ open, onOpenChange, coupleId, 
         <div className="space-y-3">
           <div>
             <Label className="text-xs">Meta total (R$)</Label>
-            <Input type="number" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Ex: 80000" />
+            <MoedaInput value={target} onValueChange={(n) => setTarget(n == null ? "" : String(n))} placeholder="80.000,00" />
           </div>
         </div>
         <DialogFooter>
