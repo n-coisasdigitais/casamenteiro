@@ -64,6 +64,13 @@
       "when": 1793098156592,
       "tag": "0008_fornecedor_aprovacao_redes_celebrante",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793105854022,
+      "tag": "0009_supplier_faqs_reviews_tempo_resposta",
+      "breakpoints": true
     }
   ]
 }
