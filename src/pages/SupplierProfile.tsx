@@ -44,6 +44,7 @@ import { absoluteUrl, breadcrumbJsonLd, priceRangeLabel, truncate } from "@/lib/
 import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
 import DynamicFieldsView from "@/components/dynamic-fields/DynamicFieldsView";
+import RedesSociaisPerfil from "@/components/redes/RedesSociaisPerfil";
 import SupplierPublicAttachments from "@/components/supplier/SupplierPublicAttachments";
 import { isEspacoCategory } from "@/lib/categories";
 
@@ -528,6 +529,7 @@ export default function SupplierProfile() {
                   )}
                 </CardContent>
               </Card>
+              <RedesSociaisPerfil supplierId={supplier.id} className="mt-3" />
             </div>
 
             {/* Tabs */}
@@ -866,6 +868,8 @@ export default function SupplierProfile() {
                   </p>
                 </CardContent>
               </Card>
+
+              <RedesSociaisPerfil supplierId={supplier.id} className="mb-4" />
 
               {(supplier.email || (supplier.phone && phoneUnlocked)) && (
                 <Card>

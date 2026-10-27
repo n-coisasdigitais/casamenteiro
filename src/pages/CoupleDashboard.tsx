@@ -36,7 +36,7 @@ type Situacao = "ok" | "wip" | "todo";
 type LinhaCategoria = { cat: Categoria; situacao: Situacao; detalhe: string };
 
 /** categorias mostradas quando o casal ainda não escolheu nenhuma */
-const CATEGORIAS_PADRAO = ["espaco", "buffet", "fotografia", "decoracao", "musica-dj", "cerimonialista", "video", "vestido-noiva", "bolos-doces"];
+const CATEGORIAS_PADRAO = ["espaco", "buffet", "fotografia", "decoracao", "musica-dj", "cerimonialista", "celebrante", "video", "vestido-noiva", "bolos-doces"];
 
 /* ---------- ajudantes ---------- */
 function isoLocal(d: Date) {

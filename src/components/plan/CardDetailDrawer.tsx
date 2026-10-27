@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { carregarRedes, linkRede } from "@/lib/redesSociais";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -88,10 +89,11 @@ export default function CardDetailDrawer({
         .then(({ data }) => setQuoteId(data?.[0]?.id || null));
       Promise.all([
         supabase.rpc("my_supplier_contacts", { _ids: [item.supplier_id] }),
-        supabase.from("suppliers").select("id, website").eq("id", item.supplier_id).maybeSingle(),
-      ]).then(([{ data: contatos }, { data: sup }]) => {
+        carregarRedes(item.supplier_id),
+      ]).then(([{ data: contatos }, redes]) => {
         const c = (contatos as any[])?.[0] || null;
-        setMeta({ ...(sup as any), ...(c || {}) } as SupplierMeta | null);
+        const site = linkRede("site", redes?.site);
+        setMeta({ id: item.supplier_id, website: site, ...(c || {}) } as SupplierMeta | null);
       });
     } else {
       setQuoteId(null);

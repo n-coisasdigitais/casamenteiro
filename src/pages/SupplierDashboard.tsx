@@ -43,6 +43,8 @@ import SupplierQuotesKanban from "@/components/supplier/SupplierQuotesKanban";
 import SupplierReviewCouples from "@/components/supplier/SupplierReviewCouples";
 import StaffReviewsReceived from "@/components/staff/StaffReviewsReceived";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
+import RedesSociaisEditor from "@/components/redes/RedesSociaisEditor";
+import { AjustesPedidosBanner, CadastroRecusadoBanner } from "@/components/supplier/AjustesPedidosBanner";
 import UserMenu from "@/components/UserMenu";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import SupplierFilesTab from "@/components/supplier/SupplierFilesTab";
@@ -412,7 +414,8 @@ export default function SupplierDashboard() {
   const statusConfig = {
     pending: { label: "Pendente de Aprovação", icon: Clock, variant: "secondary" as const },
     approved: { label: "Aprovado", icon: CheckCircle, variant: "default" as const },
-    rejected: { label: "Rejeitado", icon: AlertCircle, variant: "destructive" as const },
+    rejected: { label: "Ajustes pedidos", icon: AlertCircle, variant: "secondary" as const },
+    blocked: { label: "Recusado", icon: AlertCircle, variant: "destructive" as const },
   };
 
   const statusInfo = supplier ? statusConfig[supplier.status as keyof typeof statusConfig] : null;
@@ -681,6 +684,7 @@ export default function SupplierDashboard() {
                   <DynamicFieldsForm supplierId={supplier.id} categoryId={categoryId || null} />
                 </CardContent>
               </Card>
+              <RedesSociaisEditor supplierId={supplier.id} />
             </>
           )}
 
@@ -885,29 +889,15 @@ export default function SupplierDashboard() {
           )}
 
           {supplier.status === "rejected" && (
-            <Card className="mb-6 border-destructive/40 bg-destructive/5">
-              <CardContent className="p-4 text-sm space-y-2">
-                <p>
-                  <strong className="text-destructive">Seu perfil precisa de ajustes.</strong>
-                </p>
-                {rejectMotivo && <p className="text-muted-foreground">Motivo: {rejectMotivo}</p>}
-                <p className="text-muted-foreground">Atualize as informações abaixo e reenvie para nova análise.</p>
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    await supabase.from("suppliers").update({ status: "pending" }).eq("id", supplier.id);
-                    await supabase
-                      .from("fornecedor_aprovacoes")
-                      .insert({ supplier_id: supplier.id, acao: "resubmitted" });
-                    toast({ title: "Reenviado para análise" });
-                    loadSupplier();
-                  }}
-                >
-                  Reenviar para análise
-                </Button>
-              </CardContent>
-            </Card>
+            <AjustesPedidosBanner
+              supplierId={supplier.id}
+              chave={`${photos.length}-${supplier.updated_at || ""}`}
+              onIrPara={(aba) => goDest("negocio", { sub: aba === "fotos" ? "fotos" : "perfil" })}
+              onReenviado={loadSupplier}
+            />
           )}
+
+          {supplier.status === "blocked" && <CadastroRecusadoBanner supplierId={supplier.id} />}
 
           {!supplier.onboarding_completed && (
             <div className="mb-6">

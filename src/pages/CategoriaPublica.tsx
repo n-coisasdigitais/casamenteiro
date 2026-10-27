@@ -24,6 +24,7 @@ import {
   Sparkles,
   Cake,
   ClipboardList,
+  HeartHandshake,
   Car,
   Video,
 } from "lucide-react";
@@ -39,6 +40,7 @@ const categoryIcons: Record<string, any> = {
   sparkles: Sparkles,
   cake: Cake,
   clipboard: ClipboardList,
+  heart: HeartHandshake,
   car: Car,
   utensils: Utensils,
 };

@@ -19,6 +19,10 @@ import SEO from "@/components/SEO";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CityAutocomplete from "@/components/CityAutocomplete";
 import { UFS_BRASIL } from "@/components/CityStateSelect";
+import RedesSociaisCampos from "@/components/redes/RedesSociaisCampos";
+import ListaOpcoes from "@/components/dynamic-fields/ListaOpcoes";
+import { carregarRedes, salvarRedes, type Redes } from "@/lib/redesSociais";
+import { MINIMO_DESCRICAO, MINIMO_FOTOS, PENDENCIAS, mensagemCadastroIncompleto, type Pendencia } from "@/lib/pendencias";
 
 
 type Categoria = { id: string; name: string; slug: string; icon: string | null };
@@ -36,7 +40,7 @@ type Campo = {
 };
 
 const CAT_ICON: Record<string, string> = {
-  "espacos-buffet": "🍽️", fotografia: "📸", cerimonialista: "💍",
+  "espacos-buffet": "🍽️", fotografia: "📸", cerimonialista: "💍", celebrante: "🕊️",
   "musica-dj": "🎵", decoracao: "🌸", "traje-noivo": "🤵",
   "vestido-noiva": "👰", "beleza-maquiagem": "💄", convites: "✉️",
   "bolos-doces": "🎂", transporte: "🚗", video: "🎬",
@@ -70,8 +74,7 @@ export default function SupplierOnboarding() {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [website, setWebsite] = useState("");
+  const [redes, setRedes] = useState<Redes>({});
   const [description, setDescription] = useState("");
 
   // Etapas dinâmicas
@@ -122,8 +125,7 @@ export default function SupplierOnboarding() {
       const { data: contato } = await supabase.rpc("get_supplier_contact", { _supplier_id: sup.id });
       const c = (contato as any[])?.[0];
       setWhatsapp(formatPhoneBR(c?.whatsapp || c?.phone || ""));
-      setInstagram(sup.instagram || "");
-      setWebsite(sup.website || "");
+      carregarRedes(sup.id).then((r) => r && setRedes(r));
       setDescription(sup.description || "");
       setCategoryId(sup.category_id || "");
       setProfilePhoto(sup.profile_photo_url || null);
@@ -219,13 +221,13 @@ export default function SupplierOnboarding() {
       state: state.toUpperCase().slice(0, 2),
       whatsapp: whatsapp.replace(/\D/g, ""),
       phone: whatsapp.replace(/\D/g, ""),
-      instagram: instagram.trim() || null,
-      website: website.trim() || null,
       description: description.trim() || null,
       category_id: categoryId || null,
       onboarding_step: step + 1,
     }).eq("id", supplierId);
     if (error) { toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" }); return false; }
+    const { error: errRedes } = await salvarRedes(supplierId, redes);
+    if (errRedes) { toast({ title: "Erro ao salvar as redes", description: traduzirErro(errRedes), variant: "destructive" }); return false; }
     return true;
   };
 
@@ -303,26 +305,51 @@ export default function SupplierOnboarding() {
     setGalleryPhotos(galleryPhotos.filter((p) => p.id !== id));
   };
 
+  // Mínimo para enviar (o banco confere a mesma regra)
+  const respostaVazia = (c: Campo) => {
+    const v = respostas[c.id];
+    return v === undefined || v === null || v === "" || (Array.isArray(v) && v.length === 0) || (c.tipo === "faixa" && !v?.min);
+  };
+  const campoDescricao = campos.find((c) => c.chave === "descricao");
+  const textoDescricao = String(description || (campoDescricao ? respostas[campoDescricao.id] : "") || "").trim();
+  const statusItens: Record<Pendencia, boolean> = {
+    foto_perfil: !!profilePhoto,
+    fotos_trabalho: galleryPhotos.length >= MINIMO_FOTOS,
+    contato: isValidPhoneBR(whatsapp),
+    descricao: textoDescricao.length >= MINIMO_DESCRICAO,
+    cidade: !!city.trim() && !!state.trim(),
+    obrigatorios: campos.filter((c) => c.obrigatorio && !(c as any).is_base).every((c) => !respostaVazia(c)),
+    categoria: !!categoryId,
+  };
+  const faltando = PENDENCIAS.filter((p) => !statusItens[p.codigo]);
+  const irPara = (codigo: Pendencia) => {
+    if (codigo === "foto_perfil" || codigo === "fotos_trabalho") setStep(etapaFotos);
+    else if (codigo === "obrigatorios") {
+      const i = grupos.findIndex((g) => g.campos.some((c) => c.obrigatorio && respostaVazia(c)));
+      setStep(i >= 0 ? etapaGruposInicio + i : etapaGruposInicio);
+    } else setStep(2);
+  };
+
   const submitForApproval = async () => {
     if (!supplierId) return;
-    if (!profilePhoto) {
-      toast({ title: "Foto obrigatória", description: "Adicione a foto de perfil antes de enviar.", variant: "destructive" });
-      setStep(etapaFotos);
+    if (faltando.length > 0) {
+      toast({ title: "Falta pouco", description: "Complete os itens da lista antes de enviar.", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
-      await (supabase.from("suppliers") as any).update({
+      const { error: errEnvio } = await (supabase.from("suppliers") as any).update({
         status: "pending", onboarding_completed: true, onboarding_step: 999,
       }).eq("id", supplierId);
+      if (errEnvio) throw errEnvio;
       await (supabase.from("fornecedor_aprovacoes") as any).insert({
         supplier_id: supplierId, acao: "submitted",
       });
-      toast({ title: "Cadastro enviado!", description: "Vamos revisar e te avisar em até 48h." });
+      toast({ title: "Cadastro enviado!", description: "Vamos revisar e te avisar em até 24 h." });
       analytics.onboardingComplete("supplier");
       navigate("/fornecedor/painel", { replace: true });
     } catch (e: any) {
-      toast({ title: "Erro ao enviar", description: traduzirErro(e), variant: "destructive" });
+      toast({ title: "Não foi possível enviar", description: mensagemCadastroIncompleto(e) || traduzirErro(e), variant: "destructive" });
     } finally { setSaving(false); }
   };
 
@@ -430,6 +457,9 @@ export default function SupplierOnboarding() {
       }
       case "lista": {
         const list: string[] = Array.isArray(v) ? v : [];
+        if (Array.isArray(c.opcoes) && c.opcoes.length > 0) {
+          return <ListaOpcoes opcoes={c.opcoes} value={list} onChange={set} />;
+        }
         const [draft, setDraft] = [
           (respostas as any)[`__draft_${c.id}`] || "",
           (val: string) => setRespostas((r) => ({ ...r, [`__draft_${c.id}`]: val })),
@@ -557,7 +587,10 @@ export default function SupplierOnboarding() {
             <div><Label>Nome do negócio *</Label><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></div>
             <div>
               <Label>Descrição (será exibida no perfil)</Label>
-              <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Conte sobre seu diferencial, estilo, experiência..." />
+              <Textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Conte sobre seu diferencial, estilo, experiência..." />
+              <p className={`text-xs mt-1 ${description.trim().length >= MINIMO_DESCRICAO ? "text-muted-foreground" : "text-amber-700"}`}>
+                {description.trim().length}/{MINIMO_DESCRICAO} caracteres no mínimo
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 sm:col-span-1"><Label>Cidade *</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
@@ -574,9 +607,14 @@ export default function SupplierOnboarding() {
                 <Label>WhatsApp *</Label>
                 <Input value={whatsapp} onChange={(e) => setWhatsapp(formatPhoneBR(e.target.value))} placeholder="(11) 99999-0000" />
               </div>
-              <div><Label>Instagram</Label><Input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@seuperfil" /></div>
             </div>
-            <div><Label>Site (opcional)</Label><Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" /></div>
+            <div className="space-y-3 pt-2">
+              <div>
+                <h2 className="text-lg font-semibold">Onde os casais podem ver seu trabalho?</h2>
+                <p className="text-sm text-muted-foreground">Digite só o @ ou o nome. Perfis com Instagram recebem mais pedidos. Os links aparecem para casais com conta no Casamenteiro.</p>
+              </div>
+              <RedesSociaisCampos value={redes} onChange={setRedes} />
+            </div>
           </div>
         )}
 
@@ -604,7 +642,7 @@ export default function SupplierOnboarding() {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-semibold">Adicione fotos do seu trabalho.</h1>
-              <p className="text-muted-foreground mt-1">A foto de perfil é obrigatória. As outras aumentam suas chances de contato.</p>
+              <p className="text-muted-foreground mt-1">A foto de perfil e pelo menos {MINIMO_FOTOS} fotos do seu trabalho são obrigatórias. Mostre casamentos reais que você fez.</p>
             </div>
             <div>
               <Label>Foto de perfil *</Label>
@@ -624,7 +662,7 @@ export default function SupplierOnboarding() {
               </div>
             </div>
             <div>
-              <Label>Galeria (até 10 fotos)</Label>
+              <Label>Fotos do seu trabalho * <span className={`text-xs font-normal ${galleryPhotos.length >= MINIMO_FOTOS ? "text-muted-foreground" : "text-amber-700"}`}>{galleryPhotos.length} de no mínimo {MINIMO_FOTOS} (até 10)</span></Label>
               <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {galleryPhotos.map((p) => (
                   <div key={p.id} className="relative group aspect-square rounded-lg overflow-hidden">
@@ -654,30 +692,62 @@ export default function SupplierOnboarding() {
         {step === etapaRevisao && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-semibold">Tudo certo. Revise antes de enviar.</h1>
-              <p className="text-muted-foreground mt-1">Após enviar, nossa equipe analisa em até 48h.</p>
+              <h1 className="text-3xl font-semibold">
+                {faltando.length === 0 ? "Tudo certo. Revise antes de enviar." : "Quase lá. Falta pouco para enviar."}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {faltando.length === 0
+                  ? "Após enviar, nossa equipe analisa em até 24 h."
+                  : "Complete os itens marcados para liberar o envio. Perfis completos recebem mais pedidos."}
+              </p>
             </div>
-            <div className="space-y-4 bg-background border border-border rounded-2xl p-5">
-              <div>
-                <p className="text-xs uppercase text-muted-foreground">Negócio</p>
-                <p className="font-medium">{companyName} — {city}/{state}</p>
-                <p className="text-sm text-muted-foreground">{categorias.find((c) => c.id === categoryId)?.name}</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>{PENDENCIAS.length - faltando.length} de {PENDENCIAS.length} prontos</span>
               </div>
-              <div>
-                <p className="text-xs uppercase text-muted-foreground">Contato</p>
-                <p className="text-sm">WhatsApp {whatsapp} {instagram && `• ${instagram}`}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase text-muted-foreground">Detalhes preenchidos</p>
-                <p className="text-sm">{Object.keys(respostas).filter((k) => !k.startsWith("__")).length} campos respondidos</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase text-muted-foreground">Fotos</p>
-                <p className="text-sm">{profilePhoto ? "Perfil ✓" : "Perfil pendente"} • {galleryPhotos.length} na galeria</p>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${faltando.length === 0 ? "bg-emerald-600" : "bg-primary"}`}
+                  style={{ width: `${((PENDENCIAS.length - faltando.length) / PENDENCIAS.length) * 100}%` }}
+                />
               </div>
             </div>
-            <Button onClick={submitForApproval} disabled={saving} className="w-full h-14 rounded-full text-base">
+            <div className="bg-background border border-border rounded-2xl divide-y divide-border">
+              {PENDENCIAS.map((p) => {
+                const ok = statusItens[p.codigo];
+                const detalhe =
+                  p.codigo === "fotos_trabalho" && !ok ? `você tem ${galleryPhotos.length}` :
+                  p.codigo === "descricao" && !ok ? `${textoDescricao.length} de ${MINIMO_DESCRICAO}` : "";
+                return (
+                  <div key={p.codigo} className="flex items-center gap-3 px-4 py-3 text-sm">
+                    <span
+                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${
+                        ok ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {ok ? <Check className="h-3.5 w-3.5" /> : "!"}
+                    </span>
+                    <span className="flex-1">
+                      {p.label} {detalhe && <span className="text-muted-foreground">({detalhe})</span>}
+                    </span>
+                    {!ok && (
+                      <button type="button" onClick={() => irPara(p.codigo)} className="text-sm font-semibold text-primary hover:underline">
+                        Resolver
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="bg-background border border-border rounded-2xl p-5 text-sm">
+              <p className="font-medium">{companyName} — {city}/{state}</p>
+              <p className="text-muted-foreground">{categorias.find((c) => c.id === categoryId)?.name} · WhatsApp {whatsapp}</p>
+            </div>
+            <Button onClick={submitForApproval} disabled={saving || faltando.length > 0} className="w-full h-14 rounded-full text-base">
               {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Check className="h-5 w-5 mr-2" /> Enviar para aprovação</>}
+            </Button>
+            <Button variant="ghost" onClick={back} disabled={saving} className="w-full">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
             </Button>
           </div>
         )}

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CityAutocomplete from "@/components/CityAutocomplete";
 import { UFS_BRASIL } from "@/components/CityStateSelect";
+import ListaOpcoes from "./ListaOpcoes";
 
 export type CampoTipo =
   | "texto"
@@ -151,6 +152,9 @@ export default function DynamicFieldInput({ campo, value, onChange, uf, onUfChan
     }
     case "lista": {
       const list: string[] = Array.isArray(value) ? value : [];
+      if (Array.isArray(campo.opcoes) && campo.opcoes.length > 0) {
+        return <ListaOpcoes opcoes={campo.opcoes} value={list} onChange={onChange} />;
+      }
       const add = () => {
         const t = draft.trim();
         if (!t) return;
