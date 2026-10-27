@@ -44,6 +44,7 @@ import SupplierReviewCouples from "@/components/supplier/SupplierReviewCouples";
 import StaffReviewsReceived from "@/components/staff/StaffReviewsReceived";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
 import RedesSociaisEditor from "@/components/redes/RedesSociaisEditor";
+import PerguntasFrequentesEditor from "@/components/supplier/PerguntasFrequentesEditor";
 import { AjustesPedidosBanner, CadastroRecusadoBanner } from "@/components/supplier/AjustesPedidosBanner";
 import UserMenu from "@/components/UserMenu";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
@@ -685,6 +686,7 @@ export default function SupplierDashboard() {
                 </CardContent>
               </Card>
               <RedesSociaisEditor supplierId={supplier.id} />
+              <PerguntasFrequentesEditor supplierId={supplier.id} />
             </>
           )}
 
