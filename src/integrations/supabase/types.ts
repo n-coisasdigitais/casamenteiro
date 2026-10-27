@@ -4275,6 +4275,51 @@ export type Database = {
           },
         ]
       }
+      supplier_faqs: {
+        Row: {
+          created_at: string
+          id: string
+          ordem: number
+          pergunta: string
+          resposta: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ordem?: number
+          pergunta: string
+          resposta: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ordem?: number
+          pergunta?: string
+          resposta?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_faqs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_faqs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_leads: {
         Row: {
           cidade_evento: string | null
@@ -5410,6 +5455,10 @@ export type Database = {
       fornecedor_tem_recurso: {
         Args: { p_recurso: string; p_supplier: string }
         Returns: boolean
+      }
+      fornecedor_tempo_resposta: {
+        Args: { _supplier_id: string }
+        Returns: number
       }
       generate_couple_profile_slug: {
         Args: { _nome: string; _wedding_date: string }
