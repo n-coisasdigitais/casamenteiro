@@ -78,6 +78,13 @@
       "when": 1793125008062,
       "tag": "0010_destaques_vagas_avisos_preco",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793128172587,
+      "tag": "0011_vitrine_destaques_ativos_function",
+      "breakpoints": true
     }
   ]
 }
