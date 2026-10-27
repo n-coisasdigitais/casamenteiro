@@ -1,583 +1,400 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { Link, useParams, Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useMemo, useState } from "react";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowUpDown, Building, ChevronDown, MapPin, Tag, Users } from "lucide-react";
 import SEO from "@/components/SEO";
-import UserMenu from "@/components/UserMenu";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { absoluteUrl, breadcrumbJsonLd, itemListJsonLd, truncate } from "@/lib/seo";
-import { demoValues } from "@/lib/demoScope";
-import {
-  Heart,
-  Star,
-  Building,
-  MapPin,
-  ChevronRight,
-  Loader2,
-  Award,
-  Camera,
-  Music,
-  Utensils,
-  Flower2,
-  Mail,
-  Shirt,
-  Sparkles,
-  Cake,
-  ClipboardList,
-  HeartHandshake,
-  Car,
-  Video,
-} from "lucide-react";
-
-const categoryIcons: Record<string, any> = {
-  building: Building,
-  camera: Camera,
-  video: Video,
-  music: Music,
-  flower: Flower2,
-  mail: Mail,
-  shirt: Shirt,
-  sparkles: Sparkles,
-  cake: Cake,
-  clipboard: ClipboardList,
-  heart: HeartHandshake,
-  car: Car,
-  utensils: Utensils,
-};
-
-type HeroDestaque = {
-  supplier_id: string | null;
-  imagem_url: string | null;
-  company_name: string;
-  profile_photo_url: string | null;
-  category_name: string | null;
-  category_icon: string | null;
-  city: string | null;
-  institucional?: boolean;
-};
-
-function CategoriaHero({ d, categoryLabel }: { d: HeroDestaque | null; categoryLabel?: string }) {
-  if (!d) return null;
-  const Icon = categoryIcons[d.category_icon || "building"] || Building;
-  const img =
-    d.imagem_url ||
-    d.profile_photo_url ||
-    "https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=85&auto=format&fit=crop";
-  const inst = d.institucional;
-
-  return (
-    <section className="relative">
-      <div
-        className="relative h-[52vh] min-h-[380px] w-full overflow-hidden"
-        style={{ borderBottomLeftRadius: "50% 12%", borderBottomRightRadius: "50% 12%" }}
-      >
-        <img src={img} alt={d.company_name} className="absolute inset-0 w-full h-full object-cover" />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, hsl(0 0% 0% / 0.35) 0%, hsl(0 0% 0% / 0.25) 45%, hsl(0 0% 0% / 0.45) 100%)",
-          }}
-        />
-
-        {/* tag do fornecedor pago (canto sup. direito) */}
-        {!inst && d.supplier_id && (
-          <a
-            href={`/fornecedor/${d.supplier_id}`}
-            className="absolute top-5 right-5 flex items-center gap-2 bg-background/95 hover:bg-background text-foreground text-sm font-semibold pl-2.5 pr-4 py-1.5 rounded-full shadow transition"
-          >
-            <span className="flex items-center justify-center h-7 w-7 rounded-full bg-secondary">
-              <Icon className="h-4 w-4 text-primary" />
-            </span>
-            <span className="max-w-[180px] truncate">{d.company_name}</span>
-            <Award className="h-3.5 w-3.5 text-primary" />
-          </a>
-        )}
-
-        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6 pb-14">
-          <h1
-            className="font-serif text-white max-w-3xl"
-            style={{
-              fontSize: "clamp(1.9rem, 4.5vw, 3.25rem)",
-              lineHeight: 1.08,
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
-              textShadow: "0 2px 18px hsl(0 0% 0% / 0.5)",
-            }}
-          >
-            {inst ? d.company_name : `Destaque em ${categoryLabel || d.category_name || "casamentos"}`}
-          </h1>
-          {(inst ? d.category_name : d.company_name) && (
-            <p
-              className="text-white/90 mt-2 max-w-xl"
-              style={{ fontSize: "clamp(0.95rem, 1.6vw, 1.15rem)", textShadow: "0 1px 10px hsl(0 0% 0% / 0.5)" }}
-            >
-              {inst ? d.category_name : `${d.company_name}${d.city ? ` · ${d.city}` : ""}`}
-            </p>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-type Category = { id: string; name: string; slug: string; icon: string | null };
-type Supplier = {
-  id: string;
-  company_name: string;
-  description: string | null;
-  city: string | null;
-  state: string | null;
-  rating: number | null;
-  review_count: number | null;
-  price_min: number | null;
-  featured: boolean;
-  supplier_photos?: { photo_url: string }[];
-};
-
-const PAGE_SIZE = 18;
 import { useMyPlanSuppliers } from "@/hooks/useMyPlanSuppliers";
+import { RodapeVitrine, TopoVitrine, useFavoritos } from "@/components/vitrine/VitrineLayout";
+import CapaVitrine from "@/components/vitrine/CapaVitrine";
+import CardFornecedor from "@/components/vitrine/CardFornecedor";
+import AvisoCategoria from "@/components/vitrine/AvisoCategoria";
+import { iconesCategoria } from "@/pages/Explore";
+import {
+  FOTO_PADRAO,
+  carregarAnuncios,
+  carregarCategorias,
+  carregarFornecedores,
+  carregarFotoInstitucional,
+  normalizar,
+  pluralCategoria,
+  type Anuncio,
+  type CategoriaVitrine,
+  type FornecedorVitrine,
+} from "@/lib/vitrine";
 
-const formatPrice = (n: number | null) => {
-  if (!n) return null;
-  if (n >= 1000) return `R$ ${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
-  return `R$ ${n}`;
+const FAIXAS_PRECO: Record<string, { label: string; min?: number; max?: number }> = {
+  ate2: { label: "Até R$ 2.000", max: 2000 },
+  "2a5": { label: "R$ 2.000 a R$ 5.000", min: 2000, max: 5000 },
+  "5mais": { label: "Acima de R$ 5.000", min: 5000 },
 };
+const FAIXAS_CONV: Record<string, { label: string; min: number }> = {
+  ate50: { label: "Até 50", min: 1 },
+  "51a150": { label: "51 a 150", min: 51 },
+  "150mais": { label: "Mais de 150", min: 151 },
+};
+const ORDENS: Record<string, string> = { rel: "Relevância", nota: "Mais bem avaliados", novos: "Mais novos", preco: "Menor preço" };
 
-function SupplierCardItem({ s, inPlan }: { s: Supplier; inPlan?: boolean }) {
-  const _fotos = s.supplier_photos || [];
-  const photo = (_fotos.find((p: any) => p.is_principal) || _fotos[0])?.photo_url;
+function Filtro({
+  icone: Icone,
+  rotulo,
+  ativo,
+  valor,
+  opcoes,
+  onChange,
+}: {
+  icone: any;
+  rotulo: string;
+  ativo: boolean;
+  valor: string;
+  opcoes: [string, string][];
+  onChange: (v: string) => void;
+}) {
   return (
-    <Link to={`/fornecedor/${s.id}`} className="group block">
-      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted">
-        {photo ? (
-          <img
-            src={photo}
-            alt={s.company_name}
-            loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            <Building className="h-8 w-8" />
-          </div>
-        )}
-        {s.featured && (
-          <span className="absolute top-2 left-2 bg-background/95 text-foreground text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
-            Destaque
-          </span>
-        )}
-        {inPlan && (
-          <span className="absolute bottom-2 left-2 bg-primary text-primary-foreground text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
-            No seu plano
-          </span>
-        )}
-      </div>
-      <div className="pt-2.5 px-0.5">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold text-foreground truncate">{s.company_name}</h3>
-          {s.rating != null && s.rating > 0 && (
-            <span className="flex items-center gap-0.5 text-xs text-foreground shrink-0">
-              <Star className="h-3 w-3 fill-foreground" /> {Number(s.rating).toFixed(1)}
-            </span>
-          )}
-        </div>
-        {s.city && (
-          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-            <MapPin className="h-3 w-3" /> {s.city}
-            {s.state ? ` · ${s.state}` : ""}
-          </p>
-        )}
-        {s.price_min && (
-          <p className="text-xs text-foreground mt-0.5">
-            <span className="font-semibold">{formatPrice(s.price_min)}</span>
-            <span className="text-muted-foreground"> · a partir de</span>
-          </p>
-        )}
-      </div>
-    </Link>
+    <span className={`vt-fb ${ativo ? "on" : ""}`}>
+      <Icone className="h-[15px] w-[15px]" />
+      {rotulo}
+      <ChevronDown className="h-[15px] w-[15px]" />
+      <select value={valor} onChange={(e) => onChange(e.target.value)} aria-label={rotulo}>
+        {opcoes.map(([v, l]) => (
+          <option key={v} value={v}>
+            {l}
+          </option>
+        ))}
+      </select>
+    </span>
   );
 }
 
 export default function CategoriaPublica() {
   const { slug } = useParams<{ slug: string }>();
-  const { user, profile } = useAuth();
+  const [params, setParams] = useSearchParams();
   const planIds = useMyPlanSuppliers();
-  const [category, setCategory] = useState<Category | null>(null);
-  const [otherCategories, setOtherCategories] = useState<Category[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [heroDestaque, setHeroDestaque] = useState<HeroDestaque | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { favoritos, alternar } = useFavoritos();
+  const [categoria, setCategoria] = useState<CategoriaVitrine | null>(null);
+  const [categorias, setCategorias] = useState<CategoriaVitrine[]>([]);
+  const [todos, setTodos] = useState<FornecedorVitrine[]>([]);
+  const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
+  const [fotoPadrao, setFotoPadrao] = useState(FOTO_PADRAO);
+  const [carregando, setCarregando] = useState(true);
+  const [naoAchou, setNaoAchou] = useState(false);
 
-  // 1. Carrega a categoria pelo slug
+  const cidade = params.get("cidade") || "";
+  const preco = params.get("preco") || "";
+  const conv = params.get("conv") || "";
+  const ordem = params.get("ordem") || "rel";
+  const mudar = (k: string, v: string) => {
+    const n = new URLSearchParams(params);
+    if (v && !(k === "ordem" && v === "rel")) n.set(k, v);
+    else n.delete(k);
+    setParams(n, { replace: true });
+  };
+
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setSuppliers([]);
-    setPage(0);
-    setHasMore(true);
-    setNotFound(false);
+    let vivo = true;
+    setCarregando(true);
+    setNaoAchou(false);
+    setAnuncios([]);
     (async () => {
-      const { data: cat } = await supabase
-        .from("categories")
-        .select("id, name, slug, icon")
-        .eq("slug", slug!)
-        .maybeSingle();
-      if (cancelled) return;
+      const cats = await carregarCategorias();
+      if (!vivo) return;
+      setCategorias(cats);
+      const cat = cats.find((c) => c.slug === slug) || null;
       if (!cat) {
-        setNotFound(true);
-        setLoading(false);
+        setNaoAchou(true);
         return;
       }
-      setCategory(cat as Category);
-      const { data: others } = await supabase
-        .from("categories")
-        .select("id, name, slug, icon")
-        .neq("id", cat.id)
-        .order("name")
-        .limit(12);
-      if (!cancelled) setOtherCategories((others as Category[]) || []);
+      setCategoria(cat);
+      const [forns, anun] = await Promise.all([carregarFornecedores(), carregarAnuncios(cat.id)]);
+      if (!vivo) return;
+      setTodos(forns);
+      setAnuncios(anun);
+      setCarregando(false);
     })();
+    carregarFotoInstitucional().then((f) => vivo && setFotoPadrao(f));
     return () => {
-      cancelled = true;
+      vivo = false;
     };
   }, [slug]);
 
-  // 2. Loader incremental
-  const loadPage = useCallback(async (cat: Category, pageIdx: number, replace: boolean) => {
-    const from = pageIdx * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-    const { data, count } = await supabase
-      .from("suppliers")
-      .select(
-        "id, company_name, description, city, state, rating, review_count, price_min, featured, supplier_photos(photo_url, is_principal)",
-        { count: "exact" },
-      )
-      .eq("status", "approved")
-        .in("is_demo", demoValues())
-      .eq("category_id", cat.id)
-      .order("featured", { ascending: false })
-      .order("rating", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .range(from, to);
-    const rows = (data as Supplier[]) || [];
-    setSuppliers((prev) => (replace ? rows : [...prev, ...rows]));
-    if (typeof count === "number") setTotal(count);
-    setHasMore(rows.length === PAGE_SIZE);
-  }, []);
+  const daCategoria = useMemo(() => (categoria ? todos.filter((f) => f.category_id === categoria.id) : []), [todos, categoria]);
+  const contagem = useMemo(() => {
+    const m = new Map<string, number>();
+    todos.forEach((f) => f.category_id && m.set(f.category_id, (m.get(f.category_id) || 0) + 1));
+    return m;
+  }, [todos]);
+  const cidades = useMemo(() => [...new Set(daCategoria.map((f) => f.city).filter(Boolean) as string[])].sort(), [daCategoria]);
+  const temPreco = daCategoria.some((f) => f.price_min);
+  const ehEspaco = !!categoria && /espaco|buffet/.test(categoria.slug);
 
-  // 3. Primeira página quando categoria carrega
-  useEffect(() => {
-    if (!category) return;
-    (async () => {
-      await loadPage(category, 0, true);
-      setLoading(false);
-    })();
-  }, [category, loadPage]);
+  const itens = useMemo(() => {
+    let l = daCategoria;
+    if (cidade) l = l.filter((f) => normalizar(f.city).includes(normalizar(cidade)));
+    const fp = FAIXAS_PRECO[preco];
+    if (fp) l = l.filter((f) => f.price_min && (fp.min == null || Number(f.price_min) >= fp.min) && (fp.max == null || Number(f.price_min) <= fp.max));
+    const fc = FAIXAS_CONV[conv];
+    if (fc) l = l.filter((f) => !f.guest_max || f.guest_max >= fc.min);
+    const pontuar = (f: FornecedorVitrine) => (f.featured ? 1000 : 0) + (f.review_count ? 10 + Number(f.rating || 0) : 0) + (f.price_min ? 3 : 0) + Math.min(f.fotos.length, 5);
+    const copia = [...l];
+    if (ordem === "nota") copia.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
+    else if (ordem === "novos") copia.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    else if (ordem === "preco") copia.sort((a, b) => Number(a.price_min || 9e12) - Number(b.price_min || 9e12));
+    else copia.sort((a, b) => pontuar(b) - pontuar(a) || b.created_at.localeCompare(a.created_at));
+    return copia;
+  }, [daCategoria, cidade, preco, conv, ordem]);
 
-  // 4. Infinite scroll via IntersectionObserver
-  useEffect(() => {
-    if (!category || loading || !hasMore || loadingMore) return;
-    const node = sentinelRef.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(
-      async (entries) => {
-        if (entries[0]?.isIntersecting && hasMore && !loadingMore) {
-          setLoadingMore(true);
-          const next = page + 1;
-          await loadPage(category, next, false);
-          setPage(next);
-          setLoadingMore(false);
-        }
-      },
-      { rootMargin: "300px" },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [category, page, hasMore, loading, loadingMore, loadPage]);
+  if (naoAchou) return <Navigate to="/explorar" replace />;
 
+  const nome = categoria?.name || "";
+  const plural = categoria ? pluralCategoria(categoria) : "";
+  const total = daCategoria.length;
+  const vazio = !carregando && total === 0;
+  const filtrosAtivos = [cidade, preco, conv].filter(Boolean).length;
+  const cidTxt = cidades.length ? (cidades.length <= 2 ? cidades.join(" e ") : `${cidades.length} cidades`) : "";
+  const outras = categorias.filter((c) => c.id !== categoria?.id);
+  const Icone = iconesCategoria[categoria?.icon || "building"] || Building;
 
-  // Hero da categoria: destaque pago dela -> featured dela -> institucional (secoes_home escopo=explore)
-  useEffect(() => {
-    if (!category) return;
-    (async () => {
-      const hoje = new Date().toISOString();
-      const { data: compras } = await (supabase.from("featured_purchases" as any) as any)
-        .select("supplier_id, imagem_url, status, inicio, fim")
-        .in("status", ["ativo", "pago"])
-        .eq("escopo", "categoria")
-        .eq("escopo_categoria_id", category.id)
-        .lte("inicio", hoje)
-        .gte("fim", hoje);
-      const pick = compras && compras.length ? compras[Math.floor(Math.random() * compras.length)] : null;
-
-      const buildFromSupplier = (sup: any, imagem: string | null): HeroDestaque => ({
-        supplier_id: sup.id,
-        imagem_url: imagem,
-        company_name: sup.company_name,
-        profile_photo_url: sup.profile_photo_url ?? null,
-        category_name: sup.categories?.name ?? category.name,
-        category_icon: sup.categories?.icon ?? category.icon,
-        city: sup.city ?? null,
-      });
-
-      if (pick) {
-        const { data: sup } = await supabase
-          .from("suppliers")
-          .select("id, company_name, city, profile_photo_url, categories(name, icon)")
-          .eq("id", pick.supplier_id)
-          .eq("status", "approved")
-        .in("is_demo", demoValues())
-          .maybeSingle();
-        if (sup) {
-          setHeroDestaque(buildFromSupplier(sup, pick.imagem_url));
-          return;
-        }
-      }
-      // fallback: featured da categoria
-      const { data: fb } = await supabase
-        .from("suppliers")
-        .select("id, company_name, city, profile_photo_url, categories(name, icon)")
-        .eq("status", "approved")
-        .in("is_demo", demoValues())
-        .eq("featured", true)
-        .eq("category_id", category.id)
-        .order("rating", { ascending: false, nullsFirst: false })
-        .limit(1);
-      if (fb && fb[0]) {
-        setHeroDestaque(buildFromSupplier(fb[0] as any, null));
-        return;
-      }
-      // fallback institucional configurável
-      const { data: inst } = await (supabase.from("secoes_home" as any) as any)
-        .select("foto_url, frase, subtexto")
-        .eq("escopo", "explore")
-        .eq("ativo", true)
-        .order("ordem")
-        .limit(1)
-        .maybeSingle();
-      setHeroDestaque(
-        inst
-          ? {
-              supplier_id: null,
-              imagem_url: inst.foto_url,
-              company_name: inst.frase,
-              profile_photo_url: null,
-              category_name: inst.subtexto ?? `Os melhores em ${category.name.toLowerCase()}`,
-              category_icon: null,
-              city: null,
-              institucional: true,
-            }
-          : {
-              supplier_id: null,
-              imagem_url:
-                "https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=85&auto=format&fit=crop",
-              company_name: `Os melhores em ${category.name.toLowerCase()} para o seu casamento`,
-              profile_photo_url: null,
-              category_name: "Explore e peça orçamentos sem compromisso",
-              category_icon: null,
-              city: null,
-              institucional: true,
-            },
-      );
-    })();
-  }, [category]);
-
-  const seoTitle = category ? `${category.name} para casamento — Casamenteiro` : "Categoria — Casamenteiro";
-  const seoDescription = category
-    ? truncate(
-        `Encontre os melhores ${category.name.toLowerCase()} para casamento no Casamenteiro. Compare orçamentos, fotos e avaliações reais de ${total || "diversos"} fornecedores aprovados.`,
-      )
+  const seoTitulo = categoria ? `${nome} para casamento${cidade ? ` em ${cidade}` : ""} — Casamenteiro` : "Categoria — Casamenteiro";
+  const seoDescricao = categoria
+    ? truncate(`Encontre ${plural.toLowerCase()} para casamento no Casamenteiro. Compare fotos, preços e peça orçamento grátis, sem comissão.`)
     : "";
   const canonical = absoluteUrl(`/categoria/${slug}`);
-
-  const jsonLd = category
+  const jsonLd = categoria
     ? [
         breadcrumbJsonLd([
           { name: "Início", path: "/" },
           { name: "Fornecedores", path: "/explorar" },
-          { name: category.name, path: `/categoria/${category.slug}` },
+          { name: nome, path: `/categoria/${categoria.slug}` },
         ]),
-        {
-          "@context": "https://schema.org",
-          "@type": "CollectionPage",
-          name: `${category.name} para casamento`,
-          description: seoDescription,
-          url: canonical,
-          isPartOf: { "@type": "WebSite", name: "Casamenteiro", url: absoluteUrl("/") },
-        },
-        itemListJsonLd(
-          suppliers.slice(0, 20).map((s) => ({
-            name: s.company_name,
-            path: `/fornecedor/${s.id}`,
-          })),
-        ),
+        { "@context": "https://schema.org", "@type": "CollectionPage", name: `${nome} para casamento`, description: seoDescricao, url: canonical },
+        itemListJsonLd(itens.slice(0, 20).map((s) => ({ name: s.company_name, path: `/fornecedor/${s.id}` }))),
       ]
     : undefined;
 
-  // fica depois de todos os hooks: retornar antes deles quebra a tela (erro #300 do React)
-  if (notFound) return <Navigate to="/explorar" replace />;
-
   return (
-    <div className="min-h-screen bg-background">
-      <SEO title={seoTitle} description={seoDescription} canonical={canonical} jsonLd={jsonLd} />
+    <div className="vt">
+      <SEO title={seoTitulo} description={seoDescricao} canonical={canonical} jsonLd={jsonLd} noIndex={vazio} />
+      <TopoVitrine ativo="fornecedores" />
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="container py-3 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="text-lg font-semibold tracking-tight hidden sm:inline">Casamenteiro</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm">
-            <Link to="/explorar" className="text-muted-foreground hover:text-foreground transition">
-              Fornecedores
-            </Link>
-            {user && (
-              <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition">
-                Meu Casamento
-              </Link>
-            )}
-          </nav>
-          <div className="flex items-center gap-2">
-            {user ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground hidden sm:inline">
-                  Olá, {profile?.full_name?.split(" ")[0] || "Casal"}
-                </span>
-                <UserMenu />
-              </div>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-                  <Link to="/login">Entrar</Link>
-                </Button>
-                <Button size="sm" className="rounded-full" asChild>
-                  <Link to="/cadastro">Cadastrar</Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <CategoriaHero d={heroDestaque} categoryLabel={category?.name} />
-
-      <main className="container py-6 md:py-10">
-        {/* Breadcrumb */}
-        <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground flex items-center gap-1.5 mb-4">
-          <Link to="/" className="hover:text-foreground">
+      <CapaVitrine anuncios={anuncios} fotoPadrao={fotoPadrao} tipo="categoria">
+        <nav aria-label="Caminho" className="flex flex-wrap gap-1.5 pb-2 text-[12.5px] text-white/80">
+          <Link to="/" className="hover:text-white">
             Início
           </Link>
-          <ChevronRight className="h-3 w-3" />
-          <Link to="/explorar" className="hover:text-foreground">
+          ›
+          <Link to="/explorar" className="hover:text-white">
             Fornecedores
           </Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground">{category?.name || "Categoria"}</span>
+          ›<span className="text-white">{nome}</span>
         </nav>
+        <h1 className="mb-2 mt-1.5 text-[clamp(34px,4.6vw,54px)]">
+          {plural} <em>para casamento</em>
+        </h1>
+        <p className="max-w-[52ch] text-base text-white/90">
+          {carregando
+            ? " "
+            : vazio
+              ? `Estamos aprovando os primeiros ${plural.toLowerCase()} do Casamenteiro.`
+              : `${total} ${total === 1 ? "fornecedor aprovado" : "fornecedores aprovados"}${cidTxt ? ` em ${cidTxt}` : ""}. Peça orçamento grátis, sem comissão.`}
+        </p>
+      </CapaVitrine>
 
-        {/* Hero da categoria */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
-            {category ? `${category.name} para casamento` : "Carregando..."}
-          </h1>
-          {category && (
-            <p className="text-muted-foreground mt-2 max-w-2xl">
-              {total > 0
-                ? `${total} ${total === 1 ? "fornecedor aprovado" : "fornecedores aprovados"} para você comparar, conversar e contratar com segurança.`
-                : "Estamos carregando os fornecedores desta categoria..."}
-            </p>
-          )}
+      {!vazio && !carregando && (
+        <div className="vt-filtros mt-[18px]">
+          <div className="vt-wrap">
+            <Filtro
+              icone={MapPin}
+              rotulo={cidade || "Cidade"}
+              ativo={!!cidade}
+              valor={cidades.includes(cidade) ? cidade : ""}
+              opcoes={[["", "Todas as cidades"], ...cidades.map((c) => [c, c] as [string, string])]}
+              onChange={(v) => mudar("cidade", v)}
+            />
+            {temPreco && (
+              <Filtro
+                icone={Tag}
+                rotulo={FAIXAS_PRECO[preco]?.label || "Preço"}
+                ativo={!!preco}
+                valor={preco}
+                opcoes={[["", "Qualquer preço"], ...Object.entries(FAIXAS_PRECO).map(([k, v]) => [k, v.label] as [string, string])]}
+                onChange={(v) => mudar("preco", v)}
+              />
+            )}
+            {ehEspaco && (
+              <Filtro
+                icone={Users}
+                rotulo={FAIXAS_CONV[conv] ? `${FAIXAS_CONV[conv].label} convidados` : "Convidados"}
+                ativo={!!conv}
+                valor={conv}
+                opcoes={[["", "Qualquer número"], ...Object.entries(FAIXAS_CONV).map(([k, v]) => [k, v.label] as [string, string])]}
+                onChange={(v) => mudar("conv", v)}
+              />
+            )}
+            <Filtro
+              icone={ArrowUpDown}
+              rotulo={ORDENS[ordem] || ORDENS.rel}
+              ativo={false}
+              valor={ordem}
+              opcoes={Object.entries(ORDENS) as [string, string][]}
+              onChange={(v) => mudar("ordem", v)}
+            />
+            {filtrosAtivos > 0 && (
+              <button
+                type="button"
+                className="flex-none text-[13.5px] font-bold text-[var(--vt-clay)] underline underline-offset-4"
+                onClick={() => setParams(new URLSearchParams(), { replace: true })}
+              >
+                Limpar filtros
+              </button>
+            )}
+            <span className="ml-auto flex-none pl-2 text-[13.5px] text-[var(--vt-muted)]">
+              {itens.length} {itens.length === 1 ? "resultado" : "resultados"}
+            </span>
+          </div>
         </div>
+      )}
 
-        {/* Grid */}
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className="aspect-[4/3] rounded-2xl bg-muted animate-pulse" />
-                <div className="h-3 w-2/3 bg-muted rounded animate-pulse" />
-                <div className="h-3 w-1/2 bg-muted rounded animate-pulse" />
+      <main className="vt-wrap pt-5">
+        {carregando ? (
+          <div className="vt-grade">
+            {Array.from({ length: 6 }).map((_, k) => (
+              <div key={k} className="space-y-2">
+                <div className="aspect-[4/3] animate-pulse rounded-[18px] bg-[#efe7dd]" />
+                <div className="h-3 w-2/3 animate-pulse rounded bg-[#efe7dd]" />
               </div>
             ))}
           </div>
-        ) : suppliers.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <p>Nenhum fornecedor desta categoria no momento.</p>
-            <Button asChild className="mt-4 rounded-full">
-              <Link to="/explorar">Ver todas as categorias</Link>
-            </Button>
-          </div>
+        ) : vazio ? (
+          <>
+            <section className="vt-caixa grid items-center gap-7 p-[clamp(24px,5vw,48px)] md:grid-cols-[auto_minmax(0,1fr)]">
+              <span className="grid h-[120px] w-[120px] place-items-center rounded-[32px] bg-[var(--vt-amber)] text-[var(--vt-star)]">
+                <Icone className="h-[54px] w-[54px]" />
+              </span>
+              <div>
+                <h2 className="vt-h2">
+                  Ainda não temos <em>{plural.toLowerCase()}</em> por aqui
+                </h2>
+                <p className="mb-4 mt-2 max-w-[56ch] text-[var(--vt-body)]">
+                  Estamos conferindo os primeiros cadastros desta categoria. Deixe seu contato que avisamos assim que tiver opções na sua região.
+                </p>
+                {categoria && <AvisoCategoria categoriaFixa={categoria} />}
+                <p className="mt-4 text-sm text-[var(--vt-body)]">
+                  Trabalha com {nome.toLowerCase()}?{" "}
+                  <Link to="/cadastro?tipo=supplier" className="font-bold text-[var(--vt-clay)] underline underline-offset-4">
+                    Seja um dos primeiros, o cadastro é grátis
+                  </Link>
+                  .
+                </p>
+              </div>
+            </section>
+            {outras.some((c) => contagem.get(c.id)) && (
+              <section className="vt-sec">
+                <h2 className="vt-h2 mb-4">
+                  Enquanto isso, <em>já tem</em>
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
+                  {outras
+                    .filter((c) => contagem.get(c.id))
+                    .map((c) => {
+                      const I = iconesCategoria[c.icon || "building"] || Building;
+                      const n = contagem.get(c.id) || 0;
+                      return (
+                        <Link key={c.id} to={`/categoria/${c.slug}`} className="vt-cat">
+                          <span className="vt-ic">
+                            <I className="h-[21px] w-[21px]" />
+                          </span>
+                          <b>{c.name}</b>
+                          <small className="text-[12.5px] font-semibold text-[var(--vt-muted)]">
+                            {n} {n === 1 ? "fornecedor" : "fornecedores"}
+                          </small>
+                        </Link>
+                      );
+                    })}
+                </div>
+              </section>
+            )}
+          </>
         ) : (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-7">
-              {suppliers.map((s) => (
-                <SupplierCardItem key={s.id} s={s} inPlan={planIds.has(s.id)} />
-              ))}
-            </div>
-
-            {/* Sentinel + fallback "carregar mais" */}
-            <div ref={sentinelRef} className="h-10 mt-8 flex items-center justify-center">
-              {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-            </div>
-            {hasMore && !loadingMore && (
-              <div className="flex justify-center mt-2">
-                <Button
-                  variant="outline"
-                  className="rounded-full"
-                  onClick={async () => {
-                    if (!category) return;
-                    setLoadingMore(true);
-                    const next = page + 1;
-                    await loadPage(category, next, false);
-                    setPage(next);
-                    setLoadingMore(false);
-                  }}
-                >
-                  Carregar mais fornecedores
-                </Button>
+            {itens.length ? (
+              <div className="vt-grade">
+                {itens.map((f) => (
+                  <CardFornecedor
+                    key={f.id}
+                    f={f}
+                    favorito={favoritos.has(f.id)}
+                    onFavoritar={alternar}
+                    mostrarCategoria={false}
+                    mostrarDescricao
+                    destaque={f.featured}
+                    selo={planIds.has(f.id) ? "No seu plano" : undefined}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="vt-caixa flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="vt-serif text-[21px]">Nenhum resultado com esses filtros</h3>
+                  <p className="mt-1 text-sm text-[var(--vt-body)]">Tente outra cidade ou limpe os filtros.</p>
+                </div>
+                <button type="button" className="vt-pill" onClick={() => setParams(new URLSearchParams(), { replace: true })}>
+                  Limpar filtros
+                </button>
               </div>
             )}
-            {!hasMore && suppliers.length > PAGE_SIZE && (
-              <p className="text-center text-xs text-muted-foreground mt-6">
-                Você viu todos os fornecedores desta categoria.
-              </p>
+
+            {total > 0 && total < 4 && categoria && (
+              <div className="vt-caixa mt-8 grid items-center gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                <div>
+                  <h3 className="vt-serif text-[21px]">Ainda são poucas opções por aqui</h3>
+                  <p className="mt-1 text-sm text-[var(--vt-body)]">
+                    Novos {plural.toLowerCase()} entram toda semana. Quer que a gente te avise quando chegar alguém na sua cidade?
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <AvisoCategoria categoriaFixa={categoria} compacto />
+                </div>
+              </div>
             )}
           </>
         )}
 
-        {/* Outras categorias — links internos para SEO */}
-        {otherCategories.length > 0 && (
-          <section className="mt-16 border-t border-border pt-10">
-            <h2 className="text-lg font-semibold mb-4">Explore outras categorias</h2>
+        {!carregando && (
+          <section className="vt-sec">
+            <h2 className="vt-h2 mb-4">
+              Dicas para <em>escolher bem</em>
+            </h2>
+            <div className="grid gap-3.5 md:grid-cols-3">
+              {[
+                ["Confirme a data primeiro", "Antes de comparar preço, pergunte se a data de vocês está livre. É o que mais elimina opções."],
+                ["Peça 3 orçamentos", "Com a mesma data e o mesmo número de convidados fica fácil comparar o que cada um inclui."],
+                ["Leia o que está incluso", "Deslocamento, horas extras e equipe costumam ficar de fora. Pergunte antes de fechar."],
+              ].map(([t, d]) => (
+                <div key={t} className="vt-dica">
+                  <b className="mb-1 block text-[15px]">{t}</b>
+                  <p className="text-sm text-[var(--vt-body)]">{d}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!carregando && !vazio && outras.length > 0 && (
+          <section className="vt-sec">
+            <h2 className="vt-h2 mb-4">
+              Outras <em>categorias</em>
+            </h2>
             <div className="flex flex-wrap gap-2">
-              {otherCategories.map((c) => (
-                <Link
-                  key={c.id}
-                  to={`/categoria/${c.slug}`}
-                  className="px-3.5 py-1.5 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground transition"
-                >
-                  {c.name}
+              {outras.map((c) => (
+                <Link key={c.id} to={`/categoria/${c.slug}`} className="vt-chip">
+                  {c.name} <small className="font-semibold text-[var(--vt-muted)]">{contagem.get(c.id) || "em breve"}</small>
                 </Link>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-6">
-              Ou veja{" "}
-              <Link to="/explorar" className="underline hover:text-foreground">
-                todos os fornecedores em destaque
-              </Link>
-              .
-            </p>
           </section>
         )}
       </main>
+
+      <RodapeVitrine />
     </div>
   );
 }
