@@ -126,25 +126,19 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/65364cc8-dc6d-4b37-98d5-1e8a2d5b3716</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/65656fa5-0bfd-44db-add0-096521763c40</loc>
     <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.casamenteiro.com.br/fornecedor/7e7615cd-00e9-481a-ab30-fd5179947ec3</loc>
-    <lastmod>2026-10-22</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/2e1d42e9-a412-4577-a7f3-89c9b491296e</loc>
-    <lastmod>2026-10-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.casamenteiro.com.br/fornecedor/65364cc8-dc6d-4b37-98d5-1e8a2d5b3716</loc>
     <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -157,6 +151,12 @@
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/a8ebd07a-da3b-456f-a7a2-c4431fe535fa</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/7e7615cd-00e9-481a-ab30-fd5179947ec3</loc>
     <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -183,17 +183,17 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/urubici-sc</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/belo-horizonte-mg</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/belo-horizonte-e-cidades-metropolitanas-mg</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/urubici-sc</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
