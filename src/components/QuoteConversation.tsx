@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Send, DollarSign, CheckCircle2, Loader2, X } from "lucide-react";
 import { AttachmentPicker, AttachmentList } from "@/components/QuoteAttachments";
 import ConfirmFinishTaskDialog from "@/components/ConfirmFinishTaskDialog";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 type TextMsg = {
   id: string;
@@ -418,14 +419,11 @@ export default function QuoteConversation({
               <DollarSign className="w-4 h-4 text-primary shrink-0" />
               <div className="flex-1">
                 <label className="text-[11px] text-muted-foreground block">Valor da proposta (R$)</label>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  placeholder="Ex.: 12000"
+                <MoedaInput
+                  placeholder="12.000,00"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="h-9 text-base border-0 bg-transparent px-0 focus-visible:ring-0 shadow-none"
+                  onValueChange={(n) => setAmount(n == null ? "" : String(n))}
+                  className="h-9 text-base border-0 bg-transparent focus-within:ring-0 focus-within:ring-offset-0 shadow-none [&>span]:pl-0"
                 />
               </div>
               <Button

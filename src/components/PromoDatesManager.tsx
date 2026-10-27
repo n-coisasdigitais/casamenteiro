@@ -12,6 +12,7 @@ import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { calcularOferta } from "@/lib/corretagem";
 import { formatBRL } from "@/lib/platformPricing";
 import { antecedenciaDoFornecedor } from "@/lib/reservasConfig";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 type PromoDate = {
   id: string;
@@ -178,7 +179,7 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <Label className="text-xs">Piso (R$)</Label>
-                <Input type="number" min={0} value={piso} onChange={(e) => setPiso(e.target.value)} placeholder="Ex: 8000" />
+                <MoedaInput value={piso} onValueChange={(n) => setPiso(n == null ? "" : String(n))} placeholder="8.000,00" />
               </div>
               <div>
                 <Label className="text-xs">Markup (%) opcional</Label>

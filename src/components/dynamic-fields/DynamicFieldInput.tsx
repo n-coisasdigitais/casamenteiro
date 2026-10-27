@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import CityAutocomplete from "@/components/CityAutocomplete";
 import { UFS_BRASIL } from "@/components/CityStateSelect";
 import ListaOpcoes from "./ListaOpcoes";
+import { MoedaInput, ehCampoDinheiro } from "@/components/ui/moeda-input";
 
 export type CampoTipo =
   | "texto"
@@ -90,6 +91,7 @@ export default function DynamicFieldInput({ campo, value, onChange, uf, onUfChan
         />
       );
     case "numero":
+      if (ehCampoDinheiro(campo)) return <MoedaInput value={value} onValueChange={onChange} />;
       return (
         <Input
           type="number"
@@ -206,28 +208,8 @@ export default function DynamicFieldInput({ campo, value, onChange, uf, onUfChan
       const fv = value || {};
       return (
         <div className="grid grid-cols-2 gap-2">
-          <Input
-            type="number"
-            placeholder="De"
-            value={fv.min ?? ""}
-            onChange={(e) =>
-              onChange({
-                ...fv,
-                min: e.target.value === "" ? null : Number(e.target.value),
-              })
-            }
-          />
-          <Input
-            type="number"
-            placeholder="Até"
-            value={fv.max ?? ""}
-            onChange={(e) =>
-              onChange({
-                ...fv,
-                max: e.target.value === "" ? null : Number(e.target.value),
-              })
-            }
-          />
+          <MoedaInput placeholder="De" value={fv.min} onValueChange={(n) => onChange({ ...fv, min: n })} />
+          <MoedaInput placeholder="Até" value={fv.max} onValueChange={(n) => onChange({ ...fv, max: n })} />
         </div>
       );
     }

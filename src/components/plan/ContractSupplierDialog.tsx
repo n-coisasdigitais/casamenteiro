@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 type Parcela = { descricao: string; valor: string; vencimento: string };
 
@@ -127,12 +128,11 @@ export default function ContractSupplierDialog({
         <div className="space-y-4">
           <div>
             <Label htmlFor="valor-contratado">Valor contratado (R$) *</Label>
-            <Input
+            <MoedaInput
               id="valor-contratado"
-              type="number"
               value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              placeholder={target?.suggestedValue ? String(target.suggestedValue) : "0,00"}
+              onValueChange={(n) => setValor(n == null ? "" : String(n))}
+              placeholder={target?.suggestedValue ? Number(target.suggestedValue).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "0,00"}
             />
           </div>
 

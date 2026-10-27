@@ -19,6 +19,7 @@ import CepInput from "@/components/CepInput";
 import AlbumUpload from "@/components/AlbumUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { MoedaInput } from "@/components/ui/moeda-input";
 
 export default function UserProfile() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -444,21 +445,11 @@ export default function UserProfile() {
                     </div>
                     <div>
                       <Label htmlFor="budget">Orçamento estimado (R$)</Label>
-                      <Input
-                        id="budget"
-                        type="number"
-                        value={estimatedBudget}
-                        onChange={(e) => setEstimatedBudget(e.target.value)}
-                      />
+                      <MoedaInput id="budget" value={estimatedBudget} onValueChange={(n) => setEstimatedBudget(n == null ? "" : String(n))} />
                     </div>
                     <div>
                       <Label htmlFor="target">Meta de orçamento (R$)</Label>
-                      <Input
-                        id="target"
-                        type="number"
-                        value={targetBudget}
-                        onChange={(e) => setTargetBudget(e.target.value)}
-                      />
+                      <MoedaInput id="target" value={targetBudget} onValueChange={(n) => setTargetBudget(n == null ? "" : String(n))} />
                       <p className="text-xs text-muted-foreground mt-1">
                         Esse será o teto que você quer respeitar nos gastos.
                       </p>
