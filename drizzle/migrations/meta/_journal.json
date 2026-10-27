@@ -57,6 +57,13 @@
       "when": 1792778074649,
       "tag": "0007_profissional_landing",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793098156592,
+      "tag": "0008_fornecedor_aprovacao_redes_celebrante",
+      "breakpoints": true
     }
   ]
 }
