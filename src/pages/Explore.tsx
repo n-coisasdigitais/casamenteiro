@@ -128,7 +128,7 @@ const Explore = () => {
   const semFornecedor = useMemo(() => categorias.filter((c) => !contagem.get(c.id)), [categorias, contagem]);
   const destaques = fornecedores.filter((f) => f.featured).slice(0, 8);
   const novos = [...fornecedores].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 8);
-  const linhas = comFornecedor.filter((c) => (contagem.get(c.id) || 0) >= 3).slice(0, 4);
+  const linhas = comFornecedor.filter((c) => (contagem.get(c.id) || 0) >= 5).slice(0, 8);
   const cidades = useMemo(() => [...new Set(fornecedores.map((f) => f.city).filter(Boolean) as string[])].sort(), [fornecedores]);
 
   useEffect(() => {

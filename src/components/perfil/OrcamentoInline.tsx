@@ -216,7 +216,7 @@ export default function OrcamentoInline({
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2.5">
             <label className="pf-campo">
               Data do casamento
               <input type="date" min={hoje} value={data} disabled={semData} onChange={(e) => setData(e.target.value)} />

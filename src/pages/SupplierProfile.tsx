@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import {
   Accessibility,
@@ -885,8 +885,15 @@ export default function SupplierProfile() {
         </button>
       </div>
       <Sheet open={folha} onOpenChange={setFolha}>
-        <SheetContent side="bottom" className="pf max-h-[92vh] overflow-y-auto rounded-t-3xl border-0 p-3 pt-10" style={{ minHeight: 0 }}>
-          <SheetTitle className="sr-only">Pedir orçamento para {supplier.company_name}</SheetTitle>
+        <SheetContent
+          side="bottom"
+          className="pf pf-folha max-h-[92dvh] w-full max-w-full overflow-y-auto overflow-x-hidden rounded-t-3xl border-0 p-3 pt-0"
+          style={{ minHeight: 0 }}
+        >
+          <div className="sticky top-0 z-10 -mx-3 mb-2 flex items-center gap-3 bg-[var(--pf-bg)] px-4 pb-2 pt-3">
+            <SheetTitle className="min-w-0 flex-1 truncate text-[15px] font-semibold">Orçamento · {supplier.company_name}</SheetTitle>
+            <SheetClose className="pf-pill h-9 px-3.5 text-[13.5px]">Fechar</SheetClose>
+          </div>
           <OrcamentoInline {...orcamentoProps} />
         </SheetContent>
       </Sheet>
