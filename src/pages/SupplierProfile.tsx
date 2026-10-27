@@ -1,62 +1,107 @@
 import { traduzirErro } from "@/lib/errorMessages";
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { semDemo } from "@/lib/demoScope";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Heart,
-  MapPin,
-  Phone,
-  Mail,
+  Accessibility,
+  Award,
+  BedDouble,
   Building,
-  Star,
-  Users,
-  DollarSign,
-  Tag,
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  Sparkles,
-  TreePine,
-  Car as CarIcon,
+  CalendarDays,
+  Car,
+  Check,
   ChefHat,
-  Image,
+  Clock,
+  Leaf,
+  MapPin,
+  Music,
+  Route,
   Send,
-  Eye,
-  MessageCircle,
+  Sparkles,
+  Star,
+  Tag,
+  Umbrella,
+  Users,
+  UtensilsCrossed,
+  Wallet,
+  Wine,
+  X as XIcon,
+  type LucideIcon,
 } from "lucide-react";
-import QuoteRequestForm from "@/components/QuoteRequestForm";
 import PromoDatesInline from "@/components/reservas/PromoDatesInline";
 import SupplierMap from "@/components/SupplierMap";
-import { buildWhatsAppLink } from "@/lib/phone";
-import { analytics } from "@/lib/analytics";
 import SEO from "@/components/SEO";
 import { absoluteUrl, breadcrumbJsonLd, priceRangeLabel, truncate } from "@/lib/seo";
 import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
-import DynamicFieldsView from "@/components/dynamic-fields/DynamicFieldsView";
 import RedesSociaisPerfil from "@/components/redes/RedesSociaisPerfil";
 import SupplierPublicAttachments from "@/components/supplier/SupplierPublicAttachments";
 import { isEspacoCategory } from "@/lib/categories";
+import { reais, ehCampoDinheiro } from "@/components/ui/moeda-input";
+import GaleriaFornecedor, { Visualizador } from "@/components/perfil/GaleriaFornecedor";
+import OrcamentoInline, { formatarHoras } from "@/components/perfil/OrcamentoInline";
+import "@/components/perfil/perfil.css";
 
-type Review = {
-  id: string;
-  rating: number;
-  title: string | null;
-  comment: string | null;
-  created_at: string;
-  couples: { id: string } | null;
-  profiles: { full_name: string | null } | null;
-};
+type Campo = { id: string; chave: string; label: string; tipo: string; grupo: string | null; ordem: number; valor: any };
+type Faq = { id: string; pergunta: string; resposta: string };
+
+/** Campos que já aparecem em outro lugar da página (ou são contato). */
+const CHAVES_FORA = new Set(["descricao", "telefone", "whatsapp", "site", "instagram", "cidade", "estado"]);
+
+function iconeDoCampo(chave: string): LucideIcon {
+  const c = chave.toLowerCase();
+  if (/capacidade|convidados|pessoas|equipe/.test(c)) return Users;
+  if (/estacionamento|manobrista/.test(c)) return Car;
+  if (/cozinha|cardapio|card[aá]pio/.test(c)) return ChefHat;
+  if (/hospedagem|quarto|chal/.test(c)) return BedDouble;
+  if (/acessib/.test(c)) return Accessibility;
+  if (/eventos_por_dia|agenda|data/.test(c)) return CalendarDays;
+  if (/horario|hora|duracao|tempo/.test(c)) return Clock;
+  if (/preco|valor|pacote|faixa/.test(c)) return Wallet;
+  if (/atende_fora|deslocamento|raio|viagem|destination/.test(c)) return Route;
+  if (/anos|experiencia/.test(c)) return Award;
+  if (/restri|vegan|vegetar/.test(c)) return Leaf;
+  if (/degusta|servico|buffet/.test(c)) return UtensilsCrossed;
+  if (/bebida|bar|drink/.test(c)) return Wine;
+  if (/coberta|chuva/.test(c)) return Umbrella;
+  if (/musica|repertorio|som|banda/.test(c)) return Music;
+  return Sparkles;
+}
+
+function vazio(v: any) {
+  return (
+    v === null ||
+    v === undefined ||
+    v === "" ||
+    (Array.isArray(v) && v.length === 0) ||
+    (typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === 0)
+  );
+}
+
+function textoFaixa(v: any) {
+  if (v?.min != null && v?.max != null) return `${reais(v.min)} a ${reais(v.max)}`;
+  if (v?.min != null) return `a partir de ${reais(v.min)}`;
+  if (v?.max != null) return `até ${reais(v.max)}`;
+  return "";
+}
+
+function Estrelas({ nota, tamanho = "h-4 w-4" }: { nota: number; tamanho?: string }) {
+  return (
+    <span className="inline-flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star key={s} className={`${tamanho} ${s <= Math.round(nota) ? "fill-[var(--pf-star)] text-[var(--pf-star)]" : "text-[#d8cfc4]"}`} />
+      ))}
+    </span>
+  );
+}
 
 export default function SupplierProfile() {
   const { id } = useParams();
@@ -64,29 +109,39 @@ export default function SupplierProfile() {
   const { toast } = useToast();
   const [supplier, setSupplier] = useState<any>(null);
   const [photos, setPhotos] = useState<any[]>([]);
+  const [campos, setCampos] = useState<Campo[]>([]);
+  const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [tempoResposta, setTempoResposta] = useState<number | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [coupleId, setCoupleId] = useState<string | null>(null);
-  const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [loading, setLoading] = useState(true);
-  const quoteFormRef = useRef<HTMLDivElement>(null);
+  const [sobreAberto, setSobreAberto] = useState(false);
+  const [fotoAberta, setFotoAberta] = useState<number | null>(null);
+  const [folha, setFolha] = useState(false);
+  const [secao, setSecao] = useState("sobre");
 
-  // Reviews
+  // Avaliações
   const [reviews, setReviews] = useState<any[]>([]);
+  const [verTodas, setVerTodas] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [userHasReview, setUserHasReview] = useState(false);
+  const [podeAvaliar, setPodeAvaliar] = useState(false);
   const [phoneUnlocked, setPhoneUnlocked] = useState(false);
 
-  // Recommendations
   const [recommendations, setRecommendations] = useState<any[]>([]);
 
-  // Social proof - random viewer count (stable per page load)
+  // Prova social (aleatória, estável por carregamento)
   const viewerCount = useMemo(() => Math.floor(Math.random() * 15) + 1, []);
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
+    setSobreAberto(false);
+    setVerTodas(false);
+    window.scrollTo(0, 0);
 
     supabase
       .from("suppliers")
@@ -96,18 +151,20 @@ export default function SupplierProfile() {
       .then(({ data }) => {
         setSupplier(data);
         setLoading(false);
-        if (data?.category_id) {
+        if (!data) return;
+        if (data.category_id) {
           semDemo(
             supabase
               .from("suppliers")
               .select(`${SUPPLIER_COLS}, categories(name), supplier_photos(photo_url, is_principal)`)
               .eq("status", "approved")
               .eq("category_id", data.category_id)
-              .neq("id", id)
+              .neq("id", id),
           )
             .order("rating", { ascending: false, nullsFirst: false })
             .limit(4)
             .then(({ data: recs }: any) => setRecommendations(recs || []));
+          carregarCampos(id, data.category_id);
         }
       });
 
@@ -117,17 +174,23 @@ export default function SupplierProfile() {
       .eq("supplier_id", id)
       .order("display_order")
       .then(({ data }) => setPhotos(data || []));
+
+    (supabase.from("supplier_faqs" as any) as any)
+      .select("id, pergunta, resposta")
+      .eq("supplier_id", id)
+      .order("ordem")
+      .then(({ data }: any) => setFaqs(data || []));
+
+    (supabase.rpc as any)("fornecedor_tempo_resposta", { _supplier_id: id }).then(({ data }: any) =>
+      setTempoResposta((typeof data === "number" || typeof data === "string") && data !== "" && Number.isFinite(Number(data)) ? Number(data) : null),
+    );
+
     loadReviews();
 
     // Registra visita ao perfil (1x por carregamento)
-    (supabase.from("supplier_profile_views") as any)
-      .insert({
-        supplier_id: id,
-        viewer_id: user?.id ?? null,
-      })
-      .then(() => {
-        /* fire-and-forget */
-      });
+    (supabase.from("supplier_profile_views") as any).insert({ supplier_id: id, viewer_id: user?.id ?? null }).then(() => {
+      /* fire-and-forget */
+    });
 
     if (user) {
       supabase
@@ -136,48 +199,73 @@ export default function SupplierProfile() {
         .eq("user_id", user.id)
         .maybeSingle()
         .then(({ data }) => {
-          if (data) {
-            setCoupleId(data.id);
-            supabase
-              .from("couple_favorites")
-              .select("id")
-              .eq("couple_id", data.id)
-              .eq("supplier_id", id)
-              .maybeSingle()
-              .then(({ data: fav }) => {
-                setIsFavorited(!!fav);
-              });
-            supabase
-              .from("reviews")
-              .select("id")
-              .eq("couple_id", data.id)
-              .eq("supplier_id", id)
-              .maybeSingle()
-              .then(({ data: rev }) => {
-                setUserHasReview(!!rev);
-              });
-            supabase
-              .rpc("get_supplier_contact", { _supplier_id: id })
-              .then(({ data: contato }) => {
-                const c = (contato as any[])?.[0];
-                if (c && (c.phone || c.whatsapp || c.email)) {
-                  setPhoneUnlocked(true);
-                  setSupplier((prev: any) => (prev ? { ...prev, ...c } : prev));
-                } else {
-                  setPhoneUnlocked(false);
-                }
-              });
-          }
+          if (!data) return;
+          setCoupleId(data.id);
+          supabase
+            .from("couple_favorites")
+            .select("id")
+            .eq("couple_id", data.id)
+            .eq("supplier_id", id)
+            .maybeSingle()
+            .then(({ data: fav }) => setIsFavorited(!!fav));
+          supabase
+            .from("reviews")
+            .select("id")
+            .eq("couple_id", data.id)
+            .eq("supplier_id", id)
+            .maybeSingle()
+            .then(({ data: rev }) => setUserHasReview(!!rev));
+          verificarPodeAvaliar(data.id, id);
+          carregarContato(id);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user]);
+
+  const carregarCampos = async (supplierId: string, categoryId: string) => {
+    const [{ data: cps }, { data: resps }] = await Promise.all([
+      (supabase.from("campos_categoria") as any)
+        .select("id, chave, label, tipo, grupo, ordem")
+        .eq("category_id", categoryId)
+        .eq("ativo", true)
+        .eq("mostrar_no_perfil", true)
+        .order("ordem"),
+      (supabase.from("fornecedor_campos") as any).select("campo_id, valor").eq("supplier_id", supplierId),
+    ]);
+    const mapa = new Map<string, any>((resps || []).map((r: any) => [r.campo_id, r.valor]));
+    setCampos(
+      (cps || [])
+        .map((c: any) => ({ ...c, valor: mapa.get(c.id) }))
+        .filter((c: Campo) => !vazio(c.valor)),
+    );
+  };
+
+  const carregarContato = (supplierId: string) => {
+    supabase.rpc("get_supplier_contact", { _supplier_id: supplierId }).then(({ data: contato }) => {
+      const c = (contato as any[])?.[0];
+      if (c && (c.phone || c.whatsapp || c.email)) {
+        setPhoneUnlocked(true);
+        setSupplier((prev: any) => (prev ? { ...prev, ...c } : prev));
+      } else setPhoneUnlocked(false);
+    });
+  };
+
+  const verificarPodeAvaliar = async (casal: string, supplierId: string) => {
+    const [{ count: pedidos }, { count: contratos }] = await Promise.all([
+      supabase.from("quotes").select("id", { count: "exact", head: true }).eq("couple_id", casal).eq("supplier_id", supplierId),
+      supabase.from("couple_suppliers").select("id", { count: "exact", head: true }).eq("couple_id", casal).eq("supplier_id", supplierId),
+    ]);
+    setPodeAvaliar((pedidos || 0) + (contratos || 0) > 0);
+  };
 
   const loadReviews = async () => {
     if (!id) return;
-    const { data } = await supabase
-      .from("reviews")
+    const { data } = await (supabase.from("reviews") as any)
       .select("*")
       .eq("supplier_id", id)
+      .eq("alvo_tipo", "supplier")
+      .eq("aprovado", true)
+      .eq("publico", true)
       .order("created_at", { ascending: false });
     setReviews(data || []);
   };
@@ -199,31 +287,29 @@ export default function SupplierProfile() {
     setSubmittingReview(false);
     if (error) {
       toast({ title: "Erro ao enviar avaliação", description: traduzirErro(error), variant: "destructive" });
-    } else {
-      toast({ title: "Avaliação enviada!" });
-      setReviewTitle("");
-      setReviewComment("");
-      setReviewRating(5);
-      setUserHasReview(true);
-      loadReviews();
-      supabase
-        .from("suppliers")
-        .select(`${SUPPLIER_COLS}, categories(name)`)
-        .eq("id", id)
-        .maybeSingle()
-        .then(({ data }) => setSupplier(data));
+      return;
     }
+    toast({ title: "Avaliação enviada!" });
+    setReviewTitle("");
+    setReviewComment("");
+    setReviewRating(5);
+    setUserHasReview(true);
+    loadReviews();
+    supabase
+      .from("suppliers")
+      .select(`${SUPPLIER_COLS}, categories(name, slug)`)
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data }) => data && setSupplier((prev: any) => ({ ...prev, ...data })));
   };
 
   const toggleFavorite = async () => {
+    if (!user) {
+      toast({ title: "Faça login para salvar", description: "Crie uma conta grátis ou entre para guardar seus favoritos." });
+      return;
+    }
     if (!coupleId || !id) {
-      if (!user) {
-        toast({
-          title: "Faça login para favoritar",
-          description: "Crie uma conta ou entre para salvar seus favoritos.",
-        });
-        return;
-      }
+      toast({ title: "Favoritos são para contas de casal" });
       return;
     }
     if (isFavorited) {
@@ -233,40 +319,108 @@ export default function SupplierProfile() {
     } else {
       await supabase.from("couple_favorites").insert({ couple_id: coupleId, supplier_id: id });
       setIsFavorited(true);
-      toast({ title: "Adicionado aos favoritos!" });
+      toast({ title: "Salvo nos favoritos!" });
     }
   };
 
-  const scrollToQuoteForm = () => {
-    quoteFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  const compartilhar = async () => {
+    const url = absoluteUrl(`/fornecedor/${id}`);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: supplier?.company_name, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copiado!" });
+    } catch {
+      /* cancelado */
+    }
   };
+
+  // seção ativa no menu fixo
+  useEffect(() => {
+    if (loading || !("IntersectionObserver" in window)) return;
+    const els = Array.from(document.querySelectorAll<HTMLElement>(".pf-bloco[id]"));
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => e.isIntersecting && setSecao(e.target.id)),
+      { rootMargin: "-130px 0px -60% 0px" },
+    );
+    els.forEach((e) => io.observe(e));
+    return () => io.disconnect();
+  }, [loading, campos.length, faqs.length, photos.length]);
+
+  const notas = useMemo(() => {
+    const cont = [0, 0, 0, 0, 0];
+    reviews.forEach((r) => {
+      const n = Math.min(5, Math.max(1, Math.round(r.rating)));
+      cont[5 - n]++;
+    });
+    const media = reviews.length ? reviews.reduce((s, r) => s + Number(r.rating), 0) / reviews.length : 0;
+    return { cont, media };
+  }, [reviews]);
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Carregando...</p>
+      <div className="pf grid min-h-screen place-items-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--pf-line2)] border-t-[var(--pf-clay)]" />
       </div>
     );
   if (!supplier)
     return (
-      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
-        <Building className="h-16 w-16 text-muted-foreground" />
-        <p className="text-muted-foreground">Fornecedor não encontrado.</p>
+      <div className="pf flex min-h-screen flex-col items-center justify-center gap-4">
+        <Building className="h-16 w-16 text-[var(--pf-muted)]" />
+        <p className="text-[var(--pf-body)]">Fornecedor não encontrado.</p>
         <Button asChild>
           <Link to="/buscar">Voltar à busca</Link>
         </Button>
       </div>
     );
 
-  const categoryName = (supplier.categories as any)?.name || "Fornecedor";
-  const ratingLabel =
-    supplier.rating >= 4.8
-      ? "Fantástico"
-      : supplier.rating >= 4.5
-        ? "Excelente"
-        : supplier.rating >= 4.0
-          ? "Muito bom"
-          : "Bom";
+  const categoria = (supplier.categories as any) || {};
+  const categoryName: string = categoria.name || "Fornecedor";
+  const categoriaSlug: string = categoria.slug || "";
+  const ehEspaco = isEspacoCategory(categoriaSlug || null, categoria.name ?? null);
+  const local = [supplier.city, supplier.state].filter(Boolean).join(", ");
+  const nota = reviews.length ? notas.media : Number(supplier.rating) || 0;
+  const totalAvaliacoes = reviews.length || supplier.review_count || 0;
+  const ratingLabel = nota >= 4.8 ? "Fantástico" : nota >= 4.5 ? "Excelente" : nota >= 4.0 ? "Muito bom" : "Bom";
+  const valorCampo = (...chaves: string[]) => campos.find((c) => chaves.includes(c.chave))?.valor;
+
+  // preço: faixa da categoria > preço médio > price_min do cadastro
+  const faixaPreco = valorCampo("preco_locacao", "preco_por_pessoa", "faixa_preco", "preco");
+  const precoBase: number | null =
+    (faixaPreco && typeof faixaPreco === "object" ? faixaPreco.min ?? null : null) ??
+    (valorCampo("preco_medio") != null ? Number(valorCampo("preco_medio")) : null) ??
+    (supplier.price_min ? Number(supplier.price_min) : null);
+  const porPessoa = !!campos.find((c) => c.chave === "preco_por_pessoa" && !vazio(c.valor));
+  const precoTexto = precoBase ? `${reais(precoBase)}${porPessoa ? " /pessoa" : ""}` : null;
+
+  // destaques: só dados reais do cadastro
+  const capacidade = valorCampo("capacidade_max", "convidados_max") ?? supplier.guest_max;
+  const destaques: { icone: LucideIcon; rotulo: string; valor: string }[] = [];
+  if (capacidade) destaques.push({ icone: Users, rotulo: "Capacidade", valor: `até ${Number(capacidade).toLocaleString("pt-BR")} convidados` });
+  const quartos = valorCampo("hospedagem_qtd");
+  if (quartos) destaques.push({ icone: BedDouble, rotulo: "Hospedagem", valor: `${quartos} ${Number(quartos) === 1 ? "quarto ou chalé" : "quartos ou chalés"}` });
+  const anos = valorCampo("anos_experiencia");
+  if (anos) destaques.push({ icone: Award, rotulo: "Experiência", valor: `${anos} ${Number(anos) === 1 ? "ano" : "anos"}` });
+  destaques.push({ icone: Wallet, rotulo: "Preço", valor: precoTexto ? `a partir de ${precoTexto}` : "sob consulta" });
+  if (local) destaques.push({ icone: MapPin, rotulo: "Atende", valor: local });
+
+  const oferece = campos.filter((c) => !CHAVES_FORA.has(c.chave));
+  const cidadesAtendidas: string[] = Array.isArray(supplier.cidades_atendidas) ? supplier.cidades_atendidas.filter(Boolean) : [];
+  const descricao: string = supplier.description || "";
+  const descricaoLonga = descricao.length > 420;
+  const mostrarFotos = photos.length > 1;
+  const reviewsVisiveis = verTodas ? reviews : reviews.slice(0, 4);
+
+  const secoes = [
+    { id: "sobre", rotulo: "Sobre" },
+    ...(oferece.length ? [{ id: "oferece", rotulo: "O que oferece" }] : []),
+    ...(mostrarFotos ? [{ id: "fotos", rotulo: "Fotos" }] : []),
+    { id: "avaliacoes", rotulo: "Avaliações" },
+    ...(local ? [{ id: "local", rotulo: "Localização" }] : []),
+    ...(faqs.length ? [{ id: "perguntas", rotulo: "Perguntas" }] : []),
+  ];
 
   const seoImages = [supplier.profile_photo_url, ...photos.slice(0, 4).map((p: any) => p.photo_url)].filter(Boolean);
   const localBusinessJsonLd: Record<string, any> = {
@@ -285,17 +439,10 @@ export default function SupplierProfile() {
       addressCountry: "BR",
     },
     telephone: supplier.whatsapp || supplier.phone || undefined,
-    geo:
-      supplier.lat && supplier.lng
-        ? { "@type": "GeoCoordinates", latitude: supplier.lat, longitude: supplier.lng }
-        : undefined,
+    geo: supplier.lat && supplier.lng ? { "@type": "GeoCoordinates", latitude: supplier.lat, longitude: supplier.lng } : undefined,
     aggregateRating:
       supplier.rating && supplier.review_count
-        ? {
-            "@type": "AggregateRating",
-            ratingValue: supplier.rating,
-            reviewCount: supplier.review_count,
-          }
+        ? { "@type": "AggregateRating", ratingValue: supplier.rating, reviewCount: supplier.review_count }
         : undefined,
   };
   const breadcrumb = breadcrumbJsonLd([
@@ -304,32 +451,54 @@ export default function SupplierProfile() {
     { name: supplier.company_name, path: `/fornecedor/${id}` },
   ]);
 
+  const orcamentoProps = {
+    supplierId: supplier.id,
+    supplierName: supplier.company_name,
+    categoriaSlug,
+    categoriaNome: categoryName,
+    precoTexto,
+    tempoResposta,
+    olhando: viewerCount,
+    whatsapp: phoneUnlocked ? supplier.whatsapp || supplier.phone || null : null,
+    onEnviado: () => {
+      carregarContato(supplier.id);
+      if (coupleId) setPodeAvaliar(true);
+    },
+  };
+
+  const cartoesLaterais = (
+    <>
+      <div className="pf-promo">
+        <PromoDatesInline supplierId={supplier.id} supplierName={supplier.company_name} priceMin={supplier.price_min} />
+      </div>
+      <RedesSociaisPerfil supplierId={supplier.id} className="pf-redes" />
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="pf pb-24 md:pb-0">
       <SEO
         title={`${supplier.company_name} — Casamenteiro`}
         description={truncate(
-          supplier.description ||
-            `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`,
+          supplier.description || `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`,
         )}
         canonical={absoluteUrl(`/fornecedor/${id}`)}
-        ogImage={supplier.profile_photo_url || undefined}
+        ogImage={supplier.profile_photo_url || photos[0]?.photo_url || undefined}
         jsonLd={[localBusinessJsonLd, breadcrumb]}
       />
-      {/* Header */}
-      <header className="bg-background border-b border-border sticky top-0 z-50">
-        <div className="container flex items-center h-14 gap-4">
-          <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="text-lg font-bold hidden sm:inline">Casamenteiro</span>
+
+      <header className="pf-top">
+        <div className="pf-wrap flex h-[60px] items-center gap-6">
+          <Link to="/" className="pf-serif text-[22px] tracking-tight">
+            casamenteiro<span className="text-[var(--pf-clay)]">.</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm ml-6">
-            <Link to="/explorar" className="text-muted-foreground hover:text-foreground transition-colors">
+          <nav className="hidden items-center gap-5 text-sm font-semibold text-[var(--pf-body)] md:flex">
+            <Link to="/explorar" className="hover:text-[var(--pf-ink)]">
               Fornecedores
             </Link>
             {user && (
-              <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-                Meu Casamento
+              <Link to="/dashboard" className="hover:text-[var(--pf-ink)]">
+                Meu casamento
               </Link>
             )}
           </nav>
@@ -341,559 +510,425 @@ export default function SupplierProfile() {
               </>
             ) : (
               <>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/login">Entrar</Link>
-                </Button>
-                <Button size="sm" asChild>
-                  <Link to="/cadastro">Cadastrar</Link>
-                </Button>
+                <Link to="/login" className="pf-pill h-9 px-3.5 text-[13.5px]">
+                  Entrar
+                </Link>
+                <Link to="/cadastro" className="pf-pill pri hidden h-9 px-3.5 text-[13.5px] sm:inline-flex">
+                  Criar conta
+                </Link>
               </>
             )}
           </div>
         </div>
       </header>
 
-      {/* Breadcrumb */}
-      <div className="border-b border-border">
-        <div className="container py-2 text-xs text-muted-foreground flex items-center gap-1.5">
-          <Link to="/" className="hover:text-foreground">
-            Casamentos
+      <main className="pf-wrap">
+        <nav className="flex flex-wrap items-center gap-1.5 py-3.5 text-[12.5px] text-[var(--pf-muted)]" aria-label="Caminho">
+          <Link to="/" className="hover:text-[var(--pf-ink)]">
+            Início
           </Link>
-          <span>/</span>
-          <Link to="/buscar" className="hover:text-foreground">
+          <span>›</span>
+          <Link to={categoriaSlug ? `/categoria/${categoriaSlug}` : "/explorar"} className="hover:text-[var(--pf-ink)]">
             {categoryName}
           </Link>
-          <span>/</span>
-          <span className="text-foreground">{supplier.company_name}</span>
-        </div>
-      </div>
+          {local && (
+            <>
+              <span>›</span>
+              <span>{local}</span>
+            </>
+          )}
+          <span>›</span>
+          <span className="text-[var(--pf-ink)]">{supplier.company_name}</span>
+        </nav>
 
-      {/* Search bar */}
-      <div className="border-b border-border">
-        <div className="container py-3 flex items-center gap-3 max-w-2xl">
-          <div className="flex-1 border border-border rounded-lg px-3 py-2 text-sm text-muted-foreground">
-            {categoryName}
-          </div>
-          <span className="text-sm text-muted-foreground">em</span>
-          <div className="border border-border rounded-lg px-3 py-2 text-sm text-muted-foreground w-40">
-            {[supplier.city, supplier.state].filter(Boolean).join(", ") || "Brasil"}
-          </div>
-          <Button
-            variant="outline"
-            className="text-primary border-primary hover:bg-primary hover:text-primary-foreground"
-            asChild
-          >
-            <Link to="/buscar">Pesquisar</Link>
-          </Button>
-        </div>
-      </div>
+        <GaleriaFornecedor
+          fotos={photos}
+          nome={supplier.company_name}
+          favorito={isFavorited}
+          onFavoritar={toggleFavorite}
+          onCompartilhar={compartilhar}
+        />
 
-      {/* Interest banner with social proof */}
-      <div className="bg-blue-50 border-b border-blue-100">
-        <div className="container py-3 text-sm text-blue-700 flex items-center gap-2">
-          <Eye className="h-4 w-4" />
-          <span className="font-medium">
-            {viewerCount} {viewerCount === 1 ? "pessoa está" : "pessoas estão"} olhando este fornecedor.
-          </span>
-          <button onClick={scrollToQuoteForm} className="underline font-medium hover:text-blue-900 transition-colors">
-            Solicite um orçamento!
-          </button>
-        </div>
-      </div>
-
-      <main className="container py-6">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Left: Gallery + content */}
-          <div className="flex-1 min-w-0">
-            {/* Photo gallery - mosaic */}
-            {photos.length > 0 ? (
-              <div className="relative mb-6">
-                <div
-                  className="grid grid-cols-2 sm:grid-cols-3 gap-1 rounded-xl overflow-hidden"
-                  style={{ height: "400px" }}
-                >
-                  <div
-                    className="col-span-2 row-span-2 relative bg-muted cursor-pointer"
-                    onClick={() => setSelectedPhoto(0)}
-                  >
-                    <img
-                      src={photos[0]?.photo_url}
-                      alt={supplier.company_name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {photos.slice(1, 5).map((photo, i) => (
-                    <div
-                      key={photo.id}
-                      className="relative bg-muted cursor-pointer"
-                      onClick={() => setSelectedPhoto(i + 1)}
-                    >
-                      <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
-                      {i === 3 && photos.length > 5 && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-medium">
-                          +{photos.length - 5} fotos
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <button
-                    onClick={toggleFavorite}
-                    className={`bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-white transition-colors ${isFavorited ? "text-primary" : "text-muted-foreground"}`}
-                  >
-                    <Heart className={`h-5 w-5 ${isFavorited ? "fill-primary" : ""}`} />
-                  </button>
-                </div>
-                <button className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 text-sm font-medium shadow-md flex items-center gap-2 hover:bg-white transition-colors">
-                  <Image className="h-4 w-4" />
-                  Ver Fotos {photos.length}
-                </button>
-              </div>
-            ) : (
-              <div className="h-64 bg-muted rounded-xl flex items-center justify-center mb-6">
-                <Building className="h-16 w-16 text-muted-foreground" />
-              </div>
-            )}
-
-            {/* Mobile: Supplier info + quote form */}
-            <div className="lg:hidden mb-6" ref={quoteFormRef}>
-              <Card>
-                <CardContent className="p-5">
-                  <h1 className="font-bold text-xl mb-3">{supplier.company_name}</h1>
-
-                  {supplier.rating && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="font-semibold text-sm">{supplier.rating.toFixed(1)}</span>
-                      <span className="text-sm text-muted-foreground">{ratingLabel}</span>
-                    </div>
-                  )}
-
-                  {(supplier.city || supplier.state) && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <span>{[supplier.city, supplier.state].filter(Boolean).join(", ")}</span>
-                    </div>
-                  )}
-
-                  {supplier.price_min && (
-                    <div className="flex items-center gap-2 text-sm mb-3">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>Desde R${supplier.price_min.toLocaleString("pt-BR")}</span>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <QuoteRequestForm supplierId={supplier.id} supplierName={supplier.company_name} />
-                    {phoneUnlocked &&
-                      buildWhatsAppLink(
-                        supplier.whatsapp || supplier.phone || "",
-                        "Olá! Vim pelo Casamenteiro, gostaria de conversar sobre o casamento.",
-                      ) && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-12 w-12 shrink-0 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
-                          asChild
-                        >
-                          <a
-                            href={
-                              buildWhatsAppLink(
-                                supplier.whatsapp || supplier.phone || "",
-                                "Olá! Vim pelo Casamenteiro, gostaria de conversar sobre o casamento.",
-                              )!
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Conversar no WhatsApp"
-                            onClick={() => analytics.contactCtaClick({ supplier_id: supplier.id, origem: "whatsapp" })}
-                          >
-                            <MessageCircle className="h-5 w-5" />
-                          </a>
-                        </Button>
-                      )}
-                  </div>
-                  {!phoneUnlocked && (
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                      <MessageCircle className="h-3 w-3" />
-                      WhatsApp liberado após enviar o primeiro pedido de orçamento
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-              <RedesSociaisPerfil supplierId={supplier.id} className="mt-3" />
+        <div className="mt-6 grid gap-10 md:mt-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0">
+            <div className="flex flex-wrap gap-2">
+              <span className="pf-tag">{categoryName}</span>
+              {supplier.status === "approved" && (
+                <span className="pf-tag ok">
+                  <Check className="h-3.5 w-3.5" strokeWidth={2.6} /> Perfil verificado
+                </span>
+              )}
+              {supplier.promo_percentage > 0 && (
+                <span className="pf-tag">
+                  <Tag className="h-3.5 w-3.5" /> {supplier.promo_percentage}% de desconto
+                </span>
+              )}
+            </div>
+            <h1 className="pf-serif mt-3 text-[34px] leading-[1.08] tracking-[-0.02em] md:text-[46px]">{supplier.company_name}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14.5px] text-[var(--pf-body)]">
+              {totalAvaliacoes > 0 && nota > 0 ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Star className="h-4 w-4 fill-[var(--pf-star)] text-[var(--pf-star)]" />
+                  <b className="text-[var(--pf-ink)]">{nota.toFixed(1).replace(".", ",")}</b>
+                  <a href="#avaliacoes" className="underline underline-offset-2">
+                    {totalAvaliacoes} {totalAvaliacoes === 1 ? "avaliação" : "avaliações"}
+                  </a>
+                </span>
+              ) : (
+                <span className="pf-tag h-6 text-xs">Novo no Casamenteiro</span>
+              )}
+              {local && (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" /> {local}
+                </span>
+              )}
+              {tempoResposta != null && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" /> Responde em cerca de {formatarHoras(tempoResposta)}
+                </span>
+              )}
             </div>
 
-            {/* Tabs */}
-            <Tabs defaultValue="info" className="mb-8">
-              <TabsList className="bg-transparent border-b border-border rounded-none w-full justify-start gap-0 h-auto p-0 overflow-x-auto">
-                {[
-                  { value: "info", label: "Informação" },
-                  { value: "faqs", label: "FAQs" },
-                  { value: "opinions", label: `Opiniões ${reviews.length > 0 ? `(${reviews.length})` : ""}` },
-                  { value: "map", label: "Mapa" },
-                ].map((tab) => (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 text-sm whitespace-nowrap"
-                  >
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
+              {destaques.slice(0, 4).map((d) => (
+                <div key={d.rotulo} className="pf-dest">
+                  <span className="pf-ic">
+                    <d.icone className="h-[18px] w-[18px]" />
+                  </span>
+                  <small className="text-xs font-semibold text-[var(--pf-muted)]">{d.rotulo}</small>
+                  <b className="text-[14.5px] leading-snug">{d.valor}</b>
+                </div>
+              ))}
+            </div>
 
-              <TabsContent value="info" className="mt-6">
-                <div className="mb-8">
-                  <h2 className="font-bold text-lg mb-4">Dados de interesse</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {supplier.city && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <TreePine className="h-5 w-5 text-muted-foreground" />
-                        <span>{supplier.city}</span>
-                      </div>
-                    )}
-                    {(supplier.guest_min || supplier.guest_max) && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                        <span>
-                          {supplier.guest_min && supplier.guest_max
-                            ? `${supplier.guest_min} a ${supplier.guest_max} convidados`
-                            : supplier.guest_max
-                              ? `Até ${supplier.guest_max} convidados`
-                              : `${supplier.guest_min}+ convidados`}
+            {/* celular: datas e redes logo abaixo dos destaques */}
+            <div className="mt-4 flex flex-col gap-3 lg:hidden">{cartoesLaterais}</div>
+
+            <nav className="pf-subnav -mx-4 mt-8 px-4 md:mx-0 md:px-0" aria-label="Seções">
+              {secoes.map((s) => (
+                <a key={s.id} href={`#${s.id}`} className={secao === s.id ? "on" : ""}>
+                  {s.rotulo}
+                </a>
+              ))}
+            </nav>
+
+            <section className="pf-bloco" id="sobre">
+              <h2 className="pf-h2">
+                Sobre {ehEspaco ? "o" : ""} <em>{ehEspaco ? "espaço" : categoryName.toLowerCase()}</em>
+              </h2>
+              {descricao ? (
+                <>
+                  <div className={`pf-sobre ${descricaoLonga && !sobreAberto ? "curto" : ""}`}>{descricao}</div>
+                  {descricaoLonga && (
+                    <button
+                      type="button"
+                      className="mt-2 text-sm font-bold text-[var(--pf-clay)] underline underline-offset-4"
+                      onClick={() => setSobreAberto((v) => !v)}
+                    >
+                      {sobreAberto ? "Mostrar menos" : "Ler tudo"}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className="text-[var(--pf-body)]">Este fornecedor ainda não escreveu sobre o trabalho dele.</p>
+              )}
+              <div className="mt-5">
+                <SupplierPublicAttachments supplierId={supplier.id} showFloorPlan={ehEspaco} />
+              </div>
+            </section>
+
+            {oferece.length > 0 && (
+              <section className="pf-bloco" id="oferece">
+                <h2 className="pf-h2">
+                  O que <em>oferece</em>
+                </h2>
+                <p className="-mt-2 mb-3 text-[13px] text-[var(--pf-muted)]">Informações preenchidas pelo fornecedor no cadastro.</p>
+                <div className="grid gap-x-8 sm:grid-cols-2">
+                  {oferece.map((c) => {
+                    const Icone = iconeDoCampo(c.chave);
+                    return (
+                      <div key={c.id} className="pf-of">
+                        <span className="pf-ic">
+                          <Icone className="h-4 w-4" />
                         </span>
+                        <div className="min-w-0 flex-1">
+                          <small className="block text-[12.5px] text-[var(--pf-muted)]">{c.label}</small>
+                          <ValorCampo campo={c} />
+                        </div>
                       </div>
-                    )}
-                    <div className="flex items-center gap-3 text-sm">
-                      <CarIcon className="h-5 w-5 text-muted-foreground" />
-                      <span>Possui estacionamento</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <ChefHat className="h-5 w-5 text-muted-foreground" />
-                      <span>Cozinha para catering</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                      <span>Realiza 1 evento por dia</span>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
+              </section>
+            )}
 
-                {supplier.category_id && (
-                  <div className="mb-8">
-                    <h2 className="font-bold text-lg mb-4">Detalhes da categoria</h2>
-                    <DynamicFieldsView supplierId={supplier.id} categoryId={supplier.category_id} />
-                  </div>
-                )}
-
-                <SupplierPublicAttachments
-                  supplierId={supplier.id}
-                  showFloorPlan={isEspacoCategory(
-                    (supplier.categories as any)?.slug ?? null,
-                    (supplier.categories as any)?.name ?? null,
-                  )}
-                />
-
-                <div>
-                  <h2 className="font-bold text-lg mb-4">Informação</h2>
-                  {supplier.description ? (
-                    <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                      {supplier.description}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Ainda não há informações detalhadas sobre este fornecedor.
-                    </p>
-                  )}
+            {mostrarFotos && (
+              <section className="pf-bloco" id="fotos">
+                <h2 className="pf-h2">
+                  Fotos <em>({photos.length})</em>
+                </h2>
+                <div className="pf-mosaico">
+                  {photos.map((f, i) => (
+                    <button key={f.id || i} type="button" onClick={() => setFotoAberta(i)} aria-label={`Abrir foto ${i + 1}`}>
+                      <img src={f.photo_url} alt="" loading="lazy" />
+                    </button>
+                  ))}
                 </div>
-              </TabsContent>
+              </section>
+            )}
 
-              <TabsContent value="faqs" className="mt-6">
-                <h2 className="font-bold text-lg mb-4">Perguntas frequentes</h2>
-                <p className="text-sm text-muted-foreground">Ainda não há perguntas frequentes cadastradas.</p>
-              </TabsContent>
-
-              <TabsContent value="opinions" className="mt-6">
-                <h2 className="font-bold text-lg mb-4">Opiniões</h2>
-
-                {supplier.rating ? (
-                  <div className="flex items-center gap-3 mb-6 p-4 bg-secondary rounded-lg">
-                    <div className="text-3xl font-bold text-primary">{supplier.rating.toFixed(1)}</div>
-                    <div>
-                      <div className="flex gap-0.5 mb-1">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {ratingLabel} · {reviews.length} opiniões
-                      </p>
+            <section className="pf-bloco" id="avaliacoes">
+              <h2 className="pf-h2">
+                O que dizem os <em>casais</em>
+              </h2>
+              {reviews.length > 0 ? (
+                <>
+                  <div className="pf-card flex flex-col gap-5 p-5 sm:flex-row sm:items-center">
+                    <div className="flex flex-col">
+                      <b className="pf-serif text-[44px] leading-none">{nota.toFixed(1).replace(".", ",")}</b>
+                      <span className="mt-1.5">
+                        <Estrelas nota={nota} />
+                      </span>
+                      <small className="mt-1 text-[13px] text-[var(--pf-muted)]">
+                        {reviews.length} {reviews.length === 1 ? "avaliação" : "avaliações"} · {ratingLabel}
+                      </small>
                     </div>
-                  </div>
-                ) : null}
-
-                {user && coupleId && !userHasReview && (
-                  <div className="border border-border rounded-lg p-4 mb-6">
-                    <h3 className="font-semibold text-sm mb-3">Deixe sua avaliação</h3>
-                    <div className="flex gap-1 mb-3">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <button key={s} onClick={() => setReviewRating(s)}>
-                          <Star
-                            className={`h-6 w-6 transition-colors ${s <= reviewRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground hover:text-amber-300"}`}
-                          />
-                        </button>
+                    <div className="pf-barra-nota flex flex-1 flex-col gap-1.5 text-[12.5px] text-[var(--pf-body)]">
+                      {notas.cont.map((n, i) => (
+                        <div key={i} className="grid grid-cols-[64px_1fr_20px] items-center gap-2.5">
+                          <span>
+                            {5 - i} {5 - i === 1 ? "estrela" : "estrelas"}
+                          </span>
+                          <i style={{ ["--w" as any]: `${(n / reviews.length) * 100}%` }} />
+                          <span className="text-right">{n}</span>
+                        </div>
                       ))}
                     </div>
-                    <Input
-                      placeholder="Título da avaliação (opcional)"
-                      value={reviewTitle}
-                      onChange={(e) => setReviewTitle(e.target.value)}
-                      className="mb-2"
-                      maxLength={100}
-                    />
-                    <Textarea
-                      placeholder="Conte como foi sua experiência..."
-                      value={reviewComment}
-                      onChange={(e) => setReviewComment(e.target.value)}
-                      className="mb-3"
-                      maxLength={1000}
-                    />
-                    <Button onClick={submitReview} disabled={submittingReview} size="sm">
-                      <Send className="h-4 w-4 mr-2" />
-                      {submittingReview ? "Enviando..." : "Enviar avaliação"}
-                    </Button>
                   </div>
-                )}
-
-                {!user && (
-                  <p className="text-sm text-muted-foreground mb-4">
-                    <Link to="/login" className="text-primary underline">
-                      Faça login
-                    </Link>{" "}
-                    para deixar sua avaliação.
-                  </p>
-                )}
-
-                {reviews.length > 0 ? (
-                  <div className="space-y-4">
-                    {reviews.map((rev) => (
-                      <div key={rev.id} className="border border-border rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                className={`h-3.5 w-3.5 ${s <= rev.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(rev.created_at).toLocaleDateString("pt-BR")}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {reviewsVisiveis.map((rev) => (
+                      <article key={rev.id} className="pf-card p-4">
+                        <header className="mb-2 flex items-center gap-2.5">
+                          <span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--pf-blush)] text-[var(--pf-clay)]">
+                            <Users className="h-4 w-4" />
                           </span>
-                        </div>
-                        {rev.title && <p className="font-semibold text-sm mb-1">{rev.title}</p>}
-                        {rev.comment && <p className="text-sm text-muted-foreground">{rev.comment}</p>}
-                      </div>
+                          <div className="min-w-0 flex-1">
+                            <b className="block truncate text-sm">Casal do Casamenteiro</b>
+                            <small className="text-xs text-[var(--pf-muted)]">
+                              {new Date(rev.created_at).toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
+                            </small>
+                          </div>
+                          <Estrelas nota={rev.rating} tamanho="h-3.5 w-3.5" />
+                        </header>
+                        {rev.title && <p className="mb-1 text-sm font-semibold">{rev.title}</p>}
+                        {rev.comment && <p className="text-sm leading-relaxed text-[var(--pf-body)]">{rev.comment}</p>}
+                      </article>
                     ))}
                   </div>
-                ) : !supplier.rating ? (
-                  <p className="text-sm text-muted-foreground">Ainda não há opiniões sobre este fornecedor.</p>
-                ) : null}
-              </TabsContent>
+                  {reviews.length > 4 && !verTodas && (
+                    <button type="button" className="pf-pill mt-4" onClick={() => setVerTodas(true)}>
+                      Ver as {reviews.length} avaliações
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="pf-card flex items-start gap-3.5 p-5">
+                  <span className="pf-ic">
+                    <Star className="h-5 w-5 fill-current" />
+                  </span>
+                  <div>
+                    <b>Ainda sem avaliações</b>
+                    <p className="mt-0.5 text-sm text-[var(--pf-body)]">
+                      Só casais que pediram orçamento ou contrataram este fornecedor podem avaliar, para as notas serem de verdade.
+                    </p>
+                  </div>
+                </div>
+              )}
 
-              <TabsContent value="map" className="mt-6" forceMount>
-                <h2 className="font-bold text-lg mb-4">Localização</h2>
-                <SupplierMap city={supplier.city} state={supplier.state} supplierName={supplier.company_name} />
-              </TabsContent>
-            </Tabs>
+              {user && coupleId && !userHasReview && podeAvaliar && (
+                <div className="pf-card mt-4 p-5">
+                  <h3 className="mb-3 font-semibold">Conte como foi com {supplier.company_name}</h3>
+                  <div className="mb-3 flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button key={s} type="button" onClick={() => setReviewRating(s)} aria-label={`${s} estrelas`}>
+                        <Star
+                          className={`h-7 w-7 transition-colors ${s <= reviewRating ? "fill-[var(--pf-star)] text-[var(--pf-star)]" : "text-[#d8cfc4] hover:text-[var(--pf-terra)]"}`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <Input
+                    placeholder="Título da avaliação (opcional)"
+                    value={reviewTitle}
+                    onChange={(e) => setReviewTitle(e.target.value)}
+                    className="mb-2 bg-white"
+                    maxLength={100}
+                  />
+                  <Textarea
+                    placeholder="Como foi a experiência?"
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    className="mb-3 bg-white"
+                    maxLength={1000}
+                  />
+                  <button type="button" className="pf-pill pri" onClick={submitReview} disabled={submittingReview}>
+                    <Send className="h-4 w-4" />
+                    {submittingReview ? "Enviando..." : "Enviar avaliação"}
+                  </button>
+                </div>
+              )}
+            </section>
 
-            {/* Recommendations */}
+            {local && (
+              <section className="pf-bloco" id="local">
+                <h2 className="pf-h2">
+                  Onde <em>fica</em>
+                </h2>
+                <div className="overflow-hidden rounded-[18px] border border-[var(--pf-line)] bg-white">
+                  <SupplierMap city={supplier.city} state={supplier.state} supplierName={supplier.company_name} />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(cidadesAtendidas.length ? cidadesAtendidas : [supplier.city].filter(Boolean)).map((c: string) => (
+                    <span key={c} className="pf-chip">
+                      Atende em {c}
+                    </span>
+                  ))}
+                  {valorCampo("atende_fora") === true && <span className="pf-chip">Atende fora da cidade</span>}
+                </div>
+              </section>
+            )}
+
+            {faqs.length > 0 && (
+              <section className="pf-bloco" id="perguntas">
+                <h2 className="pf-h2">
+                  Perguntas <em>frequentes</em>
+                </h2>
+                {faqs.map((f) => (
+                  <details key={f.id} className="pf-faq">
+                    <summary>{f.pergunta}</summary>
+                    <p className="whitespace-pre-line pb-4 text-[15px] leading-relaxed text-[var(--pf-body)]">{f.resposta}</p>
+                  </details>
+                ))}
+              </section>
+            )}
+
             {recommendations.length > 0 && (
-              <div className="mb-8">
-                <h2 className="font-bold text-lg mb-4">Fornecedores similares que você pode gostar</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <section className="pf-bloco pb-10">
+                <h2 className="pf-h2">
+                  Outros <em>{ehEspaco ? "espaços" : categoryName.toLowerCase()}</em> que você pode gostar
+                </h2>
+                <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
                   {recommendations.map((rec) => {
-                    const _fotos = rec.supplier_photos || [];
-                    const photo = (_fotos.find((p: any) => p.is_principal) || _fotos[0])?.photo_url;
+                    const fotos = rec.supplier_photos || [];
+                    const foto = (fotos.find((p: any) => p.is_principal) || fotos[0])?.photo_url || rec.profile_photo_url;
                     return (
-                      <Link key={rec.id} to={`/fornecedor/${rec.id}`} className="group">
-                        <div className="rounded-lg overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
-                          <div className="relative h-36 bg-muted">
-                            {photo ? (
-                              <img
-                                src={photo}
-                                alt={rec.company_name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                loading="lazy"
-                              />
+                      <Link
+                        key={rec.id}
+                        to={`/fornecedor/${rec.id}`}
+                        className="group w-[220px] flex-none snap-start overflow-hidden rounded-2xl border border-[var(--pf-line)] bg-white md:w-auto"
+                      >
+                        <div className="relative aspect-[4/3] overflow-hidden bg-[#e9e0d6]">
+                          {foto ? (
+                            <img
+                              src={foto}
+                              alt={rec.company_name}
+                              loading="lazy"
+                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="grid h-full place-items-center">
+                              <Building className="h-8 w-8 text-[#b9a999]" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3">
+                          <b className="line-clamp-1 text-sm">{rec.company_name}</b>
+                          <small className="mt-0.5 flex items-center gap-1 text-xs text-[var(--pf-muted)]">
+                            {[rec.city, rec.state].filter(Boolean).join(", ") || "Brasil"}
+                            {" · "}
+                            {rec.rating ? (
+                              <>
+                                <Star className="h-3 w-3 fill-[var(--pf-star)] text-[var(--pf-star)]" />
+                                {Number(rec.rating).toFixed(1).replace(".", ",")}
+                              </>
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Building className="h-8 w-8 text-muted-foreground" />
-                              </div>
+                              "Novo"
                             )}
-                          </div>
-                          <div className="p-3">
-                            <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">
-                              {rec.company_name}
-                            </h3>
-                            {rec.rating && (
-                              <div className="flex items-center gap-1 text-xs mb-1">
-                                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                                <span className="font-semibold">{rec.rating.toFixed(1)}</span>
-                              </div>
-                            )}
-                            {(rec.city || rec.state) && (
-                              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {[rec.city, rec.state].filter(Boolean).join(", ")}
-                              </p>
-                            )}
-                          </div>
+                          </small>
                         </div>
                       </Link>
                     );
                   })}
                 </div>
-              </div>
+              </section>
             )}
           </div>
 
-          {/* Right sidebar - desktop only */}
-          <aside className="hidden lg:block w-[340px] shrink-0">
-            <div className="sticky top-20" ref={quoteFormRef}>
-              <Card className="mb-4">
-                <CardContent className="p-6">
-                  <h1 className="font-bold text-xl mb-3">{supplier.company_name}</h1>
-
-                  {supplier.rating && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`h-4 w-4 ${s <= Math.round(supplier.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="font-semibold text-sm">{supplier.rating.toFixed(1)}</span>
-                      <span className="text-sm text-muted-foreground">{ratingLabel}</span>
-                      {reviews.length > 0 && (
-                        <span className="text-sm text-primary underline cursor-pointer">
-                          · {reviews.length} opiniões
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {(supplier.city || supplier.state) && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <span>{[supplier.city, supplier.state].filter(Boolean).join(", ")}</span>
-                    </div>
-                  )}
-
-                  {supplier.promo_percentage && supplier.promo_percentage > 0 && (
-                    <div className="flex items-center gap-2 text-sm mb-4">
-                      <Tag className="h-4 w-4 text-primary" />
-                      <span>1 promoção</span>
-                      <span className="text-primary font-medium">{supplier.promo_percentage}% desconto</span>
-                    </div>
-                  )}
-
-                  <div className="border border-border rounded-lg p-4 mb-4 space-y-3">
-                    {supplier.price_min && (
-                      <div className="flex items-center gap-3">
-                        <DollarSign className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {categoryName === "Espaços e Buffet" ? "Aluguel" : "Preço"} desde R$
-                            {supplier.price_min.toLocaleString("pt-BR")}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {(supplier.guest_min || supplier.guest_max) && (
-                      <div className="flex items-center gap-3">
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                        <p className="text-sm">
-                          {supplier.guest_min && supplier.guest_max
-                            ? `${supplier.guest_min} a ${supplier.guest_max} convidados`
-                            : supplier.guest_max
-                              ? `Até ${supplier.guest_max} convidados`
-                              : `${supplier.guest_min}+ convidados`}
-                        </p>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Disponibilidade</p>
-                        <p className="text-xs text-muted-foreground">Ver calendário</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <QuoteRequestForm supplierId={supplier.id} supplierName={supplier.company_name} />
-                    {supplier.phone && phoneUnlocked && (
-                      <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" asChild>
-                        <a href={`tel:${supplier.phone}`}>
-                          <Phone className="h-5 w-5" />
-                        </a>
-                      </Button>
-                    )}
-                  </div>
-
-                  <PromoDatesInline
-                    supplierId={supplier.id}
-                    supplierName={supplier.company_name}
-                    priceMin={supplier.price_min}
-                  />
-
-                  <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    Dos mais pesquisados em {supplier.state || "sua região"}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <RedesSociaisPerfil supplierId={supplier.id} className="mb-4" />
-
-              {(supplier.email || (supplier.phone && phoneUnlocked)) && (
-                <Card>
-                  <CardContent className="p-4 space-y-2">
-                    <h3 className="font-semibold text-sm">Contato</h3>
-                    {supplier.phone && phoneUnlocked && (
-                      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="h-4 w-4 text-primary" />
-                        {supplier.phone}
-                      </p>
-                    )}
-                    {supplier.email && (
-                      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Mail className="h-4 w-4 text-primary" />
-                        {supplier.email}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+          <aside className="hidden lg:block">
+            <div className="sticky top-[76px] flex flex-col gap-3">
+              <OrcamentoInline {...orcamentoProps} />
+              {cartoesLaterais}
             </div>
           </aside>
         </div>
       </main>
+
+      {/* celular: barra fixa + folha com o formulário */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-[var(--pf-line)] bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="flex min-w-0 flex-col leading-tight">
+          <small className="text-[11.5px] font-semibold text-[var(--pf-muted)]">{precoTexto ? "a partir de" : "preço"}</small>
+          <b className="pf-serif truncate text-lg">{precoTexto || "Sob consulta"}</b>
+        </div>
+        <button type="button" className="pf-cta ml-auto h-12 flex-1 px-5 text-[15px]" onClick={() => setFolha(true)}>
+          Pedir orçamento grátis
+        </button>
+      </div>
+      <Sheet open={folha} onOpenChange={setFolha}>
+        <SheetContent side="bottom" className="pf max-h-[92vh] overflow-y-auto rounded-t-3xl border-0 p-3 pt-10" style={{ minHeight: 0 }}>
+          <SheetTitle className="sr-only">Pedir orçamento para {supplier.company_name}</SheetTitle>
+          <OrcamentoInline {...orcamentoProps} />
+        </SheetContent>
+      </Sheet>
+
+      {fotoAberta !== null && (
+        <Visualizador fotos={photos} nome={supplier.company_name} inicio={fotoAberta} onFechar={() => setFotoAberta(null)} />
+      )}
     </div>
   );
+}
+
+function ValorCampo({ campo }: { campo: Campo }) {
+  const v = campo.valor;
+  switch (campo.tipo) {
+    case "booleano":
+    case "checkbox":
+      return v ? (
+        <span className="inline-flex items-center gap-1 font-semibold text-[var(--pf-ok)]">
+          <Check className="h-4 w-4" /> Sim
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 text-[var(--pf-muted)]">
+          <XIcon className="h-4 w-4" /> Não
+        </span>
+      );
+    case "lista":
+    case "multiselect":
+      return (
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {(Array.isArray(v) ? v : [v]).map((s: string, i: number) => (
+            <span key={i} className="pf-chip">
+              {s}
+            </span>
+          ))}
+        </div>
+      );
+    case "faixa":
+      return <span className="font-semibold">{textoFaixa(v)}</span>;
+    case "numero":
+      return <span className="font-semibold">{ehCampoDinheiro(campo) ? reais(Number(v)) : Number(v).toLocaleString("pt-BR")}</span>;
+    case "textarea":
+      return <span className="whitespace-pre-line text-[var(--pf-body)]">{String(v)}</span>;
+    default:
+      return <span className="font-semibold">{String(v)}</span>;
+  }
 }
