@@ -389,7 +389,7 @@ export default function SupplierProfile() {
   // preço: faixa da categoria > preço médio > price_min do cadastro
   const faixaPreco = valorCampo("preco_locacao", "preco_por_pessoa", "faixa_preco", "preco");
   const precoBase: number | null =
-    (faixaPreco && typeof faixaPreco === "object" ? faixaPreco.min ?? null : null) ??
+    (faixaPreco && typeof faixaPreco === "object" ? (faixaPreco.min as number | null | undefined) ?? null : null) ??
     (valorCampo("preco_medio") != null ? Number(valorCampo("preco_medio")) : null) ??
     (supplier.price_min ? Number(supplier.price_min) : null);
   const porPessoa = !!campos.find((c) => c.chave === "preco_por_pessoa" && !vazio(c.valor));
