@@ -30,6 +30,7 @@ export default function SupplierMetrics({ supplierId }: { supplierId: string }) 
   const [m, setM] = useState<Metrics>({ views: vazia, quotes: vazia, proposals: vazia, contracted: vazia });
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [cliquesRedes, setCliquesRedes] = useState<number | null>(null);
 
   useEffect(() => {
     if (!supplierId) return;
@@ -46,6 +47,7 @@ export default function SupplierMetrics({ supplierId }: { supplierId: string }) 
         { data: contracted }, { count: contractedPrev },
         { data: proposals }, { count: proposalsPrev },
         { data: leads },
+        { data: cliques },
       ] = await Promise.all([
         supabase.from("supplier_profile_views").select("viewed_at").eq("supplier_id", supplierId).gte("viewed_at", since).limit(5000),
         supabase.from("supplier_profile_views").select("id", { count: "exact", head: true }).eq("supplier_id", supplierId).gte("viewed_at", before).lt("viewed_at", since),
@@ -58,6 +60,7 @@ export default function SupplierMetrics({ supplierId }: { supplierId: string }) 
         supabase.from("quote_messages").select("id", { count: "exact", head: true }).eq("sender_id", uid).not("amount", "is", null).gte("created_at", before).lt("created_at", since),
         supabase.from("supplier_leads").select("id, nome_casal, cidade_evento, data_evento, created_at, status_lead")
           .eq("supplier_id", supplierId).order("created_at", { ascending: false }).limit(5),
+        (supabase.from("supplier_redes_cliques" as any) as any).select("user_id").eq("supplier_id", supplierId).gte("created_at", since).limit(5000),
       ]);
 
       const serie = (rows: any[] | null, campo: string, prev: number | null): Serie => ({
@@ -72,6 +75,8 @@ export default function SupplierMetrics({ supplierId }: { supplierId: string }) 
         contracted: serie(contracted as any[], "updated_at", contractedPrev),
       });
       setRecentLeads(leads || []);
+      // pessoas diferentes que abriram alguma rede social
+      setCliquesRedes(new Set(((cliques as any[]) || []).map((c) => c.user_id)).size);
       setCarregando(false);
     })();
   }, [supplierId]);
@@ -90,6 +95,12 @@ export default function SupplierMetrics({ supplierId }: { supplierId: string }) 
           <Indicador key={c.label} rotulo={c.label} serie={c.s} carregando={carregando} atraso={0.08 + i * 0.06} />
         ))}
       </section>
+
+      {!!cliquesRedes && (
+        <p className="m-0 -mt-1 text-[13px] text-muted-foreground">
+          <b className="text-foreground">{cliquesRedes}</b> {cliquesRedes === 1 ? "casal abriu" : "casais abriram"} suas redes sociais nos últimos 30 dias.
+        </p>
+      )}
 
       {recentLeads.length > 0 && (
         <section className="pv-panel pv-enter flex flex-col gap-3 p-5" aria-labelledby="pv-leads" style={{ animationDelay: ".3s" }}>

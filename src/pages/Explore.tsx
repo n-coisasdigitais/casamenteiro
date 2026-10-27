@@ -22,6 +22,7 @@ import {
   Sparkles,
   Cake,
   ClipboardList,
+  HeartHandshake,
   Car,
   Video,
   ChevronLeft,
@@ -44,6 +45,7 @@ const categoryIcons: Record<string, any> = {
   sparkles: Sparkles,
   cake: Cake,
   clipboard: ClipboardList,
+  heart: HeartHandshake,
   car: Car,
   utensils: Utensils,
 };

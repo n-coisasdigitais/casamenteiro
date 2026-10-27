@@ -14,7 +14,7 @@ import { semDemo } from "@/lib/demoScope";
 
 const PAGE_SIZE = 25;
 type Contato = { phone?: string | null; whatsapp?: string | null; email?: string | null };
-type Rapido = "todos" | "pending" | "approved" | "teste" | "pagante" | "rejected";
+type Rapido = "todos" | "pending" | "approved" | "teste" | "pagante" | "rejected" | "blocked";
 
 const CORES = ["#a9551f", "#d9905a", "#4a7c6a", "#5b7fa6", "#8a6a9e", "#c46a5e"];
 const iniciais = (s: string) =>
@@ -31,7 +31,8 @@ const diasTeste = (s: any) => Math.max(0, Math.ceil((new Date(s.trial_ends_at).g
 
 function Situacao({ s, pagante }: { s: any; pagante: boolean }) {
   if (s.status === "pending") return <span className="cz-st cz-warn">Aguardando aprovação</span>;
-  if (s.status === "rejected") return <span className="cz-st cz-err">Recusado</span>;
+  if (s.status === "rejected") return <span className="cz-st cz-warn">Ajustes pedidos</span>;
+  if (s.status === "blocked") return <span className="cz-st cz-err">Recusado</span>;
   if (pagante) return <span className="cz-st cz-ok">Pagante</span>;
   if (emTeste(s)) return <span className="cz-st cz-info">Teste · {diasTeste(s)} dias</span>;
   return <span className="cz-st cz-off">Plano grátis</span>;
@@ -42,6 +43,7 @@ function SupplierList() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [contatos, setContatos] = useState<Record<string, Contato>>({});
   const [pagantes, setPagantes] = useState<Set<string>>(new Set());
+  const [instas, setInstas] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(true);
   const [q, setQ] = useState("");
   const [rapido, setRapido] = useState<Rapido>("todos");
@@ -51,11 +53,15 @@ function SupplierList() {
 
   useEffect(() => {
     (async () => {
-      const [{ data }, ct, subs] = await Promise.all([
+      const [{ data }, ct, subs, rs] = await Promise.all([
         semDemo(supabase.from("suppliers").select(`${SUPPLIER_COLS}, categories(name)`)).order("created_at", { ascending: false }),
         (supabase.rpc as any)("admin_suppliers_contacts"),
         (supabase.from("supplier_subscriptions" as any) as any).select("supplier_id").eq("status", "ativa"),
+        (supabase.from("supplier_redes_sociais" as any) as any).select("supplier_id, instagram"),
       ]);
+      const ig: Record<string, string> = {};
+      ((rs?.data || []) as any[]).forEach((r) => r.instagram && (ig[r.supplier_id] = r.instagram));
+      setInstas(ig);
       setSuppliers(data || []);
       const m: Record<string, Contato> = {};
       ((ct?.data || []) as any[]).forEach((c) => (m[c.id] = c));
@@ -79,7 +85,7 @@ function SupplierList() {
     () =>
       suppliers.filter((s) => {
         const c = contatos[s.id] || {};
-        if (q && ![s.company_name, c.email, c.phone, c.whatsapp, s.city, s.instagram].some((v) => String(v || "").toLowerCase().includes(q.toLowerCase())))
+        if (q && ![s.company_name, c.email, c.phone, c.whatsapp, s.city, instas[s.id]].some((v) => String(v || "").toLowerCase().includes(q.toLowerCase())))
           return false;
         if (!passaRapido(s, rapido)) return false;
         if (categoria !== "all" && s.categories?.name !== categoria) return false;
@@ -87,7 +93,7 @@ function SupplierList() {
         return true;
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [suppliers, contatos, pagantes, q, rapido, categoria, cidade],
+    [suppliers, contatos, pagantes, instas, q, rapido, categoria, cidade],
   );
 
   useEffect(() => {
@@ -127,7 +133,8 @@ function SupplierList() {
     { k: "pagante", l: "Pagantes" },
     { k: "teste", l: "Em teste" },
     { k: "approved", l: "Aprovados" },
-    { k: "rejected", l: "Recusados" },
+    { k: "rejected", l: "Ajustes pedidos" },
+    { k: "blocked", l: "Recusados" },
   ];
 
   return (

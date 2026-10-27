@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Heart, ArrowLeft, Save, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { isDemoSession, semDemo } from "@/lib/demoScope";
+import { normalizarRede } from "@/lib/redesSociais";
 
 type Sup = {
   id: string; company_name: string; city: string|null; state: string|null;
@@ -44,14 +45,18 @@ export default function AdminSuppliers() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: sup }, { data: ct }, { data: contatos }] = await Promise.all([
-      semDemo(supabase.from("suppliers").select("id,company_name,city,state,instagram,website,price_min,price_max,status,is_demo,featured,category_id")).order("created_at", { ascending: false }),
+    const [{ data: sup }, { data: ct }, { data: contatos }, { data: redes }] = await Promise.all([
+      semDemo(supabase.from("suppliers").select("id,company_name,city,state,price_min,price_max,status,is_demo,featured,category_id")).order("created_at", { ascending: false }),
       supabase.from("categories").select("id,name").order("name"),
       supabase.rpc("admin_suppliers_contacts"),
+      (supabase.from("supplier_redes_sociais" as any) as any).select("supplier_id, instagram, site"),
     ]);
     const contatoPorId = new Map<string, any>();
     (contatos || []).forEach((c: any) => contatoPorId.set(c.id, c));
-    setRows(((sup as any) || []).map((s: any) => ({ ...s, ...(contatoPorId.get(s.id) || {}) })));
+    // Instagram e site ficam na tabela de redes (só usuários logados leem)
+    const redesPorId = new Map<string, any>();
+    ((redes as any[]) || []).forEach((r: any) => redesPorId.set(r.supplier_id, { instagram: r.instagram, website: r.site }));
+    setRows(((sup as any) || []).map((s: any) => ({ ...s, instagram: null, website: null, ...(contatoPorId.get(s.id) || {}), ...(redesPorId.get(s.id) || {}) })));
     setFilter(isDemoSession() ? "demo" : "real");
     setCats(ct || []); setLoading(false);
     setDirty(new Set()); setSelected(new Set());
@@ -68,11 +73,22 @@ export default function AdminSuppliers() {
     for (const r of toSave) {
       const { error } = await supabase.from("suppliers").update({
         company_name: r.company_name, city: r.city, state: r.state,
-        phone: r.phone, whatsapp: r.whatsapp, instagram: r.instagram, website: r.website,
+        phone: r.phone, whatsapp: r.whatsapp,
         price_min: r.price_min, price_max: r.price_max, status: r.status as any,
         is_demo: r.is_demo, featured: r.featured, category_id: r.category_id,
       } as any).eq("id", r.id);
-      if (error) fail++; else ok++;
+      const { error: errRedes } = error
+        ? { error: null }
+        : await (supabase.from("supplier_redes_sociais" as any) as any).upsert(
+            {
+              supplier_id: r.id,
+              instagram: normalizarRede("instagram", r.instagram || ""),
+              site: normalizarRede("site", r.website || ""),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "supplier_id" },
+          );
+      if (error || errRedes) fail++; else ok++;
     }
     toast({ title: `${ok} salvos${fail ? `, ${fail} com erro` : ""}` });
     load();
