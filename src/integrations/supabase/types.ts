@@ -1672,6 +1672,7 @@ export type Database = {
           admin_id: string | null
           created_at: string
           id: string
+          itens: string[] | null
           motivo: string | null
           supplier_id: string
         }
@@ -1680,6 +1681,7 @@ export type Database = {
           admin_id?: string | null
           created_at?: string
           id?: string
+          itens?: string[] | null
           motivo?: string | null
           supplier_id: string
         }
@@ -1688,6 +1690,7 @@ export type Database = {
           admin_id?: string | null
           created_at?: string
           id?: string
+          itens?: string[] | null
           motivo?: string | null
           supplier_id?: string
         }
@@ -4461,6 +4464,93 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_redes_cliques: {
+        Row: {
+          created_at: string
+          id: string
+          rede: string
+          supplier_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rede: string
+          supplier_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rede?: string
+          supplier_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_redes_cliques_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_redes_cliques_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_redes_sociais: {
+        Row: {
+          facebook: string | null
+          instagram: string | null
+          pinterest: string | null
+          site: string | null
+          supplier_id: string
+          tiktok: string | null
+          updated_at: string
+          youtube: string | null
+        }
+        Insert: {
+          facebook?: string | null
+          instagram?: string | null
+          pinterest?: string | null
+          site?: string | null
+          supplier_id: string
+          tiktok?: string | null
+          updated_at?: string
+          youtube?: string | null
+        }
+        Update: {
+          facebook?: string | null
+          instagram?: string | null
+          pinterest?: string | null
+          site?: string | null
+          supplier_id?: string
+          tiktok?: string | null
+          updated_at?: string
+          youtube?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_redes_sociais_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_redes_sociais_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_referral_events: {
         Row: {
           bonus_assinatura_credit_id: string | null
@@ -5313,6 +5403,10 @@ export type Database = {
       }
       expirar_monetizacao: { Args: never; Returns: undefined }
       expire_idle_reservations: { Args: never; Returns: number }
+      fornecedor_pendencias: {
+        Args: { _supplier_id: string }
+        Returns: string[]
+      }
       fornecedor_tem_recurso: {
         Args: { p_recurso: string; p_supplier: string }
         Returns: boolean
@@ -5530,7 +5624,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       couple_role: "noivo" | "noiva"
-      supplier_status: "pending" | "approved" | "rejected"
+      supplier_status: "pending" | "approved" | "rejected" | "blocked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5660,7 +5754,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       couple_role: ["noivo", "noiva"],
-      supplier_status: ["pending", "approved", "rejected"],
+      supplier_status: ["pending", "approved", "rejected", "blocked"],
     },
   },
 } as const
