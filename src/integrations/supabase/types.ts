@@ -5718,6 +5718,21 @@ export type Database = {
         Args: { p_categoria?: string; p_escopo: string }
         Returns: number
       }
+      vitrine_destaques_ativos: {
+        Args: { _categoria_id?: string }
+        Returns: {
+          categoria_nome: string
+          categoria_slug: string
+          cidade: string
+          estado: string
+          foco_desktop: string
+          foco_mobile: string
+          imagem_url: string
+          is_demo: boolean
+          supplier_id: string
+          supplier_nome: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
