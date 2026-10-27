@@ -71,6 +71,13 @@
       "when": 1793105854022,
       "tag": "0009_supplier_faqs_reviews_tempo_resposta",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793125008062,
+      "tag": "0010_destaques_vagas_avisos_preco",
+      "breakpoints": true
     }
   ]
 }
