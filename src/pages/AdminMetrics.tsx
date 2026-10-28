@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { linkFornecedor } from "@/lib/linkFornecedor";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -254,7 +255,7 @@ export default function AdminMetrics() {
                   <p className="text-xs text-muted-foreground">★ {s.rating || "—"} ({s.review_count || 0}) · cadastrado em {new Date(s.created_at).toLocaleDateString("pt-BR")}</p>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                  <Link to={`/fornecedor/${s.id}`}><ExternalLink className="w-3 h-3 mr-1" />Ver</Link>
+                  <Link to={linkFornecedor(s)}><ExternalLink className="w-3 h-3 mr-1" />Ver</Link>
                 </Button>
               </CardContent></Card>
             ))}

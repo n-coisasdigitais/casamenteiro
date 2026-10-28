@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { linkFornecedor } from "@/lib/linkFornecedor";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Heart, MapPin, Star } from "lucide-react";
 import { textoPreco, type FornecedorVitrine } from "@/lib/vitrine";
@@ -37,7 +38,7 @@ export default function CardFornecedor({
   };
 
   return (
-    <Link to={`/fornecedor/${f.id}`} className="vt-card group">
+    <Link to={linkFornecedor(f)} className="vt-card group">
       <div className="vt-foto">
         <div
           ref={trilho}
