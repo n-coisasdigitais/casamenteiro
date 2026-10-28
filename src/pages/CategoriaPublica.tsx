@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowUpDown, Building, ChevronDown, MapPin, Tag, Users } from "lucide-react";
@@ -81,6 +82,9 @@ export default function CategoriaPublica() {
   const cidade = params.get("cidade") || "";
   const preco = params.get("preco") || "";
   const conv = params.get("conv") || "";
+  const tipo = params.get("tipo") || "";
+  const [subcats, setSubcats] = useState<string[]>([]);
+  const [tiposPorForn, setTiposPorForn] = useState<Map<string, string[]>>(new Map());
   const ordem = params.get("ordem") || "rel";
   const mudar = (k: string, v: string) => {
     const n = new URLSearchParams(params);
@@ -104,6 +108,23 @@ export default function CategoriaPublica() {
         return;
       }
       setCategoria(cat);
+      setSubcats([]);
+      setTiposPorForn(new Map());
+      // Subcategorias: pergunta "tipo_atracao" (lista de opções) da categoria
+      const { data: campo } = await (supabase.from("campos_categoria") as any)
+        .select("id, opcoes")
+        .eq("category_id", cat.id)
+        .eq("chave", "tipo_atracao")
+        .eq("ativo", true)
+        .maybeSingle();
+      if (campo && Array.isArray(campo.opcoes)) {
+        const { data: resps } = await (supabase.from("fornecedor_campos") as any).select("supplier_id, valor").eq("campo_id", campo.id);
+        if (!vivo) return;
+        const m = new Map<string, string[]>();
+        (resps || []).forEach((r: any) => Array.isArray(r.valor) && m.set(r.supplier_id, r.valor));
+        setSubcats(campo.opcoes as string[]);
+        setTiposPorForn(m);
+      }
       const [forns, anun] = await Promise.all([carregarFornecedores(), carregarAnuncios(cat.id)]);
       if (!vivo) return;
       setTodos(forns);
@@ -128,6 +149,7 @@ export default function CategoriaPublica() {
 
   const itens = useMemo(() => {
     let l = daCategoria;
+    if (tipo) l = l.filter((f) => (tiposPorForn.get(f.id) || []).includes(tipo));
     if (cidade) l = l.filter((f) => normalizar(f.city).includes(normalizar(cidade)));
     const fp = FAIXAS_PRECO[preco];
     if (fp) l = l.filter((f) => f.price_min && (fp.min == null || Number(f.price_min) >= fp.min) && (fp.max == null || Number(f.price_min) <= fp.max));
@@ -140,7 +162,7 @@ export default function CategoriaPublica() {
     else if (ordem === "preco") copia.sort((a, b) => Number(a.price_min || 9e12) - Number(b.price_min || 9e12));
     else copia.sort((a, b) => pontuar(b) - pontuar(a) || b.created_at.localeCompare(a.created_at));
     return copia;
-  }, [daCategoria, cidade, preco, conv, ordem]);
+  }, [daCategoria, cidade, preco, conv, ordem, tipo, tiposPorForn]);
 
   if (naoAchou) return <Navigate to="/explorar" replace />;
 
@@ -148,7 +170,7 @@ export default function CategoriaPublica() {
   const plural = categoria ? pluralCategoria(categoria) : "";
   const total = daCategoria.length;
   const vazio = !carregando && total === 0;
-  const filtrosAtivos = [cidade, preco, conv].filter(Boolean).length;
+  const filtrosAtivos = [cidade, preco, conv, tipo].filter(Boolean).length;
   const cidTxt = cidades.length ? (cidades.length <= 2 ? cidades.join(" e ") : `${cidades.length} cidades`) : "";
   const outras = categorias.filter((c) => c.id !== categoria?.id);
   const Icone = iconesCategoria[categoria?.icon || "building"] || Building;
@@ -209,6 +231,16 @@ export default function CategoriaPublica() {
               opcoes={[["", "Todas as cidades"], ...cidades.map((c) => [c, c] as [string, string])]}
               onChange={(v) => mudar("cidade", v)}
             />
+            {subcats.length > 0 && (
+              <Filtro
+                icone={Tag}
+                rotulo={tipo || "Tipo de atração"}
+                ativo={!!tipo}
+                valor={tipo}
+                opcoes={[["", "Todos os tipos"], ...subcats.map((c) => [c, c] as [string, string])]}
+                onChange={(v) => mudar("tipo", v)}
+              />
+            )}
             {temPreco && (
               <Filtro
                 icone={Tag}
