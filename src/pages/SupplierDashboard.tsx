@@ -65,6 +65,7 @@ import PlanGate, { TrialBanner } from "@/components/plan/PlanGate";
 import MinhaAssinaturaCard from "@/components/plan/MinhaAssinaturaCard";
 import AjudaTab from "@/components/AjudaTab";
 import MercadoPagoConnectCard from "@/components/supplier/MercadoPagoConnectCard";
+import { AvisoTipoAtracao } from "@/components/supplier/AvisoTipoAtracao";
 import { AgendaMes, PerfilCompleto, type PassoPerfil } from "@/components/supplier/PainelExtras";
 import { useSupplierPlan } from "@/hooks/usePlanFeature";
 import "@/components/supplier/painel-v2.css";
@@ -483,6 +484,7 @@ export default function SupplierDashboard() {
     if (dest === "painel") {
       return (
         <div className="flex flex-col gap-4 lg:gap-5">
+          <AvisoTipoAtracao supplierId={supplier.id} categoryId={supplier.category_id} onIr={() => goDest("negocio")} />
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-5">
             <SupplierActionCards
               supplierId={supplier.id}
