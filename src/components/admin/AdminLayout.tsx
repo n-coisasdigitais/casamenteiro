@@ -35,6 +35,7 @@ const groups: { label: string; items: NavItem[] }[] = [
     label: "Fila de trabalho",
     items: [
       { title: "Aprovar fornecedores", url: "/admin/aprovacao", icon: ClipboardCheck, badge: "aprovacao" },
+      { title: "Categorias sugeridas", url: "/admin/categorias-sugeridas", icon: ClipboardCheck },
       { title: "Reservas de datas", url: "/admin/reservas", icon: CalendarRange, badge: "reservas" },
       { title: "Datas ociosas", url: "/admin/datas-ociosas", icon: Sparkles },
       { title: "Avaliações", url: "/admin/avaliacoes", icon: Star },

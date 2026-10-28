@@ -39,6 +39,7 @@ import AdminCampos from "./pages/AdminCampos";
 import AdminCategorias from "./pages/AdminCategorias";
 import AdminCategoriaCampos from "./pages/AdminCategoriaCampos";
 import AdminFornecedorAprovacao from "./pages/AdminFornecedorAprovacao";
+import AdminCategoriasSugeridas from "./pages/AdminCategoriasSugeridas";
 import AdminCidades from "./pages/AdminCidades";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminHomeDestaques from "./pages/AdminHomeDestaques";
@@ -339,6 +340,14 @@ const App = () => (
                 element={
                   <AdminLayout>
                     <AdminSuppliers />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/categorias-sugeridas"
+                element={
+                  <AdminLayout>
+                    <AdminCategoriasSugeridas />
                   </AdminLayout>
                 }
               />
