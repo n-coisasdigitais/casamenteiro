@@ -51,6 +51,11 @@
     <priority>0.3</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/categoria/brigadistas</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/categoria/buffet</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -106,6 +111,16 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/categoria/outros</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/categoria/som-iluminacao</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/categoria/traje-noivo</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -127,31 +142,19 @@
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/65364cc8-dc6d-4b37-98d5-1e8a2d5b3716</loc>
-    <lastmod>2026-10-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.casamenteiro.com.br/fornecedor/65656fa5-0bfd-44db-add0-096521763c40</loc>
-    <lastmod>2026-10-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.casamenteiro.com.br/fornecedor/2e1d42e9-a412-4577-a7f3-89c9b491296e</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/711b66c7-a2f6-431a-9975-f6a3a905a258</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/7e7615cd-00e9-481a-ab30-fd5179947ec3</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -162,8 +165,20 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/65656fa5-0bfd-44db-add0-096521763c40</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/2e1d42e9-a412-4577-a7f3-89c9b491296e</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/7222414a-0fda-462d-bc58-f90cdf415aab</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
