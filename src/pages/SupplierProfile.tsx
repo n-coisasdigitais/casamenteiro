@@ -582,7 +582,13 @@ export default function SupplierProfile() {
                 </span>
               )}
             </div>
-            <h1 className="pf-serif mt-3 text-[34px] leading-[1.08] tracking-[-0.02em] md:text-[46px]">{supplier.company_name}</h1>
+            <div className="mt-3 flex items-center gap-4">
+              {supplier.logo_url && <LogoFornecedor url={supplier.logo_url} nome={supplier.company_name} className="h-16 w-16 md:h-20 md:w-20" />}
+              <h1 className="pf-serif text-[34px] leading-[1.08] tracking-[-0.02em] md:text-[46px]">{supplier.company_name}</h1>
+            </div>
+            {supplier.categoria_outros_descricao && (
+              <p className="mt-2 text-[14.5px] text-[var(--pf-body)]">{supplier.categoria_outros_descricao}</p>
+            )}
             <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14.5px] text-[var(--pf-body)]">
               {totalAvaliacoes > 0 && nota > 0 ? (
                 <span className="inline-flex items-center gap-1.5">
