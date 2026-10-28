@@ -23,6 +23,8 @@ export type FornecedorVitrine = {
   featured: boolean;
   created_at: string;
   category_id: string | null;
+  slug?: string | null;
+  logo_url?: string | null;
   categories?: { name: string; slug: string } | null;
   fotos: string[];
 };
@@ -60,7 +62,7 @@ export const PLURAL: Record<string, string> = {
 export const pluralCategoria = (c: { slug: string; name: string }) => PLURAL[c.slug] || c.name;
 
 const COLS =
-  "id, company_name, description, city, state, rating, review_count, price_min, preco_por_pessoa, guest_max, featured, created_at, category_id, categories(name, slug), supplier_photos(photo_url, is_principal, display_order)";
+  "id, slug, logo_url, company_name, description, city, state, rating, review_count, price_min, preco_por_pessoa, guest_max, featured, created_at, category_id, categories(name, slug), supplier_photos(photo_url, is_principal, display_order)";
 
 function comFotos(rows: any[]): FornecedorVitrine[] {
   return (rows || [])
