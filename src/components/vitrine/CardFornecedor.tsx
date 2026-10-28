@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { linkFornecedor } from "@/lib/linkFornecedor";
+import LogoFornecedor from "@/components/supplier/LogoFornecedor";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Heart, MapPin, Star } from "lucide-react";
 import { textoPreco, type FornecedorVitrine } from "@/lib/vitrine";
