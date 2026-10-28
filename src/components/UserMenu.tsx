@@ -14,6 +14,8 @@ import {
   Briefcase, FileText, FlaskConical,
 } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function UserMenu() {
   const { profile, isAdmin, signOut } = useAuth();
@@ -26,6 +28,13 @@ export default function UserMenu() {
 
   const isSupplier = profile?.account_type === "supplier";
   const isStaff = profile?.account_type === "profissional";
+  const { user } = useAuth();
+  const [linkPublico, setLinkPublico] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isSupplier || !user) return;
+    (supabase.from("suppliers") as any).select("id, slug").eq("user_id", user.id).maybeSingle()
+      .then(({ data }: any) => data && setLinkPublico(`/fornecedor/${data.slug || data.id}`));
+  }, [isSupplier, user?.id]);
 
   const items = isStaff
     ? [
@@ -39,7 +48,8 @@ export default function UserMenu() {
         { to: "/fornecedor/painel", icon: LayoutDashboard, label: "Painel do Fornecedor" },
         { to: "/fornecedor/painel?tab=quotes", icon: MessageSquareQuote, label: "Orçamentos recebidos" },
         { to: "/fornecedor/painel?tab=availability", icon: CalendarDays, label: "Disponibilidade" },
-        { to: "/fornecedor/painel?tab=profile", icon: UserCircle, label: "Perfil público" },
+        { to: "/fornecedor/painel?tab=profile", icon: UserCircle, label: "Editar perfil" },
+        ...(linkPublico ? [{ to: linkPublico, icon: Store, label: "Ver perfil público" }] : []),
       ]
     : [
         { to: "/dashboard", icon: Heart, label: "Meu Casamento" },
