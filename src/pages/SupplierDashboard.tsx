@@ -115,6 +115,7 @@ export default function SupplierDashboard() {
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [outrosDescricao, setOutrosDescricao] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [phone, setPhone] = useState("");
