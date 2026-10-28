@@ -55,7 +55,7 @@ type Supplier = {
 };
 
 const subCategories: Record<string, string[]> = {
-  "espacos-buffet": [
+  espaco: [
     "Fazendas",
     "Chácaras",
     "Hotéis",
@@ -66,7 +66,7 @@ const subCategories: Record<string, string[]> = {
     "Espaços exclusivos",
   ],
   fotografia: ["Pré-wedding", "Pós-wedding", "Álbuns", "Mini álbuns", "Álbum digital", "Fotografias em alta resolução"],
-  "musica-dj": ["DJ", "Banda", "Cantor", "Coral", "Instrumentistas"],
+  "musica-dj": ["Banda", "DJ", "Voz e violão", "Cantor(a) para cerimônia", "Quarteto/trio de cordas", "Saxofonista ou instrumentista solo", "Coral", "Bateria/escola de samba", "Mariachi/grupo temático"],
   decoracao: ["Decoração floral", "Cenografia", "Iluminação", "Mobiliário"],
 };
 

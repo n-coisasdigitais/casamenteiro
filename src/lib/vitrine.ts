@@ -45,7 +45,7 @@ export const FOTO_PADRAO = heroWedding;
 /** Plural usado nos títulos ("Celebrantes para casamento"). */
 export const PLURAL: Record<string, string> = {
   celebrante: "Celebrantes",
-  "musica-dj": "Músicos e DJs",
+  "musica-dj": "Música e atrações",
   cerimonialista: "Cerimonialistas",
   espaco: "Espaços",
   buffet: "Buffets",
