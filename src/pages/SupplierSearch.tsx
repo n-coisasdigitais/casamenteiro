@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { linkFornecedor } from "@/lib/linkFornecedor";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { supabase } from "@/integrations/supabase/client";
@@ -493,7 +494,7 @@ export default function SupplierSearch() {
               /* MAP VIEW */
               <div className="flex flex-col lg:flex-row gap-4" style={{ height: "600px" }}>
                 <div className="flex-1 min-h-[300px] lg:min-h-0">
-                  <SupplierSearchMap suppliers={suppliers} onSupplierClick={(id) => navigate(`/fornecedor/${id}`)} />
+                  <SupplierSearchMap suppliers={suppliers} onSupplierClick={(id) => navigate(linkFornecedor(suppliers.find((x: any) => x.id === id) ?? { id }))} />
                 </div>
                 <div className="lg:w-[300px] overflow-y-auto space-y-2">
                   {suppliers.map((sup) => {
@@ -502,7 +503,7 @@ export default function SupplierSearch() {
                     return (
                       <Link
                         key={sup.id}
-                        to={`/fornecedor/${sup.id}`}
+                        to={linkFornecedor(sup)}
                         className="flex gap-3 p-2 rounded-lg border border-border hover:shadow-md transition-shadow bg-card"
                       >
                         <div className="w-20 h-16 rounded-md overflow-hidden bg-muted shrink-0">
@@ -555,7 +556,7 @@ export default function SupplierSearch() {
                       {/* Photo carousel */}
                       <div className="relative w-full sm:w-[280px] h-48 sm:h-[220px] shrink-0 bg-muted group">
                         {photos.length > 0 ? (
-                          <Link to={`/fornecedor/${sup.id}`}>
+                          <Link to={linkFornecedor(sup)}>
                             <img
                               src={photos[currentPhoto]?.photo_url}
                               alt={sup.company_name}
@@ -604,7 +605,7 @@ export default function SupplierSearch() {
 
                       {/* Info */}
                       <div className="flex-1 p-4 sm:p-5 flex flex-col">
-                        <Link to={`/fornecedor/${sup.id}`} className="hover:text-primary transition-colors">
+                        <Link to={linkFornecedor(sup)} className="hover:text-primary transition-colors">
                           <h3 className="font-bold text-base sm:text-lg mb-1">{sup.company_name}</h3>
                         </Link>
 
@@ -656,14 +657,14 @@ export default function SupplierSearch() {
 
                         {/* Mobile CTA */}
                         <Button className="mt-3 sm:hidden w-full" size="sm" asChild>
-                          <Link to={`/fornecedor/${sup.id}`}>Pedir Orçamento</Link>
+                          <Link to={linkFornecedor(sup)}>Pedir Orçamento</Link>
                         </Button>
                       </div>
 
                       {/* Desktop CTA */}
                       <div className="hidden sm:flex items-end p-5">
                         <Button className="whitespace-nowrap" asChild>
-                          <Link to={`/fornecedor/${sup.id}`}>Pedir Orçamento Grátis</Link>
+                          <Link to={linkFornecedor(sup)}>Pedir Orçamento Grátis</Link>
                         </Button>
                       </div>
                     </div>
@@ -684,7 +685,7 @@ export default function SupplierSearch() {
                       >
                         <Checkbox checked={selectedIds.has(sup.id)} onCheckedChange={() => toggleSelect(sup.id)} />
                       </label>
-                      <Link to={`/fornecedor/${sup.id}`} className="group block">
+                      <Link to={linkFornecedor(sup)} className="group block">
                         <div
                           className={`rounded-lg overflow-hidden border bg-card hover:shadow-lg transition-all ${selectedIds.has(sup.id) ? "border-primary ring-1 ring-primary" : "border-border"}`}
                         >

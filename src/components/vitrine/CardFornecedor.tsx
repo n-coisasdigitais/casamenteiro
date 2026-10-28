@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import { linkFornecedor } from "@/lib/linkFornecedor";
+import LogoFornecedor from "@/components/supplier/LogoFornecedor";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Heart, MapPin, Star } from "lucide-react";
 import { textoPreco, type FornecedorVitrine } from "@/lib/vitrine";
@@ -37,7 +39,7 @@ export default function CardFornecedor({
   };
 
   return (
-    <Link to={`/fornecedor/${f.id}`} className="vt-card group">
+    <Link to={linkFornecedor(f)} className="vt-card group">
       <div className="vt-foto">
         <div
           ref={trilho}
@@ -83,7 +85,10 @@ export default function CardFornecedor({
         )}
       </div>
       <div className="flex items-start justify-between gap-2.5">
-        <b className="vt-clamp2 text-[15.5px] leading-snug">{f.company_name}</b>
+        <span className="flex min-w-0 items-center gap-2">
+          {f.logo_url && <LogoFornecedor url={f.logo_url} nome={f.company_name} className="h-8 w-8 rounded-lg" />}
+          <b className="vt-clamp2 text-[15.5px] leading-snug">{f.company_name}</b>
+        </span>
         {temNota ? (
           <span className="inline-flex flex-none items-center gap-1 text-[13.5px] font-bold">
             <Star className="h-3.5 w-3.5 fill-[var(--vt-star)] text-[var(--vt-star)]" />

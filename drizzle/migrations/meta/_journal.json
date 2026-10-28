@@ -92,6 +92,13 @@
       "when": 1793130381683,
       "tag": "0012_grant_preco_por_pessoa_vitrine",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793220130142,
+      "tag": "0013_categorias_sugestoes_logo_slug",
+      "breakpoints": true
     }
   ]
 }

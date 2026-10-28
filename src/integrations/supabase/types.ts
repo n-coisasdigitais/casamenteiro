@@ -411,6 +411,57 @@ export type Database = {
           },
         ]
       }
+      categoria_sugestoes: {
+        Row: {
+          created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
+          id: string
+          nome: string
+          nome_normalizado: string
+          observacao: string | null
+          status: string
+          supplier_id: string
+        }
+        Insert: {
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          id?: string
+          nome: string
+          nome_normalizado: string
+          observacao?: string | null
+          status?: string
+          supplier_id: string
+        }
+        Update: {
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          id?: string
+          nome?: string
+          nome_normalizado?: string
+          observacao?: string | null
+          status?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categoria_sugestoes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categoria_sugestoes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           active: boolean
@@ -4868,6 +4919,7 @@ export type Database = {
         Row: {
           accepts_idle_dates: boolean
           aparece_na_home: boolean
+          categoria_outros_descricao: string | null
           category_id: string | null
           cidades_atendidas: Json
           city: string | null
@@ -4886,6 +4938,7 @@ export type Database = {
           is_demo: boolean
           lat: number | null
           lng: number | null
+          logo_url: string | null
           mp_access_token: string | null
           mp_account_id: string | null
           mp_connected_at: string | null
@@ -4904,6 +4957,7 @@ export type Database = {
           rating: number | null
           reserva_antecedencia_min_dias: number
           review_count: number | null
+          slug: string | null
           state: string | null
           status: Database["public"]["Enums"]["supplier_status"]
           trial_ends_at: string | null
@@ -4915,6 +4969,7 @@ export type Database = {
         Insert: {
           accepts_idle_dates?: boolean
           aparece_na_home?: boolean
+          categoria_outros_descricao?: string | null
           category_id?: string | null
           cidades_atendidas?: Json
           city?: string | null
@@ -4933,6 +4988,7 @@ export type Database = {
           is_demo?: boolean
           lat?: number | null
           lng?: number | null
+          logo_url?: string | null
           mp_access_token?: string | null
           mp_account_id?: string | null
           mp_connected_at?: string | null
@@ -4951,6 +5007,7 @@ export type Database = {
           rating?: number | null
           reserva_antecedencia_min_dias?: number
           review_count?: number | null
+          slug?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
           trial_ends_at?: string | null
@@ -4962,6 +5019,7 @@ export type Database = {
         Update: {
           accepts_idle_dates?: boolean
           aparece_na_home?: boolean
+          categoria_outros_descricao?: string | null
           category_id?: string | null
           cidades_atendidas?: Json
           city?: string | null
@@ -4980,6 +5038,7 @@ export type Database = {
           is_demo?: boolean
           lat?: number | null
           lng?: number | null
+          logo_url?: string | null
           mp_access_token?: string | null
           mp_account_id?: string | null
           mp_connected_at?: string | null
@@ -4998,6 +5057,7 @@ export type Database = {
           rating?: number | null
           reserva_antecedencia_min_dias?: number
           review_count?: number | null
+          slug?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
           trial_ends_at?: string | null
@@ -5713,6 +5773,7 @@ export type Database = {
         Args: { _couple_id: string; _wedding_date?: string }
         Returns: undefined
       }
+      slugify_texto: { Args: { _t: string }; Returns: string }
       supplier_tem_acesso: { Args: { _supplier_id: string }; Returns: boolean }
       vagas_destaque_disponiveis: {
         Args: { p_categoria?: string; p_escopo: string }

@@ -363,7 +363,7 @@ export default function UserProfile() {
                     Ao alterar, você precisará confirmar pelo link enviado ao novo email.
                   </p>
                 </div>
-                <div>
+                {isCouple && <div>
                   <Label>Eu sou</Label>
                   <Select value={coupleRole} onValueChange={setCoupleRole}>
                     <SelectTrigger>
@@ -374,7 +374,7 @@ export default function UserProfile() {
                       <SelectItem value="noiva">Noiva</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </div>}
                 <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
                   <Save className="mr-2 h-4 w-4" />
                   {saving ? "Salvando..." : "Salvar dados pessoais"}

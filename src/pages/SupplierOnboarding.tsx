@@ -1,4 +1,5 @@
 import { traduzirErro } from "@/lib/errorMessages";
+import LogoUploader from "@/components/supplier/LogoUploader";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
@@ -43,7 +44,7 @@ type Campo = {
 const CAT_ICON: Record<string, string> = {
   "espacos-buffet": "🍽️", fotografia: "📸", cerimonialista: "💍", celebrante: "🕊️",
   "musica-dj": "🎵", decoracao: "🌸", "traje-noivo": "🤵",
-  "vestido-noiva": "👰", "beleza-maquiagem": "💄", convites: "✉️",
+  "vestido-noiva": "👰", "som-iluminacao": "🔊", brigadistas: "🚒", outros: "✨", "beleza-maquiagem": "💄", convites: "✉️",
   "bolos-doces": "🎂", transporte: "🚗", video: "🎬",
 };
 
@@ -84,6 +85,8 @@ export default function SupplierOnboarding() {
 
   // Fotos
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [outrosDescricao, setOutrosDescricao] = useState("");
   const [galleryPhotos, setGalleryPhotos] = useState<{ id: string; url: string }[]>([]);
   const [uploading, setUploading] = useState(false);
 
@@ -130,6 +133,8 @@ export default function SupplierOnboarding() {
       setDescription(sup.description || "");
       setCategoryId(sup.category_id || "");
       setProfilePhoto(sup.profile_photo_url || null);
+      setLogoUrl((sup as any).logo_url || null);
+      setOutrosDescricao((sup as any).categoria_outros_descricao || "");
       // gallery
       const { data: photos } = await (supabase.from("supplier_photos") as any)
         .select("id, photo_url")
@@ -232,10 +237,17 @@ export default function SupplierOnboarding() {
     return true;
   };
 
+  const ehOutros = categorias.find((c) => c.id === categoryId)?.slug === "outros";
+
   const saveCategoria = async () => {
     if (!supplierId || !categoryId) return false;
+    if (ehOutros && outrosDescricao.trim().length < 3) {
+      toast({ title: "Descreva seu serviço", description: "Conte qual é o serviço ou a categoria que você oferece.", variant: "destructive" });
+      return false;
+    }
     const { error } = await (supabase.from("suppliers") as any).update({
       category_id: categoryId, onboarding_step: step + 1,
+      categoria_outros_descricao: ehOutros ? outrosDescricao.trim() : null,
     }).eq("id", supplierId);
     if (error) { toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" }); return false; }
     return true;
@@ -576,6 +588,15 @@ export default function SupplierOnboarding() {
                 );
               })}
             </div>
+            {ehOutros && (
+              <div className="max-w-xl">
+                <Label htmlFor="outros-desc">Qual é o seu serviço? *</Label>
+                <Input id="outros-desc" value={outrosDescricao} maxLength={120}
+                  onChange={(e) => setOutrosDescricao(e.target.value)}
+                  placeholder="Ex.: Aluguel de mobiliário, Fogos de artifício..." />
+                <p className="text-xs text-muted-foreground mt-1">Usamos essa informação para avaliar novas categorias na plataforma.</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -663,6 +684,10 @@ export default function SupplierOnboarding() {
                 </label>
               </div>
             </div>
+            {supplierId && session?.user && (
+              <LogoUploader userId={session.user.id} supplierId={supplierId} nome={companyName}
+                atual={logoUrl} onSalvo={setLogoUrl} />
+            )}
             <div>
               <Label>Fotos do seu trabalho * <span className={`text-xs font-normal ${galleryPhotos.length >= MINIMO_FOTOS ? "text-muted-foreground" : "text-amber-700"}`}>{galleryPhotos.length} de no mínimo {MINIMO_FOTOS} (até 10)</span></Label>
               <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 gap-2">

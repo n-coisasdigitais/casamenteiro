@@ -1,6 +1,8 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { linkFornecedor, ehUuid } from "@/lib/linkFornecedor";
+import LogoFornecedor from "@/components/supplier/LogoFornecedor";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
 import { semDemo } from "@/lib/demoScope";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,7 +106,8 @@ function Estrelas({ nota, tamanho = "h-4 w-4" }: { nota: number; tamanho?: strin
 }
 
 export default function SupplierProfile() {
-  const { id } = useParams();
+  const { id: ident } = useParams();
+  const [id, setId] = useState<string | undefined>(undefined);
   const { user } = useAuth();
   const { toast } = useToast();
   const [supplier, setSupplier] = useState<any>(null);
@@ -135,6 +138,20 @@ export default function SupplierProfile() {
 
   // Prova social (aleatória, estável por carregamento)
   const viewerCount = useMemo(() => Math.floor(Math.random() * 15) + 1, []);
+
+  // Aceita o endereço pelo nome (slug) ou pelo código antigo
+  useEffect(() => {
+    if (!ident) return;
+    setId(undefined);
+    setSupplier(null);
+    if (ehUuid(ident)) { setId(ident); return; }
+    setLoading(true);
+    (supabase.from("suppliers") as any).select("id").eq("slug", ident).maybeSingle()
+      .then(({ data }: any) => {
+        if (data?.id) setId(data.id);
+        else setLoading(false);
+      });
+  }, [ident]);
 
   useEffect(() => {
     if (!id) return;
@@ -324,7 +341,7 @@ export default function SupplierProfile() {
   };
 
   const compartilhar = async () => {
-    const url = absoluteUrl(`/fornecedor/${id}`);
+    const url = absoluteUrl(linkFornecedor(supplier ?? { id }));
     try {
       if (navigator.share) {
         await navigator.share({ title: supplier?.company_name, url });
@@ -427,9 +444,9 @@ export default function SupplierProfile() {
   const localBusinessJsonLd: Record<string, any> = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "@id": absoluteUrl(`/fornecedor/${id}`),
+    "@id": absoluteUrl(linkFornecedor(supplier ?? { id })),
     name: supplier.company_name,
-    url: absoluteUrl(`/fornecedor/${id}`),
+    url: absoluteUrl(linkFornecedor(supplier ?? { id })),
     image: seoImages.length ? seoImages : undefined,
     description: supplier.description || undefined,
     priceRange: priceRangeLabel(supplier.price_min, supplier.price_max),
@@ -449,7 +466,7 @@ export default function SupplierProfile() {
   const breadcrumb = breadcrumbJsonLd([
     { name: "Início", path: "/" },
     { name: categoryName, path: "/explorar" },
-    { name: supplier.company_name, path: `/fornecedor/${id}` },
+    { name: supplier.company_name, path: linkFornecedor(supplier) },
   ]);
 
   const orcamentoProps = {
@@ -483,7 +500,7 @@ export default function SupplierProfile() {
         description={truncate(
           supplier.description || `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`,
         )}
-        canonical={absoluteUrl(`/fornecedor/${id}`)}
+        canonical={absoluteUrl(linkFornecedor(supplier ?? { id }))}
         ogImage={supplier.profile_photo_url || photos[0]?.photo_url || undefined}
         jsonLd={[localBusinessJsonLd, breadcrumb]}
       />
@@ -565,7 +582,13 @@ export default function SupplierProfile() {
                 </span>
               )}
             </div>
-            <h1 className="pf-serif mt-3 text-[34px] leading-[1.08] tracking-[-0.02em] md:text-[46px]">{supplier.company_name}</h1>
+            <div className="mt-3 flex items-center gap-4">
+              {supplier.logo_url && <LogoFornecedor url={supplier.logo_url} nome={supplier.company_name} className="h-16 w-16 md:h-20 md:w-20" />}
+              <h1 className="pf-serif text-[34px] leading-[1.08] tracking-[-0.02em] md:text-[46px]">{supplier.company_name}</h1>
+            </div>
+            {supplier.categoria_outros_descricao && (
+              <p className="mt-2 text-[14.5px] text-[var(--pf-body)]">{supplier.categoria_outros_descricao}</p>
+            )}
             <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14.5px] text-[var(--pf-body)]">
               {totalAvaliacoes > 0 && nota > 0 ? (
                 <span className="inline-flex items-center gap-1.5">

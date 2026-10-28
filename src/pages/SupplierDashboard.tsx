@@ -1,4 +1,5 @@
 import { registrarMinhaIndicacaoSeHouver } from "@/lib/beneficios";
+import LogoUploader from "@/components/supplier/LogoUploader";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -114,6 +115,7 @@ export default function SupplierDashboard() {
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [outrosDescricao, setOutrosDescricao] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [phone, setPhone] = useState("");
@@ -263,6 +265,7 @@ export default function SupplierDashboard() {
       setCompanyName(data.company_name || "");
       setDescription(data.description || "");
       setCategoryId(data.category_id || "");
+      setOutrosDescricao((data as any).categoria_outros_descricao || "");
       setCity(data.city || "");
       setState(data.state || "");
       const { data: contato } = await supabase.rpc("get_supplier_contact", { _supplier_id: data.id });
@@ -317,6 +320,11 @@ export default function SupplierDashboard() {
 
   const handleSave = async () => {
     if (!supplier) return;
+    const ehOutros = categories.find((c) => c.id === categoryId)?.slug === "outros";
+    if (ehOutros && outrosDescricao.trim().length < 3) {
+      toast({ title: "Descreva seu serviço", description: "Conte qual é o serviço que você oferece.", variant: "destructive" });
+      return;
+    }
     if (phone && !isValidPhoneBR(phone)) {
       toast({
         title: "WhatsApp inválido",
@@ -333,6 +341,7 @@ export default function SupplierDashboard() {
         company_name: companyName,
         description,
         category_id: categoryId || null,
+        categoria_outros_descricao: categories.find((c) => c.id === categoryId)?.slug === "outros" ? outrosDescricao.trim() : null,
         city: city || null,
         state: state || null,
         phone: phoneDigits,
@@ -646,6 +655,17 @@ export default function SupplierDashboard() {
                       </SelectContent>
                     </Select>
                   </div>
+                  {categories.find((c) => c.id === categoryId)?.slug === "outros" && (
+                    <div>
+                      <Label>Qual é o seu serviço? *</Label>
+                      <Input value={outrosDescricao} maxLength={120} onChange={(e) => setOutrosDescricao(e.target.value)}
+                        placeholder="Ex.: Aluguel de mobiliário" />
+                    </div>
+                  )}
+                  {user && (
+                    <LogoUploader userId={user.id} supplierId={supplier.id} nome={companyName}
+                      atual={supplier.logo_url} onSalvo={(url) => setSupplier((s: any) => ({ ...s, logo_url: url }))} />
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Cidade</Label>
