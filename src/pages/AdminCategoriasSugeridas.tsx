@@ -83,36 +83,36 @@ export default function AdminCategoriasSugeridas() {
       ) : grupos.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhuma sugestão por aqui.</p>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {grupos.map((g) => {
             const pendentes = g.filter((s) => s.status === "pendente").map((s) => s.id);
             return (
               <Card key={g[0].nome_normalizado}>
-                <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-                  <div>
-                    <CardTitle className="text-lg">{g[0].nome}</CardTitle>
-                    {g.length > 1 && <Badge variant="secondary" className="mt-1">{g.length} sugestões parecidas</Badge>}
+                <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0 p-5 sm:p-6 pb-3">
+                  <div className="space-y-2">
+                    <CardTitle className="text-lg leading-snug">{g[0].nome}</CardTitle>
+                    {g.length > 1 && <Badge variant="secondary">{g.length} sugestões parecidas</Badge>}
                   </div>
                   {pendentes.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 shrink-0">
                       <Button size="sm" onClick={() => decidir(pendentes, "aprovada")}>Aprovar</Button>
                       <Button size="sm" variant="outline" onClick={() => decidir(pendentes, "recusada")}>Recusar</Button>
                     </div>
                   )}
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-5 sm:px-6 pb-5">
                   <ul className="divide-y divide-border text-sm">
                     {g.map((s) => (
-                      <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                        <div>
+                      <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
+                        <div className="space-y-1 min-w-0">
                           {s.suppliers ? (
                             <Link to={linkFornecedor(s.suppliers)} target="_blank" className="font-medium underline-offset-2 hover:underline">
                               {s.suppliers.company_name}
                             </Link>
                           ) : <span className="font-medium">Fornecedor removido</span>}
-                          <span className="text-muted-foreground">
-                            {s.suppliers?.city ? ` · ${s.suppliers.city}/${s.suppliers.state ?? ""}` : ""} · "{s.nome}" · {new Date(s.created_at).toLocaleDateString("pt-BR")}
-                          </span>
+                          <p className="text-muted-foreground text-xs leading-relaxed">
+                            {s.suppliers?.city ? `${s.suppliers.city}/${s.suppliers.state ?? ""} · ` : ""}"{s.nome}" · {new Date(s.created_at).toLocaleDateString("pt-BR")}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant={s.status === "aprovada" ? "default" : s.status === "recusada" ? "destructive" : "outline"}>{ROTULO[s.status]}</Badge>
