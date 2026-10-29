@@ -155,7 +155,7 @@ export default function AdminTransacoes() {
                     <div>
                       <p className="font-medium">{suppliersMap[s.supplier_id]?.company_name || "Fornecedor"}</p>
                       <p className="text-xs text-muted-foreground">
-                        Plano: {plansMap[s.plan_id]?.nome || "—"} · {s.ciclo === "anual" ? "Anual" : "Mensal"} · {s.ambiente === "demo" ? "Demo" : "Produção"}
+                        Plano: {plansMap[s.plan_id]?.nome || "—"} · {s.ciclo === "anual" ? "Anual" : "Mensal"} · {s.ambiente === "demo" ? "Demo" : s.ambiente === "sandbox" ? "Teste (sandbox)" : "Produção"}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Período: {s.current_period_start ? new Date(s.current_period_start).toLocaleDateString("pt-BR") : "—"} → {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString("pt-BR") : "—"}
