@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tag, X } from "lucide-react";
+import { Tag, X, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { calcularOferta } from "@/lib/corretagem";
@@ -37,6 +37,7 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
   const [saving, setSaving] = useState(false);
   const [antecedencia, setAntecedencia] = useState<number>(15);
   const [salvandoAntecedencia, setSalvandoAntecedencia] = useState(false);
+  const [mostrarAjuda, setMostrarAjuda] = useState(() => typeof window === "undefined" || localStorage.getItem("ajuda_data_ociosa_ok") !== "1");
 
   const load = async () => {
     const { data } = await (supabase
@@ -127,7 +128,27 @@ export default function PromoDatesManager({ supplierId, categoriaSlug }: { suppl
         <CardTitle className="font-serif text-lg flex items-center gap-2">
           <Tag className="w-4 h-4 text-primary" />
           Datas ociosas com desconto
+          {!mostrarAjuda && (
+            <button type="button" aria-label="O que é data ociosa?" onClick={() => setMostrarAjuda(true)} className="ml-auto text-muted-foreground hover:text-foreground">
+              <HelpCircle className="w-4 h-4" />
+            </button>
+          )}
         </CardTitle>
+        {mostrarAjuda && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 mt-2 space-y-2 text-sm">
+            <p className="font-medium">O que é uma data ociosa?</p>
+            <p className="text-muted-foreground">É um dia em que sua agenda está livre e você aceita fazer um valor menor para não ficar parado.</p>
+            <ol className="list-decimal pl-5 space-y-1 text-muted-foreground">
+              <li>Você marca a data e o desconto.</li>
+              <li>Ela aparece em destaque para os casais no simulador e na busca.</li>
+              <li>O casal pede a reserva e você confirma.</li>
+            </ol>
+            <p className="text-muted-foreground"><strong>Exemplo:</strong> "Sexta, 14/03, livre — 20% de desconto."</p>
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" onClick={() => { localStorage.setItem("ajuda_data_ociosa_ok", "1"); setMostrarAjuda(false); }}>Entendi</Button>
+            </div>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground">
           Marque dias em que você tem agenda livre e topa um desconto. Eles aparecem com destaque pra noivos no simulador.
         </p>
