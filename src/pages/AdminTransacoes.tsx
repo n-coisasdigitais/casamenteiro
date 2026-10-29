@@ -61,8 +61,14 @@ export default function AdminTransacoes() {
   const conversaoFech = quotes.length ? Math.round((contracted.length / quotes.length) * 100) : 0;
   const receitaAssinaturas = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.valor || 0), 0);
   const receitaDestaques = destaques.filter((d) => d.status === "paid").reduce((s, d) => s + Number(d.valor || 0), 0);
-  const subsAtivas = subs.filter((s) => s.status === "active").length;
-  const statusLabel: Record<string, string> = { active: "Ativa", canceled: "Cancelada", past_due: "Vencida", trialing: "Teste", paid: "Pago", pending: "Pendente", refunded: "Reembolsado", expired: "Expirado" };
+  const isAtiva = (s: any) => s.status === "active" || s.status === "ativa";
+  const isGratis = (s: any) => Number(s.valor || 0) === 0 && Number(plansMap[s.plan_id]?.preco_mensal || 0) === 0;
+  const isTesteAmb = (s: any) => s.ambiente === "sandbox" || s.ambiente === "demo";
+  const isTrial = (s: any) => s.status === "trialing" || s.status === "trial";
+  const subsPagantes = subs.filter((s) => isAtiva(s) && !isGratis(s) && !isTesteAmb(s)).length;
+  const subsGratis = subs.filter((s) => isAtiva(s) && isGratis(s)).length;
+  const subsTrial = subs.filter(isTrial).length;
+  const statusLabel: Record<string, string> = { active: "Ativa", ativa: "Ativa", canceled: "Cancelada", past_due: "Vencida", trialing: "Teste 60 dias", paid: "Pago", pending: "Pendente", refunded: "Reembolsado", expired: "Expirado" };
   const fmtStatus = (s: string) => statusLabel[s] || s;
 
   return (
@@ -84,7 +90,7 @@ export default function AdminTransacoes() {
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Contratos</p><p className="text-2xl font-bold">{contracted.length}</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Conversão sim→orc</p><p className="text-2xl font-bold">{conversaoOrc}%</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">GMV fechado</p><p className="text-2xl font-bold">R$ {totalGmv.toLocaleString("pt-BR")}</p></CardContent></Card>
-          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Assinaturas ativas</p><p className="text-2xl font-bold">{subsAtivas}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Assinantes pagantes</p><p className="text-2xl font-bold">{subsPagantes}</p><p className="text-[11px] text-muted-foreground mt-1">{subsGratis} gratuitos · {subsTrial} em teste de 60 dias</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Receita assinaturas</p><p className="text-2xl font-bold">R$ {receitaAssinaturas.toLocaleString("pt-BR")}</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Receita destaques</p><p className="text-2xl font-bold">R$ {receitaDestaques.toLocaleString("pt-BR")}</p></CardContent></Card>
         </div>
@@ -158,7 +164,11 @@ export default function AdminTransacoes() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">R$ {Number(s.valor || 0).toLocaleString("pt-BR")}</p>
-                      <Badge variant={s.status === "active" ? "default" : "outline"}>{fmtStatus(s.status)}</Badge>
+                      <div className="flex flex-wrap justify-end gap-1 mt-1">
+                        <Badge variant={isAtiva(s) && !isGratis(s) ? "default" : "outline"}>{fmtStatus(s.status)}</Badge>
+                        {isGratis(s) && <Badge variant="secondary">Gratuito</Badge>}
+                        {isTesteAmb(s) && <Badge variant="outline">Teste</Badge>}
+                      </div>
                     </div>
                   </div>
                   {faturas.length > 0 && (
