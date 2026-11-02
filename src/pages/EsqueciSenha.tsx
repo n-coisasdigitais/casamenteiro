@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,8 +39,7 @@ export default function EsqueciSenha() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link to="/" className="flex items-center justify-center gap-2 mb-4">
-            <Heart className="h-6 w-6 text-primary fill-primary" />
-            <span className="text-xl font-bold">Casamenteiro</span>
+            <BrandLogo />
           </Link>
           <CardTitle className="text-2xl">Recuperar senha</CardTitle>
           <CardDescription>

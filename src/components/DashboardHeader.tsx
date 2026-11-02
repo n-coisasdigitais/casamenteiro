@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { Link } from "react-router-dom";
 import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
@@ -11,7 +12,7 @@ export default function DashboardHeader() {
     >
       <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-7">
         <Link to="/" className="ca-logo-topo text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "#1f1d1b" }}>
-          casamenteiro<span style={{ color: "#d9905a" }}>.</span>
+          <BrandLogo />
         </Link>
         <span className="flex-1" />
         <div className="flex items-center gap-2">

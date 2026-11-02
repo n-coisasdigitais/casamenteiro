@@ -60,7 +60,7 @@ export default function Home() {
         description="Simule o custo do seu casamento, compare fornecedores avaliados e organize tudo num lugar só. Casamentos em BH e região."
         canonical={absoluteUrl("/")}
         jsonLd={[
-          { "@context": "https://schema.org", "@type": "Organization", name: "Casamenteiro", url: SITE_URL, logo: `${SITE_URL}/favicon.ico` },
+          { "@context": "https://schema.org", "@type": "Organization", name: "Casamenteiro", url: SITE_URL, logo: `${SITE_URL}/favicon.png` },
           {
             "@context": "https://schema.org",
             "@type": "WebSite",

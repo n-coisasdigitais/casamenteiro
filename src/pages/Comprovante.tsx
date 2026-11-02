@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BrandLogo from "@/components/shared/BrandLogo";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -83,7 +84,7 @@ export default function Comprovante() {
             <CardContent className="p-6 space-y-6">
               <div className="flex items-start justify-between gap-4 border-b pb-4">
                 <div>
-                  <p className="text-lg font-semibold">Casamenteiro</p>
+                  <BrandLogo />
                   <p className="text-sm text-muted-foreground">{TIPO_LABEL[intent.tipo] ?? intent.tipo}</p>
                 </div>
                 <Badge className={ETAPA_TONE[etapa]} variant="secondary">{ETAPA_LABEL[etapa]}</Badge>

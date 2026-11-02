@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -132,8 +133,7 @@ export default function EmailConfirmado() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link to="/" className="flex items-center justify-center gap-2 mb-4">
-            <Heart className="h-6 w-6 text-primary fill-primary" />
-            <span className="text-xl font-bold">Casamenteiro</span>
+            <BrandLogo />
           </Link>
           <div className="flex justify-center mb-3">
             <CheckCircle2 className="h-14 w-14 text-primary" strokeWidth={1.5} />

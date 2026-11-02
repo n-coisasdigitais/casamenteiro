@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,10 +132,10 @@ function AdminSidebar() {
       <SidebarHeader>
         <Link to="/admin" onClick={closeMobile} className="flex items-center gap-2 px-2 py-1.5">
           {collapsed ? (
-            <span className="text-[18px] font-extrabold" style={{ color: "var(--ad-terracota)" }}>c.</span>
+            <BrandLogo symbolOnly />
           ) : (
             <span className="whitespace-nowrap text-[18px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--ad-ink)" }}>
-              casamenteiro<span style={{ color: "var(--ad-terracota)" }}>.</span>
+              <BrandLogo className="gap-1.5 text-base" />
               <small className="ml-1.5 rounded-full px-1.5 py-0.5 align-[2px] text-[10px] font-extrabold uppercase" style={{ letterSpacing: ".08em", color: "var(--ad-clay)", background: "#fdf0e6" }}>
                 admin
               </small>

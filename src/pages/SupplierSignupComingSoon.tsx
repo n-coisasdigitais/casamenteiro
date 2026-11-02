@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { Link } from "react-router-dom";
 import { Heart, Clock } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -9,8 +10,7 @@ export default function SupplierSignupComingSoon() {
       <header className="border-b" style={{ borderColor: "rgba(44,36,32,0.08)" }}>
         <div className="container flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-4 w-4" style={{ color: "#C4856A", fill: "#C4856A" }} />
-            <span className="font-serif text-lg">Casamenteiro</span>
+            <BrandLogo />
           </Link>
           <Link to="/fornecedor/login" className="text-sm font-medium hover:opacity-70">Já tenho cadastro</Link>
         </div>

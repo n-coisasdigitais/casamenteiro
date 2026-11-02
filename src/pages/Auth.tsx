@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
@@ -363,7 +364,7 @@ export default function Auth() {
       <section className="flex min-w-0 flex-col px-4 pb-7 pt-5 sm:px-6">
         <div className="mx-auto flex w-full max-w-[440px] items-center justify-between">
           <Link to="/" className="text-[21px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--a-ink)" }}>
-            casamenteiro<span style={{ color: "var(--a-terracota)" }}>.</span>
+            <BrandLogo />
           </Link>
           <Link to="/" className="text-sm" style={{ color: "var(--a-body)" }}>← Voltar ao site</Link>
         </div>

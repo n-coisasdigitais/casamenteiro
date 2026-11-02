@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -58,7 +59,7 @@ export function FornecedorNav({ cfg }: { cfg: SupplierLandingConfig }) {
     <>
       <nav aria-label="Navegação" className="relative z-10 mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2 text-[19px] font-extrabold text-white sm:text-[22px]" style={{ letterSpacing: "-0.03em" }}>
-          casamenteiro<span style={{ color: "var(--hv-peach)" }}>.</span>
+          <BrandLogo light />
           <span className="hidden rounded-full border px-2.5 py-1 text-[12px] font-semibold sm:inline" style={{ letterSpacing: 0, color: "var(--hv-peach)", borderColor: "rgba(242,185,138,.5)" }}>
             para fornecedores
           </span>
@@ -86,7 +87,7 @@ export function FornecedorNav({ cfg }: { cfg: SupplierLandingConfig }) {
         <div role="dialog" aria-modal="true" aria-label="Menu" className="fixed inset-0 z-[60] lg:hidden" style={{ background: "rgba(20,14,10,.45)" }} onClick={() => setAberto(false)}>
           <div className="flex flex-col rounded-b-[28px] bg-white px-6 pb-7 pt-3" onClick={(e) => e.stopPropagation()}>
             <div className="flex min-h-[56px] items-center justify-between">
-              <Link to="/" onClick={() => setAberto(false)} className="text-[20px] font-extrabold" style={{ color: "var(--hv-ink)" }}>casamenteiro<span style={{ color: "var(--hv-terracota)" }}>.</span></Link>
+              <Link to="/" onClick={() => setAberto(false)} className="text-[20px] font-extrabold" style={{ color: "var(--hv-ink)" }}><BrandLogo /></Link>
               <button type="button" onClick={() => setAberto(false)} aria-label="Fechar menu" className="inline-flex h-11 w-11 items-center justify-center rounded-full border" style={{ borderColor: "var(--hv-line)", color: "var(--hv-ink)" }}>
                 <X className="h-5 w-5" />
               </button>

@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, Menu, X } from "lucide-react";
@@ -22,11 +23,7 @@ export default function HomeNavbar({ onSimularClick }: { onSimularClick: () => v
     >
       <div className="container flex items-center justify-between h-14">
         <Link to="/" className="flex items-center gap-2" style={{ color: "hsl(var(--color-dark))" }}>
-          <Heart
-            className="h-4 w-4"
-            style={{ color: "hsl(var(--color-primary))", fill: "hsl(var(--color-primary))" }}
-          />
-          <span className="font-serif text-lg">Casamenteiro</span>
+          <BrandLogo />
         </Link>
 
         {/* Desktop nav */}
