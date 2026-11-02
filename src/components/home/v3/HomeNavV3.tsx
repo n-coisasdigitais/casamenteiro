@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
@@ -51,7 +52,7 @@ export default function HomeNavV3({ onSimular }: { onSimular: () => void }) {
       >
         <nav aria-label="Navegação principal" className="mx-auto flex max-w-[1200px] items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6" style={{ height: solido ? 64 : 76, transition: "height .3s" }}>
           <Link to="/" className="text-[18px] font-extrabold sm:text-[22px]" style={{ color: cor, letterSpacing: "-0.03em" }}>
-            casamenteiro<span style={{ color: solido ? "var(--hv-terracota)" : "var(--hv-peach)" }}>.</span>
+            <BrandLogo light={!solido} />
           </Link>
 
           <div className="hidden items-center gap-7 text-[15px] font-medium lg:flex">
@@ -103,7 +104,7 @@ export default function HomeNavV3({ onSimular }: { onSimular: () => void }) {
           <div className="flex flex-col rounded-b-[28px] bg-white px-6 pb-7 pt-3 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex min-h-[56px] items-center justify-between">
               <span className="text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em" }}>
-                casamenteiro<span style={{ color: "var(--hv-terracota)" }}>.</span>
+                <BrandLogo />
               </span>
               <button type="button" onClick={() => setAberto(false)} aria-label="Fechar menu" className="inline-flex h-11 w-11 items-center justify-center rounded-full border" style={{ borderColor: "var(--hv-line)" }}>
                 <X className="h-5 w-5" />

@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { Thread } from "./parts";
@@ -41,7 +42,7 @@ export function HomeFooterV3() {
       <div className="mx-auto grid max-w-[1200px] gap-7" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
         <div className="flex flex-col gap-2.5">
           <span className="text-[20px] font-extrabold" style={{ color: "var(--hv-cream)", letterSpacing: "-0.03em" }}>
-            casamenteiro<span style={{ color: "var(--hv-peach)" }}>.</span>
+            <BrandLogo light />
           </span>
           <span>Casamentos em BH e região.</span>
         </div>

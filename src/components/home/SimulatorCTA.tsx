@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { traduzirErro } from "@/lib/errorMessages";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -207,7 +208,7 @@ const SimulatorCTA = forwardRef<HTMLElement, SimulatorCTAProps>(({ embedded = fa
                 {step === 0 && (
                   <div className="text-center flex flex-col items-center">
                     <p className="font-serif text-xl mb-7" style={{ color: "hsl(var(--color-primary))", letterSpacing: ".5px" }}>
-                      casamenteiro
+                      <BrandLogo />
                     </p>
                     <h2 className="font-serif text-3xl md:text-4xl mb-4" style={{ color: "hsl(var(--color-dark))", lineHeight: 1.2 }}>
                       Vamos planejar o casamento dos seus sonhos?

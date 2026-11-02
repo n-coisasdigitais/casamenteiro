@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -1226,7 +1227,7 @@ export default function StaffDashboard() {
       <header className="sticky top-0 z-40 border-b backdrop-blur" style={{ background: "rgba(227,238,232,.92)", borderColor: "var(--pp-line)" }}>
         <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
           <Link to="/" className="text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--pp-ink)" }}>
-            casamenteiro<span style={{ color: "var(--pp-terracota)" }}>.</span>
+            <BrandLogo />
           </Link>
           <div className="flex items-center gap-2">
             {staff.slug && (

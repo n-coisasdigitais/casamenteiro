@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -405,8 +406,7 @@ export default function SimuladorResultado() {
       <header className="border-b sticky top-0 z-30 backdrop-blur bg-background/90" style={{ borderColor: "hsl(var(--color-border))" }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-5 w-5" style={{ color: "hsl(var(--color-primary))" }} fill="currentColor" />
-            <span className="text-lg font-semibold tracking-wide">casamenteiro</span>
+            <BrandLogo />
           </Link>
           {!user ? (
             <Button variant="ghost" size="sm" asChild>

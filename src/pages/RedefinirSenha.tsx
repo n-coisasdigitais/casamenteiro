@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,8 +63,7 @@ export default function RedefinirSenha() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Heart className="h-6 w-6 text-primary fill-primary" />
-            <span className="text-xl font-bold">Casamenteiro</span>
+            <BrandLogo />
           </div>
           <CardTitle className="text-2xl">Definir nova senha</CardTitle>
           <CardDescription>

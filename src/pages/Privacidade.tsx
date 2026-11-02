@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { Link } from "react-router-dom";
 import { Heart, ArrowLeft } from "lucide-react";
 
@@ -9,8 +10,7 @@ export default function Privacidade() {
       <header className="border-b bg-background">
         <div className="container py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="font-semibold">Casamenteiro</span>
+            <BrandLogo />
           </Link>
           <Link to="/" className="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Voltar

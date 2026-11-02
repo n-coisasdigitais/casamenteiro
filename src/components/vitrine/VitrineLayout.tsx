@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,7 @@ export function TopoVitrine({ ativo }: { ativo?: "fornecedores" }) {
     <header className="vt-top">
       <div className="vt-wrap flex h-[60px] items-center gap-6">
         <Link to="/" className="vt-serif text-[22px] tracking-tight">
-          casamenteiro<span className="text-[var(--vt-clay)]">.</span>
+          <BrandLogo />
         </Link>
         <nav className="hidden items-center gap-5 text-sm font-semibold text-[var(--vt-body)] md:flex">
           <Link to="/explorar" className={ativo === "fornecedores" ? "text-[var(--vt-ink)]" : "hover:text-[var(--vt-ink)]"}>
@@ -54,7 +55,7 @@ export function RodapeVitrine() {
         <div className="grid grid-cols-2 gap-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="vt-serif text-[22px] text-[var(--vt-ink)]">
-              casamenteiro<span className="text-[var(--vt-clay)]">.</span>
+              <BrandLogo />
             </Link>
             <p className="mt-2 max-w-[30ch]">Fornecedores de casamento, orçamento grátis e sem comissão.</p>
           </div>

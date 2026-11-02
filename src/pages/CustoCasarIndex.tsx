@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,9 +56,8 @@ export default function CustoCasarIndex() {
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <Link to="/" className="flex items-center gap-2 font-semibold">
-            <Heart className="h-5 w-5 text-primary" />
-            Casamenteiro
-          </Link>
+            <BrandLogo />
+</Link>
           <UserMenu />
         </div>
       </header>

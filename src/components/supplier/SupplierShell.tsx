@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { Link, useLocation } from "react-router-dom";
 import { Heart, LayoutDashboard, MessageSquare, Store, Star, Sparkles, Receipt, Gift } from "lucide-react";
 import NotificationsBell from "@/components/NotificationsBell";
@@ -24,8 +25,7 @@ export default function SupplierShell({ children }: { children: React.ReactNode 
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary fill-primary" />
-            <span className="text-lg font-bold">Casamenteiro</span>
+            <BrandLogo />
           </Link>
           <div className="flex items-center gap-2">
             <NotificationsBell />

@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -162,7 +163,7 @@ export default function Simulador() {
                     className="text-xl md:text-2xl mb-7 font-semibold tracking-wide"
                     style={{ color: "hsl(var(--color-primary))" }}
                   >
-                    casamenteiro
+                    <BrandLogo />
                   </p>
                   <h1
                     className="text-3xl md:text-5xl mb-5"

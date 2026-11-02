@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { registrarMinhaIndicacaoSeHouver } from "@/lib/beneficios";
 import LogoUploader from "@/components/supplier/LogoUploader";
 import { traduzirErro } from "@/lib/errorMessages";
@@ -796,7 +797,7 @@ export default function SupplierDashboard() {
       <header className="sticky top-0 z-40 border-b backdrop-blur" style={{ background: "rgba(248,243,237,.9)", borderColor: "var(--pv-line)" }}>
         <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
           <Link to="/" className="text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--pv-ink)" }}>
-            casamenteiro<span style={{ color: "var(--pv-terracota)" }}>.</span>
+            <BrandLogo />
           </Link>
           <div className="flex items-center gap-2">
             <Link

@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -90,7 +91,7 @@ export default function DashboardNav() {
         aria-label="Menu do casal"
       >
         <Link to="/" className="mb-3 px-2.5 text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--ca-ink)" }}>
-          casamenteiro<span style={{ color: "var(--ca-terracota)" }}>.</span>
+          <BrandLogo />
         </Link>
         <nav className="flex flex-col gap-0.5" aria-label="Seções">
           {lista.map((it) => (

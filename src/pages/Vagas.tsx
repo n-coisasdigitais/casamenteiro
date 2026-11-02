@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Search, X } from "lucide-react";
@@ -175,7 +176,7 @@ export default function Vagas() {
       <header className="sticky top-0 z-40 border-b backdrop-blur" style={{ borderColor: "var(--vg-linha)", background: "color-mix(in srgb, var(--vg-topo) 92%, transparent)" }}>
         <div className="mx-auto flex max-w-[880px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <Link to="/" className="flex items-baseline gap-2 text-[19px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--hv-ink)" }}>
-            casamenteiro<span style={{ color: "var(--hv-terracota)", marginLeft: "-0.4em" }}>.</span>
+            <BrandLogo />
             <span className="hidden text-[14px] font-medium sm:inline" style={{ letterSpacing: 0, color: "#8A8178" }}>vagas</span>
           </Link>
           <nav aria-label="Navegação" className="flex items-center gap-1 sm:gap-2">

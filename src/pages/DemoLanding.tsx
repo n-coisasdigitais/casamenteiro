@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useState } from "react";
 import { useNavigate, Link, Navigate } from "react-router-dom";
@@ -34,8 +35,7 @@ export default function DemoLanding() {
       <header className="border-b" style={{ borderColor: "hsl(var(--color-border))" }}>
         <div className="container flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-2" style={{ color: "hsl(var(--color-dark))" }}>
-            <Heart className="h-4 w-4" style={{ color: "hsl(var(--color-primary))", fill: "hsl(var(--color-primary))" }} />
-            <span className="font-serif text-lg">Casamenteiro</span>
+            <BrandLogo />
           </Link>
           <Link to="/" className="text-sm inline-flex items-center gap-1 hover:opacity-80" style={{ color: "hsl(var(--color-text-body))" }}>
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao site

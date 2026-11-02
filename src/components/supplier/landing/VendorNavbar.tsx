@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
@@ -21,8 +22,7 @@ export default function VendorNavbar({ cfg = DEFAULT_LANDING.navbar }: { cfg?: N
     >
       <div className="container flex items-center justify-between h-14">
         <Link to="/" className="flex items-center gap-2 text-white">
-          <Heart className="h-4 w-4 text-primary fill-primary" />
-          <span className="font-serif text-lg">Casamenteiro</span>
+          <BrandLogo light />
         </Link>
         <Link
           to={cfg.cta_href}

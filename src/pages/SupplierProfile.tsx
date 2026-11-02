@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/shared/BrandLogo";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -508,7 +509,7 @@ export default function SupplierProfile() {
       <header className="pf-top">
         <div className="pf-wrap flex h-[60px] items-center gap-6">
           <Link to="/" className="pf-serif text-[22px] tracking-tight">
-            casamenteiro<span className="text-[var(--pf-clay)]">.</span>
+            <BrandLogo />
           </Link>
           <nav className="hidden items-center gap-5 text-sm font-semibold text-[var(--pf-body)] md:flex">
             <Link to="/explorar" className="hover:text-[var(--pf-ink)]">
