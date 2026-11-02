@@ -10,9 +10,9 @@ export default function BrandLogo({ light = false, symbolOnly = false, className
   nameClassName?: string;
 }) {
   return (
-    <span className={cn("inline-flex shrink-0 items-center gap-2 align-middle font-sans text-lg font-bold tracking-normal", className)}>
-      <img src={(light ? logoClaro : logo).url} alt={symbolOnly ? "Casamenteiro" : ""} aria-hidden={symbolOnly ? undefined : true} width={932} height={430} className="h-auto w-12 shrink-0 object-contain" />
-      {!symbolOnly && <span className={cn("whitespace-nowrap", nameClassName)}>Casamenteiro</span>}
+    <span className={cn("inline-flex shrink-0 items-center align-middle tracking-normal", className)}>
+      <img src={(light ? logoClaro : logo).url} alt={symbolOnly ? "Casamenteiro" : ""} aria-hidden={symbolOnly ? undefined : true} width={932} height={430} className={cn("h-auto shrink-0 object-contain", symbolOnly ? "w-12" : "-mr-4 w-16")} />
+      {!symbolOnly && <span className={cn("relative whitespace-nowrap", nameClassName)}>casamenteiro<span className="text-primary">.</span></span>}
     </span>
   );
 }
