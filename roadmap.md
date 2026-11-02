@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Aplicar símbolo oficial com nome Casamenteiro e favicon em todas as frentes; validar a apresentação.
+- [x] Aplicar símbolo oficial com nome Casamenteiro e favicon em todas as frentes; páginas públicas e menus conferidos no computador e celular. Conferência autenticada indisponível: painel permaneceu em “Carregando...”.
 
 - [x] Revisar avisos de segurança do banco (linter) e corrigir funções/views
 - [x] Página "Seja fornecedor" mais forte (plano grátis, como funcionam orçamentos, cadastro rápido)
