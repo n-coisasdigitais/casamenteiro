@@ -14,6 +14,8 @@ declare global {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
     __GA_ID__?: string;
+    __META_PIXEL_ID__?: string;
+    fbq?: (...args: unknown[]) => void;
     __abrirPreferenciasCookies__?: () => void;
   }
 }
@@ -27,6 +29,38 @@ function gtag(...args: unknown[]) {
   if (typeof window === "undefined") return;
   // O snippet do index.html cria dataLayer/gtag antes do React montar.
   if (typeof window.gtag === "function") window.gtag(...args);
+}
+
+function fbq(...args: unknown[]) {
+  if (typeof window === "undefined") return;
+  if (typeof window.fbq === "function") window.fbq(...args);
+}
+
+/**
+ * Tradução dos eventos do GA para o Meta Pixel.
+ * Eventos padrão da Meta (CompleteRegistration, Lead, Contact) permitem
+ * otimizar campanhas direto no Gerenciador de Anúncios.
+ */
+function enviarMeta(name: string, params: Record<string, unknown>) {
+  switch (name) {
+    case "sign_up":
+      fbq("track", "CompleteRegistration", { content_name: params.user_type });
+      break;
+    case "onboarding_complete":
+      // Lead = cadastro concluído (fornecedor, profissional ou casal).
+      // Filtre por content_category em conversões personalizadas.
+      fbq("track", "Lead", { content_category: params.user_type });
+      fbq("trackCustom", "OnboardingCompleto", { user_type: params.user_type });
+      break;
+    case "contact_cta_click":
+      fbq("track", "Contact", { content_name: params.origem });
+      break;
+    case "form_submit":
+      fbq("trackCustom", "FormSubmit", { form_name: params.form_name });
+      break;
+    default:
+      fbq("trackCustom", name, params);
+  }
 }
 
 function gaAtivo() {
@@ -68,6 +102,7 @@ export function aplicarConsentimento(value: ConsentValue) {
     functionality_storage: "granted",
     security_storage: "granted",
   });
+  fbq("consent", value === "granted" ? "grant" : "revoke");
 }
 
 /* ------------------------------------------------------------------ */
@@ -109,15 +144,12 @@ export type TrackOptions = {
   janelaMs?: number;
 };
 
-export function trackEvent(
-  name: string,
-  params: Record<string, unknown> = {},
-  options: TrackOptions = {},
-) {
+export function trackEvent(name: string, params: Record<string, unknown> = {}, options: TrackOptions = {}) {
   if (typeof window === "undefined") return;
   const { dedupeKey, scope = "action", janelaMs = 2000 } = options;
   const key = dedupeKey ?? `${name}:${JSON.stringify(params)}`;
   if (jaEnviado(key, scope, janelaMs)) return;
+  enviarMeta(name, params);
   if (!gaAtivo()) {
     if (import.meta.env.DEV) console.debug("[analytics] (inativo)", name, params);
     return;
@@ -134,6 +166,7 @@ export function trackPageView(path: string, title?: string) {
   if (typeof window === "undefined") return;
   if (path === ultimoPath) return; // evita disparo em re-render
   ultimoPath = path;
+  fbq("track", "PageView");
   if (!gaAtivo()) return;
   gtag("event", "page_view", {
     page_path: path,
@@ -150,8 +183,7 @@ export const analytics = {
   signUp: (userType: string, method = "email") =>
     trackEvent("sign_up", { method, user_type: userType }, { scope: "session", dedupeKey: "sign_up" }),
 
-  login: (method = "email") =>
-    trackEvent("login", { method }, { scope: "session", dedupeKey: "login" }),
+  login: (method = "email") => trackEvent("login", { method }, { scope: "session", dedupeKey: "login" }),
 
   onboardingComplete: (userType: string) =>
     trackEvent(
