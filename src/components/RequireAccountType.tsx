@@ -5,19 +5,14 @@ import { useAuth } from "@/contexts/AuthContext";
 const HOME_BY_TYPE: Record<string, string> = {
   supplier: "/fornecedor/painel",
   profissional: "/profissional/painel",
+  generico: "/meu-sonho",
 };
 
 /**
  * Impede que contas de fornecedor/prestador acessem as rotas do casal.
  * Espera o perfil carregar antes de decidir (não assume "casal" por padrão).
  */
-export default function RequireAccountType({
-  allow,
-  children,
-}: {
-  allow: string[];
-  children: ReactNode;
-}) {
+export default function RequireAccountType({ allow, children }: { allow: string[]; children: ReactNode }) {
   const { loading, user, profile, isAdmin } = useAuth();
 
   if (loading || (user && !profile)) {
