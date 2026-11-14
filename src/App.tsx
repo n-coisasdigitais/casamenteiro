@@ -82,6 +82,7 @@ import MensagensCasais from "./pages/MensagensCasais";
 import CapturarIndicacao from "./pages/CapturarIndicacao";
 import AdminIndicacoes from "./pages/AdminIndicacoes";
 import AdminPlatformReviews from "./pages/AdminPlatformReviews";
+import AdminFeedback from "./pages/AdminFeedback";
 import DemoLanding from "./pages/DemoLanding";
 import DemoBanner from "./components/DemoBanner";
 import StaffLanding from "./pages/StaffLanding";
@@ -533,6 +534,14 @@ const App = () => (
                 element={
                   <AdminLayout>
                     <AdminReviews />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/feedback"
+                element={
+                  <AdminLayout>
+                    <AdminFeedback />
                   </AdminLayout>
                 }
               />

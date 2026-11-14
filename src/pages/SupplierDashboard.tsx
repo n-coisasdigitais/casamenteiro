@@ -39,6 +39,7 @@ import PromoDatesManager from "@/components/PromoDatesManager";
 import CalendarConnections from "@/components/CalendarConnections";
 import NotificationsBell from "@/components/NotificationsBell";
 import SupplierMetrics from "@/components/supplier/SupplierMetrics";
+import SeloCasamenteiroCard from "@/components/supplier/SeloCasamenteiroCard";
 import SupplierOnboardingWizard from "@/components/supplier/SupplierOnboardingWizard";
 import SupplierAreaEditor from "@/components/supplier/SupplierAreaEditor";
 import SupplierQuotesKanban from "@/components/supplier/SupplierQuotesKanban";
@@ -498,6 +499,7 @@ export default function SupplierDashboard() {
             <PerfilCompleto passos={passosPerfil} />
           </div>
           <SupplierMetrics supplierId={supplier.id} />
+          <SeloCasamenteiroCard supplierId={supplier.id} />
           <div className="grid gap-4 lg:grid-cols-2 lg:gap-5">
             <AgendaMes supplierId={supplier.id} onGerenciar={() => goDest("negocio", { sub: "disponibilidade" })} />
             <div className="flex min-w-0 flex-col gap-4">

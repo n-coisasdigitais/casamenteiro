@@ -47,6 +47,7 @@ const CAT_ICON: Record<string, string> = {
   "musica-dj": "🎵", decoracao: "🌸", "traje-noivo": "🤵",
   "vestido-noiva": "👰", "som-iluminacao": "🔊", brigadistas: "🚒", outros: "✨", "beleza-maquiagem": "💄", convites: "✉️",
   "bolos-doces": "🎂", transporte: "🚗", video: "🎬",
+  "equipe-danca": "💃", "desenho-ao-vivo": "🎨",
 };
 
 const UFs = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];

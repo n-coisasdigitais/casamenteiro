@@ -18,10 +18,10 @@ import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
   Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
   Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal, MapPin, Zap, Mail, Share2,
-  CalendarRange, Sparkles, Tag,
+  CalendarRange, Sparkles, Tag, MessageSquareHeart,
 } from "lucide-react";
 
-type NavItem = { title: string; url: string; icon: any; end?: boolean; extra?: string[]; badge?: "aprovacao" | "reservas" };
+type NavItem = { title: string; url: string; icon: any; end?: boolean; extra?: string[]; badge?: "aprovacao" | "reservas" | "feedback" };
 
 /** Menu em 7 grupos por tarefa (antes: 32 itens com grupos trocados). Todas as rotas continuam acessíveis. */
 const groups: { label: string; items: NavItem[] }[] = [
@@ -41,6 +41,7 @@ const groups: { label: string; items: NavItem[] }[] = [
       { title: "Datas ociosas", url: "/admin/datas-ociosas", icon: Sparkles },
       { title: "Avaliações", url: "/admin/avaliacoes", icon: Star },
       { title: "Avaliações da plataforma", url: "/admin/avaliacoes-plataforma", icon: Star },
+      { title: "Feedback dos usuários", url: "/admin/feedback", icon: MessageSquareHeart, badge: "feedback" },
     ],
   },
   {
@@ -101,16 +102,17 @@ const groups: { label: string; items: NavItem[] }[] = [
 
 /** contadores do menu (fila de trabalho) */
 function useContadoresMenu() {
-  const [c, setC] = useState<{ aprovacao: number; reservas: number }>({ aprovacao: 0, reservas: 0 });
+  const [c, setC] = useState<{ aprovacao: number; reservas: number; feedback: number }>({ aprovacao: 0, reservas: 0, feedback: 0 });
   const { pathname } = useLocation();
   useEffect(() => {
     let vivo = true;
     (async () => {
-      const [{ count: aprov }, { count: res }] = await Promise.all([
+      const [{ count: aprov }, { count: res }, { data: fb }] = await Promise.all([
         (supabase.from("suppliers") as any).select("id", { count: "exact", head: true }).eq("status", "pending").eq("is_demo", isDemoSession()),
         (supabase.from("idle_date_reservations" as any) as any).select("id", { count: "exact", head: true }).in("status", ["solicitada", "pendente"]),
+        supabase.rpc("admin_feedback_abertos" as never) as unknown as Promise<{ data: number | null }>,
       ]);
-      if (vivo) setC({ aprovacao: aprov || 0, reservas: res || 0 });
+      if (vivo) setC({ aprovacao: aprov || 0, reservas: res || 0, feedback: Number(fb) || 0 });
     })();
     return () => {
       vivo = false;
