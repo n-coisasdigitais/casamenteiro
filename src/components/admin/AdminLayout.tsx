@@ -86,6 +86,7 @@ const groups: { label: string; items: NavItem[] }[] = [
       { title: "Categorias e campos", url: "/admin/categorias", icon: SlidersHorizontal },
       { title: "Cidades", url: "/admin/cidades", icon: MapPin },
       { title: "Tarefas padrão", url: "/admin/tarefas-padrao", icon: ListChecks },
+      { title: "Quiz Um dia vou casar", url: "/admin/quiz", icon: Sparkles },
       { title: "Edição em massa de fornecedores", url: "/admin/fornecedores", icon: Building2, end: true },
     ],
   },

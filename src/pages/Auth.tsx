@@ -15,7 +15,7 @@ import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import heroCasal from "@/assets/hero-wedding.jpg";
 import "@/components/auth/auth-v2.css";
 
-type Tipo = "couple" | "supplier" | "profissional";
+type Tipo = "couple" | "supplier" | "profissional" | "generico";
 
 /** Textos por perfil e modo (login/cadastro). */
 const TEXTOS: Record<Tipo, { login: [string, string]; signup: [string, string]; nome: string; cta: string; faixa: string }> = {
@@ -32,6 +32,13 @@ const TEXTOS: Record<Tipo, { login: [string, string]; signup: [string, string]; 
     nome: "Seu nome (responsável)",
     cta: "Criar conta de fornecedor",
     faixa: "Fornecedor: pedidos com data, convidados e contato do casal.",
+  },
+  generico: {
+    login: ["Que bom ter você de volta", "Entre para ver o seu casamento dos sonhos."],
+    signup: ["Guarde o seu casamento dos sonhos", "Grátis. Quando noivar, vira conta de casal com um clique."],
+    nome: "Seu nome",
+    cta: "Criar minha conta",
+    faixa: "Seu mural: fotos, música de entrada e lugares dos sonhos.",
   },
   profissional: {
     login: ["Pronto para o próximo evento?", "Entre para ver convites e vagas da sua região."],
@@ -84,7 +91,9 @@ export default function Auth() {
     !searchParams.get("tipo") &&
     (path === "/login" || path === "/fornecedor/login" || path === "/profissional/login");
   const defaultType: Tipo =
-    searchParams.get("tipo") === "supplier" || isSupplierContext
+    searchParams.get("tipo") === "generico"
+      ? "generico"
+      : searchParams.get("tipo") === "supplier" || isSupplierContext
       ? "supplier"
       : searchParams.get("tipo") === "profissional" || isProfissionalContext
       ? "profissional"
@@ -137,6 +146,13 @@ export default function Auth() {
           return;
         }
       } catch (_) { /* noop */ }
+
+      // perfil genérico (quiz "Um dia vou casar"): volta para o mural
+      if (profile.account_type === "generico") {
+        const redirect = searchParams.get("redirect");
+        navigate(redirect?.startsWith("/") ? redirect : "/meu-sonho", { replace: true });
+        return;
+      }
 
       if (profile.account_type !== "couple") {
         if (profile.account_type === "profissional") {
@@ -346,7 +362,7 @@ export default function Auth() {
 
       {/* ---------- lado visual (desktop) ---------- */}
       <aside aria-hidden="true" className="relative m-4 mr-0 hidden overflow-hidden rounded-[28px] lg:block" style={{ position: "sticky", top: 16, height: "calc(100vh - 32px)", minHeight: 560 }}>
-        <Cena on={accountType === "couple"} fundo={<><img src={heroCasal} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /><div className="absolute inset-0 -z-10" style={{ background: "linear-gradient(180deg, rgba(20,14,10,0) 30%, rgba(20,14,10,.78) 100%)" }} /></>}
+        <Cena on={accountType === "couple" || accountType === "generico"} fundo={<><img src={heroCasal} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /><div className="absolute inset-0 -z-10" style={{ background: "linear-gradient(180deg, rgba(20,14,10,0) 30%, rgba(20,14,10,.78) 100%)" }} /></>}
           claro titulo={<>Do sim ao sim, <em className="a-serif" style={{ color: "#F7C9A1" }}>sem planilha.</em></>}
           itens={["Orçamentos de quem tem a sua data livre", "Lista de convidados e cronograma juntos", "Tudo salvo para continuar de onde parou"]}
           chips={[["✓", "Simulação salva", "Seus valores e convidados guardados", "#f6ede3", "#a9551f"], ["✉", "Orçamentos chegando", "Buffet, fotografia e decoração", "#e3eee8", "#3b6656"]]} chipsDireita />
@@ -418,6 +434,7 @@ export default function Auth() {
               </p>
 
               {/* perfil */}
+              {accountType !== "generico" && (
               <fieldset className="m-0 border-0 p-0">
                 <legend className="sr-only">Eu sou</legend>
                 <div className="relative grid rounded-2xl border p-[5px]" style={{ gridTemplateColumns: `repeat(${tipos.length}, 1fr)`, background: "var(--a-sand)", borderColor: "var(--a-line)" }}>
@@ -436,6 +453,7 @@ export default function Auth() {
                   })}
                 </div>
               </fieldset>
+              )}
 
               {/* Entrar / Criar conta */}
               <div role="tablist" aria-label="Entrar ou criar conta" className="flex gap-[22px] border-b" style={{ borderColor: "var(--a-line)" }}>

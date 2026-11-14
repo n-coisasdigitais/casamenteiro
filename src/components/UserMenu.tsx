@@ -28,6 +28,7 @@ export default function UserMenu() {
 
   const isSupplier = profile?.account_type === "supplier";
   const isStaff = profile?.account_type === "profissional";
+  const isGenerico = profile?.account_type === "generico";
   const { user } = useAuth();
   const [linkPublico, setLinkPublico] = useState<string | null>(null);
   useEffect(() => {
@@ -36,7 +37,13 @@ export default function UserMenu() {
       .then(({ data }: any) => data && setLinkPublico(`/fornecedor/${data.slug || data.id}`));
   }, [isSupplier, user?.id]);
 
-  const items = isStaff
+  const items = isGenerico
+    ? [
+        { to: "/meu-sonho", icon: Heart, label: "Meu casamento dos sonhos" },
+        { to: "/quiz", icon: FlaskConical, label: "Refazer o quiz" },
+        { to: "/buscar", icon: Search, label: "Buscar fornecedores" },
+      ]
+    : isStaff
     ? [
         { to: "/profissional/painel", icon: LayoutDashboard, label: "Painel do Profissional" },
         { to: "/profissional/painel?tab=vagas", icon: Briefcase, label: "Vagas disponíveis" },
@@ -71,7 +78,7 @@ export default function UserMenu() {
         <DropdownMenuLabel className="font-normal">
           <p className="text-sm font-medium leading-none">{profile?.full_name || "Minha conta"}</p>
           <Link
-            to={isStaff ? "/profissional/onboarding" : isSupplier && linkPublico ? linkPublico : "/perfil"}
+            to={isStaff ? "/profissional/onboarding" : isSupplier && linkPublico ? linkPublico : isGenerico ? "/meu-sonho" : "/perfil"}
             className="text-xs text-primary hover:underline mt-1 inline-block"
           >
             {isSupplier && linkPublico ? "Ver meu perfil público" : "Ver perfil"}

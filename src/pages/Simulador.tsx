@@ -35,7 +35,11 @@ export default function Simulador() {
   const [cidade, setCidade] = useState("");
   const [cidadeSemFornecedor, setCidadeSemFornecedor] = useState(false);
   const [estadoCidade, setEstadoCidade] = useState<string | null>(null);
-  const [estilo, setEstilo] = useState<Estilo | null>(null);
+  // vindo do quiz: /simulador?estilo=intimista já chega com o estilo marcado
+  const [estilo, setEstilo] = useState<Estilo | null>(() => {
+    const e = new URLSearchParams(window.location.search).get("estilo");
+    return e === "intimista" || e === "elegante" || e === "grandioso" ? e : null;
+  });
 
   useEffect(() => {
     document.title = "Simulador — Casamenteiro";

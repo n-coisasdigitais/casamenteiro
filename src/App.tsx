@@ -87,6 +87,9 @@ import DemoBanner from "./components/DemoBanner";
 import StaffLanding from "./pages/StaffLanding";
 import Vagas from "./pages/Vagas";
 import CustoCasarIndex from "./pages/CustoCasarIndex";
+import Quiz from "./pages/Quiz";
+import MeuSonho from "./pages/MeuSonho";
+import AdminQuiz from "./pages/AdminQuiz";
 import CustoCasarCidade from "./pages/CustoCasarCidade";
 import StaffOnboarding from "./pages/StaffOnboarding";
 import StaffDashboard from "./pages/StaffDashboard";
@@ -283,6 +286,9 @@ const App = () => (
                   </FlagGate>
                 }
               />
+              <Route path="/quiz" element={<Quiz />} />
+              <Route path="/meu-sonho" element={<RequireAccountType allow={["generico", "admin"]}><MeuSonho /></RequireAccountType>} />
+              <Route path="/admin/quiz" element={<AdminLayout><AdminQuiz /></AdminLayout>} />
               <Route path="/quanto-custa-casar" element={<CustoCasarIndex />} />
               <Route path="/quanto-custa-casar-em/:cidade" element={<CustoCasarCidade />} />
               <Route
