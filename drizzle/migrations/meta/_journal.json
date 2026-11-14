@@ -99,6 +99,13 @@
       "when": 1793220130142,
       "tag": "0013_categorias_sugestoes_logo_slug",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794671351731,
+      "tag": "0014_admin_duplicar_categoria",
+      "breakpoints": true
     }
   ]
 }

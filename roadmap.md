@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Adicionar duplicação de categorias com seus campos e criar Convites e Sites Virtuais; os 18 arquivos continuam vazios e nenhum build foi executado manualmente. Teste unitário passou; conferência no admin indisponível com a sessão do solicitante.
+
 - [x] Aplicar símbolo oficial com nome Casamenteiro e favicon em todas as frentes; páginas públicas e menus conferidos no computador e celular. Conferência autenticada indisponível: painel permaneceu em “Carregando...”.
 
 - [x] Revisar avisos de segurança do banco (linter) e corrigir funções/views

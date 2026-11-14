@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { slugify } from "@/lib/slugify";
+import { categoryDuplicateDraft } from "@/lib/categoryDuplicate";
 
 type Cat = {
   id?: string;
@@ -22,12 +23,13 @@ type Cat = {
 const EMOJIS = ["📷","🎵","🍰","💐","💍","👗","🤵","🚗","✉️","🏛️","🎬","💄","🍽️","🎂","🎉","🌸"];
 
 export default function CategoryFormDialog({
-  open, onOpenChange, category, onSaved,
+  open, onOpenChange, category, onSaved, duplicate = false,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   category: Cat | null;
   onSaved: () => void;
+  duplicate?: boolean;
 }) {
   const { toast } = useToast();
   const [data, setData] = useState<Cat>({ name: "", slug: "", icon: "", description: "", active: true });
@@ -36,13 +38,13 @@ export default function CategoryFormDialog({
 
   useEffect(() => {
     if (category) {
-      setData({ ...category, icon: category.icon || "", description: category.description || "" });
+      setData({ ...(duplicate ? categoryDuplicateDraft(category) : category), icon: category.icon || "", description: category.description || "" });
       setSlugTouched(true);
     } else {
       setData({ name: "", slug: "", icon: "", description: "", active: true });
       setSlugTouched(false);
     }
-  }, [category, open]);
+  }, [category, open, duplicate]);
 
   const onName = (v: string) => {
     setData((d) => ({ ...d, name: v, slug: slugTouched ? d.slug : slugify(v) }));
@@ -61,7 +63,9 @@ export default function CategoryFormDialog({
       description: data.description || null,
       active: data.active,
     };
-    const q = data.id
+    const q = duplicate && category?.id
+      ? supabase.rpc("admin_duplicar_categoria", { p_origem: category.id, p_nome: payload.name, p_slug: payload.slug, p_icon: payload.icon, p_description: payload.description, p_active: payload.active })
+      : data.id
       ? supabase.from("categories").update(payload).eq("id", data.id)
       : supabase.from("categories").insert(payload);
     const { error } = await q;
@@ -70,7 +74,7 @@ export default function CategoryFormDialog({
       toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
       return;
     }
-    toast({ title: data.id ? "Categoria atualizada" : "Categoria criada" });
+    toast({ title: duplicate ? "Categoria e campos duplicados" : data.id ? "Categoria atualizada" : "Categoria criada" });
     onSaved();
     onOpenChange(false);
   };
@@ -79,7 +83,7 @@ export default function CategoryFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{data.id ? "Editar categoria" : "Nova categoria"}</DialogTitle>
+          <DialogTitle>{duplicate ? "Duplicar categoria" : data.id ? "Editar categoria" : "Nova categoria"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>

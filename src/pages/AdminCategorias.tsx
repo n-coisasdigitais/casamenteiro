@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, SlidersHorizontal } from "lucide-react";
+import { Plus, Pencil, SlidersHorizontal, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CategoryFormDialog from "@/components/admin/categorias/CategoryFormDialog";
 
@@ -23,6 +23,7 @@ export default function AdminCategorias() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Cat | null>(null);
   const [open, setOpen] = useState(false);
+  const [duplicate, setDuplicate] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -49,8 +50,9 @@ export default function AdminCategorias() {
     setCats((prev) => prev.map((c) => c.id === cat.id ? { ...c, active: v } : c));
   };
 
-  const openNew = () => { setEditing(null); setOpen(true); };
-  const openEdit = (c: Cat) => { setEditing(c); setOpen(true); };
+  const openNew = () => { setDuplicate(false); setEditing(null); setOpen(true); };
+  const openEdit = (c: Cat) => { setDuplicate(false); setEditing(c); setOpen(true); };
+  const openDuplicate = (c: Cat) => { setDuplicate(true); setEditing(c); setOpen(true); };
 
   return (
     <div className="px-4 md:px-8 py-6">
@@ -93,6 +95,9 @@ export default function AdminCategorias() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" onClick={() => openDuplicate(c)} title="Duplicar categoria" aria-label={`Duplicar ${c.name}`}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => openEdit(c)} title="Editar">
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -110,7 +115,7 @@ export default function AdminCategorias() {
         </div>
       )}
 
-      <CategoryFormDialog open={open} onOpenChange={setOpen} category={editing} onSaved={load} />
+      <CategoryFormDialog open={open} onOpenChange={setOpen} category={editing} duplicate={duplicate} onSaved={load} />
     </div>
   );
 }

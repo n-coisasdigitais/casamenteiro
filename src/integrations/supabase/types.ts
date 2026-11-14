@@ -5473,6 +5473,17 @@ export type Database = {
         }
         Returns: string
       }
+      admin_duplicar_categoria: {
+        Args: {
+          p_active: boolean
+          p_description: string
+          p_icon: string
+          p_nome: string
+          p_origem: string
+          p_slug: string
+        }
+        Returns: string
+      }
       admin_mark_commission_paid: {
         Args: { _amount: number; _lead_id: string }
         Returns: undefined
