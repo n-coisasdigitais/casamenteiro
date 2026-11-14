@@ -63,7 +63,7 @@ export default function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-full">
+        <button type="button" aria-label="Abrir menu da conta" className="flex shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
           <UserAvatar fullName={profile?.full_name} avatarUrl={profile?.avatar_url} />
         </button>
       </DropdownMenuTrigger>
@@ -71,10 +71,10 @@ export default function UserMenu() {
         <DropdownMenuLabel className="font-normal">
           <p className="text-sm font-medium leading-none">{profile?.full_name || "Minha conta"}</p>
           <Link
-            to={isStaff ? "/profissional/onboarding" : "/perfil"}
+            to={isStaff ? "/profissional/onboarding" : isSupplier && linkPublico ? linkPublico : "/perfil"}
             className="text-xs text-primary hover:underline mt-1 inline-block"
           >
-            Ver perfil
+            {isSupplier && linkPublico ? "Ver meu perfil público" : "Ver perfil"}
           </Link>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

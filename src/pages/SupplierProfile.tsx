@@ -43,6 +43,7 @@ import PromoDatesInline from "@/components/reservas/PromoDatesInline";
 import SupplierMap from "@/components/SupplierMap";
 import SEO from "@/components/SEO";
 import { absoluteUrl, breadcrumbJsonLd, priceRangeLabel, truncate } from "@/lib/seo";
+import { compartilharPerfil, gerarArquivoCartao } from "@/lib/cartaoCompartilhar";
 import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
 import RedesSociaisPerfil from "@/components/redes/RedesSociaisPerfil";
@@ -341,18 +342,37 @@ export default function SupplierProfile() {
     }
   };
 
+  const dadosCartao = useMemo(() => {
+    if (!supplier) return null;
+    const nome = supplier.company_name || "Fornecedor";
+    const categoria = (supplier.categories as any)?.name || null;
+    const nota = Number(supplier.rating) || 0;
+    return {
+      titulo: nome,
+      texto: `Conheça ${nome}${categoria ? ` (${categoria.toLowerCase()})` : ""} no Casamenteiro:`,
+      url: absoluteUrl(linkFornecedor(supplier)),
+      nome,
+      fotoUrl: photos.find((p: any) => p.is_principal)?.photo_url || supplier.profile_photo_url || photos[0]?.photo_url || null,
+      linha1: categoria,
+      linha2: [supplier.city, supplier.state].filter(Boolean).join(", ") || null,
+      selo: nota >= 4 ? `★ ${nota.toFixed(1).replace(".", ",")}` : null,
+    };
+  }, [supplier, photos]);
+
+  // Gera a imagem com antecedência: no iPhone o share precisa sair logo após o toque.
+  const [arquivoCartao, setArquivoCartao] = useState<File | null>(null);
+  useEffect(() => {
+    if (!dadosCartao) return;
+    let vivo = true;
+    const t = setTimeout(() => gerarArquivoCartao(dadosCartao).then((f) => vivo && setArquivoCartao(f)), 1200);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [dadosCartao]);
+
   const compartilhar = async () => {
-    const url = absoluteUrl(linkFornecedor(supplier ?? { id }));
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: supplier?.company_name, url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      toast({ title: "Link copiado!" });
-    } catch {
-      /* cancelado */
-    }
+    if (!dadosCartao) return;
+    const resultado = await compartilharPerfil(dadosCartao, arquivoCartao);
+    if (resultado === "imagem-baixada") toast({ title: "Imagem baixada e link copiado!", description: "É só colar o link junto da imagem." });
+    else if (resultado === "link-copiado") toast({ title: "Link copiado!" });
   };
 
   // seção ativa no menu fixo

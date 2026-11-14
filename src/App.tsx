@@ -8,6 +8,7 @@ import { FeatureFlagsProvider } from "@/contexts/FeatureFlagsContext";
 import FlagGate from "@/components/FlagGate";
 import CookieConsent from "@/components/CookieConsent";
 import BackToTop from "@/components/BackToTop";
+import BotaoFeedback from "@/components/feedback/BotaoFeedback";
 import RequireAccountType from "@/components/RequireAccountType";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
@@ -119,6 +120,7 @@ const App = () => (
             <DemoBanner />
             <CookieConsent />
             <BackToTop />
+            <BotaoFeedback />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/explorar" element={<Explore />} />

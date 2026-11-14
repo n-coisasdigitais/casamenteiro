@@ -23,6 +23,7 @@ import { UFS_BRASIL } from "@/components/CityStateSelect";
 import RedesSociaisCampos from "@/components/redes/RedesSociaisCampos";
 import ListaOpcoes from "@/components/dynamic-fields/ListaOpcoes";
 import { MoedaInput, ehCampoDinheiro } from "@/components/ui/moeda-input";
+import AjustarFotoDialog from "@/components/shared/AjustarFotoDialog";
 import { carregarRedes, salvarRedes, type Redes } from "@/lib/redesSociais";
 import { MINIMO_DESCRICAO, MINIMO_FOTOS, PENDENCIAS, mensagemCadastroIncompleto, type Pendencia } from "@/lib/pendencias";
 
@@ -85,6 +86,7 @@ export default function SupplierOnboarding() {
 
   // Fotos
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [fotoPerfilParaAjustar, setFotoPerfilParaAjustar] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [outrosDescricao, setOutrosDescricao] = useState("");
   const [galleryPhotos, setGalleryPhotos] = useState<{ id: string; url: string }[]>([]);
@@ -281,16 +283,17 @@ export default function SupplierOnboarding() {
     return true;
   };
 
-  const handleProfileUpload = async (file: File) => {
+  const handleProfileUpload = async (file: Blob) => {
     if (!supplierId || !session?.user) return;
     setUploading(true);
     try {
-      const path = `${session.user.id}/profile-${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("supplier-photos").upload(path, file);
+      const path = `${session.user.id}/profile-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("supplier-photos").upload(path, file, { contentType: "image/jpeg" });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from("supplier-photos").getPublicUrl(path);
       await (supabase.from("suppliers") as any).update({ profile_photo_url: publicUrl }).eq("id", supplierId);
       setProfilePhoto(publicUrl);
+      setFotoPerfilParaAjustar(null);
     } catch (e: any) {
       toast({ title: "Erro no upload", description: traduzirErro(e), variant: "destructive" });
     } finally { setUploading(false); }
@@ -680,8 +683,21 @@ export default function SupplierOnboarding() {
                 <label className="cursor-pointer inline-flex items-center justify-center h-10 px-4 rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition">
                   {profilePhoto ? "Trocar foto" : "Enviar foto"}
                   <input type="file" accept="image/*" className="hidden" disabled={uploading}
-                    onChange={(e) => e.target.files?.[0] && handleProfileUpload(e.target.files[0])} />
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setFotoPerfilParaAjustar(URL.createObjectURL(f)); }} />
                 </label>
+                {profilePhoto && (
+                  <button type="button" onClick={() => setFotoPerfilParaAjustar(profilePhoto)} className="text-sm text-primary hover:underline">
+                    Ajustar foto
+                  </button>
+                )}
+                <AjustarFotoDialog
+                  src={fotoPerfilParaAjustar}
+                  formato="redondo"
+                  titulo="Ajustar foto de perfil"
+                  salvando={uploading}
+                  onCancelar={() => setFotoPerfilParaAjustar(null)}
+                  onConfirmar={handleProfileUpload}
+                />
               </div>
             </div>
             {supplierId && session?.user && (
