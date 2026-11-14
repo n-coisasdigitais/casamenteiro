@@ -2726,6 +2726,145 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_opcoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          credito_nome: string | null
+          credito_url: string | null
+          foto_url: string | null
+          id: string
+          ordem: number
+          patrocinada: boolean
+          pergunta_id: string
+          peso_elegante: number
+          peso_grandioso: number
+          peso_intimista: number
+          rotulo: string
+          supplier_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          credito_nome?: string | null
+          credito_url?: string | null
+          foto_url?: string | null
+          id?: string
+          ordem?: number
+          patrocinada?: boolean
+          pergunta_id: string
+          peso_elegante?: number
+          peso_grandioso?: number
+          peso_intimista?: number
+          rotulo: string
+          supplier_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          credito_nome?: string | null
+          credito_url?: string | null
+          foto_url?: string | null
+          id?: string
+          ordem?: number
+          patrocinada?: boolean
+          pergunta_id?: string
+          peso_elegante?: number
+          peso_grandioso?: number
+          peso_intimista?: number
+          rotulo?: string
+          supplier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_opcoes_pergunta_id_fkey"
+            columns: ["pergunta_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_perguntas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_opcoes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_opcoes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_perguntas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          ordem: number
+          subtitulo: string | null
+          titulo: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          subtitulo?: string | null
+          titulo: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          subtitulo?: string | null
+          titulo?: string
+        }
+        Relationships: []
+      }
+      quiz_resultados: {
+        Row: {
+          adesivo: string | null
+          compartilhou: boolean
+          created_at: string
+          estilo: string
+          formato_adesivo: string | null
+          id: string
+          indicado_codigo: string | null
+          opcoes: string[]
+          titulo: string | null
+          user_id: string | null
+        }
+        Insert: {
+          adesivo?: string | null
+          compartilhou?: boolean
+          created_at?: string
+          estilo: string
+          formato_adesivo?: string | null
+          id: string
+          indicado_codigo?: string | null
+          opcoes?: string[]
+          titulo?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          adesivo?: string | null
+          compartilhou?: boolean
+          created_at?: string
+          estilo?: string
+          formato_adesivo?: string | null
+          id?: string
+          indicado_codigo?: string | null
+          opcoes?: string[]
+          titulo?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       quote_messages: {
         Row: {
           attachment_url: string | null
@@ -3242,6 +3381,164 @@ export type Database = {
           id?: string
           num_convidados?: number
           orcamento_total?: number
+        }
+        Relationships: []
+      }
+      sonho_fotos: {
+        Row: {
+          created_at: string
+          id: string
+          origem: string
+          quiz_opcao_id: string | null
+          storage_path: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          origem: string
+          quiz_opcao_id?: string | null
+          storage_path?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          origem?: string
+          quiz_opcao_id?: string | null
+          storage_path?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sonho_fotos_quiz_opcao_id_fkey"
+            columns: ["quiz_opcao_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_opcoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sonho_lugares: {
+        Row: {
+          cidade: string | null
+          created_at: string
+          foto_path: string | null
+          id: string
+          nome: string
+          quero_trazer: boolean
+          supplier_id: string | null
+          uf: string | null
+          user_id: string
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string
+          foto_path?: string | null
+          id?: string
+          nome: string
+          quero_trazer?: boolean
+          supplier_id?: string | null
+          uf?: string | null
+          user_id: string
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string
+          foto_path?: string | null
+          id?: string
+          nome?: string
+          quero_trazer?: boolean
+          supplier_id?: string | null
+          uf?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sonho_lugares_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sonho_lugares_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sonho_perfis: {
+        Row: {
+          adesivo: string | null
+          cidade: string | null
+          codigo: string
+          created_at: string
+          estilo: string | null
+          formato_adesivo: string
+          fotos_autorizadas: boolean
+          frase: string | null
+          interesses: string[]
+          match_consentido_em: string | null
+          match_lista: boolean
+          match_maior_idade: boolean
+          mostrar_foto: boolean
+          mostrar_selo_match: boolean
+          musica: Json | null
+          resultado_id: string | null
+          sobre_mim: string | null
+          titulo: string | null
+          uf: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adesivo?: string | null
+          cidade?: string | null
+          codigo?: string
+          created_at?: string
+          estilo?: string | null
+          formato_adesivo?: string
+          fotos_autorizadas?: boolean
+          frase?: string | null
+          interesses?: string[]
+          match_consentido_em?: string | null
+          match_lista?: boolean
+          match_maior_idade?: boolean
+          mostrar_foto?: boolean
+          mostrar_selo_match?: boolean
+          musica?: Json | null
+          resultado_id?: string | null
+          sobre_mim?: string | null
+          titulo?: string | null
+          uf?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adesivo?: string | null
+          cidade?: string | null
+          codigo?: string
+          created_at?: string
+          estilo?: string | null
+          formato_adesivo?: string
+          fotos_autorizadas?: boolean
+          frase?: string | null
+          interesses?: string[]
+          match_consentido_em?: string | null
+          match_lista?: boolean
+          match_maior_idade?: boolean
+          mostrar_foto?: boolean
+          mostrar_selo_match?: boolean
+          musica?: Json | null
+          resultado_id?: string | null
+          sobre_mim?: string | null
+          titulo?: string | null
+          uf?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -5503,9 +5800,30 @@ export type Database = {
         }
         Returns: string
       }
+      admin_lista_match: {
+        Args: never
+        Returns: {
+          cidade: string
+          total: number
+          uf: string
+        }[]
+      }
       admin_mark_commission_paid: {
         Args: { _amount: number; _lead_id: string }
         Returns: undefined
+      }
+      admin_quiz_resumo: { Args: never; Returns: Json }
+      admin_ranking_lugares: {
+        Args: never
+        Returns: {
+          chave: string
+          cidade: string
+          nome: string
+          querem_trazer: number
+          supplier_id: string
+          total: number
+          uf: string
+        }[]
       }
       admin_reset_demo: { Args: never; Returns: Json }
       admin_set_user_suspended: {
@@ -5524,6 +5842,10 @@ export type Database = {
       admin_toggle_admin_role: {
         Args: { _make_admin: boolean; _user_id: string }
         Returns: undefined
+      }
+      admin_unificar_lugar: {
+        Args: { _chave: string; _nome: string; _supplier_id?: string }
+        Returns: number
       }
       buscar_cidades_brasil: {
         Args: { _prefix: string }
@@ -5554,6 +5876,7 @@ export type Database = {
         Args: { _motivo?: string; _reservation_id: string }
         Returns: Json
       }
+      chave_lugar: { Args: { _nome: string }; Returns: string }
       cidades_disponiveis: {
         Args: { _prefix: string }
         Returns: {
@@ -5583,6 +5906,7 @@ export type Database = {
       }
       expirar_monetizacao: { Args: never; Returns: undefined }
       expire_idle_reservations: { Args: never; Returns: number }
+      fiquei_noivo: { Args: never; Returns: undefined }
       fornecedor_pendencias: {
         Args: { _supplier_id: string }
         Returns: string[]
@@ -5736,6 +6060,11 @@ export type Database = {
         Returns: boolean
       }
       purge_platform_events: { Args: { _meses?: number }; Returns: number }
+      quiz_contagem_estilo: { Args: { _estilo: string }; Returns: number }
+      quiz_marcar_compartilhou: { Args: { _id: string }; Returns: undefined }
+      quiz_minhas_indicacoes: { Args: never; Returns: number }
+      quiz_reivindicar_resultado: { Args: { _id: string }; Returns: undefined }
+      quiz_textos: { Args: never; Returns: Json }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
