@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { attributeReferralConversion, getStoredReferralCode } from "@/lib/referral";
 import { clearDemoScope, setDemoSession } from "@/lib/demoScope";
 
-
 type Profile = {
   id: string;
   user_id: string;
@@ -23,6 +22,8 @@ type AuthContextType = {
   isDemo: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
+  /** Relê o perfil (ex.: depois de mudar o tipo de conta). */
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -33,6 +34,7 @@ const AuthContext = createContext<AuthContextType>({
   isDemo: false,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -45,11 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
     setProfile(data);
     setDemoSession(!!data?.is_demo);
 
@@ -66,20 +64,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
-        } else {
-          setProfile(null);
-          setIsAdmin(false);
-          clearDemoScope();
-        }
-        setLoading(false);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        setTimeout(() => fetchProfile(session.user.id), 0);
+      } else {
+        setProfile(null);
+        setIsAdmin(false);
+        clearDemoScope();
       }
-    );
+      setLoading(false);
+    });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -102,8 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearDemoScope();
   };
 
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id);
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, isAdmin, isDemo: !!profile?.is_demo, loading, signOut }}>
+    <AuthContext.Provider
+      value={{ session, user, profile, isAdmin, isDemo: !!profile?.is_demo, loading, signOut, refreshProfile }}
+    >
       {children}
     </AuthContext.Provider>
   );
