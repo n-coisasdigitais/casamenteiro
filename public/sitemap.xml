@@ -136,14 +136,32 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/ae6d4a13-948d-4df9-b761-ccb091f83460</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/65364cc8-dc6d-4b37-98d5-1e8a2d5b3716</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/4e3d81f3-490a-4033-a672-8b6df440944a</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/711b66c7-a2f6-431a-9975-f6a3a905a258</loc>
     <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/c4fbf53a-9592-4d37-a348-30f3d9377aa0</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -191,6 +209,11 @@
     <loc>https://www.casamenteiro.com.br/casais/nosso-casamento-ca0a</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/itajai-sc</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/urubici-sc</loc>
