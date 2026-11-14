@@ -50,8 +50,16 @@ export default function HomeNavV3({ onSimular }: { onSimular: () => void }) {
           boxShadow: solido ? "0 6px 24px rgba(31,29,27,.06)" : undefined,
         }}
       >
-        <nav aria-label="Navegação principal" className="mx-auto flex max-w-[1200px] items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6" style={{ height: solido ? 64 : 76, transition: "height .3s" }}>
-          <Link to="/" className="text-[18px] font-extrabold sm:text-[22px]" style={{ color: cor, letterSpacing: "-0.03em" }}>
+        <nav
+          aria-label="Navegação principal"
+          className="mx-auto flex max-w-[1200px] items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6"
+          style={{ height: solido ? 64 : 76, transition: "height .3s" }}
+        >
+          <Link
+            to="/"
+            className="text-[18px] font-extrabold sm:text-[22px]"
+            style={{ color: cor, letterSpacing: "-0.03em" }}
+          >
             <BrandLogo light={!solido} />
           </Link>
 
@@ -65,11 +73,18 @@ export default function HomeNavV3({ onSimular }: { onSimular: () => void }) {
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             {user ? (
-              <span className="rounded-full" style={{ background: solido ? "transparent" : "rgba(255,255,255,.92)" }}>
+              <span
+                className="inline-flex items-center justify-center rounded-full p-[3px]"
+                style={{ background: solido ? "transparent" : "rgba(255,255,255,.92)" }}
+              >
                 <UserMenu />
               </span>
             ) : (
-              <Link to="/login" className="inline-flex min-h-[44px] items-center px-2 text-[15px] font-semibold sm:px-3" style={{ color: cor }}>
+              <Link
+                to="/login"
+                className="inline-flex min-h-[44px] items-center px-2 text-[15px] font-semibold sm:px-3"
+                style={{ color: cor }}
+              >
                 Entrar
               </Link>
             )}
@@ -77,7 +92,11 @@ export default function HomeNavV3({ onSimular }: { onSimular: () => void }) {
               type="button"
               onClick={onSimular}
               className="hv-btn inline-flex min-h-[44px] items-center rounded-full px-4 text-[15px] font-bold sm:px-5"
-              style={solido ? { background: "var(--hv-clay)", color: "#fff" } : { background: "#fff", color: "var(--hv-ink)" }}
+              style={
+                solido
+                  ? { background: "var(--hv-clay)", color: "#fff" }
+                  : { background: "#fff", color: "var(--hv-ink)" }
+              }
             >
               Simular
             </button>
@@ -100,18 +119,40 @@ export default function HomeNavV3({ onSimular }: { onSimular: () => void }) {
       </header>
 
       {aberto && (
-        <div role="dialog" aria-modal="true" aria-label="Menu" className="fixed inset-0 z-[60] lg:hidden" style={{ background: "rgba(20,14,10,.45)" }} onClick={() => setAberto(false)}>
-          <div className="flex flex-col rounded-b-[28px] bg-white px-6 pb-7 pt-3 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu"
+          className="fixed inset-0 z-[60] lg:hidden"
+          style={{ background: "rgba(20,14,10,.45)" }}
+          onClick={() => setAberto(false)}
+        >
+          <div
+            className="flex flex-col rounded-b-[28px] bg-white px-6 pb-7 pt-3 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex min-h-[56px] items-center justify-between">
               <span className="text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em" }}>
                 <BrandLogo />
               </span>
-              <button type="button" onClick={() => setAberto(false)} aria-label="Fechar menu" className="inline-flex h-11 w-11 items-center justify-center rounded-full border" style={{ borderColor: "var(--hv-line)" }}>
+              <button
+                type="button"
+                onClick={() => setAberto(false)}
+                aria-label="Fechar menu"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border"
+                style={{ borderColor: "var(--hv-line)" }}
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
             {LINKS.map((l) => (
-              <Link key={l.to} to={l.to} onClick={() => setAberto(false)} className="flex min-h-[56px] items-center border-b text-[20px] font-bold" style={{ borderColor: "#f2eee8", color: "var(--hv-ink)" }}>
+              <Link
+                key={l.to}
+                to={l.to}
+                onClick={() => setAberto(false)}
+                className="flex min-h-[56px] items-center border-b text-[20px] font-bold"
+                style={{ borderColor: "#f2eee8", color: "var(--hv-ink)" }}
+              >
                 {l.label}
               </Link>
             ))}
