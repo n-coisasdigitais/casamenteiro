@@ -6004,6 +6004,14 @@ export type Database = {
           supplier_nome: string
         }[]
       }
+      indicacao_publica: {
+        Args: { _codigo: string }
+        Returns: {
+          e_propria: boolean
+          id: string
+          nome_casal: string
+        }[]
+      }
       is_demo_user: { Args: { _user_id: string }; Returns: boolean }
       is_job_applicant: { Args: { _job_id: string }; Returns: boolean }
       is_supplier_of_my_job: {
@@ -6059,6 +6067,7 @@ export type Database = {
         Args: { _autor_id: string; _autor_tipo: string; _job_id: string }
         Returns: boolean
       }
+      profissional_config_atual_id: { Args: never; Returns: string }
       purge_platform_events: { Args: { _meses?: number }; Returns: number }
       quiz_contagem_estilo: { Args: { _estilo: string }; Returns: number }
       quiz_marcar_compartilhou: { Args: { _id: string }; Returns: undefined }
@@ -6080,6 +6089,10 @@ export type Database = {
       recalcular_preco_fornecedor: {
         Args: { _supplier_id: string }
         Returns: undefined
+      }
+      registrar_clique_indicacao: {
+        Args: { _codigo: string }
+        Returns: boolean
       }
       registrar_clique_indicacao_fornecedor: {
         Args: { _codigo: string }

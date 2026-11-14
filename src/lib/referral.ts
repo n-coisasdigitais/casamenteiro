@@ -29,18 +29,9 @@ export function getStoredReferral(): { codigo: string; nome: string | null } | n
 /** Nome do casal dono do código de indicação (para exibir "Fulano te indicou"). */
 export async function buscarNomeIndicador(codigo: string): Promise<string | null> {
   const { data: ref } = await supabase
-    .from("referrals")
-    .select("couple_id")
-    .eq("codigo", codigo.toUpperCase())
-    .eq("ativo", true)
+    .rpc("indicacao_publica", { _codigo: codigo.toUpperCase() })
     .maybeSingle();
-  if (!ref?.couple_id) return null;
-  const { data: perfil } = await supabase
-    .from("couple_public_profiles")
-    .select("nome_casal")
-    .eq("couple_id", ref.couple_id)
-    .maybeSingle();
-  return perfil?.nome_casal ?? null;
+  return ref?.nome_casal ?? null;
 }
 
 export function getStoredReferralCode(): string | null {
@@ -65,18 +56,8 @@ export function clearReferralCode() {
 }
 
 export async function incrementReferralClick(codigo: string) {
-  const { data } = await supabase
-    .from("referrals")
-    .select("id, cliques")
-    .eq("codigo", codigo.toUpperCase())
-    .eq("ativo", true)
-    .maybeSingle();
-  if (!data) return null;
-  await supabase
-    .from("referrals")
-    .update({ cliques: (data.cliques ?? 0) + 1 })
-    .eq("id", data.id);
-  return data.id;
+  const { data } = await supabase.rpc("registrar_clique_indicacao", { _codigo: codigo.toUpperCase() });
+  return data;
 }
 
 export async function attributeReferralConversion(
@@ -87,10 +68,7 @@ export async function attributeReferralConversion(
   if (!codigo) return;
 
   const { data: ref } = await supabase
-    .from("referrals")
-    .select("id, couple_id")
-    .eq("codigo", codigo)
-    .eq("ativo", true)
+    .rpc("indicacao_publica", { _codigo: codigo })
     .maybeSingle();
   if (!ref) {
     clearReferralCode();
@@ -98,12 +76,7 @@ export async function attributeReferralConversion(
   }
 
   // Não atribui auto-indicação
-  const { data: ownCouple } = await supabase
-    .from("couples")
-    .select("id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (ownCouple?.id === ref.couple_id) {
+  if (ref.e_propria) {
     clearReferralCode();
     return;
   }

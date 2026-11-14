@@ -106,6 +106,27 @@
       "when": 1794671351731,
       "tag": "0014_admin_duplicar_categoria",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794684867570,
+      "tag": "0015_restringir_indicacoes_avaliacoes_arquivos",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794684881786,
+      "tag": "0016_config_profissional_sem_recursao",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794684895614,
+      "tag": "0017_indicacao_nome_apenas_perfil_publico",
+      "breakpoints": true
     }
   ]
 }
