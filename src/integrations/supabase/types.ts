@@ -3751,7 +3751,10 @@ export type Database = {
           descricao: string
           id: string
           origem: string
+          pagina: string | null
+          solucao_sugerida: string | null
           status: string
+          tipo: string
           user_id: string
         }
         Insert: {
@@ -3761,7 +3764,10 @@ export type Database = {
           descricao: string
           id?: string
           origem?: string
+          pagina?: string | null
+          solucao_sugerida?: string | null
           status?: string
+          tipo?: string
           user_id: string
         }
         Update: {
@@ -3771,7 +3777,10 @@ export type Database = {
           descricao?: string
           id?: string
           origem?: string
+          pagina?: string | null
+          solucao_sugerida?: string | null
           status?: string
+          tipo?: string
           user_id?: string
         }
         Relationships: []
@@ -5462,6 +5471,16 @@ export type Database = {
           _title: string
         }
         Returns: number
+      }
+      admin_buscar_usuarios: {
+        Args: { _termo: string }
+        Returns: {
+          avatar_url: string
+          email: string
+          nome: string
+          tipo: string
+          user_id: string
+        }[]
       }
       admin_conceder_beneficio: {
         Args: {
