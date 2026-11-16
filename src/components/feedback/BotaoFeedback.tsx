@@ -5,9 +5,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { MessageSquareHeart } from "lucide-react";
 import FormFeedback, { type OrigemFeedback } from "./FormFeedback";
 
-// Telas onde o botão não aparece (fluxos curtos ou de convidados).
-const ESCONDER_EM = [/^\/quiz/, /^\/convite\//, /^\/pagamento/, /^\/comprovante\//, /^\/admin/];
-
 function origemDaConta(tipo?: string | null): OrigemFeedback {
   if (tipo === "supplier") return "fornecedor";
   if (tipo === "profissional") return "profissional";
@@ -16,16 +13,16 @@ function origemDaConta(tipo?: string | null): OrigemFeedback {
 }
 
 /**
- * Aba fixa na lateral direita ("Feedback") para quem está logado.
+ * Aba fixa na lateral direita ("Feedback") para administradores logados na área administrativa.
  * Abre o formulário de erro / melhoria / ideia sem sair da tela.
  */
 export default function BotaoFeedback() {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin, loading } = useAuth();
   const { pathname } = useLocation();
   const [aberto, setAberto] = useState(false);
 
-  if (!user || !profile) return null;
-  if (ESCONDER_EM.some((r) => r.test(pathname))) return null;
+  if (loading || !user || !profile || !isAdmin) return null;
+  if (pathname !== "/admin" && !pathname.startsWith("/admin/")) return null;
 
   return (
     <>
