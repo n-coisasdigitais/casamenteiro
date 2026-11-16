@@ -2733,6 +2733,7 @@ export type Database = {
           credito_nome: string | null
           credito_url: string | null
           foto_url: string | null
+          grupo: string | null
           id: string
           ordem: number
           patrocinada: boolean
@@ -2749,6 +2750,7 @@ export type Database = {
           credito_nome?: string | null
           credito_url?: string | null
           foto_url?: string | null
+          grupo?: string | null
           id?: string
           ordem?: number
           patrocinada?: boolean
@@ -2765,6 +2767,7 @@ export type Database = {
           credito_nome?: string | null
           credito_url?: string | null
           foto_url?: string | null
+          grupo?: string | null
           id?: string
           ordem?: number
           patrocinada?: boolean
@@ -2804,6 +2807,7 @@ export type Database = {
           ativo: boolean
           created_at: string
           id: string
+          multipla: boolean
           ordem: number
           subtitulo: string | null
           titulo: string
@@ -2812,6 +2816,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          multipla?: boolean
           ordem?: number
           subtitulo?: string | null
           titulo: string
@@ -2820,6 +2825,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          multipla?: boolean
           ordem?: number
           subtitulo?: string | null
           titulo?: string
