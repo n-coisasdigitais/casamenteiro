@@ -15,8 +15,16 @@ export type OpcaoQuiz = {
   peso_intimista: number;
   peso_elegante: number;
   peso_grandioso: number;
+  /** null = aparece para todos; "noiva" ou "noivo" = aparece só na aba escolhida */
+  grupo: "noiva" | "noivo" | null;
 };
-export type PerguntaQuiz = { id: string; titulo: string; subtitulo: string | null; opcoes: OpcaoQuiz[] };
+export type PerguntaQuiz = {
+  id: string;
+  titulo: string;
+  subtitulo: string | null;
+  multipla: boolean;
+  opcoes: OpcaoQuiz[];
+};
 
 export type Adesivo = { texto: string; mensagem: string };
 export type TextosQuiz = { titulos: string[]; adesivos: Adesivo[]; palavras_bloqueadas: string[] };
@@ -66,7 +74,7 @@ export const FORMATOS: { id: FormatoAdesivo; rotulo: string }[] = [
 /** Carrega só perguntas completas: ativas e com pelo menos 2 opções com foto. */
 export async function carregarQuiz(): Promise<PerguntaQuiz[]> {
   const { data: perguntas, error } = await (supabase.from("quiz_perguntas" as any) as any)
-    .select("id, titulo, subtitulo, ordem")
+    .select("id, titulo, subtitulo, ordem, multipla")
     .eq("ativo", true)
     .order("ordem");
   if (error) throw error;
@@ -74,7 +82,7 @@ export async function carregarQuiz(): Promise<PerguntaQuiz[]> {
   if (!ids.length) return [];
   const { data: opcoes, error: e2 } = await (supabase.from("quiz_opcoes" as any) as any)
     .select(
-      "id, pergunta_id, ordem, rotulo, foto_url, credito_nome, credito_url, supplier_id, peso_intimista, peso_elegante, peso_grandioso",
+      "id, pergunta_id, ordem, rotulo, foto_url, credito_nome, credito_url, supplier_id, peso_intimista, peso_elegante, peso_grandioso, grupo",
     )
     .in("pergunta_id", ids)
     .eq("ativo", true)
@@ -86,6 +94,7 @@ export async function carregarQuiz(): Promise<PerguntaQuiz[]> {
       id: p.id,
       titulo: p.titulo,
       subtitulo: p.subtitulo,
+      multipla: !!p.multipla,
       opcoes: (opcoes || []).filter((o: any) => o.pergunta_id === p.id && o.foto_url),
     }))
     .filter((p: PerguntaQuiz) => p.opcoes.length >= 2);
@@ -107,13 +116,17 @@ export async function carregarTextos(): Promise<TextosQuiz> {
   return TEXTOS_PADRAO;
 }
 
-/** Soma os pesos das opções escolhidas. Empate: elegante > intimista > grandioso. */
-export function calcularEstilo(escolhidas: OpcaoQuiz[]): EstiloQuiz {
+/** Soma os pesos por pergunta. Em pergunta de várias escolhas, usa a média, para não pesar mais
+ *  que as outras. Empate: elegante > intimista > grandioso. */
+export function calcularEstilo(porPergunta: OpcaoQuiz[][]): EstiloQuiz {
   const t = { intimista: 0, elegante: 0, grandioso: 0 };
-  escolhidas.forEach((o) => {
-    t.intimista += o.peso_intimista;
-    t.elegante += o.peso_elegante;
-    t.grandioso += o.peso_grandioso;
+  porPergunta.forEach((lista) => {
+    if (!lista.length) return;
+    lista.forEach((o) => {
+      t.intimista += o.peso_intimista / lista.length;
+      t.elegante += o.peso_elegante / lista.length;
+      t.grandioso += o.peso_grandioso / lista.length;
+    });
   });
   const ordem: EstiloQuiz[] = ["elegante", "intimista", "grandioso"];
   return ordem.reduce((melhor, e) => (t[e] > t[melhor] ? e : melhor), ordem[0]);
