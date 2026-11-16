@@ -55,6 +55,7 @@ export default function Quiz() {
   const [selo, setSelo] = useState<string | null>(null);
   const [madrinha, setMadrinha] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [mostrarPassos, setMostrarPassos] = useState(false);
 
   useEffect(() => {
     carregarFonteCaveat();
@@ -153,13 +154,14 @@ export default function Quiz() {
     if (!resultado) return;
     guardarPendente(resultado);
     if (!user) {
-      navigate("/cadastro?tipo=generico&redirect=/meu-sonho");
+      // explica antes de mandar para o cadastro
+      setMostrarPassos(true);
       return;
     }
     setSalvando(true);
     try {
       await reivindicarPendente(user.id);
-      navigate(profile?.account_type === "generico" ? "/meu-sonho" : "/dashboard");
+      navigate(profile?.account_type === "generico" || profile?.account_type === "admin" ? "/meu-sonho" : "/dashboard");
     } finally {
       setSalvando(false);
     }
@@ -237,7 +239,7 @@ export default function Quiz() {
               Começar
             </button>
             <p className="text-xs" style={{ color: SUAVE }}>
-              Não precisa de cadastro.
+              Não precisa de cadastro para jogar. Para guardar no seu mural, você cria uma conta grátis no fim.
             </p>
           </section>
         ) : etapa === "pergunta" && pergunta ? (
@@ -452,7 +454,7 @@ export default function Quiz() {
                 className="h-11 text-[15px] font-medium"
                 style={{ color: TERRA }}
               >
-                {salvando ? "Salvando…" : "Salvar no meu mural"}
+                {salvando ? "Salvando…" : user ? "Salvar no meu mural" : "Salvar no meu mural (conta grátis)"}
               </button>
             </div>
           </section>
@@ -497,6 +499,42 @@ export default function Quiz() {
           </section>
         ) : null}
       </main>
+
+      {mostrarPassos && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setMostrarPassos(false)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="titulo-passos" onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[440px] rounded-t-3xl bg-white p-6 pb-8 sm:rounded-3xl" style={{ color: "#2B211B" }}>
+            <h2 id="titulo-passos" className="text-[22px] font-semibold leading-tight">Seu mural fica guardado na sua conta</h2>
+            <p className="mt-1 text-[15px]" style={{ color: SUAVE }}>É grátis e leva 1 minuto. Funciona assim:</p>
+            <ol className="mt-4 flex flex-col gap-3">
+              {[
+                ["Crie sua conta", "Só nome, e-mail e senha."],
+                ["Seu resultado já entra no mural", "O que você escolheu no quiz fica guardado neste aparelho até lá."],
+                ["Deixe o mural com a sua cara", "Música, fotos, frase e os lugares dos sonhos. Você decide o que aparece."],
+              ].map(([t, d], i) => (
+                <li key={t} className="flex gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white" style={{ background: TERRA }}>{i + 1}</span>
+                  <span className="flex flex-col">
+                    <span className="text-[15px] font-semibold">{t}</span>
+                    <span className="text-sm" style={{ color: SUAVE }}>{d}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <button type="button" onClick={() => navigate("/cadastro?tipo=generico&redirect=/meu-sonho")}
+              className="mt-6 h-[52px] w-full rounded-[14px] text-base font-semibold text-white" style={{ background: TERRA }}>
+              Criar conta grátis
+            </button>
+            <button type="button" onClick={() => navigate("/login?redirect=/meu-sonho")}
+              className="mt-2 h-11 w-full text-[15px] font-medium" style={{ color: TERRA }}>
+              Já tenho conta
+            </button>
+            <button type="button" onClick={() => setMostrarPassos(false)} className="h-10 w-full text-sm" style={{ color: SUAVE }}>
+              Agora não
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

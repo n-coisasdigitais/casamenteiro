@@ -4,6 +4,7 @@
  * O vídeo não leva música: no Instagram, a pessoa usa o adesivo de música (licenciado).
  */
 import type { FormatoAdesivo } from "@/lib/quiz";
+import logoMarca from "@/assets/casamenteiro-logo.svg.asset.json";
 
 export type DadosCartaoQuiz = {
   titulo: string;
@@ -21,7 +22,7 @@ export type DadosCartaoQuiz = {
   link: string; // texto exibido, ex.: casamenteiro.com.br/quiz
 };
 
-type Recursos = { imgs: (HTMLImageElement | null)[]; perfil: HTMLImageElement | null };
+type Recursos = { imgs: (HTMLImageElement | null)[]; perfil: HTMLImageElement | null; logo: HTMLImageElement | null };
 
 const W = 1080;
 const H = 1920;
@@ -47,11 +48,12 @@ async function carregarRecursos(d: DadosCartaoQuiz): Promise<Recursos> {
   } catch {
     /* segue com a fonte do sistema */
   }
-  const [imgs, perfil] = await Promise.all([
+  const [imgs, perfil, logo] = await Promise.all([
     Promise.all(d.fotos.slice(0, 3).map(carregarImagem)),
     d.fotoPerfil ? carregarImagem(d.fotoPerfil) : Promise.resolve(null),
+    carregarImagem(logoMarca.url),
   ]);
-  return { imgs, perfil };
+  return { imgs, perfil, logo };
 }
 
 function arredondado(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -204,7 +206,17 @@ function desenhar(ctx: CanvasRenderingContext2D, d: DadosCartaoQuiz, rec: Recurs
     ctx.fillStyle = TINTA;
     ctx.font = "700 40px Inter, system-ui, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText("casamenteiro", M, 150);
+    // marca: símbolo (proporção 932x430, como no site) + nome com o ponto terracota
+    let xNome = M;
+    if (rec.logo) {
+      const lh = 84;
+      const lw = (lh * 932) / 430;
+      ctx.drawImage(rec.logo, M - 18, 150 - lh + 20, lw, lh);
+      xNome = M - 18 + lw * 0.75;
+    }
+    ctx.fillText("casamenteiro", xNome, 150);
+    ctx.fillStyle = "#D9905A";
+    ctx.fillText(".", xNome + ctx.measureText("casamenteiro").width, 150);
     if (d.madrinha) {
       ctx.font = "600 32px Inter, system-ui, sans-serif";
       const w = ctx.measureText(d.madrinha).width + 48;

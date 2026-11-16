@@ -21,3 +21,5 @@ project_id = "fglpzxtrvipizoymwteg"
     verify_jwt = false
   [functions.mp-process-payment]
     verify_jwt = false
+  [functions.musica-busca]
+    verify_jwt = false

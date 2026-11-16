@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 /**
  * Busca de músicas pela iTunes Search API (Apple): gratuita, sem chave.
  * Regra da Apple: a prévia de 30 s precisa aparecer perto do selo "Ouvir no Apple Music".
@@ -44,9 +46,20 @@ function jsonp<T>(url: string, timeoutMs = 8000): Promise<T> {
 export async function buscarMusicas(termo: string): Promise<Musica[]> {
   const q = termo.trim();
   if (q.length < 2) return [];
-  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=song&limit=8&country=BR`;
-  const dados = await jsonp<{ results: any[] }>(url);
-  return (dados.results || []).map((r) => ({
+  let resultados: any[] | null = null;
+  // 1) pelo nosso servidor (mais confiável); 2) se falhar, direto na Apple (JSONP)
+  try {
+    const { data, error } = await supabase.functions.invoke("musica-busca", { body: { termo: q } });
+    if (!error && data && Array.isArray(data.results)) resultados = data.results;
+  } catch {
+    /* tenta o caminho direto */
+  }
+  if (!resultados) {
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=song&limit=8&country=BR`;
+    const dados = await jsonp<{ results: any[] }>(url);
+    resultados = dados.results || [];
+  }
+  return resultados.map((r) => ({
     trackId: r.trackId,
     titulo: r.trackName,
     artista: r.artistName,
