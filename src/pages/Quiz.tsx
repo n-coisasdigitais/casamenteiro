@@ -46,7 +46,8 @@ export default function Quiz() {
   const [textos, setTextos] = useState<TextosQuiz>(TEXTOS_PADRAO);
   const [etapa, setEtapa] = useState<Etapa>("intro");
   const [indice, setIndice] = useState(0);
-  const [respostas, setRespostas] = useState<Record<string, OpcaoQuiz>>({});
+  const [respostas, setRespostas] = useState<Record<string, OpcaoQuiz[]>>({});
+  const [visual, setVisual] = useState<"noiva" | "noivo">("noiva");
   const [resultado, setResultado] = useState<ResultadoQuiz | null>(null);
   const [contagem, setContagem] = useState(0);
   const [fornecedores, setFornecedores] = useState<{ id: string; slug: string | null; company_name: string }[]>([]);
@@ -92,15 +93,17 @@ export default function Quiz() {
   }, [carregando, params]);
 
   const pergunta = perguntas[indice];
-  const escolhida = pergunta ? respostas[pergunta.id] : undefined;
+  const selecionadas = pergunta ? respostas[pergunta.id] || [] : [];
+  const temVisual = !!pergunta?.opcoes.some((o) => o.grupo);
+  const opcoesVisiveis = pergunta ? pergunta.opcoes.filter((o) => !o.grupo || o.grupo === visual) : [];
   const info = resultado ? RESULTADOS[resultado.estilo] : null;
   const urlCompartilhar = absoluteUrl(`/quiz${codigo ? `?de=${codigo}` : ""}`);
 
   const fotosResultado = useMemo(() => resultado?.fotos.slice(0, 3) || [], [resultado]);
 
-  const finalizar = async (todas: Record<string, OpcaoQuiz>) => {
-    const escolhidas = perguntas.map((p) => todas[p.id]).filter(Boolean) as OpcaoQuiz[];
-    const estilo: EstiloQuiz = calcularEstilo(escolhidas);
+  const finalizar = async (todas: Record<string, OpcaoQuiz[]>) => {
+    const escolhidas = perguntas.flatMap((p) => todas[p.id] || []);
+    const estilo: EstiloQuiz = calcularEstilo(perguntas.map((p) => todas[p.id] || []));
     const r: ResultadoQuiz = {
       id: novoId(),
       estilo,
@@ -127,14 +130,23 @@ export default function Quiz() {
     }
   };
 
+  const avancar = (novas: Record<string, OpcaoQuiz[]>) => {
+    if (indice < perguntas.length - 1) setIndice((i) => i + 1);
+    else finalizar(novas);
+  };
+
   const escolher = (o: OpcaoQuiz) => {
-    const novas = { ...respostas, [pergunta.id]: o };
+    if (pergunta.multipla) {
+      // várias escolhas: marca e desmarca; avança pelo botão "Continuar"
+      const atuais = respostas[pergunta.id] || [];
+      const lista = atuais.some((x) => x.id === o.id) ? atuais.filter((x) => x.id !== o.id) : [...atuais, o];
+      setRespostas({ ...respostas, [pergunta.id]: lista });
+      return;
+    }
+    const novas = { ...respostas, [pergunta.id]: [o] };
     setRespostas(novas);
     // avança sozinho depois de um instante, para a pessoa ver a marcação
-    setTimeout(() => {
-      if (indice < perguntas.length - 1) setIndice((i) => i + 1);
-      else finalizar(novas);
-    }, 350);
+    setTimeout(() => avancar(novas), 350);
   };
 
   const salvarNoMural = async () => {
@@ -269,19 +281,45 @@ export default function Quiz() {
                 {pergunta.titulo}
               </h1>
               <p className="mt-1 text-[15px]" style={{ color: SUAVE }}>
-                {pergunta.subtitulo || "Toque na foto que mais combina com você."}
+                {pergunta.subtitulo ||
+                  (pergunta.multipla ? "Pode escolher mais de um." : "Toque na foto que mais combina com você.")}
               </p>
             </div>
+            {temVisual && (
+              <div
+                role="tablist"
+                aria-label="Escolha o visual"
+                className="grid grid-cols-2 gap-1 rounded-xl p-1"
+                style={{ background: "#EFE4DA" }}
+              >
+                {(["noiva", "noivo"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="tab"
+                    aria-selected={visual === v}
+                    onClick={() => setVisual(v)}
+                    className="h-10 rounded-lg text-sm font-semibold"
+                    style={{
+                      background: visual === v ? "#fff" : "transparent",
+                      color: visual === v ? "#2B211B" : SUAVE,
+                    }}
+                  >
+                    {v === "noiva" ? "Visual de noiva" : "Visual de noivo"}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2.5">
-              {pergunta.opcoes.map((o) => {
-                const on = escolhida?.id === o.id;
+              {opcoesVisiveis.map((o) => {
+                const on = selecionadas.some((x) => x.id === o.id);
                 return (
                   <button
                     key={o.id}
                     type="button"
                     aria-pressed={on}
                     onClick={() => escolher(o)}
-                    className="relative min-h-[170px] overflow-hidden rounded-2xl text-left"
+                    className="relative min-h-[170px] overflow-hidden rounded-2xl text-left [&:last-child:nth-child(odd)]:col-span-2"
                     style={{ outline: on ? `3px solid ${TERRA}` : "none", outlineOffset: 2, background: "#D9B99A" }}
                   >
                     <img
@@ -310,6 +348,17 @@ export default function Quiz() {
                 );
               })}
             </div>
+            {pergunta.multipla && (
+              <button
+                type="button"
+                disabled={!selecionadas.length}
+                onClick={() => avancar(respostas)}
+                className="h-[52px] rounded-[14px] text-base font-semibold text-white disabled:opacity-40"
+                style={{ background: TERRA }}
+              >
+                {selecionadas.length ? `Continuar (${selecionadas.length})` : "Escolha pelo menos um"}
+              </button>
+            )}
             <p className="text-center text-xs" style={{ color: SUAVE }}>
               Fotos de fornecedores do Casamenteiro e do{" "}
               <a href="https://unsplash.com" target="_blank" rel="noreferrer" className="underline">
