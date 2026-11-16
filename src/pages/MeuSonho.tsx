@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Loader2, Share2, Sparkles } from "lucide-react";
+import { Copy, Heart, Loader2, Play, Share2, Sparkles } from "lucide-react";
+import { absoluteUrl } from "@/lib/seo";
 import BrandLogo from "@/components/shared/BrandLogo";
 import SEO from "@/components/SEO";
 import UserMenu from "@/components/UserMenu";
-import UserAvatar from "@/components/UserAvatar";
+import AvatarUpload from "@/components/AvatarUpload";
+import MadrinhaNiveis from "@/components/sonho/MadrinhaNiveis";
 import FotosSonho, { carregarFotosSonho } from "@/components/sonho/FotosSonho";
 import MusicaEntrada from "@/components/sonho/MusicaEntrada";
 import LugaresSonho from "@/components/sonho/LugaresSonho";
@@ -42,6 +44,8 @@ type Perfil = DadosSobreMim & {
   adesivo: string | null;
   formato_adesivo: FormatoAdesivo;
   mostrar_foto: boolean;
+  fotos_autorizadas: boolean;
+  apresentacao_publica: boolean;
   frase: string | null;
   musica: Musica | null;
 };
@@ -152,7 +156,11 @@ export default function MeuSonho() {
         ) : (
           <>
             <div className="flex items-center gap-3">
-              <UserAvatar fullName={profile?.full_name} avatarUrl={profile?.avatar_url} className="h-[52px] w-[52px]" />
+              <AvatarUpload
+                avatarUrl={profile?.avatar_url || null}
+                fullName={profile?.full_name || null}
+                onUploaded={() => refreshProfile()}
+              />
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg font-semibold">Meu casamento dos sonhos</h1>
                 <p className="text-sm" style={{ color: SUAVE }}>
@@ -217,6 +225,71 @@ export default function MeuSonho() {
               bloqueadas={bloqueadas}
               onSalvar={(campos) => salvar(campos)}
             />
+
+            <section
+              className="flex flex-col gap-3 rounded-2xl border bg-white p-4"
+              style={{ borderColor: "#ECE3DA" }}
+              aria-labelledby="titulo-apresentacao"
+            >
+              <div>
+                <h2 id="titulo-apresentacao" className="text-base font-semibold">
+                  Minha apresentação
+                </h2>
+                <p className="text-[13px] leading-snug" style={{ color: SUAVE }}>
+                  Um story animado com a sua música, fotos, frase e lugar. Você escolhe o que aparece.
+                </p>
+              </div>
+              {[
+                { k: "mostrar_foto" as const, t: "Mostrar minha foto de perfil" },
+                {
+                  k: "fotos_autorizadas" as const,
+                  t: "Mostrar as fotos que eu subi (são minhas ou tenho direito de usar)",
+                },
+                { k: "apresentacao_publica" as const, t: "Deixar visível para quem tiver o link" },
+              ].map((o) => (
+                <label key={o.k} className="flex items-start justify-between gap-3 text-sm leading-snug">
+                  <span>{o.t}</span>
+                  <input
+                    type="checkbox"
+                    checked={!!perfil[o.k]}
+                    onChange={(e) => salvar({ [o.k]: e.target.checked } as Partial<Perfil>)}
+                    className="mt-0.5 h-5 w-5 shrink-0"
+                    style={{ accentColor: TERRA }}
+                  />
+                </label>
+              ))}
+              <div className="flex gap-2">
+                <Link
+                  to={`/sonho/${perfil.codigo}`}
+                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white"
+                  style={{ background: "#2B211B" }}
+                >
+                  <Play className="h-4 w-4" fill="currentColor" aria-hidden="true" /> Ver minha apresentação
+                </Link>
+                {perfil.apresentacao_publica && (
+                  <button
+                    type="button"
+                    aria-label="Copiar link da apresentação"
+                    onClick={() =>
+                      navigator.clipboard
+                        ?.writeText(absoluteUrl(`/sonho/${perfil.codigo}`))
+                        .then(() => toast({ title: "Link copiado" }))
+                    }
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border"
+                    style={{ borderColor: "#DCCFC3" }}
+                  >
+                    <Copy className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+              {!perfil.apresentacao_publica && (
+                <p className="text-xs" style={{ color: SUAVE }}>
+                  Por enquanto, só você vê.
+                </p>
+              )}
+            </section>
+
+            <MadrinhaNiveis codigo={perfil.codigo} />
 
             <section className="mt-2 flex flex-col gap-2.5">
               <p className="text-center text-sm" style={{ color: SUAVE }}>
