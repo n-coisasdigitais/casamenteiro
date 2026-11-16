@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Heart, Loader2, Share2 } from "lucide-react";
+import { Clapperboard, Heart, Image as IconeImagem, Loader2, Share2 } from "lucide-react";
 import AdesivoPreview from "@/components/quiz/AdesivoPreview";
 import {
   FORMATOS,
@@ -9,7 +9,7 @@ import {
   type FormatoAdesivo,
   type TextosQuiz,
 } from "@/lib/quiz";
-import { compartilharCartaoQuiz, gerarCartaoQuiz } from "@/lib/cartaoQuiz";
+import { compartilharCartaoQuiz, formatoVideoSuportado, gerarCartaoQuiz, gerarVideoCartaoQuiz } from "@/lib/cartaoQuiz";
 import { useToast } from "@/hooks/use-toast";
 
 export type EscolhasCard = {
@@ -29,6 +29,8 @@ type Props = {
   urlCompartilhar: string;
   /** Pessoa está na lista do Match e escolheu mostrar o selo no card. */
   selo?: string | null;
+  /** Nível de Madrinha (ex.: "Madrinha de honra"): moldura dourada no card. */
+  madrinha?: string | null;
   onMudou?: (e: EscolhasCard) => void;
   onCompartilhou?: () => void;
 };
@@ -43,6 +45,7 @@ export default function AparenciaCard({
   fotoPerfil,
   urlCompartilhar,
   selo,
+  madrinha,
   onMudou,
   onCompartilhou,
 }: Props) {
@@ -58,8 +61,10 @@ export default function AparenciaCard({
   const [formato, setFormato] = useState<FormatoAdesivo>(inicial?.formato || "postit");
   const [usarFoto, setUsarFoto] = useState(!!inicial?.usarFoto);
   const [fotoLocal, setFotoLocal] = useState<string | null>(null);
-  const [gerando, setGerando] = useState(false);
-  const [cartao, setCartao] = useState<{ blob: Blob; url: string } | null>(null);
+  const [gerando, setGerando] = useState<null | "imagem" | "video">(null);
+  const [progresso, setProgresso] = useState(0);
+  const [cartao, setCartao] = useState<{ blob: Blob; url: string; video: boolean } | null>(null);
+  const podeVideo = useMemo(() => !!formatoVideoSuportado(), []);
   const inputFoto = useRef<HTMLInputElement>(null);
 
   const foto = fotoLocal || fotoPerfil || null;
@@ -69,7 +74,7 @@ export default function AparenciaCard({
     onMudou?.({ titulo, adesivo, formato, usarFoto: usarFoto && !!foto });
     setCartao(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [titulo, adesivo, formato, usarFoto, foto, selo]);
+  }, [titulo, adesivo, formato, usarFoto, foto, selo, madrinha]);
 
   useEffect(
     () => () => {
@@ -96,29 +101,56 @@ export default function AparenciaCard({
     setEscrevendo(false);
   };
 
+  const dadosCartao = () => ({
+    titulo,
+    nomeEstilo: info.nome,
+    paleta: info.paleta,
+    fotos,
+    fotoPerfil: usarFoto ? foto : null,
+    adesivo,
+    mensagem,
+    formato,
+    selo: selo || null,
+    madrinha: madrinha || null,
+    link: urlCompartilhar.replace(/^https?:\/\//, "").replace(/\?.*$/, ""),
+  });
+
+  const trocarCartao = (blob: Blob, video: boolean) =>
+    setCartao((antigo) => {
+      if (antigo) URL.revokeObjectURL(antigo.url);
+      return { blob, url: URL.createObjectURL(blob), video };
+    });
+
   const gerar = async () => {
-    setGerando(true);
+    setGerando("imagem");
     try {
-      const blob = await gerarCartaoQuiz({
-        titulo,
-        nomeEstilo: info.nome,
-        paleta: info.paleta,
-        fotos,
-        fotoPerfil: usarFoto ? foto : null,
-        adesivo,
-        mensagem,
-        formato,
-        selo: selo || null,
-        link: urlCompartilhar.replace(/^https?:\/\//, "").replace(/\?.*$/, ""),
-      });
-      setCartao((antigo) => {
-        if (antigo) URL.revokeObjectURL(antigo.url);
-        return { blob, url: URL.createObjectURL(blob) };
-      });
+      trocarCartao(await gerarCartaoQuiz(dadosCartao()), false);
     } catch (e: any) {
       toast({ title: "Não foi possível gerar o card", description: e?.message, variant: "destructive" });
     } finally {
-      setGerando(false);
+      setGerando(null);
+    }
+  };
+
+  const gerarVideo = async () => {
+    setGerando("video");
+    setProgresso(0);
+    try {
+      const blob = await gerarVideoCartaoQuiz(dadosCartao(), setProgresso);
+      if (blob) trocarCartao(blob, true);
+      else {
+        toast({ title: "Este aparelho não grava vídeo", description: "Geramos a imagem no lugar." });
+        trocarCartao(await gerarCartaoQuiz(dadosCartao()), false);
+      }
+    } catch (e: any) {
+      toast({ title: "Não foi possível gravar o vídeo", description: "Geramos a imagem no lugar." });
+      try {
+        trocarCartao(await gerarCartaoQuiz(dadosCartao()), false);
+      } catch {
+        /* noop */
+      }
+    } finally {
+      setGerando(null);
     }
   };
 
@@ -126,8 +158,11 @@ export default function AparenciaCard({
     if (!cartao) return;
     const r = await compartilharCartaoQuiz(cartao.blob, urlCompartilhar, `${titulo}. Descobre o seu:`);
     if (r !== "cancelado") onCompartilhou?.();
-    if (r === "imagem-baixada")
-      toast({ title: "Imagem baixada e link copiado", description: "Poste a imagem no story e cole o link." });
+    if (r === "arquivo-baixado")
+      toast({
+        title: cartao.video ? "Vídeo baixado e link copiado" : "Imagem baixada e link copiado",
+        description: "Poste no story e cole o link.",
+      });
   };
 
   const chip = (on: boolean) =>
@@ -139,12 +174,26 @@ export default function AparenciaCard({
     <div className="flex flex-col gap-6">
       {/* prévia */}
       <div
-        className="mx-auto flex h-[391px] w-[220px] flex-col items-center gap-3 rounded-[18px] border p-4"
-        style={{ background: "#FBF4EC", borderColor: "#E3D3C4" }}
+        className="mx-auto flex h-[391px] w-[220px] flex-col items-center gap-3 rounded-[18px] p-4"
+        style={
+          madrinha
+            ? { background: "#FBF4E8", border: "3px solid #C49A3C" }
+            : { background: "#FBF4EC", border: "1px solid #E3D3C4" }
+        }
       >
-        <span className="self-start text-[10px] font-semibold tracking-wide" style={{ color: PRETO }}>
-          casamenteiro
-        </span>
+        <div className="flex w-full items-center justify-between">
+          <span className="text-[10px] font-semibold tracking-wide" style={{ color: PRETO }}>
+            casamenteiro
+          </span>
+          {madrinha && (
+            <span
+              className="rounded-full px-2 py-0.5 text-[9px] font-semibold"
+              style={{ background: "#F3E2B8", color: "#5C4310" }}
+            >
+              {madrinha}
+            </span>
+          )}
+        </div>
         <div className="relative mt-2 h-[112px] w-[112px]">
           {usarFoto && foto ? (
             <img src={foto} alt="" className="h-full w-full rounded-full border-[3px] border-white object-cover" />
@@ -338,12 +387,25 @@ export default function AparenciaCard({
 
       {cartao ? (
         <div className="flex flex-col items-center gap-3">
-          <img
-            src={cartao.url}
-            alt="Prévia do seu card para o story"
-            className="w-[220px] rounded-2xl border"
-            style={{ borderColor: "#E3D3C4" }}
-          />
+          {cartao.video ? (
+            <video
+              src={cartao.url}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-[220px] rounded-2xl border"
+              style={{ borderColor: "#E3D3C4" }}
+              aria-label="Prévia do seu vídeo para o story"
+            />
+          ) : (
+            <img
+              src={cartao.url}
+              alt="Prévia do seu card para o story"
+              className="w-[220px] rounded-2xl border"
+              style={{ borderColor: "#E3D3C4" }}
+            />
+          )}
           <button
             type="button"
             onClick={compartilhar}
@@ -352,21 +414,58 @@ export default function AparenciaCard({
           >
             <Share2 className="h-5 w-5" aria-hidden="true" /> Compartilhar no story
           </button>
+          <button
+            type="button"
+            onClick={() => setCartao(null)}
+            className="h-10 text-sm font-medium"
+            style={{ color: "#5E4F45" }}
+          >
+            Gerar de novo
+          </button>
           <p className="text-center text-xs" style={{ color: "#6E625A" }}>
             No Instagram, use o adesivo de música para colocar a sua música de entrada.
           </p>
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={gerar}
-          disabled={gerando}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] text-base font-semibold text-white disabled:opacity-70"
-          style={{ background: "#A9582D" }}
+      ) : gerando === "video" ? (
+        <div
+          className="flex flex-col items-center gap-2 rounded-2xl p-4"
+          style={{ background: "#F6EBE1" }}
+          role="status"
         >
-          {gerando && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}{" "}
-          {gerando ? "Gerando…" : "Gerar meu card"}
-        </button>
+          <Loader2 className="h-6 w-6 animate-spin" style={{ color: "#A9582D" }} aria-hidden="true" />
+          <p className="text-sm font-medium">Gravando o vídeo… {Math.round(progresso * 100)}%</p>
+          <p className="text-xs" style={{ color: "#6E625A" }}>
+            Deixe esta tela aberta, leva uns 7 segundos.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {podeVideo && (
+            <button
+              type="button"
+              onClick={gerarVideo}
+              disabled={!!gerando}
+              className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] text-base font-semibold text-white disabled:opacity-70"
+              style={{ background: "#A9582D" }}
+            >
+              <Clapperboard className="h-5 w-5" aria-hidden="true" /> Gerar vídeo para o story
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={gerar}
+            disabled={!!gerando}
+            className={`flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] text-base font-semibold disabled:opacity-70 ${podeVideo ? "border" : "text-white"}`}
+            style={podeVideo ? { borderColor: "#CDBFB3", color: PRETO } : { background: "#A9582D" }}
+          >
+            {gerando === "imagem" ? (
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <IconeImagem className="h-5 w-5" aria-hidden="true" />
+            )}
+            {gerando === "imagem" ? "Gerando…" : podeVideo ? "Prefiro uma imagem" : "Gerar meu card"}
+          </button>
+        </div>
       )}
     </div>
   );
