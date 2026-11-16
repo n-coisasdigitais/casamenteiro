@@ -141,6 +141,20 @@ export type ResultadoQuiz = {
   usarFoto: boolean;
 };
 
+/** Id aleatório do aparelho: a Madrinha conta 1 por pessoa, não 1 por quiz refeito. */
+export function idDispositivo(): string {
+  try {
+    let id = localStorage.getItem("quiz_dispositivo");
+    if (!id) {
+      id = novoId();
+      localStorage.setItem("quiz_dispositivo", id);
+    }
+    return id;
+  } catch {
+    return novoId();
+  }
+}
+
 export function guardarIndicacao(codigo: string | null) {
   if (!codigo) return;
   try {
@@ -188,6 +202,7 @@ export async function registrarResultado(r: ResultadoQuiz, userId: string | null
     estilo: r.estilo,
     opcoes: r.opcoes,
     indicado_codigo: lerIndicacao(),
+    dispositivo: idDispositivo(),
     titulo: r.titulo,
     adesivo: r.adesivo,
     formato_adesivo: r.formato,
@@ -250,4 +265,36 @@ export function carregarFonteCaveat() {
   link.rel = "stylesheet";
   link.href = "https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap";
   document.head.appendChild(link);
+}
+
+// ---------- Madrinha ----------
+export type NivelMadrinha = { nivel: 1 | 2 | 3; meta: number; nome: string; premio: string };
+export const NIVEIS_MADRINHA: NivelMadrinha[] = [
+  { nivel: 1, meta: 1, nome: "Madrinha", premio: "Selo no seu mural e moldura dourada no card do story." },
+  {
+    nivel: 2,
+    meta: 3,
+    nome: "Madrinha de honra",
+    premio: "Dossiê do seu estilo: paleta, referências e as perguntas certas para fazer aos fornecedores.",
+  },
+  {
+    nivel: 3,
+    meta: 10,
+    nome: "Madrinha-mor",
+    premio: "Quando noivar: aviso das datas com desconto antes de todo mundo.",
+  },
+];
+
+export function nomeNivelMadrinha(nivel: number): string | null {
+  return NIVEIS_MADRINHA.find((n) => n.nivel === nivel)?.nome ?? null;
+}
+
+/** Quantas pessoas fizeram o quiz pelo link de quem está logado, e o nível alcançado. */
+export async function carregarMadrinha(): Promise<{ amigas: number; nivel: number }> {
+  try {
+    const { data } = await (supabase.rpc as any)("quiz_madrinha");
+    return { amigas: Number(data?.amigas) || 0, nivel: Number(data?.nivel) || 0 };
+  } catch {
+    return { amigas: 0, nivel: 0 };
+  }
 }
