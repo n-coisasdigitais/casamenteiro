@@ -13,6 +13,8 @@ import {
   TEXTOS_PADRAO,
   calcularEstilo,
   carregarFonteCaveat,
+  carregarMadrinha,
+  nomeNivelMadrinha,
   carregarQuiz,
   carregarTextos,
   contagemEstilo,
@@ -50,6 +52,7 @@ export default function Quiz() {
   const [fornecedores, setFornecedores] = useState<{ id: string; slug: string | null; company_name: string }[]>([]);
   const [codigo, setCodigo] = useState<string | null>(null);
   const [selo, setSelo] = useState<string | null>(null);
+  const [madrinha, setMadrinha] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
@@ -75,6 +78,7 @@ export default function Quiz() {
         if (data?.codigo) setCodigo(data.codigo);
         setSelo(data?.match_lista && data?.mostrar_selo_match ? "Topo conhecer alguém" : null);
       });
+    carregarMadrinha().then((m) => setMadrinha(nomeNivelMadrinha(m.nivel)));
   }, [user?.id, resultado?.id]);
 
   // Voltando do cadastro ou vindo do mural ("Criar meu card"): retoma o resultado
@@ -429,6 +433,7 @@ export default function Quiz() {
               fotoPerfil={profile?.avatar_url || null}
               urlCompartilhar={urlCompartilhar}
               selo={selo}
+              madrinha={madrinha}
               onMudou={mudouCard}
               onCompartilhou={() => marcarCompartilhou(resultado.id)}
             />
