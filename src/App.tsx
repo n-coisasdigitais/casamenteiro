@@ -106,7 +106,8 @@ import AdminCommissionLedger from "./pages/AdminCommissionLedger";
 import AdminWebhooks from "./pages/AdminWebhooks";
 import AdminStaffJobs from "./pages/AdminStaffJobs";
 import AdminProfissionais from "./pages/AdminProfissionais";
-
+import ApresentacaoSonho from "./pages/ApresentacaoSonho";
+import DossieEstilo from "./pages/DossieEstilo";
 const queryClient = new QueryClient();
 
 const Casal = ({ children }: { children: React.ReactNode }) => (
@@ -288,8 +289,22 @@ const App = () => (
                 }
               />
               <Route path="/quiz" element={<Quiz />} />
-              <Route path="/meu-sonho" element={<RequireAccountType allow={["generico", "admin"]}><MeuSonho /></RequireAccountType>} />
-              <Route path="/admin/quiz" element={<AdminLayout><AdminQuiz /></AdminLayout>} />
+              <Route
+                path="/meu-sonho"
+                element={
+                  <RequireAccountType allow={["generico", "admin"]}>
+                    <MeuSonho />
+                  </RequireAccountType>
+                }
+              />
+              <Route
+                path="/admin/quiz"
+                element={
+                  <AdminLayout>
+                    <AdminQuiz />
+                  </AdminLayout>
+                }
+              />
               <Route path="/quanto-custa-casar" element={<CustoCasarIndex />} />
               <Route path="/quanto-custa-casar-em/:cidade" element={<CustoCasarCidade />} />
               <Route
