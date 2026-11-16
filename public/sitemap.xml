@@ -177,6 +177,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.casamenteiro.com.br/fornecedor/65ed2be7-bd96-4617-b84b-fdb2ed3b3ad9</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.casamenteiro.com.br/fornecedor/a8ebd07a-da3b-456f-a7a2-c4431fe535fa</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -227,6 +233,11 @@
   </url>
   <url>
     <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/belo-horizonte-mg</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.casamenteiro.com.br/quanto-custa-casar-em/para-de-minas-mg</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
