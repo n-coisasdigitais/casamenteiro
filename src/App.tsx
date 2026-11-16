@@ -297,6 +297,8 @@ const App = () => (
                   </RequireAccountType>
                 }
               />
+              <Route path="/meu-sonho/dossie" element={<RequireAccountType allow={["generico", "couple", "admin"]}><DossieEstilo /></RequireAccountType>} />
+              <Route path="/sonho/:codigo" element={<ApresentacaoSonho />} />
               <Route
                 path="/admin/quiz"
                 element={
