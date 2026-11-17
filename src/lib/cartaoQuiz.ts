@@ -405,31 +405,7 @@ export async function gerarVideoCartaoQuiz(
   canvas.height = 1280;
   const ctx = canvas.getContext("2d")!;
   ctx.scale(720 / W, 1280 / H);
-  desenhar(ctx, d, rec, 0);
-
-  const stream = canvas.captureStream(30);
-  const gravador = new MediaRecorder(stream, { mimeType: tipo, videoBitsPerSecond: 4_000_000 });
-  const pedacos: Blob[] = [];
-  gravador.ondataavailable = (e) => e.data.size && pedacos.push(e.data);
-  const fim = new Promise<void>((resolve) => (gravador.onstop = () => resolve()));
-  gravador.start(250);
-
-  await new Promise<void>((resolve) => {
-    const t0 = performance.now();
-    const quadro = () => {
-      const t = (performance.now() - t0) / 1000;
-      desenhar(ctx, d, rec, t);
-      aoProgresso?.(Math.min(1, t / DURACAO_VIDEO));
-      if (t < DURACAO_VIDEO) requestAnimationFrame(quadro);
-      else resolve();
-    };
-    requestAnimationFrame(quadro);
-  });
-  gravador.stop();
-  await fim;
-  stream.getTracks().forEach((tr) => tr.stop());
-  const blob = new Blob(pedacos, { type: "video/mp4" });
-  return blob.size > 0 ? blob : null;
+  return gravarCanvas(canvas, tipo, DURACAO_VIDEO, (t) => desenhar(ctx, d, rec, t), aoProgresso);
 }
 
 /** Compartilha o arquivo (imagem ou vídeo) + link; sem suporte, baixa o arquivo e copia o link. */
@@ -463,4 +439,58 @@ export async function compartilharCartaoQuiz(
     /* noop */
   }
   return "arquivo-baixado";
+}
+
+/**
+ * Grava a animação de um <canvas> em MP4, quadro a quadro.
+ * iPhone (Safari): se o canvas não estiver na página, o vídeo sai "congelado" na primeira tela.
+ * Por isso ele entra na página (invisível) e cada quadro é pedido ao gravador com requestFrame.
+ */
+export async function gravarCanvas(
+  canvas: HTMLCanvasElement,
+  tipo: string,
+  duracao: number,
+  desenharEm: (t: number) => void,
+  aoProgresso?: (p: number) => void,
+): Promise<Blob | null> {
+  Object.assign(canvas.style, {
+    position: "fixed",
+    left: "0",
+    top: "0",
+    width: "2px",
+    height: "2px",
+    opacity: "0.01",
+    pointerEvents: "none",
+    zIndex: "-1",
+  });
+  document.body.appendChild(canvas);
+  try {
+    desenharEm(0);
+    const stream = canvas.captureStream(30);
+    const trilha = stream.getVideoTracks()[0] as any;
+    const gravador = new MediaRecorder(stream, { mimeType: tipo, videoBitsPerSecond: 4_000_000 });
+    const pedacos: Blob[] = [];
+    gravador.ondataavailable = (e) => e.data.size && pedacos.push(e.data);
+    const fim = new Promise<void>((resolve) => (gravador.onstop = () => resolve()));
+    gravador.start(250);
+    await new Promise<void>((resolve) => {
+      const t0 = performance.now();
+      const quadro = () => {
+        const t = (performance.now() - t0) / 1000;
+        desenharEm(t);
+        trilha?.requestFrame?.();
+        aoProgresso?.(Math.min(1, t / duracao));
+        if (t < duracao) requestAnimationFrame(quadro);
+        else resolve();
+      };
+      requestAnimationFrame(quadro);
+    });
+    gravador.stop();
+    await fim;
+    stream.getTracks().forEach((tr) => tr.stop());
+    const blob = new Blob(pedacos, { type: "video/mp4" });
+    return blob.size > 0 ? blob : null;
+  } finally {
+    canvas.remove();
+  }
 }

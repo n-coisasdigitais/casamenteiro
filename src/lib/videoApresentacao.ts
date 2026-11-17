@@ -5,7 +5,7 @@
  * Sem MP4 no aparelho, gera as 5 telas como imagens.
  */
 import logoMarca from "@/assets/casamenteiro-logo.svg.asset.json";
-import { formatoVideoSuportado } from "@/lib/cartaoQuiz";
+import { formatoVideoSuportado, gravarCanvas } from "@/lib/cartaoQuiz";
 
 export type DadosVideoApresentacao = {
   nome: string;
@@ -459,30 +459,7 @@ export async function gerarVideoApresentacao(d: DadosVideoApresentacao, aoProgre
   canvas.height = 1280;
   const ctx = canvas.getContext("2d")!;
   ctx.scale(720 / W, 1280 / H);
-  desenhar(ctx, d, rec, 0);
-
-  const stream = canvas.captureStream(30);
-  const gravador = new MediaRecorder(stream, { mimeType: tipo, videoBitsPerSecond: 4_000_000 });
-  const pedacos: Blob[] = [];
-  gravador.ondataavailable = (e) => e.data.size && pedacos.push(e.data);
-  const fim = new Promise<void>((resolve) => (gravador.onstop = () => resolve()));
-  gravador.start(250);
-  await new Promise<void>((resolve) => {
-    const t0 = performance.now();
-    const quadro = () => {
-      const t = (performance.now() - t0) / 1000;
-      desenhar(ctx, d, rec, t);
-      aoProgresso?.(Math.min(1, t / DURACAO_APRESENTACAO));
-      if (t < DURACAO_APRESENTACAO) requestAnimationFrame(quadro);
-      else resolve();
-    };
-    requestAnimationFrame(quadro);
-  });
-  gravador.stop();
-  await fim;
-  stream.getTracks().forEach((tr) => tr.stop());
-  const blob = new Blob(pedacos, { type: "video/mp4" });
-  return blob.size > 0 ? blob : null;
+  return gravarCanvas(canvas, tipo, DURACAO_APRESENTACAO, (t) => desenhar(ctx, d, rec, t), aoProgresso);
 }
 
 /** Alternativa sem vídeo: as 5 telas prontas, em JPG 1080×1920. */
