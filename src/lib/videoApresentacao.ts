@@ -363,6 +363,7 @@ function telaLugar(ctx: CanvasRenderingContext2D, d: DadosVideoApresentacao, r: 
 }
 
 function telaFim(ctx: CanvasRenderingContext2D, d: DadosVideoApresentacao, r: Recursos, t: number) {
+  // no story nada é clicável: em vez de botão, o endereço grande e fácil de digitar
   ctx.fillStyle = CREME;
   ctx.fillRect(0, 0, W, H);
   const cx = W / 2;
@@ -374,35 +375,55 @@ function telaFim(ctx: CanvasRenderingContext2D, d: DadosVideoApresentacao, r: Re
     const total = (r.logo ? lw * 0.75 : 0) + larguraNome;
     let x = cx - total / 2;
     if (r.logo) {
-      ctx.drawImage(r.logo, x, 640 - lh + 22, lw, lh);
+      ctx.drawImage(r.logo, x, 560 - lh + 22, lw, lh);
       x += lw * 0.75;
     }
     ctx.fillStyle = TINTA;
     ctx.textAlign = "left";
-    ctx.fillText("casamenteiro", x, 640);
+    ctx.fillText("casamenteiro", x, 560);
     ctx.fillStyle = "#D9905A";
-    ctx.fillText(".", x + ctx.measureText("casamenteiro").width, 640);
+    ctx.fillText(".", x + ctx.measureText("casamenteiro").width, 560);
   });
   ["E o seu casamento,", "como seria?"].forEach((l, i) => {
     entrada(ctx, prog(t, 0.25 + i * 0.15, 0.6), 40, () => {
       ctx.fillStyle = TINTA;
       ctx.font = "700 100px Inter, system-ui, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(l, cx, 850 + i * 116);
+      ctx.fillText(l, cx, 760 + i * 116);
     });
   });
-  entrada(ctx, prog(t, 0.7, 0.6), 30, () => {
-    ctx.font = "600 44px Inter, system-ui, sans-serif";
-    const w = ctx.measureText("Faça o quiz").width + 120;
-    ctx.fillStyle = TERRA;
-    arredondado(ctx, cx - w / 2, 1100, w, 120, 36);
-    ctx.fill();
-    ctx.fillStyle = "#FFFFFF";
+  entrada(ctx, prog(t, 0.6, 0.6), 30, () => {
+    ctx.fillStyle = "#5E4F45";
+    ctx.font = "400 46px Inter, system-ui, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("Faça o quiz", cx, 1176);
+    ctx.fillText("Faça o quiz e descubra em 1 minuto:", cx, 1040);
+  });
+  entrada(ctx, prog(t, 0.85, 0.6), 30, () => {
+    // endereço em destaque, numa caixa clara com borda (parece endereço, não botão)
+    let tam = 68;
+    ctx.font = `700 ${tam}px Inter, system-ui, sans-serif`;
+    while (ctx.measureText(d.link).width > W - 200 && tam > 40) {
+      tam -= 2;
+      ctx.font = `700 ${tam}px Inter, system-ui, sans-serif`;
+    }
+    const w = ctx.measureText(d.link).width + 96;
+    const h = tam + 84;
+    const y = 1100;
+    ctx.fillStyle = "#FFFFFF";
+    arredondado(ctx, cx - w / 2, y, w, h, 28);
+    ctx.fill();
+    ctx.strokeStyle = TERRA;
+    ctx.lineWidth = 5;
+    ctx.stroke();
     ctx.fillStyle = TERRA;
-    ctx.font = "600 42px Inter, system-ui, sans-serif";
-    ctx.fillText(d.link, cx, 1320);
+    ctx.textAlign = "center";
+    ctx.fillText(d.link, cx, y + h / 2 + tam * 0.36);
+  });
+  entrada(ctx, prog(t, 1.1, 0.6), 20, () => {
+    ctx.fillStyle = "#6E625A";
+    ctx.font = "400 38px Inter, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("É só digitar no navegador.", cx, 1340);
   });
 }
 

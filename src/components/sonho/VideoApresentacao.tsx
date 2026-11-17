@@ -42,7 +42,7 @@ async function montarDados(codigo: string): Promise<DadosVideoApresentacao | nul
         }
       : null,
     madrinha: nomeNivelMadrinha(data.madrinha || 0),
-    link: absoluteUrl("/quiz").replace(/^https?:\/\//, ""),
+    link: absoluteUrl("/quiz").replace(/^https?:\/\/(www\.)?/, ""),
   };
 }
 
@@ -69,6 +69,7 @@ export default function VideoApresentacao({
   onCompartilhou,
   onSalvarMural,
   rotuloSalvar = "Salvar no meu mural",
+  linkCompartilhar,
 }: {
   /** Mural/apresentação: busca tudo pelo código. */
   codigo?: string;
@@ -82,6 +83,8 @@ export default function VideoApresentacao({
   /** Quiz: botão "Salvar no meu mural" dentro da prévia. */
   onSalvarMural?: () => void;
   rotuloSalvar?: string;
+  /** Link do quiz (com o código de quem compartilha), copiado ao compartilhar para o adesivo de link. */
+  linkCompartilhar?: string;
 }) {
   const { toast } = useToast();
   const [aberto, setAberto] = useState(false);
@@ -157,7 +160,11 @@ export default function VideoApresentacao({
     }
   };
 
+  const link = linkCompartilhar || (codigo ? absoluteUrl(`/quiz?de=${codigo}`) : absoluteUrl("/quiz"));
+
   const compartilhar = async () => {
+    // copia o link já no toque (sem esperar), para a pessoa colar no adesivo de link do Instagram
+    navigator.clipboard?.writeText(link).catch(() => {});
     const arquivos = video
       ? [new File([video.blob], "meu-casamento-dos-sonhos.mp4", { type: "video/mp4" })]
       : imagens.map((i, n) => new File([i.blob], `meu-casamento-dos-sonhos-${n + 1}.jpg`, { type: "image/jpeg" }));
@@ -166,6 +173,7 @@ export default function VideoApresentacao({
       try {
         await nav.share({ files: arquivos });
         onCompartilhou?.();
+        toast({ title: "Link do quiz copiado", description: "No story, use o adesivo de link e cole." });
         return;
       } catch (e: any) {
         if (e?.name === "AbortError") return;
@@ -173,7 +181,10 @@ export default function VideoApresentacao({
     }
     arquivos.forEach((f) => baixar(f, f.name));
     onCompartilhou?.();
-    toast({ title: video ? "Vídeo baixado" : "Imagens baixadas", description: "Agora é só postar no story." });
+    toast({
+      title: video ? "Vídeo baixado e link copiado" : "Imagens baixadas e link copiado",
+      description: "Poste no story e cole o link no adesivo de link.",
+    });
   };
 
   const fechar = () => {
@@ -250,6 +261,12 @@ export default function VideoApresentacao({
                   "a sua música de entrada"
                 )}
                 .
+              </span>
+            </p>
+            <p className="flex gap-2 rounded-xl p-3 text-[13px] leading-snug" style={{ background: "#F6EBE1" }}>
+              <span aria-hidden="true">🔗</span>
+              <span>
+                <b>Quer que cliquem?</b> Ao compartilhar, copiamos o link do quiz. No story, use o <b>adesivo de link</b> e cole.
               </span>
             </p>
 

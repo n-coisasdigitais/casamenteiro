@@ -130,7 +130,7 @@ export default function AparenciaCard({
     lugar,
     musica,
     madrinha: madrinha || null,
-    link: absoluteUrl("/quiz").replace(/^https?:\/\//, ""),
+    link: absoluteUrl("/quiz").replace(/^https?:\/\/(www\.)?/, ""),
   });
 
   useEffect(
@@ -170,7 +170,7 @@ export default function AparenciaCard({
     selo: selo || null,
     madrinha: madrinha || null,
     musica,
-    link: urlCompartilhar.replace(/^https?:\/\//, "").replace(/\?.*$/, ""),
+    link: urlCompartilhar.replace(/^https?:\/\/(www\.)?/, "").replace(/\?.*$/, ""),
   });
 
   const trocarCartao = (blob: Blob, video: boolean) =>
@@ -561,6 +561,7 @@ export default function AparenciaCard({
             onCompartilhou={onCompartilhou}
             onSalvarMural={onSalvarMural}
             rotuloSalvar={rotuloSalvar}
+            linkCompartilhar={urlCompartilhar}
           />
           <p className="text-center text-xs leading-snug" style={{ color: "#6E625A" }}>
             O vídeo sai sem som. A música você coloca no Instagram, pelo adesivo de música.
