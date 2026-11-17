@@ -7,6 +7,7 @@ import UserMenu from "@/components/UserMenu";
 
 const LINKS = [
   { to: "/explorar", label: "Fornecedores" },
+  { to: "/quiz", label: "Quiz" },
   { to: "/vagas", label: "Vagas" },
   { to: "/profissional", label: "Sou profissional" },
   { to: "/fornecedor", label: "Sou fornecedor" },

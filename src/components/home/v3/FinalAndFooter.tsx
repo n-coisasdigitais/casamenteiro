@@ -50,6 +50,7 @@ export function HomeFooterV3() {
           { to: "/simulador", label: "Simulador" },
           { to: "/explorar", label: "Buscar fornecedores" },
           { to: "/quanto-custa-casar", label: "Quanto custa casar" },
+          { to: "/quiz", label: "Quiz do casamento" },
         ])}
         {col("Para empresas", [
           { to: "/fornecedor", label: "Sou fornecedor" },
