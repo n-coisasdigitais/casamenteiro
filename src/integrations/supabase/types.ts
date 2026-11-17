@@ -5754,6 +5754,7 @@ export type Database = {
         Args: { _due_period: string; _wedding_date: string }
         Returns: boolean
       }
+      adicionar_perfil: { Args: { tipo: string }; Returns: undefined }
       admin_broadcast_notification: {
         Args: {
           _body: string
@@ -5781,6 +5782,7 @@ export type Database = {
           avatar_url: string
           email: string
           nome: string
+          perfis: string[]
           tipo: string
           user_id: string
         }[]
@@ -5817,6 +5819,13 @@ export type Database = {
       admin_mark_commission_paid: {
         Args: { _amount: number; _lead_id: string }
         Returns: undefined
+      }
+      admin_perfis_usuarios: {
+        Args: never
+        Returns: {
+          perfis: string[]
+          user_id: string
+        }[]
       }
       admin_quiz_resumo: { Args: never; Returns: Json }
       admin_ranking_lugares: {
@@ -6042,6 +6051,14 @@ export type Database = {
         Args: { _supplier_id: string }
         Returns: Json
       }
+      meus_perfis: {
+        Args: never
+        Returns: {
+          casal: boolean
+          fornecedor: boolean
+          profissional: boolean
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -6153,6 +6170,7 @@ export type Database = {
       }
       slugify_texto: { Args: { _t: string }; Returns: string }
       supplier_tem_acesso: { Args: { _supplier_id: string }; Returns: boolean }
+      trocar_perfil: { Args: { tipo: string }; Returns: undefined }
       vagas_destaque_disponiveis: {
         Args: { p_categoria?: string; p_escopo: string }
         Returns: number

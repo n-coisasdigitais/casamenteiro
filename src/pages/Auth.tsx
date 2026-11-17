@@ -396,13 +396,13 @@ export default function Auth() {
               </h1>
               <p className="m-0 text-[15.5px] leading-relaxed" style={{ color: "var(--a-body)" }}>
                 {signupSent.jaExistia ? (
-                  <>Já existe uma conta com <b style={{ color: "var(--a-ink)" }}>{signupSent.email}</b>. Entre com sua senha ou recupere o acesso.</>
+                  <>Já existe uma conta com <b style={{ color: "var(--a-ink)" }}>{signupSent.email}</b>. {accountType === "supplier" || accountType === "profissional" ? <>Você já tem conta. Entre e adicione o perfil de {accountType === "supplier" ? "fornecedor" : "profissional"} no seu painel.</> : <>Entre com sua senha ou recupere o acesso.</>}</>
                 ) : (
                   <>Enviamos um link para <b style={{ color: "var(--a-ink)" }}>{signupSent.email}</b>. Abra o e-mail (confira também o spam) para ativar sua conta.</>
                 )}
               </p>
               <div className="flex w-full flex-col gap-2.5">
-                <button type="button" className="a-btn w-full" onClick={() => { setSignupSent(null); mudarModo("login"); }}>Ir para o login</button>
+                <button type="button" className="a-btn w-full" onClick={() => { setSignupSent(null); mudarModo("login"); }}>{signupSent.jaExistia ? "Entrar" : "Ir para o login"}</button>
                 {!signupSent.jaExistia && (
                   <button type="button" disabled={loading} onClick={reenviar} className="h-[50px] w-full rounded-full border bg-white text-[15px] font-semibold disabled:opacity-60" style={{ borderColor: "var(--a-line-strong)" }}>
                     {loading ? "Enviando…" : "Reenviar e-mail de confirmação"}

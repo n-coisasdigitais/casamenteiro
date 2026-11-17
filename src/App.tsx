@@ -9,7 +9,7 @@ import FlagGate from "@/components/FlagGate";
 import CookieConsent from "@/components/CookieConsent";
 import BackToTop from "@/components/BackToTop";
 import BotaoFeedback from "@/components/feedback/BotaoFeedback";
-import RequireAccountType from "@/components/RequireAccountType";
+import RequireAccountType, { OferecerTrocaPerfil } from "@/components/RequireAccountType";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Auth from "./pages/Auth";
@@ -251,7 +251,7 @@ const App = () => (
                 }
               />
               <Route path="/fornecedor/:id" element={<SupplierProfile />} />
-              <Route path="/fornecedor/painel" element={<SupplierDashboard />} />
+              <Route path="/fornecedor/painel" element={<OferecerTrocaPerfil tipo="supplier"><SupplierDashboard /></OferecerTrocaPerfil>} />
               <Route path="/fornecedor/mp-callback" element={<MpCallback />} />
               <Route path="/fornecedor/planos" element={<FornecedorPlanos />} />
               <Route path="/pagamento" element={<Pagamento />} />
@@ -337,7 +337,7 @@ const App = () => (
                 path="/profissional/painel"
                 element={
                   <FlagGate flag="vagas">
-                    <StaffDashboard />
+                    <OferecerTrocaPerfil tipo="profissional"><StaffDashboard /></OferecerTrocaPerfil>
                   </FlagGate>
                 }
               />

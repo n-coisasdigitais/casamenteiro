@@ -127,6 +127,13 @@
       "when": 1794684895614,
       "tag": "0017_indicacao_nome_apenas_perfil_publico",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794874029744,
+      "tag": "0018_conta_varios_perfis",
+      "breakpoints": true
     }
   ]
 }
