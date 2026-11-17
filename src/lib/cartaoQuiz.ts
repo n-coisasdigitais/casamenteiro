@@ -20,6 +20,8 @@ export type DadosCartaoQuiz = {
   /** Nível de Madrinha, ex.: "Madrinha de honra": moldura dourada + etiqueta. */
   madrinha?: string | null;
   link: string; // texto exibido, ex.: casamenteiro.com.br/quiz
+  /** Música de entrada escolhida no mural (só o nome; o som vai pelo adesivo de música do Instagram). */
+  musica?: { titulo: string; artista: string } | null;
 };
 
 type Recursos = { imgs: (HTMLImageElement | null)[]; perfil: HTMLImageElement | null; logo: HTMLImageElement | null };
@@ -331,6 +333,24 @@ function desenhar(ctx: CanvasRenderingContext2D, d: DadosCartaoQuiz, rec: Recurs
       ctx.stroke();
     });
   });
+
+  // nome da música, na linha da paleta (alinhado à direita)
+  if (d.musica?.titulo) {
+    comEntrada(ctx, prog(t, 3.2, 0.4), 0, () => {
+      ctx.textAlign = "right";
+      const larg = W - M * 2 - 360;
+      ctx.font = "600 34px Inter, system-ui, sans-serif";
+      let tit = `♪ ${d.musica!.titulo}`;
+      while (ctx.measureText(tit).width > larg && tit.length > 4) tit = tit.slice(0, -2) + "…";
+      ctx.fillStyle = TINTA;
+      ctx.fillText(tit, W - M, yPaleta - 4);
+      ctx.font = "400 28px Inter, system-ui, sans-serif";
+      ctx.fillStyle = "#5E4F45";
+      let art = d.musica!.artista;
+      while (ctx.measureText(art).width > larg && art.length > 4) art = art.slice(0, -2) + "…";
+      ctx.fillText(art, W - M, yPaleta + 34);
+    });
+  }
 
   // rodapé
   const yRod = H - 36 - 60 - 200;

@@ -31,6 +31,8 @@ type Props = {
   selo?: string | null;
   /** Nível de Madrinha (ex.: "Madrinha de honra"): moldura dourada no card. */
   madrinha?: string | null;
+  /** Música de entrada do mural (só o nome aparece no card). */
+  musica?: { titulo: string; artista: string } | null;
   onMudou?: (e: EscolhasCard) => void;
   onCompartilhou?: () => void;
 };
@@ -46,6 +48,7 @@ export default function AparenciaCard({
   urlCompartilhar,
   selo,
   madrinha,
+  musica,
   onMudou,
   onCompartilhou,
 }: Props) {
@@ -112,6 +115,7 @@ export default function AparenciaCard({
     formato,
     selo: selo || null,
     madrinha: madrinha || null,
+    musica: musica || null,
     link: urlCompartilhar.replace(/^https?:\/\//, "").replace(/\?.*$/, ""),
   });
 

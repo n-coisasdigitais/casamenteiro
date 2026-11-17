@@ -6,6 +6,7 @@ import BrandLogo from "@/components/shared/BrandLogo";
 import SEO from "@/components/SEO";
 import UserMenu from "@/components/UserMenu";
 import DashboardNav from "@/components/DashboardNav";
+import VideoApresentacao from "@/components/sonho/VideoApresentacao";
 import AvatarUpload from "@/components/AvatarUpload";
 import MadrinhaNiveis from "@/components/sonho/MadrinhaNiveis";
 import FotosSonho, { carregarFotosSonho } from "@/components/sonho/FotosSonho";
@@ -288,6 +289,7 @@ export default function MeuSonho() {
                   </button>
                 )}
               </div>
+              <VideoApresentacao codigo={perfil.codigo} />
               {!perfil.apresentacao_publica && (
                 <p className="text-xs" style={{ color: SUAVE }}>
                   Por enquanto, só você vê.

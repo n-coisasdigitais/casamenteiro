@@ -16,6 +16,7 @@ import {
 } from "@/lib/quiz";
 import type { Musica } from "@/lib/appleMusic";
 import { useToast } from "@/hooks/use-toast";
+import VideoApresentacao from "@/components/sonho/VideoApresentacao";
 
 type Dados = {
   dono: boolean;
@@ -369,6 +370,7 @@ export default function ApresentacaoSonho() {
             >
               Fazer o quiz
             </Link>
+            {dados.dono && <VideoApresentacao codigo={dados.codigo} />}
             {dados.dono && (
               <button
                 type="button"
