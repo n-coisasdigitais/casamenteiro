@@ -11,6 +11,7 @@ export default function HomeNavbar({ onSimularClick }: { onSimularClick: () => v
 
   const links = [
     { to: "/explorar", label: "Fornecedores" },
+    { to: "/quiz", label: "Quiz" },
     { to: "/vagas", label: "Vagas" },
     { to: "/profissional", label: "Sou profissional" },
     { to: "/fornecedor", label: "Sou fornecedor" },
