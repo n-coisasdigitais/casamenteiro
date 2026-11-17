@@ -161,7 +161,7 @@ export default function Quiz() {
     setSalvando(true);
     try {
       await reivindicarPendente(user.id);
-      navigate(profile?.account_type === "generico" || profile?.account_type === "admin" ? "/meu-sonho" : "/dashboard");
+      navigate(["generico", "couple", "admin"].includes(profile?.account_type || "") ? "/meu-sonho" : "/dashboard");
     } finally {
       setSalvando(false);
     }

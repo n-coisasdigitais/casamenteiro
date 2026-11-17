@@ -292,7 +292,7 @@ const App = () => (
               <Route
                 path="/meu-sonho"
                 element={
-                  <RequireAccountType allow={["generico", "admin"]}>
+                  <RequireAccountType allow={["generico", "couple", "admin"]}>
                     <MeuSonho />
                   </RequireAccountType>
                 }

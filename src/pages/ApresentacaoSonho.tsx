@@ -85,17 +85,11 @@ export default function ApresentacaoSonho() {
   }, [codigo]);
 
   const fotos = [...fotosProprias, ...(dados?.fotos_quiz || [])];
-  const telas: Tela[] = dados
-    ? ([
-        "capa",
-        dados.frase ? "frase" : null,
-        fotos.length ? "fotos" : null,
-        dados.lugar ? "lugar" : null,
-        "fim",
-      ].filter(Boolean) as Tela[])
-    : [];
+  // sempre as 5 etapas do design; o que faltar ganha um texto ou cor no lugar
+  const telas: Tela[] = dados ? ["capa", "frase", "fotos", "lugar", "fim"] : [];
   const tela = telas[indice];
   const info = dados?.estilo ? RESULTADOS[dados.estilo] : null;
+  const fraseExibida = dados?.frase || info?.descricao || "Um dia vou casar, e já sei como quero que seja.";
   const temMusica = !!dados?.musica?.previewUrl;
 
   const ir = useCallback((n: number) => setIndice(Math.max(0, Math.min(telas.length - 1, n))), [telas.length]);
@@ -284,7 +278,12 @@ export default function ApresentacaoSonho() {
             <div className="absolute inset-0 bg-[rgba(30,20,14,.6)]" />
             <div className="absolute inset-x-7 top-[28%] flex flex-col gap-3.5">
               <span className="ap-sobe text-sm font-medium opacity-90">Meu sonho</span>
-              <p className="ap-sobe2 text-[28px] font-semibold leading-[1.25]">“{dados.frase}”</p>
+              <p className="ap-sobe2 text-[28px] font-semibold leading-[1.25]">“{fraseExibida}”</p>
+              {!dados.frase && dados.dono && (
+                <Link to="/meu-sonho" className="ap-sobe3 relative z-30 self-start rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold">
+                  Só você vê este aviso: escreva sua frase no mural
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -295,14 +294,22 @@ export default function ApresentacaoSonho() {
             className="absolute inset-0 grid grid-cols-2 gap-2 px-4 pb-36 pt-16"
             style={{ background: "#F6EBE1", gridTemplateRows: "repeat(3, minmax(0, 1fr))" }}
           >
-            {fotos.slice(0, 4).map((f, n) => (
-              <img
-                key={f}
-                src={f}
-                alt=""
-                className={`h-full w-full rounded-2xl object-cover ${n === 0 ? "row-span-2" : ""} ${n % 2 ? "ap-sobe2" : "ap-sobe"}`}
-              />
-            ))}
+            {(fotos.length ? fotos.slice(0, 3) : [null, null, null]).map((f, n) =>
+              f ? (
+                <img
+                  key={f}
+                  src={f}
+                  alt=""
+                  className={`h-full w-full rounded-2xl object-cover ${n === 0 ? "row-span-2" : ""} ${n % 2 ? "ap-sobe2" : "ap-sobe"}`}
+                />
+              ) : (
+                <div
+                  key={`cor-${n}`}
+                  className={`rounded-2xl ${n === 0 ? "row-span-2" : ""} ${n % 2 ? "ap-sobe2" : "ap-sobe"}`}
+                  style={{ background: (info?.paleta || ["#D9B99A", "#C9A27E", "#B7A99A"])[n % 3] }}
+                />
+              ),
+            )}
             {info && (
               <div
                 className="ap-sobe3 col-span-2 flex items-end rounded-2xl p-3.5"
@@ -314,7 +321,7 @@ export default function ApresentacaoSonho() {
           </div>
         )}
 
-        {tela === "lugar" && dados.lugar && (
+        {tela === "lugar" && (
           <div key="lugar" className="absolute inset-0 overflow-hidden">
             {fotos[1] || fotos[0] ? (
               <img src={fotos[1] || fotos[0]} alt="" className="ap-kb absolute inset-0 h-full w-full object-cover" />
@@ -325,12 +332,19 @@ export default function ApresentacaoSonho() {
             <div className="absolute inset-x-7 bottom-44 flex flex-col gap-2">
               <span className="ap-sobe text-sm font-medium">Onde eu sonho casar</span>
               <span className="ap-sobe2 text-[34px] font-bold leading-[1.1]" style={{ letterSpacing: "-0.02em" }}>
-                {dados.lugar.nome}
+                {dados.lugar?.nome || "Ainda estou escolhendo"}
               </span>
-              {(dados.lugar.cidade || dados.lugar.uf) && (
+              {dados.lugar && (dados.lugar.cidade || dados.lugar.uf) ? (
                 <span className="ap-sobe3 text-base">
                   {[dados.lugar.cidade, dados.lugar.uf].filter(Boolean).join(", ")}
                 </span>
+              ) : (
+                !dados.lugar && info && <span className="ap-sobe3 text-base">Mas já sei: {info.nome.toLowerCase()}</span>
+              )}
+              {!dados.lugar && dados.dono && (
+                <Link to="/meu-sonho" className="ap-sobe3 relative z-30 mt-2 self-start rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold">
+                  Só você vê este aviso: adicione o lugar dos sonhos
+                </Link>
               )}
             </div>
           </div>

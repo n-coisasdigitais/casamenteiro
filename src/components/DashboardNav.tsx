@@ -13,6 +13,8 @@ import {
   Gift,
   CalendarRange,
   MoreHorizontal,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
@@ -29,6 +31,8 @@ const principais: Item[] = [
 ];
 
 const mais: Item[] = [
+  { label: "Meu mural", path: "/meu-sonho", icon: Sparkles, extra: ["/meu-sonho/dossie"] },
+  { label: "Avaliar o Casamenteiro", path: "/dashboard?avaliar=1", icon: Star },
   { label: "Mensagens", path: "/mensagens", icon: MessageSquare, flag: "mensagens_casais" },
   { label: "Reservas de datas", path: "/meu-casamento/reservas", icon: CalendarRange, flag: "reserva_datas_ociosas" },
   { label: "Perfil público", path: "/meu-casamento/perfil", icon: Globe, flag: "perfil_social_casal" },

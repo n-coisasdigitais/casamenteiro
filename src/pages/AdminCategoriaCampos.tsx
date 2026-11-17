@@ -1,4 +1,5 @@
 import { traduzirErro } from "@/lib/errorMessages";
+import IconeCategoria from "@/components/shared/IconeCategoria";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,7 +160,7 @@ export default function AdminCategoriaCampos() {
       </Button>
 
       <div className="flex items-center gap-3 mb-8">
-        <span className="text-3xl">{cat.icon || "📁"}</span>
+        <span className="text-3xl"><IconeCategoria nome={cat.icon} className="h-6 w-6" /></span>
         <div>
           <h1 className="text-2xl font-bold">{cat.name}</h1>
           <p className="text-sm text-muted-foreground">Gerencie os campos do formulário desta categoria.</p>

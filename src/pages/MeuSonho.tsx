@@ -5,6 +5,7 @@ import { absoluteUrl } from "@/lib/seo";
 import BrandLogo from "@/components/shared/BrandLogo";
 import SEO from "@/components/SEO";
 import UserMenu from "@/components/UserMenu";
+import DashboardNav from "@/components/DashboardNav";
 import AvatarUpload from "@/components/AvatarUpload";
 import MadrinhaNiveis from "@/components/sonho/MadrinhaNiveis";
 import FotosSonho, { carregarFotosSonho } from "@/components/sonho/FotosSonho";
@@ -135,9 +136,12 @@ export default function MeuSonho() {
   };
 
   const info = perfil?.estilo ? RESULTADOS[perfil.estilo] : null;
+  // casal já noivo: mesmo mural, dentro do menu do casal, sem lista do Match nem "Fiquei noivo(a)"
+  const ehCasal = profile?.account_type === "couple";
 
   return (
     <div className="min-h-screen" style={{ background: "#FAFAF7", color: "#2B211B" }}>
+      {ehCasal && <DashboardNav />}
       <SEO title="Meu casamento dos sonhos | Casamenteiro" noIndex />
       <header className="border-b" style={{ borderColor: "#ECE3DA" }}>
         <div className="mx-auto flex h-14 max-w-xl items-center justify-between px-4">
@@ -220,11 +224,13 @@ export default function MeuSonho() {
 
             {user && <LugaresSonho userId={user.id} />}
 
-            <SobreMimMatch
-              valor={{ ...perfil, interesses: perfil.interesses || [] }}
-              bloqueadas={bloqueadas}
-              onSalvar={(campos) => salvar(campos)}
-            />
+            {!ehCasal && (
+              <SobreMimMatch
+                valor={{ ...perfil, interesses: perfil.interesses || [] }}
+                bloqueadas={bloqueadas}
+                onSalvar={(campos) => salvar(campos)}
+              />
+            )}
 
             <section
               className="flex flex-col gap-3 rounded-2xl border bg-white p-4"
@@ -291,6 +297,7 @@ export default function MeuSonho() {
 
             <MadrinhaNiveis codigo={perfil.codigo} />
 
+            {!ehCasal && (
             <section className="mt-2 flex flex-col gap-2.5">
               <p className="text-center text-sm" style={{ color: SUAVE }}>
                 Tem novidade?
@@ -314,6 +321,7 @@ export default function MeuSonho() {
                 Ao noivar, seu mural continua salvo e vira o ponto de partida do casamento.
               </p>
             </section>
+            )}
           </>
         )}
       </main>

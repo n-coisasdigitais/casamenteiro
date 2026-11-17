@@ -1,6 +1,6 @@
 import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,15 @@ export default function CoupleDashboard() {
   const [copiado, setCopiado] = useState(false);
 
   const [avOpen, setAvOpen] = useState(false);
+  const [parametros, setParametros] = useSearchParams();
+  // aberto pelo menu ("Avaliar o Casamenteiro")
+  useEffect(() => {
+    if (parametros.get("avaliar") === "1") {
+      setAvOpen(true);
+      parametros.delete("avaliar");
+      setParametros(parametros, { replace: true });
+    }
+  }, [parametros, setParametros]);
   const [avRating, setAvRating] = useState(5);
   const [avComentario, setAvComentario] = useState("");
   const [avSalvando, setAvSalvando] = useState(false);

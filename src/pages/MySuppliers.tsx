@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Check, ChevronRight } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
+import IconeCategoria from "@/components/shared/IconeCategoria";
 import { TAG_LABEL, tagsForSupplier, CoupleSupplierTag } from "@/lib/coupleSupplierStatus";
 
 type Category = { id: string; name: string; slug: string; icon: string | null; active?: boolean | null };
@@ -235,7 +236,7 @@ export default function MySuppliers() {
                 <article key={cat.id} className={`ca-card ${rows.length === 0 ? "ca-fcat todo" : ""}`} style={{ padding: 14, gap: 10 }}>
                   <header className="flex items-center gap-2.5">
                     <span className="ca-ic" aria-hidden="true">
-                      {cat.icon || "📦"}
+                      <IconeCategoria nome={cat.icon} className="h-[18px] w-[18px]" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <b className="block truncate text-[15px]">{cat.name}</b>
@@ -315,8 +316,8 @@ export default function MySuppliers() {
             </summary>
             <div className="flex flex-wrap gap-2 pb-4">
               {outras.map((c) => (
-                <Link key={c.id} to={`/categoria/${c.slug}`} className="ca-pill">
-                  {c.icon ? `${c.icon} ` : ""}
+                <Link key={c.id} to={`/categoria/${c.slug}`} className="ca-pill inline-flex items-center gap-1.5">
+                  <IconeCategoria nome={c.icon} className="h-4 w-4" />
                   {c.name}
                 </Link>
               ))}

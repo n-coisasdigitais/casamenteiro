@@ -1,4 +1,5 @@
 import { traduzirErro } from "@/lib/errorMessages";
+import IconeCategoria from "@/components/shared/IconeCategoria";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,7 +83,7 @@ export default function AdminCategorias() {
             <TableBody>
               {cats.map((c) => (
                 <TableRow key={c.id} className="cursor-pointer" onClick={() => navigate(`/admin/categorias/${c.id}/campos`)}>
-                  <TableCell className="text-xl">{c.icon || "📁"}</TableCell>
+                  <TableCell className="text-xl"><IconeCategoria nome={c.icon} className="h-6 w-6" /></TableCell>
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell className="text-xs text-muted-foreground font-mono">{c.slug}</TableCell>
                   <TableCell className="text-center">{c.fields_count}</TableCell>
