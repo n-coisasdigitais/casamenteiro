@@ -188,6 +188,23 @@ export default function VideoApresentacao({
               )}
             </div>
 
+            {/* aviso de som: aparece já enquanto monta, para ninguém estranhar o vídeo mudo */}
+            <p className="flex gap-2 rounded-xl p-3 text-[13px] leading-snug" style={{ background: "#F6EBE1" }}>
+              <span aria-hidden="true">🔇</span>
+              <span>
+                <b>O vídeo sai sem som.</b> No Instagram, toque no <b>adesivo de música</b> e escolha{" "}
+                {musica ? (
+                  <b>
+                    {musica.titulo}
+                    {musica.artista ? ` · ${musica.artista}` : ""}
+                  </b>
+                ) : (
+                  "a sua música de entrada"
+                )}
+                .
+              </span>
+            </p>
+
             {gerando ? (
               <div className="flex flex-col items-center gap-3 py-8">
                 <Loader2 className="h-7 w-7 animate-spin" style={{ color: TERRA }} />
@@ -207,16 +224,6 @@ export default function VideoApresentacao({
 
             {!gerando && (
               <>
-                {musica && (
-                  <p className="rounded-xl p-3 text-[13px] leading-snug" style={{ background: "#F6EBE1" }}>
-                    O vídeo vai sem som. No Instagram, toque no <b>adesivo de música</b> e escolha{" "}
-                    <b>
-                      {musica.titulo}
-                      {musica.artista ? ` · ${musica.artista}` : ""}
-                    </b>
-                    .
-                  </p>
-                )}
                 <button
                   type="button"
                   onClick={compartilhar}

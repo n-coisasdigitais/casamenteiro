@@ -553,6 +553,9 @@ export default function AparenciaCard({
             rotulo="Gerar vídeo completo para o story"
             onCompartilhou={onCompartilhou}
           />
+          <p className="text-center text-xs leading-snug" style={{ color: "#6E625A" }}>
+            O vídeo sai sem som. A música você coloca no Instagram, pelo adesivo de música.
+          </p>
           <button
             type="button"
             onClick={gerar}
