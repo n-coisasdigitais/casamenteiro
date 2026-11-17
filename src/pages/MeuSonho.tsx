@@ -185,14 +185,8 @@ export default function MeuSonho() {
                 </span>
               </Link>
             ) : (
-              <button
-                type="button"
-                onClick={criarCard}
-                className="flex h-[52px] items-center justify-center gap-2 rounded-[14px] text-base font-semibold text-white"
-                style={{ background: TERRA }}
-              >
-                <Share2 className="h-5 w-5" aria-hidden="true" /> Criar meu card para o story
-              </button>
+              // vídeo completo com o que está no mural agora (fotos, frase, música, lugar)
+              <VideoApresentacao codigo={perfil.codigo} destaque rotulo="Criar meu vídeo para o story" />
             )}
 
             {user && <FotosSonho userId={user.id} />}
@@ -289,7 +283,6 @@ export default function MeuSonho() {
                   </button>
                 )}
               </div>
-              <VideoApresentacao codigo={perfil.codigo} />
               {!perfil.apresentacao_publica && (
                 <p className="text-xs" style={{ color: SUAVE }}>
                   Por enquanto, só você vê.
