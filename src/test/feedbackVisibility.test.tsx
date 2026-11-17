@@ -11,26 +11,18 @@ vi.mock("@/components/feedback/FormFeedback", () => ({ default: () => null }));
 
 afterEach(cleanup);
 
-function abrir(path: string, loggedIn: boolean, isAdmin: boolean, loading = false) {
-  Object.assign(auth, { user: loggedIn ? {} : null, profile: loggedIn ? { account_type: "admin" } : null, isAdmin, loading });
+function abrir(path: string, tipo: string | null, isAdmin = false, loading = false) {
+  Object.assign(auth, { user: tipo ? {} : null, profile: tipo ? { account_type: tipo } : null, isAdmin, loading });
   render(<MemoryRouter initialEntries={[path]}><BotaoFeedback /></MemoryRouter>);
   return screen.queryByRole("button", { name: "Enviar feedback, sugestão ou reportar erro" });
 }
 
-describe("acesso ao feedback administrativo", () => {
-  it.each(["/admin", "/admin/feedback", "/admin/usuarios"])("permite administrador logado em %s", (path) => {
-    expect(abrir(path, true, true)).not.toBeNull();
-  });
-  it.each(["/", "/login", "/cadastro", "/fornecedor/painel", "/profissional/painel", "/dashboard", "/administrador"])("não exibe fora do admin em %s", (path) => {
-    expect(abrir(path, true, true)).toBeNull();
-  });
-  it("não permite visitante na área administrativa", () => {
-    expect(abrir("/admin", false, false)).toBeNull();
-  });
-  it("não permite conta sem papel administrativo", () => {
-    expect(abrir("/admin", true, false)).toBeNull();
-  });
-  it("aguarda o carregamento da autenticação", () => {
-    expect(abrir("/admin", true, true, true)).toBeNull();
-  });
+describe("visibilidade do botão de feedback", () => {
+  it("aparece para fornecedor logado no painel", () => expect(abrir("/fornecedor/painel", "supplier")).not.toBeNull());
+  it("aparece para casal logado no painel", () => expect(abrir("/dashboard", "couple")).not.toBeNull());
+  it("aparece para conta genérica logada", () => expect(abrir("/meu-sonho", "generico")).not.toBeNull());
+  it("aparece para admin logado no admin", () => expect(abrir("/admin", "couple", true)).not.toBeNull());
+  it("não aparece na página inicial, mesmo logado", () => expect(abrir("/", "supplier")).toBeNull());
+  it("não aparece para visitante sem login", () => expect(abrir("/dashboard", null)).toBeNull());
+  it("aguarda o carregamento do login", () => expect(abrir("/dashboard", "couple", false, true)).toBeNull());
 });

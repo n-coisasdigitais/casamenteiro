@@ -12,17 +12,21 @@ function origemDaConta(tipo?: string | null): OrigemFeedback {
   return "casal";
 }
 
+/** Regra: só com login feito e nunca na página inicial. */
+export function podeVerFeedback(pathname: string, logado: boolean, loading: boolean) {
+  return !loading && logado && pathname !== "/";
+}
+
 /**
- * Aba fixa na lateral direita ("Feedback") para administradores logados na área administrativa.
+ * Aba fixa na lateral direita ("Feedback") para qualquer conta logada, fora da página inicial.
  * Abre o formulário de erro / melhoria / ideia sem sair da tela.
  */
 export default function BotaoFeedback() {
-  const { user, profile, isAdmin, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { pathname } = useLocation();
   const [aberto, setAberto] = useState(false);
 
-  if (loading || !user || !profile || !isAdmin) return null;
-  if (pathname !== "/admin" && !pathname.startsWith("/admin/")) return null;
+  if (!podeVerFeedback(pathname, Boolean(user && profile), loading)) return null;
 
   return (
     <>
