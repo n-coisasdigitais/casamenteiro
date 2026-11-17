@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Download, Film, Loader2, Share2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Download, Film, Heart, Loader2, Share2, Volume2, VolumeX, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { absoluteUrl } from "@/lib/seo";
 import { RESULTADOS, nomeNivelMadrinha, type EstiloQuiz } from "@/lib/quiz";
@@ -33,7 +33,14 @@ async function montarDados(codigo: string): Promise<DadosVideoApresentacao | nul
     paleta: info?.paleta || [],
     fotos: [...proprias, ...(data.fotos_quiz || [])],
     lugar: data.lugar || null,
-    musica: data.musica?.titulo ? { titulo: data.musica.titulo, artista: data.musica.artista || "" } : null,
+    musica: data.musica?.titulo
+      ? {
+          titulo: data.musica.titulo,
+          artista: data.musica.artista || "",
+          previewUrl: data.musica.previewUrl || null,
+          appleUrl: data.musica.appleUrl || null,
+        }
+      : null,
     madrinha: nomeNivelMadrinha(data.madrinha || 0),
     link: absoluteUrl("/quiz").replace(/^https?:\/\//, ""),
   };
@@ -60,6 +67,8 @@ export default function VideoApresentacao({
   destaque = false,
   rotulo = "Vídeo para o story",
   onCompartilhou,
+  onSalvarMural,
+  rotuloSalvar = "Salvar no meu mural",
 }: {
   /** Mural/apresentação: busca tudo pelo código. */
   codigo?: string;
@@ -70,9 +79,47 @@ export default function VideoApresentacao({
   destaque?: boolean;
   rotulo?: string;
   onCompartilhou?: () => void;
+  /** Quiz: botão "Salvar no meu mural" dentro da prévia. */
+  onSalvarMural?: () => void;
+  rotuloSalvar?: string;
 }) {
   const { toast } = useToast();
   const [aberto, setAberto] = useState(false);
+  // prévia com a música: o vídeo (mudo) e a prévia de 30 s da Apple tocam juntos, só aqui na tela
+  const [comSom, setComSom] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const pararSom = () => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setComSom(false);
+  };
+
+  const ouvirComMusica = () => {
+    if (comSom) return pararSom();
+    const url = musica?.previewUrl;
+    const v = videoRef.current;
+    if (!url || !v) return;
+    const a = new Audio(url);
+    a.volume = 0.8;
+    audioRef.current = a;
+    v.currentTime = 0;
+    v.play().catch(() => {});
+    a.play()
+      .then(() => setComSom(true))
+      .catch(() => {
+        audioRef.current = null;
+        toast({ title: "Não foi possível tocar a música agora" });
+      });
+  };
+
+  // o vídeo dá a volta: a música volta junto, para a prévia ficar igual ao story
+  const recomecou = () => {
+    if (audioRef.current) audioRef.current.currentTime = 0;
+  };
+
+  useEffect(() => () => audioRef.current?.pause(), []);
   const [progresso, setProgresso] = useState(0);
   const [gerando, setGerando] = useState(false);
   const [video, setVideo] = useState<{ blob: Blob; url: string } | null>(null);
@@ -130,6 +177,7 @@ export default function VideoApresentacao({
   };
 
   const fechar = () => {
+    pararSom();
     setAberto(false);
     if (video) URL.revokeObjectURL(video.url);
     imagens.forEach((i) => URL.revokeObjectURL(i.url));
@@ -213,7 +261,54 @@ export default function VideoApresentacao({
                 </div>
               </div>
             ) : video ? (
-              <video src={video.url} autoPlay muted loop playsInline className="mx-auto aspect-[9/16] w-[62%] rounded-2xl bg-black object-cover" />
+              <div className="flex flex-col items-center gap-2">
+                <video
+                  ref={videoRef}
+                  src={video.url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  onSeeked={recomecou}
+                  onTimeUpdate={(e) => {
+                    // no "loop" o navegador volta para 0 sem avisar; detecta a volta pelo tempo
+                    const v = e.currentTarget;
+                    const anterior = Number(v.dataset.t || 0);
+                    if (v.currentTime < anterior - 1) recomecou();
+                    v.dataset.t = String(v.currentTime);
+                  }}
+                  aria-label="Prévia do seu vídeo para o story"
+                  className="aspect-[9/16] w-[62%] rounded-2xl bg-black object-cover"
+                />
+                {musica?.previewUrl && (
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={ouvirComMusica}
+                      className="flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold"
+                      style={{ borderColor: "#DCCFC3" }}
+                    >
+                      {comSom ? <VolumeX className="h-4 w-4" aria-hidden="true" /> : <Volume2 className="h-4 w-4" aria-hidden="true" />}
+                      {comSom ? "Tirar o som" : "Ver com a música"}
+                    </button>
+                    {musica.appleUrl && (
+                      <a
+                        href={musica.appleUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-md bg-black px-2.5 py-1.5 text-xs font-medium text-white"
+                      >
+                        Ouvir no Apple Music
+                      </a>
+                    )}
+                  </div>
+                )}
+                {musica?.previewUrl && (
+                  <p className="text-center text-[11px]" style={{ color: "#6E625A" }}>
+                    A música toca só aqui, para você ver como fica. Prévia de 30 s.
+                  </p>
+                )}
+              </div>
             ) : (
               <div className="grid grid-cols-5 gap-1.5">
                 {imagens.map((i, n) => (
@@ -244,6 +339,19 @@ export default function VideoApresentacao({
                 >
                   <Download className="h-4 w-4" aria-hidden="true" /> Baixar
                 </button>
+                {onSalvarMural && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fechar();
+                      onSalvarMural();
+                    }}
+                    className="flex h-11 items-center justify-center gap-2 rounded-[14px] border text-[15px] font-medium"
+                    style={{ borderColor: "#DCCFC3", color: "#2B211B" }}
+                  >
+                    <Heart className="h-4 w-4" aria-hidden="true" /> {rotuloSalvar}
+                  </button>
+                )}
               </>
             )}
           </div>

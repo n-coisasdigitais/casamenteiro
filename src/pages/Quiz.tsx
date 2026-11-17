@@ -54,7 +54,7 @@ export default function Quiz() {
   const [codigo, setCodigo] = useState<string | null>(null);
   const [selo, setSelo] = useState<string | null>(null);
   const [madrinha, setMadrinha] = useState<string | null>(null);
-  const [musica, setMusica] = useState<{ titulo: string; artista: string } | null>(null);
+  const [musica, setMusica] = useState<{ titulo: string; artista: string; previewUrl?: string | null; appleUrl?: string | null } | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [mostrarPassos, setMostrarPassos] = useState(false);
 
@@ -80,7 +80,16 @@ export default function Quiz() {
       .then(({ data }: any) => {
         if (data?.codigo) setCodigo(data.codigo);
         setSelo(data?.match_lista && data?.mostrar_selo_match ? "Topo conhecer alguém" : null);
-        setMusica(data?.musica?.titulo ? { titulo: data.musica.titulo, artista: data.musica.artista || "" } : null);
+        setMusica(
+          data?.musica?.titulo
+            ? {
+                titulo: data.musica.titulo,
+                artista: data.musica.artista || "",
+                previewUrl: data.musica.previewUrl || null,
+                appleUrl: data.musica.appleUrl || null,
+              }
+            : null,
+        );
       });
     carregarMadrinha().then((m) => setMadrinha(nomeNivelMadrinha(m.nivel)));
   }, [user?.id, resultado?.id]);
@@ -489,6 +498,8 @@ export default function Quiz() {
               madrinha={madrinha}
               musica={musica}
               nome={profile?.full_name || null}
+              onSalvarMural={salvarNoMural}
+              rotuloSalvar={user ? "Salvar no meu mural" : "Salvar no meu mural (conta grátis)"}
               onMudou={mudouCard}
               onCompartilhou={() => marcarCompartilhou(resultado.id)}
             />

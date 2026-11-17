@@ -17,7 +17,8 @@ export type DadosVideoApresentacao = {
   paleta: string[];
   fotos: string[];
   lugar: { nome: string; cidade: string | null; uf: string | null } | null;
-  musica: { titulo: string; artista: string } | null;
+  /** previewUrl/appleUrl só servem para ouvir a prévia na tela; o arquivo de vídeo sai sem som. */
+  musica: { titulo: string; artista: string; previewUrl?: string | null; appleUrl?: string | null } | null;
   madrinha: string | null;
   /** texto exibido no fim, ex.: casamenteiro.com.br/quiz */
   link: string;

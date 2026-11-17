@@ -41,7 +41,10 @@ type Props = {
   /** Nível de Madrinha (ex.: "Madrinha de honra"): moldura dourada no card. */
   madrinha?: string | null;
   /** Música de entrada do mural (só o nome aparece no card). */
-  musica?: { titulo: string; artista: string } | null;
+  musica?: { titulo: string; artista: string; previewUrl?: string | null; appleUrl?: string | null } | null;
+  /** Salvar no mural direto da prévia do vídeo. */
+  onSalvarMural?: () => void;
+  rotuloSalvar?: string;
   /** Primeiro nome de quem está logado (aparece na capa do vídeo). */
   nome?: string | null;
   onMudou?: (e: EscolhasCard) => void;
@@ -60,6 +63,8 @@ export default function AparenciaCard({
   selo,
   madrinha,
   musica: musicaConta,
+  onSalvarMural,
+  rotuloSalvar,
   nome,
   onMudou,
   onCompartilhou,
@@ -97,7 +102,9 @@ export default function AparenciaCard({
     ? { nome: lugarNome.trim(), cidade: lugarCidade.trim() || null, uf: lugarUf.trim().toUpperCase().slice(0, 2) || null }
     : null;
   // música do quiz tem prioridade; sem ela, usa a do mural (se a pessoa já tiver)
-  const musica = musicaQuiz ? { titulo: musicaQuiz.titulo, artista: musicaQuiz.artista } : musicaConta || null;
+  const musica = musicaQuiz
+    ? { titulo: musicaQuiz.titulo, artista: musicaQuiz.artista, previewUrl: musicaQuiz.previewUrl, appleUrl: musicaQuiz.appleUrl }
+    : musicaConta || null;
 
   useEffect(() => {
     onMudou?.({ titulo, adesivo, formato, usarFoto: usarFoto && !!foto, frase: fraseValida, musica: musicaQuiz, lugar });
@@ -552,6 +559,8 @@ export default function AparenciaCard({
             destaque
             rotulo="Gerar vídeo completo para o story"
             onCompartilhou={onCompartilhou}
+            onSalvarMural={onSalvarMural}
+            rotuloSalvar={rotuloSalvar}
           />
           <p className="text-center text-xs leading-snug" style={{ color: "#6E625A" }}>
             O vídeo sai sem som. A música você coloca no Instagram, pelo adesivo de música.
