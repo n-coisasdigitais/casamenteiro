@@ -141,6 +141,13 @@
       "when": 1794875269035,
       "tag": "0019_faq_itens_central_ajuda",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794880142875,
+      "tag": "0020_tighten_public_write_policies",
+      "breakpoints": true
     }
   ]
 }
