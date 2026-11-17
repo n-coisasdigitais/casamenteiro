@@ -1542,6 +1542,48 @@ export type Database = {
         }
         Relationships: []
       }
+      faq_itens: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          created_at: string
+          feature_flag: string | null
+          id: string
+          ordem: number
+          pergunta: string
+          publico: string
+          resposta: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          created_at?: string
+          feature_flag?: string | null
+          id?: string
+          ordem?: number
+          pergunta: string
+          publico?: string
+          resposta: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          created_at?: string
+          feature_flag?: string | null
+          id?: string
+          ordem?: number
+          pergunta?: string
+          publico?: string
+          resposta?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           description: string | null
@@ -2837,6 +2879,7 @@ export type Database = {
           adesivo: string | null
           compartilhou: boolean
           created_at: string
+          dispositivo: string | null
           estilo: string
           formato_adesivo: string | null
           id: string
@@ -2849,6 +2892,7 @@ export type Database = {
           adesivo?: string | null
           compartilhou?: boolean
           created_at?: string
+          dispositivo?: string | null
           estilo: string
           formato_adesivo?: string | null
           id: string
@@ -2861,6 +2905,7 @@ export type Database = {
           adesivo?: string | null
           compartilhou?: boolean
           created_at?: string
+          dispositivo?: string | null
           estilo?: string
           formato_adesivo?: string | null
           id?: string
@@ -3479,6 +3524,8 @@ export type Database = {
       sonho_perfis: {
         Row: {
           adesivo: string | null
+          apresentacao_publica: boolean
+          aviso_antecipado_ociosas: boolean
           cidade: string | null
           codigo: string
           created_at: string
@@ -3502,6 +3549,8 @@ export type Database = {
         }
         Insert: {
           adesivo?: string | null
+          apresentacao_publica?: boolean
+          aviso_antecipado_ociosas?: boolean
           cidade?: string | null
           codigo?: string
           created_at?: string
@@ -3525,6 +3574,8 @@ export type Database = {
         }
         Update: {
           adesivo?: string | null
+          apresentacao_publica?: boolean
+          aviso_antecipado_ociosas?: boolean
           cidade?: string | null
           codigo?: string
           created_at?: string
@@ -5840,6 +5891,15 @@ export type Database = {
           uf: string
         }[]
       }
+      admin_ranking_madrinhas: {
+        Args: never
+        Returns: {
+          amigas: number
+          aviso_antecipado: boolean
+          nivel: number
+          nome: string
+        }[]
+      }
       admin_reset_demo: { Args: never; Returns: Json }
       admin_set_user_suspended: {
         Args: { _reason?: string; _suspended: boolean; _user_id: string }
@@ -5862,6 +5922,7 @@ export type Database = {
         Args: { _chave: string; _nome: string; _supplier_id?: string }
         Returns: number
       }
+      apresentacao_sonho: { Args: { _codigo: string }; Returns: Json }
       buscar_cidades_brasil: {
         Args: { _prefix: string }
         Returns: {
@@ -5934,6 +5995,7 @@ export type Database = {
         Args: { _supplier_id: string }
         Returns: number
       }
+      foto_sonho_publica: { Args: { _path: string }; Returns: boolean }
       generate_couple_profile_slug: {
         Args: { _nome: string; _wedding_date: string }
         Returns: string
@@ -6093,6 +6155,7 @@ export type Database = {
       profissional_config_atual_id: { Args: never; Returns: string }
       purge_platform_events: { Args: { _meses?: number }; Returns: number }
       quiz_contagem_estilo: { Args: { _estilo: string }; Returns: number }
+      quiz_madrinha: { Args: never; Returns: Json }
       quiz_marcar_compartilhou: { Args: { _id: string }; Returns: undefined }
       quiz_minhas_indicacoes: { Args: never; Returns: number }
       quiz_reivindicar_resultado: { Args: { _id: string }; Returns: undefined }

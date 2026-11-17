@@ -10,3 +10,5 @@
 - [x] Executar e validar alterações dos destaques da Home: 15 pacotes, 17 colunas, 5 funções, 2 gatilhos e políticas
 - [ ] Criar armazenamento público `destaques` — bloqueado pela política do workspace; administrador precisa permitir buckets públicos em Settings → Privacy & Security
 - [x] Conta com vários perfis (fornecedor + profissional): RPCs, trava do tipo de conta, seletor, convite dispensável, selos no admin. Testes de banco e unidade passaram. Falta conferir na tela com uma conta logada.
+- [x] Envio 2: bug do tipo no cadastro corrigido; Central de Ajuda pública em /ajuda com admin, perguntas iniciais, SEO e sitemap. Testes unitários e conferência no navegador (só leitura) ok.
+- [ ] Envio 3: aba Ajuda do painel, Dúvidas da landing do fornecedor lendo as perguntas, ícones "?" contextuais — aguardando envio.

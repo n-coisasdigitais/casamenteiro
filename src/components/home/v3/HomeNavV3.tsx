@@ -10,6 +10,7 @@ const LINKS = [
   { to: "/vagas", label: "Vagas" },
   { to: "/profissional", label: "Sou profissional" },
   { to: "/fornecedor", label: "Sou fornecedor" },
+  { to: "/ajuda", label: "Ajuda" },
 ];
 
 /**

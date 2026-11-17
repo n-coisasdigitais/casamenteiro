@@ -1,0 +1,24 @@
+.ajuda {
+  --aj-ink: #1f1d1b;
+  --aj-body: #5e564e;
+  --aj-cream: #fafaf7;
+  --aj-sand: #f6ede3;
+  --aj-line: #e6e1d9;
+  --aj-clay: #a9551f;
+  --aj-terracota: #d9905a;
+  --aj-sage: #4a7c6a;
+  background: var(--aj-cream);
+  color: var(--aj-ink);
+  overflow-x: hidden;
+}
+.ajuda .aj-card { background: #fff; border: 1px solid var(--aj-line); border-radius: 20px; }
+.ajuda .aj-muted { color: var(--aj-body); }
+.ajuda .aj-btn { background: var(--aj-clay); color: #fff; border-radius: 999px; font-weight: 700; }
+.ajuda .aj-btn:hover { filter: brightness(1.06); }
+.ajuda .aj-tab { border-radius: 999px; padding: 10px 14px; font-size: 15px; font-weight: 700; white-space: nowrap; color: var(--aj-body); }
+.ajuda .aj-tab[aria-selected="true"] { background: var(--aj-ink); color: #fff; }
+.ajuda .aj-icone { background: var(--aj-sand); color: var(--aj-clay); border-radius: 14px; }
+.ajuda .aj-selo { background: var(--aj-sand); color: var(--aj-clay); border-radius: 999px; font-size: 12px; font-weight: 700; padding: 2px 10px; }
+.ajuda .aj-destaque { border-color: var(--aj-terracota); box-shadow: 0 0 0 2px var(--aj-terracota); }
+.ajuda .aj-tablist { scrollbar-width: none; }
+.ajuda .aj-tablist::-webkit-scrollbar { display: none; }

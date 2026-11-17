@@ -118,6 +118,11 @@ export function useFeatureFlag(key: string, defaultValue = true): boolean {
   return key in FEATURE_FLAG_DEFAULTS ? FEATURE_FLAG_DEFAULTS[key] : defaultValue;
 }
 
+/** key -> mostrar como "Em breve" quando desligada. */
+export function useFeatureEmBreve() {
+  return useContext(FeatureFlagsContext).emBreve;
+}
+
 export function useReloadFeatureFlags() {
   return useContext(FeatureFlagsContext).reload;
 }
