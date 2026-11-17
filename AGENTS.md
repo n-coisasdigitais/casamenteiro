@@ -7,3 +7,4 @@
 - Public staff reviews must belong to public professional profiles; private reviews remain visible to participants/admins, to respect profile privacy.
 - Public supplier-file reads require an exact visible attachment record for an approved non-demo supplier; internal and unregistered files stay private.
 - Resolve the current professional landing configuration through a fixed-search-path definer helper, to avoid recursive RLS while excluding older configuration records.
+- Account profiles: profiles.account_type is the ACTIVE profile; owned profiles derive from rows in couples/suppliers/staff_profiles. Change account_type only via trocar_perfil/adicionar_perfil/fiquei_noivo (they set app.troca_perfil) or admin — a trigger blocks other updates, to prevent activating unowned profiles.

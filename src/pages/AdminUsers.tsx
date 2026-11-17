@@ -20,6 +20,7 @@ type Row = {
   user_id: string;
   full_name: string | null;
   account_type: string;
+  perfis?: string[];
   suspended: boolean;
   suspended_reason: string | null;
   created_at: string;
@@ -65,13 +66,15 @@ export default function AdminUsers() {
       .order("created_at", { ascending: false });
     const { data: roles } = await supabase.from("user_roles").select("user_id, role").eq("role", "admin");
     const adminSet = new Set((roles || []).map((r: any) => r.user_id));
-    setRows((profiles || []).map((p: any) => ({ ...p, is_admin: adminSet.has(p.user_id) })));
+    const { data: pf } = await (supabase.rpc as any)("admin_perfis_usuarios");
+    const perfisMap = new Map<string, string[]>((pf || []).map((x: any) => [x.user_id, x.perfis || []]));
+    setRows((profiles || []).map((p: any) => ({ ...p, is_admin: adminSet.has(p.user_id), perfis: perfisMap.get(p.user_id) || [] })));
   };
 
   const filtered = rows.filter(r => {
     if (filter === "suspended" && !r.suspended) return false;
     if (filter === "admin" && !r.is_admin) return false;
-    if ((filter === "couple" || filter === "supplier" || filter === "profissional") && r.account_type !== filter) return false;
+    if ((filter === "couple" || filter === "supplier" || filter === "profissional") && r.account_type !== filter && !(r.perfis || []).includes(filter)) return false;
     if (q && !(r.full_name || "").toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
@@ -169,6 +172,9 @@ export default function AdminUsers() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-medium">{r.full_name || "(sem nome)"}</h3>
                     <Badge variant="secondary">{tipoConta(r.account_type)}</Badge>
+                    {(r.perfis || []).filter((t) => t !== r.account_type).map((t) => (
+                      <Badge key={t} variant="outline">{tipoConta(t)}</Badge>
+                    ))}
                     {r.is_admin && <Badge>Admin</Badge>}
                     {r.suspended && <Badge variant="destructive">Suspenso</Badge>}
                   </div>

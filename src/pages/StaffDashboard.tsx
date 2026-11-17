@@ -36,6 +36,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import "@/components/staff/painel-prof.css";
+import ConvitePerfilExtra from "@/components/perfis/ConvitePerfilExtra";
 
 type Destino = "inicio" | "vagas" | "agenda" | "perfil" | "ajuda";
 
@@ -538,6 +539,7 @@ export default function StaffDashboard() {
 
   const telaInicio = (
     <div className="flex flex-col gap-4">
+      <ConvitePerfilExtra />
       <div>
         <Titulo>
           {saudacao}, <em className="pp-serif">{primeiroNome}.</em>

@@ -71,6 +71,7 @@ import { AvisoTipoAtracao } from "@/components/supplier/AvisoTipoAtracao";
 import { AgendaMes, PerfilCompleto, type PassoPerfil } from "@/components/supplier/PainelExtras";
 import { useSupplierPlan } from "@/hooks/usePlanFeature";
 import "@/components/supplier/painel-v2.css";
+import ConvitePerfilExtra from "@/components/perfis/ConvitePerfilExtra";
 
 type Category = { id: string; name: string; slug?: string | null };
 
@@ -500,6 +501,7 @@ export default function SupplierDashboard() {
           </div>
           <SupplierMetrics supplierId={supplier.id} />
           <SeloCasamenteiroCard supplierId={supplier.id} />
+          <ConvitePerfilExtra />
           <div className="grid gap-4 lg:grid-cols-2 lg:gap-5">
             <AgendaMes supplierId={supplier.id} onGerenciar={() => goDest("negocio", { sub: "disponibilidade" })} />
             <div className="flex min-w-0 flex-col gap-4">

@@ -14,6 +14,7 @@ import {
   Briefcase, FileText, FlaskConical,
 } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
+import SeletorPerfil from "@/components/perfis/SeletorPerfil";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -85,6 +86,7 @@ export default function UserMenu() {
           </Link>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <SeletorPerfil />
         {items.map((it) => (
           <DropdownMenuItem asChild key={it.to}>
             <Link to={it.to} className="cursor-pointer">
