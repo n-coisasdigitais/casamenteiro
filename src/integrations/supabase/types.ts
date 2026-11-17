@@ -6152,6 +6152,36 @@ export type Database = {
         Args: { _autor_id: string; _autor_tipo: string; _job_id: string }
         Returns: boolean
       }
+      previa_meu_convite: {
+        Args: never
+        Returns: {
+          ceremony_address: string
+          ceremony_lat: number
+          ceremony_lng: number
+          ceremony_local_nome: string
+          ceremony_time: string
+          contact_phone: string
+          dress_code: string
+          guest_name: string
+          invite_album: Json
+          invite_id: string
+          invite_message: string
+          invite_photo_url: string
+          invite_video_url: string
+          max_companions: number
+          partner_name: string
+          reception_address: string
+          reception_lat: number
+          reception_lng: number
+          reception_local_nome: string
+          responded_at: string
+          rsvp_companions: number
+          rsvp_note: string
+          rsvp_response: string
+          user_full_name: string
+          wedding_date: string
+        }[]
+      }
       profissional_config_atual_id: { Args: never; Returns: string }
       purge_platform_events: { Args: { _meses?: number }; Returns: number }
       quiz_contagem_estilo: { Args: { _estilo: string }; Returns: number }

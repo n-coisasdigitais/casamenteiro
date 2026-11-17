@@ -19,6 +19,7 @@ import CepInput from "@/components/CepInput";
 import AlbumUpload from "@/components/AlbumUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import PreviaPagina from "@/components/previa/PreviaPagina";
 import { MoedaInput } from "@/components/ui/moeda-input";
 
 export default function UserProfile() {
@@ -36,6 +37,12 @@ export default function UserProfile() {
   const [estimatedGuests, setEstimatedGuests] = useState("");
   const [estimatedBudget, setEstimatedBudget] = useState("");
   const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [slugPublico, setSlugPublico] = useState<string | null>(null);
+  useEffect(() => {
+    if (!coupleId) return;
+    supabase.from("couple_public_profiles").select("slug").eq("couple_id", coupleId).maybeSingle()
+      .then(({ data }) => setSlugPublico((data as any)?.slug ?? null));
+  }, [coupleId]);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Vínculo de parceiro
@@ -506,7 +513,10 @@ export default function UserProfile() {
               <TabsContent value="casal" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Sobre o casal</CardTitle>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <CardTitle className="text-lg">Sobre o casal</CardTitle>
+                      <PreviaPagina url={slugPublico ? `/casais/${slugPublico}` : null} rotulo="Ver prévia da página do casal" titulo="Prévia da página do casal" descricao="É assim que a página pública de vocês aparece." />
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
@@ -644,6 +654,9 @@ export default function UserProfile() {
                     <p className="text-sm text-muted-foreground">
                       Esses dados aparecerão no convite enviado por email aos convidados.
                     </p>
+                    <div className="pt-2">
+                      <PreviaPagina url="/convite/previa" rotulo="Ver prévia do convite" titulo="Prévia do convite" descricao="Assim seus convidados verão o convite. Salve as alterações para vê-las aqui." />
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>

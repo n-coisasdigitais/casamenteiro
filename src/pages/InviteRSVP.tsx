@@ -117,10 +117,14 @@ export default function InviteRSVP() {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const previa = token === "previa";
 
   useEffect(() => {
     if (!token) return;
-    (supabase as any).rpc("get_invite_by_token", { _token: token }).then(({ data: rows }: any) => {
+    const req = previa
+      ? (supabase as any).rpc("previa_meu_convite")
+      : (supabase as any).rpc("get_invite_by_token", { _token: token });
+    req.then(({ data: rows }: any) => {
       const row = rows?.[0];
       if (row) {
         setData(row);
@@ -134,6 +138,10 @@ export default function InviteRSVP() {
 
   const respond = async (response: "confirmed" | "declined") => {
     if (!token) return;
+    if (previa) {
+      toast({ title: "Isto é uma prévia", description: "Seus convidados poderão confirmar presença por aqui." });
+      return;
+    }
     setSubmitting(true);
     const { data: ok, error } = await (supabase as any).rpc("respond_invite", {
       _token: token, _response: response, _companions: companions, _note: note || null,
@@ -151,7 +159,7 @@ export default function InviteRSVP() {
   if (!data) return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="max-w-md p-8 text-center">
-        <p>Convite não encontrado ou link inválido.</p>
+        <p>{previa ? "Faça login com a conta do casal para ver a prévia do convite." : "Convite não encontrado ou link inválido."}</p>
       </Card>
     </div>
   );
@@ -181,6 +189,11 @@ export default function InviteRSVP() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/20 to-background py-8 px-4">
       <div className="max-w-2xl mx-auto">
+        {previa && (
+          <div className="mb-4 rounded-lg border border-primary/30 bg-primary/10 p-3 text-center text-sm">
+            Prévia: é assim que seus convidados verão o convite. As respostas aqui não são registradas.
+          </div>
+        )}
         {data.invite_photo_url && (
           <img src={data.invite_photo_url} alt="" className="w-full h-64 object-cover rounded-lg mb-6" />
         )}

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardNav from "@/components/DashboardNav";
+import PreviaPagina from "@/components/previa/PreviaPagina";
 import { ensureCoupleProfile, youtubeIdFromUrl, youtubeThumbnail } from "@/lib/coupleProfile";
 import { toast } from "sonner";
 import { Trash2, Upload, Star, ExternalLink, Plus } from "lucide-react";
@@ -185,9 +186,12 @@ export default function MeuCasamentoPerfil() {
               Acesse em <Link to={`/casais/${perfil.slug}`} className="text-primary underline">/casais/{perfil.slug}</Link>
             </p>
           </div>
-          <Link to={`/casais/${perfil.slug}`} target="_blank">
-            <Button variant="outline" size="sm"><ExternalLink className="h-4 w-4 mr-2" />Ver perfil</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <PreviaPagina url={`/casais/${perfil.slug}`} titulo="Prévia da página do casal" descricao="É assim que a página pública de vocês aparece." />
+            <Link to={`/casais/${perfil.slug}`} target="_blank">
+              <Button variant="outline" size="sm"><ExternalLink className="h-4 w-4 mr-2" />Ver perfil</Button>
+            </Link>
+          </div>
         </div>
 
         <Tabs defaultValue="info">
