@@ -57,6 +57,7 @@ export function HomeFooterV3() {
           { to: "/vagas", label: "Vagas" },
         ])}
         {col("Casamenteiro", [
+          { to: "/ajuda", label: "Ajuda" },
           { to: "/termos", label: "Termos" },
           { to: "/privacidade", label: "Privacidade" },
           { to: "/login", label: "Entrar" },

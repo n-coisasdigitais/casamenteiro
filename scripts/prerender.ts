@@ -14,6 +14,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve, join } from "path";
 import { createClient } from "@supabase/supabase-js";
+import { flagLigada, preencherAjuda, type FaqItem } from "../src/lib/ajudaTexto";
 
 const BASE_URL = "https://www.casamenteiro.com.br";
 const DIST = resolve("dist");
@@ -177,6 +178,47 @@ async function coletarRotas(): Promise<Rota[]> {
   }
 
   const sb = createClient(url, key);
+
+  /* central de ajuda */
+  {
+    const [faq, fl, pr, st, pl] = await Promise.all([
+      sb.from("faq_itens").select("*").eq("ativo", true).order("ordem"),
+      sb.from("feature_flags").select("key, enabled"),
+      sb.from("platform_prices").select("valor_fixo, ativo").eq("chave", "reserva_data_ociosa").maybeSingle(),
+      sb.from("system_settings").select("key, value").in("key", ["cancelamento_carencia_dias", "trial_dias", "fornecedor_aprovacao_horas"]),
+      sb.from("subscription_plans").select("slug, nome, preco_mensal, preco_anual").eq("ativo", true),
+    ]);
+    const flags: Record<string, boolean> = {};
+    ((fl.data as any[]) || []).forEach((f) => (flags[f.key] = !!f.enabled));
+    const cfg: Record<string, any> = {};
+    ((st.data as any[]) || []).forEach((r) => (cfg[r.key] = r.value));
+    const valores = {
+      taxaReserva: pr.data && (pr.data as any).ativo !== false ? Number((pr.data as any).valor_fixo) || null : null,
+      carenciaDias: Number(cfg.cancelamento_carencia_dias?.dias) || 7,
+      testeDias: Number(cfg.trial_dias?.dias) || 60,
+      aprovacaoHoras: Number(cfg.fornecedor_aprovacao_horas?.horas) || 24,
+      planos: ((pl.data as any[]) || []).map((p) => ({ slug: p.slug, nome: p.nome, preco_mensal: Number(p.preco_mensal), preco_anual: Number(p.preco_anual) })),
+    };
+    const vistos = new Set<string>();
+    const itens = ((faq.data as FaqItem[]) || []).filter((i) => flagLigada(flags, i.feature_flag) && !vistos.has(i.slug) && vistos.add(i.slug));
+    const limpa = (t: string) => preencherAjuda(t, valores).replace(/\*\*|\[|\]\([^)]*\)/g, "");
+    rotas.push({
+      path: "/ajuda",
+      title: "Central de Ajuda | Casamenteiro",
+      description:
+        "Tire suas dúvidas sobre o Casamenteiro: como funciona para casais, fornecedores e profissionais, planos, datas ociosas, confirmação de presença e mais.",
+      jsonLd: itens.length
+        ? {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: itens.map((i) => ({ "@type": "Question", name: i.pergunta, acceptedAnswer: { "@type": "Answer", text: limpa(i.resposta) } })),
+          }
+        : undefined,
+      body: `<h1>Central de Ajuda do Casamenteiro</h1>${itens
+        .map((i) => `<h2 id="${esc(i.slug)}">${esc(i.pergunta)}</h2><p>${esc(limpa(i.resposta))}</p>`)
+        .join("")}`,
+    });
+  }
 
   /* categorias */
   const { data: cats } = await sb.from("categories").select("id, name, slug, description").order("name");

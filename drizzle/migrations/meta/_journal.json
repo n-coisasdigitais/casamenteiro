@@ -134,6 +134,13 @@
       "when": 1794874029744,
       "tag": "0018_conta_varios_perfis",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794875269035,
+      "tag": "0019_faq_itens_central_ajuda",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,5 @@
+import { tipoInicial, tipoDaUrl, deveResetarProfissional } from "@/lib/authTipo";
+import { useFeatureFlagsLoading } from "@/contexts/FeatureFlagsContext";
 import BrandLogo from "@/components/shared/BrandLogo";
 import { traduzirErro } from "@/lib/errorMessages";
 import { useState, useEffect, useRef } from "react";
@@ -90,14 +92,7 @@ export default function Auth() {
   const isLogin =
     !searchParams.get("tipo") &&
     (path === "/login" || path === "/fornecedor/login" || path === "/profissional/login");
-  const defaultType: Tipo =
-    searchParams.get("tipo") === "generico"
-      ? "generico"
-      : searchParams.get("tipo") === "supplier" || isSupplierContext
-      ? "supplier"
-      : searchParams.get("tipo") === "profissional" || isProfissionalContext
-      ? "profissional"
-      : "couple";
+  const defaultType: Tipo = tipoInicial(searchParams.get("tipo"), path);
   const vagasFlag = useFeatureFlag("vagas", false);
 
   const [mode, setMode] = useState<"login" | "signup">(isLogin ? "login" : "signup");
@@ -125,9 +120,10 @@ export default function Auth() {
 
   // perfil Profissional só aparece com o recurso "vagas" ligado
   const tipos: Tipo[] = vagasFlag ? ["couple", "supplier", "profissional"] : ["couple", "supplier"];
+  const flagsCarregando = useFeatureFlagsLoading();
   useEffect(() => {
-    if (!vagasFlag && accountType === "profissional") setAccountType("couple");
-  }, [vagasFlag, accountType]);
+    if (deveResetarProfissional(accountType, vagasFlag, flagsCarregando)) setAccountType("couple");
+  }, [vagasFlag, accountType, flagsCarregando]);
 
   useEffect(() => {
     if (!session || !profile || processingRedirect.current) return;
@@ -241,7 +237,7 @@ export default function Auth() {
   }, [session, profile, navigate, searchParams, toast]);
 
   useEffect(() => {
-    if (searchParams.get("redirect") === "simulador") {
+    if (searchParams.get("redirect") === "simulador" && !tipoDaUrl(searchParams.get("tipo"))) {
       setAccountType("couple");
     }
   }, [searchParams]);

@@ -91,6 +91,8 @@ import CustoCasarIndex from "./pages/CustoCasarIndex";
 import Quiz from "./pages/Quiz";
 import MeuSonho from "./pages/MeuSonho";
 import AdminQuiz from "./pages/AdminQuiz";
+import Ajuda from "./pages/Ajuda";
+import AdminAjuda from "./pages/AdminAjuda";
 import CustoCasarCidade from "./pages/CustoCasarCidade";
 import StaffOnboarding from "./pages/StaffOnboarding";
 import StaffDashboard from "./pages/StaffDashboard";
@@ -289,6 +291,8 @@ const App = () => (
                 }
               />
               <Route path="/quiz" element={<Quiz />} />
+              <Route path="/ajuda" element={<Ajuda />} />
+              <Route path="/admin/ajuda" element={<AdminLayout><AdminAjuda /></AdminLayout>} />
               <Route
                 path="/meu-sonho"
                 element={
