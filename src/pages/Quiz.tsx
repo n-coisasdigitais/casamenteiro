@@ -488,6 +488,7 @@ export default function Quiz() {
               selo={selo}
               madrinha={madrinha}
               musica={musica}
+              nome={profile?.full_name || null}
               onMudou={mudouCard}
               onCompartilhou={() => marcarCompartilhou(resultado.id)}
             />

@@ -7,9 +7,15 @@ import {
   textoPermitido,
   type EstiloQuiz,
   type FormatoAdesivo,
+  type LugarSonhoQuiz,
   type TextosQuiz,
 } from "@/lib/quiz";
 import { compartilharCartaoQuiz, formatoVideoSuportado, gerarCartaoQuiz, gerarVideoCartaoQuiz } from "@/lib/cartaoQuiz";
+import MusicaEntrada from "@/components/sonho/MusicaEntrada";
+import VideoApresentacao from "@/components/sonho/VideoApresentacao";
+import type { DadosVideoApresentacao } from "@/lib/videoApresentacao";
+import type { Musica } from "@/lib/appleMusic";
+import { absoluteUrl } from "@/lib/seo";
 import { useToast } from "@/hooks/use-toast";
 
 export type EscolhasCard = {
@@ -17,6 +23,9 @@ export type EscolhasCard = {
   adesivo: string | null;
   formato: FormatoAdesivo;
   usarFoto: boolean;
+  frase: string | null;
+  musica: Musica | null;
+  lugar: LugarSonhoQuiz | null;
 };
 
 type Props = {
@@ -33,6 +42,8 @@ type Props = {
   madrinha?: string | null;
   /** Música de entrada do mural (só o nome aparece no card). */
   musica?: { titulo: string; artista: string } | null;
+  /** Primeiro nome de quem está logado (aparece na capa do vídeo). */
+  nome?: string | null;
   onMudou?: (e: EscolhasCard) => void;
   onCompartilhou?: () => void;
 };
@@ -48,7 +59,8 @@ export default function AparenciaCard({
   urlCompartilhar,
   selo,
   madrinha,
-  musica,
+  musica: musicaConta,
+  nome,
   onMudou,
   onCompartilhou,
 }: Props) {
@@ -63,6 +75,13 @@ export default function AparenciaCard({
   );
   const [formato, setFormato] = useState<FormatoAdesivo>(inicial?.formato || "postit");
   const [usarFoto, setUsarFoto] = useState(!!inicial?.usarFoto);
+  // "Complete sua história": o mesmo que o mural tem, para o vídeo completo sair direto do quiz
+  const [frase, setFrase] = useState(inicial?.frase || "");
+  const [erroFrase, setErroFrase] = useState("");
+  const [musicaQuiz, setMusicaQuiz] = useState<Musica | null>(inicial?.musica || null);
+  const [lugarNome, setLugarNome] = useState(inicial?.lugar?.nome || "");
+  const [lugarCidade, setLugarCidade] = useState(inicial?.lugar?.cidade || "");
+  const [lugarUf, setLugarUf] = useState(inicial?.lugar?.uf || "");
   const [fotoLocal, setFotoLocal] = useState<string | null>(null);
   const [gerando, setGerando] = useState<null | "imagem" | "video">(null);
   const [progresso, setProgresso] = useState(0);
@@ -73,11 +92,39 @@ export default function AparenciaCard({
   const foto = fotoLocal || fotoPerfil || null;
   const mensagem = useMemo(() => textos.adesivos.find((a) => a.texto === adesivo)?.mensagem || null, [adesivo, textos]);
 
+  const fraseValida = frase.trim() && !erroFrase ? frase.trim() : null;
+  const lugar: LugarSonhoQuiz | null = lugarNome.trim()
+    ? { nome: lugarNome.trim(), cidade: lugarCidade.trim() || null, uf: lugarUf.trim().toUpperCase().slice(0, 2) || null }
+    : null;
+  // música do quiz tem prioridade; sem ela, usa a do mural (se a pessoa já tiver)
+  const musica = musicaQuiz ? { titulo: musicaQuiz.titulo, artista: musicaQuiz.artista } : musicaConta || null;
+
   useEffect(() => {
-    onMudou?.({ titulo, adesivo, formato, usarFoto: usarFoto && !!foto });
+    onMudou?.({ titulo, adesivo, formato, usarFoto: usarFoto && !!foto, frase: fraseValida, musica: musicaQuiz, lugar });
     setCartao(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [titulo, adesivo, formato, usarFoto, foto, selo, madrinha]);
+  }, [titulo, adesivo, formato, usarFoto, foto, selo, madrinha, fraseValida, musicaQuiz, lugarNome, lugarCidade, lugarUf]);
+
+  const mudarFrase = (v: string) => {
+    setFrase(v);
+    setErroFrase(v.trim() && !textoPermitido(v, textos.palavras_bloqueadas) ? "Essa frase não pode. Tente outro jeito de dizer." : "");
+  };
+
+  /** Dados do vídeo completo (5 telas), montados com o que a pessoa escolheu agora. */
+  const dadosVideo = (): DadosVideoApresentacao => ({
+    nome: (nome || "").split(" ")[0],
+    foto: usarFoto ? foto : null,
+    titulo,
+    adesivo,
+    frase: fraseValida || info.descricao,
+    nomeEstilo: info.nome,
+    paleta: info.paleta,
+    fotos,
+    lugar,
+    musica,
+    madrinha: madrinha || null,
+    link: absoluteUrl("/quiz").replace(/^https?:\/\//, ""),
+  });
 
   useEffect(
     () => () => {
@@ -115,7 +162,7 @@ export default function AparenciaCard({
     formato,
     selo: selo || null,
     madrinha: madrinha || null,
-    musica: musica || null,
+    musica,
     link: urlCompartilhar.replace(/^https?:\/\//, "").replace(/\?.*$/, ""),
   });
 
@@ -389,6 +436,61 @@ export default function AparenciaCard({
         </fieldset>
       )}
 
+      {/* o que deixa o vídeo completo: as mesmas informações do mural */}
+      <section className="flex flex-col gap-4 rounded-2xl border bg-white p-4" style={{ borderColor: "#ECE3DA" }} aria-labelledby="titulo-historia">
+        <div>
+          <h2 id="titulo-historia" className="text-base font-semibold">Complete sua história</h2>
+          <p className="text-[13px] leading-snug" style={{ color: "#6E625A" }}>
+            Opcional. Entra no vídeo completo e vai para o seu mural se você salvar.
+          </p>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="frase-quiz" className="text-sm font-semibold">Meu sonho em poucas palavras</label>
+          <textarea
+            id="frase-quiz"
+            value={frase}
+            onChange={(e) => mudarFrase(e.target.value.slice(0, 140))}
+            rows={2}
+            placeholder="Ex.: todo mundo que eu amo numa mesa só, com o sol se pondo"
+            className="w-full rounded-xl border p-3 text-[15px]"
+            style={{ borderColor: erroFrase ? "#B42318" : "#DCCFC3" }}
+          />
+          <span className="text-xs" style={{ color: erroFrase ? "#B42318" : "#6E625A" }}>
+            {erroFrase || `${frase.length}/140`}
+          </span>
+        </div>
+        <MusicaEntrada valor={musicaQuiz} onSalvar={setMusicaQuiz} />
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1.5 text-sm font-semibold">Onde eu sonho casar</legend>
+          <input
+            value={lugarNome}
+            onChange={(e) => setLugarNome(e.target.value.slice(0, 80))}
+            placeholder="Nome do lugar"
+            aria-label="Nome do lugar"
+            className="h-11 w-full rounded-xl border px-3 text-[15px]"
+            style={{ borderColor: "#DCCFC3" }}
+          />
+          <div className="grid grid-cols-[1fr_72px] gap-2">
+            <input
+              value={lugarCidade}
+              onChange={(e) => setLugarCidade(e.target.value.slice(0, 60))}
+              placeholder="Cidade"
+              aria-label="Cidade"
+              className="h-11 rounded-xl border px-3 text-[15px]"
+              style={{ borderColor: "#DCCFC3" }}
+            />
+            <input
+              value={lugarUf}
+              onChange={(e) => setLugarUf(e.target.value.replace(/[^a-z]/gi, "").slice(0, 2).toUpperCase())}
+              placeholder="UF"
+              aria-label="Estado (UF)"
+              className="h-11 rounded-xl border px-3 text-center text-[15px] uppercase"
+              style={{ borderColor: "#DCCFC3" }}
+            />
+          </div>
+        </fieldset>
+      </section>
+
       {cartao ? (
         <div className="flex flex-col items-center gap-3">
           {cartao.video ? (
@@ -444,30 +546,26 @@ export default function AparenciaCard({
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
-          {podeVideo && (
-            <button
-              type="button"
-              onClick={gerarVideo}
-              disabled={!!gerando}
-              className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] text-base font-semibold text-white disabled:opacity-70"
-              style={{ background: "#A9582D" }}
-            >
-              <Clapperboard className="h-5 w-5" aria-hidden="true" /> Gerar vídeo para o story
-            </button>
-          )}
+          {/* principal: o vídeo completo, com as 5 telas (capa, frase, fotos, lugar, convite) */}
+          <VideoApresentacao
+            dados={dadosVideo}
+            destaque
+            rotulo="Gerar vídeo completo para o story"
+            onCompartilhou={onCompartilhou}
+          />
           <button
             type="button"
             onClick={gerar}
             disabled={!!gerando}
-            className={`flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] text-base font-semibold disabled:opacity-70 ${podeVideo ? "border" : "text-white"}`}
-            style={podeVideo ? { borderColor: "#CDBFB3", color: PRETO } : { background: "#A9582D" }}
+            className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] border text-base font-semibold disabled:opacity-70"
+            style={{ borderColor: "#CDBFB3", color: PRETO }}
           >
             {gerando === "imagem" ? (
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
             ) : (
               <IconeImagem className="h-5 w-5" aria-hidden="true" />
             )}
-            {gerando === "imagem" ? "Gerando…" : podeVideo ? "Prefiro uma imagem" : "Gerar meu card"}
+            {gerando === "imagem" ? "Gerando…" : "Só o card (imagem)"}
           </button>
         </div>
       )}

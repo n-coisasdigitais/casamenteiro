@@ -53,7 +53,24 @@ function baixar(blob: Blob, nome: string) {
  * Botão "Vídeo para o story": junta as 5 telas da apresentação num vídeo só (16 s) para postar de uma vez.
  * Só o dono usa (a função do banco já devolve os dados completos só para ele).
  */
-export default function VideoApresentacao({ codigo, claro = false }: { codigo: string; claro?: boolean }) {
+export default function VideoApresentacao({
+  codigo,
+  dados,
+  claro = false,
+  destaque = false,
+  rotulo = "Vídeo para o story",
+  onCompartilhou,
+}: {
+  /** Mural/apresentação: busca tudo pelo código. */
+  codigo?: string;
+  /** Quiz: dados montados na hora, sem precisar de conta. */
+  dados?: () => DadosVideoApresentacao;
+  claro?: boolean;
+  /** Botão principal (grande, terracota). */
+  destaque?: boolean;
+  rotulo?: string;
+  onCompartilhou?: () => void;
+}) {
   const { toast } = useToast();
   const [aberto, setAberto] = useState(false);
   const [progresso, setProgresso] = useState(0);
@@ -75,14 +92,14 @@ export default function VideoApresentacao({ codigo, claro = false }: { codigo: s
     setGerando(true);
     setProgresso(0);
     try {
-      const dados = await montarDados(codigo);
-      if (!dados) throw new Error("Não encontramos sua apresentação.");
-      setMusica(dados.musica);
-      const blob = formatoVideoSuportado() ? await gerarVideoApresentacao(dados, setProgresso) : null;
+      const d = dados ? dados() : codigo ? await montarDados(codigo) : null;
+      if (!d) throw new Error("Não encontramos sua apresentação.");
+      setMusica(d.musica);
+      const blob = formatoVideoSuportado() ? await gerarVideoApresentacao(d, setProgresso) : null;
       if (blob) {
         setVideo({ blob, url: URL.createObjectURL(blob) });
       } else {
-        const blobs = await gerarImagensApresentacao(dados);
+        const blobs = await gerarImagensApresentacao(d);
         setImagens(blobs.map((b) => ({ blob: b, url: URL.createObjectURL(b) })));
       }
     } catch (e: any) {
@@ -101,12 +118,14 @@ export default function VideoApresentacao({ codigo, claro = false }: { codigo: s
     if (nav.canShare?.({ files: arquivos })) {
       try {
         await nav.share({ files: arquivos });
+        onCompartilhou?.();
         return;
       } catch (e: any) {
         if (e?.name === "AbortError") return;
       }
     }
     arquivos.forEach((f) => baixar(f, f.name));
+    onCompartilhou?.();
     toast({ title: video ? "Vídeo baixado" : "Imagens baixadas", description: "Agora é só postar no story." });
   };
 
@@ -123,10 +142,20 @@ export default function VideoApresentacao({ codigo, claro = false }: { codigo: s
       <button
         type="button"
         onClick={gerar}
-        className="relative z-30 flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold"
-        style={claro ? { background: "#FFFFFF", color: "#2B211B" } : { border: "1px solid #DCCFC3", color: "#2B211B" }}
+        className={
+          destaque
+            ? "relative z-30 flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] text-base font-semibold text-white"
+            : "relative z-30 flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold"
+        }
+        style={
+          destaque
+            ? { background: TERRA }
+            : claro
+              ? { background: "#FFFFFF", color: "#2B211B" }
+              : { border: "1px solid #DCCFC3", color: "#2B211B" }
+        }
       >
-        <Film className="h-4 w-4" aria-hidden="true" /> Vídeo para o story
+        <Film className={destaque ? "h-5 w-5" : "h-4 w-4"} aria-hidden="true" /> {rotulo}
       </button>
 
       {aberto && (

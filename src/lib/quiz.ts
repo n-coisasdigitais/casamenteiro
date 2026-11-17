@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Musica } from "@/lib/appleMusic";
 
 /** Quiz "Um dia vou casar": dados, pontuação e textos. */
 
@@ -152,7 +153,13 @@ export type ResultadoQuiz = {
   adesivo: string | null;
   formato: FormatoAdesivo;
   usarFoto: boolean;
+  /** Preenchidos no quiz ("Complete sua história"); vão para o mural ao salvar. */
+  frase?: string | null;
+  musica?: Musica | null;
+  lugar?: LugarSonhoQuiz | null;
 };
+
+export type LugarSonhoQuiz = { nome: string; cidade: string | null; uf: string | null };
 
 /** Id aleatório do aparelho: a Madrinha conta 1 por pessoa, não 1 por quiz refeito. */
 export function idDispositivo(): string {
@@ -254,10 +261,28 @@ export async function reivindicarPendente(userId: string): Promise<boolean> {
       adesivo: r.adesivo,
       formato_adesivo: r.formato,
       mostrar_foto: r.usarFoto,
+      // só sobrescreve o que a pessoa preencheu no quiz
+      ...(r.frase ? { frase: r.frase } : {}),
+      ...(r.musica ? { musica: r.musica } : {}),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },
   );
+  if (r.lugar?.nome) {
+    const { data: existe } = await (supabase.from("sonho_lugares" as any) as any)
+      .select("id")
+      .eq("user_id", userId)
+      .ilike("nome", r.lugar.nome.replace(/[%_]/g, ""))
+      .limit(1);
+    if (!existe?.length) {
+      await (supabase.from("sonho_lugares" as any) as any).insert({
+        user_id: userId,
+        nome: r.lugar.nome,
+        cidade: r.lugar.cidade,
+        uf: r.lugar.uf,
+      });
+    }
+  }
   limparPendente();
   return true;
 }
