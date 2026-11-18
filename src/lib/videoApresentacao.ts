@@ -29,8 +29,8 @@ const H = 1920;
 const TINTA = "#2B211B";
 const TERRA = "#A9582D";
 const CREME = "#F6EBE1";
-/** Segundos de cada tela: capa, frase (um pouco mais, para dar tempo de ler), fotos, lugar, fim. */
-export const TEMPOS = [3, 4, 3, 3, 3];
+/** Segundos de cada tela: capa, frase, fotos, lugar, fim (7 s cada, ~35 s no total). */
+export const TEMPOS = [7, 7, 7, 7, 7];
 export const DURACAO_APRESENTACAO = TEMPOS.reduce((a, b) => a + b, 0);
 const INICIOS = TEMPOS.map((_, i) => TEMPOS.slice(0, i).reduce((a, b) => a + b, 0));
 
