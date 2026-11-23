@@ -4,6 +4,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { sendViaResend, appUrl } from "../_shared/resend.ts";
 import { adminClient, getUserId, isAdmin } from "../_shared/auth.ts";
+import { explicarErroEmail } from "../_shared/email-errors.ts";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -110,7 +111,7 @@ Deno.serve(async (req) => {
         text: `${titulo}\n\n${mensagem}\n\n${linkAbs}`,
       });
       resultado.email = envio.ok;
-      if (!envio.ok) resultado.emailErro = envio.error ?? "Falha no envio";
+      if (!envio.ok) resultado.emailErro = explicarErroEmail(envio.error);
     }
   }
 

@@ -2,6 +2,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3";
 import { adminClient, getUserId, isAdmin } from "../_shared/auth.ts";
 import { appUrl, logEmail, sendViaResend } from "../_shared/resend.ts";
+import { explicarErroEmail } from "../_shared/email-errors.ts";
 
 const schema = z.object({
   segment: z.enum(["couples", "suppliers", "profissionais", "genericos", "all"]),
@@ -31,7 +32,7 @@ Deno.serve(async (req) => {
     const { data: recipients, error } = await db.rpc("admin_destinatarios_comunicacao", { _segment: input.segment, _pendencia: input.pendencia, _demo: input.demo });
     if (error) return json({ error: error.message }, 400);
     const ids = [...new Set<string>((recipients || []).map((r: { user_id: string }) => r.user_id))];
-    const result = { destinatarios: ids.length, plataforma: 0, emails: 0, falhas: 0 };
+    const result = { destinatarios: ids.length, plataforma: 0, emails: 0, falhas: 0, emailErro: null as string | null };
     const delivered = new Set<string>();
     for (let offset = 0; offset < ids.length; offset += 5) {
       await Promise.all(ids.slice(offset, offset + 5).map(async (userId) => {
@@ -47,14 +48,15 @@ Deno.serve(async (req) => {
           const url = input.link ? (input.link.startsWith("/") ? `${appUrl()}${input.link}` : input.link) : appUrl();
           const send = await sendViaResend({ to: address, subject: input.titulo, text: `${input.mensagem}\n\n${url}`, html: `<h2>${escape(input.titulo)}</h2><p style="white-space:pre-wrap">${escape(input.mensagem)}</p><p><a href="${escape(url)}">Abrir Casamenteiro</a></p>` }, 1);
           await logEmail(db, { message_id: send.id || crypto.randomUUID(), template_name: "admin-comunicacao-grupo", recipient_email: address, status: send.ok ? "sent" : "failed", error_message: send.ok ? null : send.error, metadata: { segment: input.segment, pendencia: input.pendencia, user_id: userId } });
-          if (send.ok) { result.emails++; delivered.add(userId); } else result.falhas++;
+          if (send.ok) { result.emails++; delivered.add(userId); }
+          else { result.falhas++; result.emailErro = explicarErroEmail(send.error); }
         }
       }));
     }
     if (delivered.size) {
-      await db.from("broadcast_history").insert({ admin_id: adminId, segment: input.segment, filters: { pendencia: input.pendencia, demo: input.demo, plataforma: result.plataforma, emails: result.emails, falhas: result.falhas }, title: input.titulo, body: input.mensagem, link: input.link || null, recipients_count: delivered.size, channel: [result.plataforma ? "in_app" : null, result.emails ? "email" : null].filter(Boolean).join("+") });
+      await db.from("broadcast_history").insert({ admin_id: adminId, segment: input.segment, filters: { pendencia: input.pendencia, demo: input.demo, plataforma: result.plataforma, emails: result.emails, falhas: result.falhas, emailErro: result.emailErro }, title: input.titulo, body: input.mensagem, link: input.link || null, recipients_count: delivered.size, channel: [result.plataforma ? "in_app" : null, result.emails ? "email" : null].filter(Boolean).join("+") });
     }
-    return json({ ok: true, ...result });
+    return json({ ok: delivered.size > 0, ...result });
   } catch {
     return json({ error: "Não foi possível concluir o envio." }, 500);
   }

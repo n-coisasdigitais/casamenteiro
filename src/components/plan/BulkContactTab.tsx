@@ -136,9 +136,11 @@ export default function BulkContactTab({
         };
         const { data, error } = await supabase.functions.invoke("send-bulk-supplier-emails", { body: payload });
         if (error) throw error;
+        if (typeof data?.sent !== "number") throw new Error("Não foi possível confirmar os envios. Confira o histórico antes de repetir.");
         toast({
-          title: `${data?.queued || 0} e-mail(s) enviados`,
-          description: "As respostas chegam normalmente ao seu e-mail.",
+          title: `${data?.sent || 0} e-mail(s) aceitos`,
+          description: data?.sent < escolhidos.length ? `${escolhidos.length - (data?.sent || 0)} envio(s) não concluídos. Não repita os pedidos já enviados.` : "As respostas chegam normalmente ao seu e-mail.",
+          variant: data?.sent < escolhidos.length ? "destructive" : undefined,
         });
       }
       setSelected(new Set());

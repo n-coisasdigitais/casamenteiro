@@ -73,11 +73,12 @@ Deno.serve(async (req) => {
         const titulo = qtd === 1 ? `Chegou ${cat.name.toLowerCase()} no Casamenteiro` : `Chegaram ${qtd} opções de ${cat.name.toLowerCase()}`;
         const corpo = `Você pediu para ser avisado. ${qtd === 1 ? `${achados[0].company_name} já está` : `${qtd} fornecedores já estão`} no Casamenteiro${p.cidade ? ` para ${p.cidade}` : ""}. Veja fotos e peça orçamento grátis.`;
 
+        let enviado = false;
         if (p.user_id) {
           const { error: eNot } = await supabase
             .from("notifications")
             .insert({ user_id: p.user_id, type: "aviso_categoria", title: titulo, body: corpo, link: link.replace(appUrl(), ""), read: false });
-          if (!eNot) stats.notificacoes++;
+          if (!eNot) { stats.notificacoes++; enviado = true; }
         }
 
         let email = p.email as string | null;
@@ -108,11 +109,13 @@ Deno.serve(async (req) => {
             error_message: r.ok ? null : `[${r.status}] ${r.error}`,
             metadata: { aviso_id: p.id, category_id: p.category_id, provider: "resend" },
           });
-          if (r.ok) stats.emails++;
+          if (r.ok) { stats.emails++; enviado = true; }
           else stats.erros.push(`email ${p.id}: ${r.error}`);
         }
 
-        await supabase.from("avisos_categoria").update({ avisado_em: new Date().toISOString() }).eq("id", p.id);
+        if (!enviado) continue;
+        const { error: updateError } = await supabase.from("avisos_categoria").update({ avisado_em: new Date().toISOString() }).eq("id", p.id);
+        if (updateError) { stats.erros.push(`Não foi possível registrar o aviso ${p.id}.`); continue; }
         stats.avisados++;
       } catch (e) {
         stats.erros.push(`${p.id}: ${(e as Error).message}`);

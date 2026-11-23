@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Conferir resultados por canal: grupo/pessoa, feedback, histórico e logs, gatilhos, convites, pedidos, lembretes, vagas/categoria, autenticação e fila. Todos os pontos lidos; corrigidas confirmações indevidas, contadores, causa legível da cota e retentativas inúteis de cota. RPC de destinatários e RPCs legadas de broadcast contam inserções corretamente; nenhuma alteração de permissões/settings/registros enviados.
+  - Conferido no navegador autenticado: mensagem individual à própria conta admin aceita nos dois canais e lida no histórico; envio parcial de grupo simulado no celular com aviso permanente. Nenhum reenvio de grupo real.
+  - 20 testes passaram, incluindo cota sem retry e reenvio individual apenas no canal que falhou. Build OK. Convites, pedidos, lembretes, resposta de feedback, avisos de vagas/categoria, gatilhos e autenticação/fila conferidos pelo código, sem disparos reais desses fluxos. Aceitação de e-mail não comprova chegada à caixa de entrada.
+
 - [x] Investigar falha de comunicação: envio de 23/11 confirmado no histórico autenticado; 212 avisos na plataforma e 200 e-mails aceitos, 12 e-mails falharam por limite diário do serviço (daily_quota_exceeded). Nenhum reenvio realizado; não há erro de cadastro ou filtros para corrigir neste envio.
 
 - [x] Adicionar filtros de cadastro incompleto na comunicação com canais plataforma/e-mail e aviso editável; seleção real conferida (9 fornecedores, 212 profissionais sem documentos ou com recusas), 6 testes passaram. Nenhuma mensagem real disparada.

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { traduzirErro } from "@/lib/errorMessages";
+import { erroComunicacao } from "@/lib/comunicacao";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,7 +80,7 @@ export default function MensagemParaPessoa({ inicial }: { inicial?: string | nul
   }, [termo]);
 
   const enviar = async () => {
-    if (!para || !titulo.trim() || (!push && !email)) return;
+    if (!para || !titulo.trim() || (!push && !email) || enviando) return;
     const canais = [push && "sininho", email && "e-mail"].filter(Boolean).join(" e ");
     if (!confirm(`Enviar para ${para.nome || para.email} por ${canais}?`)) return;
     setEnviando(true);
@@ -95,16 +96,25 @@ export default function MensagemParaPessoa({ inicial }: { inicial?: string | nul
     });
     setEnviando(false);
     if (error) {
-      toast({ title: "Não foi possível enviar", description: traduzirErro(error), variant: "destructive" });
+      toast({ title: "Não foi possível enviar", description: await erroComunicacao(error), variant: "destructive" });
       return;
     }
-    const r = data as { push?: boolean; email?: boolean; emailErro?: string | null };
+    const r = data as { ok?: boolean; push?: boolean; email?: boolean; emailErro?: string | null } | null;
+    if (!r?.ok || (!r.push && !r.email)) {
+      toast({ title: "Nenhum canal confirmou o envio", variant: "destructive" });
+      return;
+    }
     const ok = [r.push && "sininho", r.email && "e-mail"].filter(Boolean).join(" e ");
     toast({
       title: `Mensagem enviada por ${ok}!`,
-      description: email && !r.email ? `O e-mail falhou: ${r.emailErro ?? "erro desconhecido"}` : undefined,
-      variant: email && !r.email ? "destructive" : undefined,
+      description: email && !r.email ? r.emailErro ?? "O e-mail não foi enviado." : push && !r.push ? "O aviso na plataforma não foi enviado." : undefined,
+      variant: (email && !r.email) || (push && !r.push) ? "destructive" : undefined,
     });
+    if ((email && !r.email) || (push && !r.push)) {
+      if (r.push) setPush(false);
+      if (r.email) setEmail(false);
+      return;
+    }
     setTitulo("");
     setMensagem("");
     setLink("");

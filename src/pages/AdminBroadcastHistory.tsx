@@ -187,6 +187,8 @@ export default function AdminBroadcastHistory() {
                         <h3 className="font-semibold">{r.title}</h3>
                         <p className="text-sm text-muted-foreground whitespace-pre-wrap">{r.body}</p>
                         {r.link && <p className="text-xs text-primary mt-1">Link: {r.link}</p>}
+                        {typeof f.plataforma === "number" && <p className="text-sm mt-2">{f.plataforma} avisos na plataforma · {f.emails || 0} e-mails aceitos · {f.falhas || 0} envios não concluídos</p>}
+                        {f.falhas > 0 && <p className="text-sm text-destructive mt-1">{f.emailErro || "Confira as falhas em E-mails enviados."} Não reenvie o grupo inteiro, para evitar duplicações.</p>}
                       </div>
                     </div>
                     {(f.city || f.category_id || f.days_max) && (

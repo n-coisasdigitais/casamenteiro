@@ -1,4 +1,5 @@
 // Envio direto pela API do Resend (sem gateway), com retentativa em falhas temporárias.
+import { cotaEmailEsgotada } from './email-errors.ts'
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails'
 
@@ -78,7 +79,7 @@ export async function sendViaResend(payload: ResendPayload, attempts = 3): Promi
     console.error(`Resend falhou [${res.status}]: ${raw}`)
 
     // Só vale retentar em rate limit / erro temporário
-    if (res.status !== 429 && res.status < 500) break
+    if (cotaEmailEsgotada(raw) || (res.status !== 429 && res.status < 500)) break
     await sleep(res.status === 429 ? 1500 * (i + 1) : 700 * (i + 1))
   }
 

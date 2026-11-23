@@ -187,9 +187,10 @@ export default function SupplierLeadsCRM({ supplierId, supplierUserId, companyNa
     await supabase.from("lead_events" as any).insert({
       quote_id: lead.quote.id, supplier_id: supplierId, tipo: "lembrete",
       created_by: supplierUserId,
-      payload: { canal: "in_app+email" },
+      payload: { canal: "in_app" },
     });
     // tenta e-mail (não bloqueia se falhar)
+    let emailEnviado = false;
     try {
       const emails: string[] = [];
       for (const uid of targetIds) {
@@ -198,16 +199,17 @@ export default function SupplierLeadsCRM({ supplierId, supplierUserId, companyNa
       }
       if (couple?.email) emails.push(couple.email);
       if (emails.length) {
-        await supabase.functions.invoke("send-transactional-email", {
+        const { data, error: emailError } = await supabase.functions.invoke("send-transactional-email", {
           body: {
             to: emails,
             subject: `${companyName || "Um fornecedor"} está aguardando seu retorno`,
             html: `<p>Olá!</p><p><strong>${companyName || "Um fornecedor"}</strong> enviou uma proposta e ainda aguarda seu retorno.</p><p>Acesse seu painel para responder.</p>`,
           },
         });
+        emailEnviado = !emailError && data?.sent === true;
       }
     } catch { /* silencioso */ }
-    toast({ title: "Lembrete enviado ao casal" });
+    toast({ title: "Lembrete enviado na plataforma", description: emailEnviado ? "O e-mail também foi aceito para envio." : "O e-mail não foi enviado; não repita o lembrete já enviado na plataforma." });
     load();
   };
 

@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { isDemoSession } from "@/lib/demoScope";
-import { filtroComunicacao, type FiltroPendencia, type SegmentoComunicacao } from "@/lib/comunicacao";
+import { erroComunicacao, filtroComunicacao, type FiltroPendencia, type SegmentoComunicacao } from "@/lib/comunicacao";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +35,7 @@ export default function AdminBroadcast() {
   const [body, setBody] = useState("");
   const [link, setLink] = useState("");
   const [sending, setSending] = useState(false);
+  const [resultado, setResultado] = useState<string | null>(null);
   const [counts, setCounts] = useState({ couples: 0, suppliers: 0, profissionais: 0, genericos: 0, all: 0 });
   const [params] = useSearchParams();
   const paraInicial = params.get("para");
@@ -81,18 +82,26 @@ export default function AdminBroadcast() {
     const canais = [push && "plataforma", email && "e-mail"].filter(Boolean).join(" e ");
     if (!confirm(`Enviar para ${destinatarios} destinatários por ${canais}?`)) return;
     setSending(true);
+    setResultado(null);
+    try {
     const { data, error } = await supabase.functions.invoke("admin-comunicacao-grupo", {
       body: { segment, pendencia: filtro, titulo: title.trim(), mensagem: body.trim(), link: link.trim() || null, push, email, demo },
     });
-    setSending(false);
-    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
+    if (error) toast({ title: "Erro", description: await erroComunicacao(error), variant: "destructive" });
     else if (data?.ok) {
-      toast({ title: `${data.plataforma} avisos na plataforma e ${data.emails} e-mails enviados`, description: data.falhas ? `${data.falhas} envios não concluídos. Confira o histórico.` : undefined, variant: data.falhas ? "destructive" : undefined });
-      if (data.falhas) return;
+      const resumo = `${data.plataforma} avisos na plataforma e ${data.emails} e-mails aceitos.${data.falhas ? ` ${data.falhas} envios não concluídos. ${data.emailErro || "Confira o histórico."} Não reenvie o grupo inteiro, para evitar duplicações.` : ""}`;
+      setResultado(resumo);
+      toast({ title: data.falhas ? "Envio parcialmente concluído" : "Envio concluído", description: resumo, variant: data.falhas ? "destructive" : undefined });
       setTitle("");
       setBody("");
       setLink("");
+    } else {
+      setResultado(data?.emailErro || "Nenhum canal confirmou o envio. Confira o histórico antes de tentar novamente.");
+      toast({ title: "Nenhuma mensagem enviada", description: data?.emailErro, variant: "destructive" });
     }
+    } catch (error) {
+      toast({ title: "Erro no envio", description: await erroComunicacao(error), variant: "destructive" });
+    } finally { setSending(false); }
   };
 
   if (!ok) return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
@@ -177,6 +186,7 @@ export default function AdminBroadcast() {
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground">{erroDestinatarios ? "Não foi possível consultar os destinatários. Atualize a página para tentar novamente." : destinatarios === null ? "Consultando destinatários…" : `${destinatarios} destinatários selecionados`}</p>
+                {resultado && <p role="status" className="text-sm border-l-2 border-primary pl-3">{resultado} <Link to="/admin/comunicacao/historico" className="underline">Ver histórico</Link></p>}
                 <div>
                   <Label htmlFor="title">Título *</Label>
                   <Input

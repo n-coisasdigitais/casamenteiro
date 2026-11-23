@@ -95,7 +95,9 @@ export default function PublishJobDialog({
     toast({ title: isEdit ? "Vaga atualizada!" : "Vaga publicada!" });
     // Avisa por e-mail os profissionais com a mesma função e cidade
     if (!isEdit && novoId && pub) {
-      supabase.functions.invoke("send-job-match-emails", { body: { job_id: novoId } }).catch(() => {});
+      supabase.functions.invoke("send-job-match-emails", { body: { job_id: novoId } }).then(({ data, error }) => {
+        if (error || (data?.sent ?? 0) < (data?.candidatos ?? 0)) toast({ title: "Vaga publicada, mas alguns avisos por e-mail não foram enviados", description: "Não publique a vaga novamente. Os profissionais continuam podendo encontrá-la na plataforma.", variant: "destructive" });
+      }).catch(() => toast({ title: "Vaga publicada; envio dos avisos não confirmado", variant: "destructive" }));
     }
     setOpen(false);
     setFuncao(""); setData(""); setHoraIni(""); setHoraFim(""); setLocal(""); setCidade(""); setEstado(""); setValor(""); setDescricao("");

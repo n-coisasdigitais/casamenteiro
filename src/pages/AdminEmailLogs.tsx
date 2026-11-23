@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Clock, AlertTriangle, Ban } from "lucide-react";
+import { explicarErroEmail } from "@/lib/comunicacao";
 
 type Row = {
   id: string;
@@ -154,7 +155,7 @@ export default function AdminEmailLogs() {
                   <td className="p-2">{r.template_name}</td>
                   <td className="p-2">{r.recipient_email}</td>
                   <td className="p-2 max-w-md">
-                    {r.error_message ? <span className="text-destructive text-xs">{r.error_message}</span> : <span className="text-muted-foreground text-xs">—</span>}
+                    {r.error_message ? <span className="text-destructive text-xs" title={r.error_message}>{explicarErroEmail(r.error_message)}</span> : <span className="text-muted-foreground text-xs">—</span>}
                   </td>
                 </tr>
               );

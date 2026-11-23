@@ -11,3 +11,4 @@
 - Help center content: questions live in faq_itens; hero/steps/feature cards live in system_settings key ajuda_conteudo; value placeholders are filled by the pure src/lib/ajudaTexto.ts (shared by page, admin, prerender and tests) so no price or fee is hardcoded.
 - Feedback administration uses role-checked RPCs over suporte_reportes; keep list, count and update together so reports and responses remain private.
 - Manual group communication counts and sends through admin_destinatarios_comunicacao; reuse supplier approval requirements and staff onboarding/document states without changing approval rules.
+- Email quota errors use the pure shared email-errors helper in sending and admin displays; do not retry exhausted quotas as transient rate limits or encourage resending completed channels.

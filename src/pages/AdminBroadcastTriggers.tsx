@@ -96,12 +96,16 @@ export default function AdminBroadcastTriggers() {
 
   const executarAgora = async () => {
     toast({ title: "Disparando cron...", description: "Aguarde alguns segundos." });
-    const { error } = await supabase.functions.invoke("broadcast-cron");
+    const { data, error } = await supabase.functions.invoke("broadcast-cron");
     if (error) {
       toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
       return;
     }
-    toast({ title: "Cron executado", description: "Veja as notificações geradas." });
+    if (!data?.ok || data.erros?.length) {
+      toast({ title: "Execução não concluída integralmente", description: `${data?.notificacoes || 0} avisos enviados. Confira os resultados antes de repetir.`, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Execução concluída", description: `${data.notificacoes} avisos enviados na plataforma.` });
   };
 
   return (

@@ -336,11 +336,13 @@ export default function WeddingGuests() {
     const ids = Array.from(selected);
     setSendingEmails(true);
     try {
-      const { error } = await supabase.functions.invoke("send-invite-emails", {
+      const { data, error } = await supabase.functions.invoke("send-invite-emails", {
         body: { couple_id: coupleId, guest_ids: ids },
       });
       if (error) throw error;
-      toast({ title: `Convites enviados`, description: `${ids.length} convite(s) entraram na fila de envio.` });
+      if (typeof data?.sent !== "number") throw new Error("Não foi possível confirmar o envio dos convites.");
+      const falhas = ids.length - data.sent;
+      toast({ title: `${data.sent} convite(s) enviados`, description: falhas ? `${falhas} convite(s) não enviados. Confira os convidados sem envio antes de tentar novamente.` : undefined, variant: falhas ? "destructive" : undefined });
       setSelected(new Set());
       loadData(coupleId);
     } catch (e: any) {

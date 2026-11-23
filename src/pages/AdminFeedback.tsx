@@ -186,7 +186,7 @@ function ItemFeedback({ item, expandido, onAlternar, onMudou }: { item: Item; ex
     setEnviando(false);
     if (e2) toast({ title: "Resposta enviada, mas o status não mudou", description: traduzirErro(e2), variant: "destructive" });
     else {
-      toast({ title: envio.email && envio.push ? "Resposta enviada por e-mail e no sininho!" : envio.email ? "Resposta enviada por e-mail." : "Resposta enviada no sininho; o e-mail não foi enviado." });
+      toast({ title: envio.email && envio.push ? "Resposta enviada por e-mail e no sininho!" : envio.email ? "Resposta enviada por e-mail." : "Resposta enviada no sininho; o e-mail não foi enviado.", description: !envio.email ? envio.emailErro : undefined, variant: !envio.email ? "destructive" : undefined });
       setResposta("");
       onMudou();
     }

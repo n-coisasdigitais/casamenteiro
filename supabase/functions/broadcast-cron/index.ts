@@ -60,20 +60,25 @@ Deno.serve(async (req) => {
 
         // Cria notificação na plataforma
         if (g.canais?.includes("platform")) {
-          await supabase.from("notifications").insert({
+          const { error: notificationError } = await supabase.from("notifications").insert({
             user_id: alvo.user_id,
             type: "broadcast_trigger",
             title: g.titulo,
             body: g.corpo,
             link: g.link,
           });
+          if (notificationError) { stats.erros.push("Não foi possível criar um aviso na plataforma."); continue; }
+        } else {
+          stats.erros.push("Nenhum canal de envio disponível para este gatilho.");
+          continue;
         }
         // Email é tratado em outro fluxo (queue) — registramos para histórico
-        await supabase.from("broadcast_gatilho_execucoes").insert({
+        const { error: executionError } = await supabase.from("broadcast_gatilho_execucoes").insert({
           gatilho_id: g.id,
           user_id: alvo.user_id,
           contexto: alvo.contexto || {},
         });
+        if (executionError) stats.erros.push("Aviso enviado, mas não foi possível registrar a execução.");
         stats.notificacoes++;
       }
     }
