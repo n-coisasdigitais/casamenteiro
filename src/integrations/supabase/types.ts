@@ -5288,6 +5288,9 @@ export type Database = {
         Row: {
           accepts_idle_dates: boolean
           aparece_na_home: boolean
+          atende_exterior: boolean
+          atendimento_formas: string[]
+          atendimento_modo: string
           categoria_outros_descricao: string | null
           category_id: string | null
           cidades_atendidas: Json
@@ -5329,6 +5332,8 @@ export type Database = {
           slug: string | null
           state: string | null
           status: Database["public"]["Enums"]["supplier_status"]
+          taxa_deslocamento: string | null
+          taxa_deslocamento_valor: number | null
           trial_ends_at: string | null
           updated_at: string
           user_id: string
@@ -5338,6 +5343,9 @@ export type Database = {
         Insert: {
           accepts_idle_dates?: boolean
           aparece_na_home?: boolean
+          atende_exterior?: boolean
+          atendimento_formas?: string[]
+          atendimento_modo?: string
           categoria_outros_descricao?: string | null
           category_id?: string | null
           cidades_atendidas?: Json
@@ -5379,6 +5387,8 @@ export type Database = {
           slug?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
+          taxa_deslocamento?: string | null
+          taxa_deslocamento_valor?: number | null
           trial_ends_at?: string | null
           updated_at?: string
           user_id: string
@@ -5388,6 +5398,9 @@ export type Database = {
         Update: {
           accepts_idle_dates?: boolean
           aparece_na_home?: boolean
+          atende_exterior?: boolean
+          atendimento_formas?: string[]
+          atendimento_modo?: string
           categoria_outros_descricao?: string | null
           category_id?: string | null
           cidades_atendidas?: Json
@@ -5429,6 +5442,8 @@ export type Database = {
           slug?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
+          taxa_deslocamento?: string | null
+          taxa_deslocamento_valor?: number | null
           trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
@@ -5876,6 +5891,15 @@ export type Database = {
         Returns: string
       }
       admin_feedback_abertos: { Args: never; Returns: number }
+      admin_fotos_fornecedores: {
+        Args: never
+        Returns: {
+          atualizado: string
+          bytes: number
+          nome: string
+          tipo: string
+        }[]
+      }
       admin_lista_match: {
         Args: never
         Returns: {
