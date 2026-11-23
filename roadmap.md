@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Conferir pontos compartilhados de feedback e categorias; corrigir falhas restantes de consulta, envio e apresentação sem alterar registros reais.
+
 - [x] Corrigir carregamento e envio de feedback: consulta e status conferidos no admin; envio confirmado em conta comum e admin; 9 testes passaram.
 - [x] Ajustar margens de Categorias sugeridas: conferido no celular e computador, sem corte lateral.
 

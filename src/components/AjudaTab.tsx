@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { traduzirErro } from "@/lib/errorMessages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LifeBuoy } from "lucide-react";
@@ -28,14 +30,18 @@ const STATUS_LABEL: Record<Reporte["status"], string> = {
 export default function AjudaTab({ origem }: { origem: OrigemFeedback }) {
   const { user } = useAuth();
   const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [erro, setErro] = useState<string | null>(null);
 
   const carregar = async () => {
     if (!user) return;
-    const { data } = await supabase
+    setErro(null);
+    const { data, error } = await supabase
       .from("suporte_reportes")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20);
+    if (error) { setErro(traduzirErro(error)); return; }
     setReportes((data as unknown as Reporte[]) || []);
   };
 
@@ -61,7 +67,13 @@ export default function AjudaTab({ origem }: { origem: OrigemFeedback }) {
         </CardContent>
       </Card>
 
-      {reportes.length > 0 && (
+      {erro && (
+        <div role="alert" className="space-y-2 text-sm">
+          <p>Não foi possível carregar seus envios. {erro}</p>
+          <Button variant="outline" onClick={carregar}>Tentar novamente</Button>
+        </div>
+      )}
+      {reportes.length > 0 && !erro && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Seus envios</CardTitle>

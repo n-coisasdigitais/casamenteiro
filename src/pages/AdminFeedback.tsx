@@ -61,14 +61,19 @@ export default function AdminFeedback() {
   const [status, setStatus] = useState<Status | "todos">("aberto");
   const [tipo, setTipo] = useState<Tipo | "todos">("todos");
   const [aberto, setAberto] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
   const carregar = async () => {
     setCarregando(true);
+    setErro(null);
     const { data, error } = await supabase.rpc("admin_listar_feedback" as never, {
       _status: status === "todos" ? null : status,
       _tipo: tipo === "todos" ? null : tipo,
     } as never);
-    if (error) toast({ title: "Erro ao carregar", description: traduzirErro(error), variant: "destructive" });
+    if (error) {
+      setErro(traduzirErro(error));
+      toast({ title: "Erro ao carregar", description: traduzirErro(error), variant: "destructive" });
+    }
     setItens(((data as unknown) as Item[]) || []);
     setCarregando(false);
   };
@@ -106,6 +111,11 @@ export default function AdminFeedback() {
         <div className="space-y-2">
           {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
         </div>
+      ) : erro ? (
+        <div role="alert" className="space-y-3">
+          <p className="text-sm">Não foi possível carregar os feedbacks. {erro}</p>
+          <Button variant="outline" onClick={carregar}>Tentar novamente</Button>
+        </div>
       ) : itens.length === 0 ? (
         <Card><CardContent className="p-8 text-center text-muted-foreground">Nada por aqui.</CardContent></Card>
       ) : (
@@ -131,11 +141,15 @@ function ItemFeedback({ item, expandido, onAlternar, onMudou }: { item: Item; ex
   const [resolver, setResolver] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [anexoUrl, setAnexoUrl] = useState<string | null>(null);
+  const [erroAnexo, setErroAnexo] = useState(false);
   const t = TIPO[item.tipo] ?? TIPO.erro;
 
   useEffect(() => {
     if (!expandido || !item.anexo_path || anexoUrl) return;
-    supabase.storage.from("suporte").createSignedUrl(item.anexo_path, 60 * 30).then(({ data }) => setAnexoUrl(data?.signedUrl ?? null));
+    supabase.storage.from("suporte").createSignedUrl(item.anexo_path, 60 * 30).then(({ data, error }) => {
+      setAnexoUrl(data?.signedUrl ?? null);
+      setErroAnexo(Boolean(error || !data?.signedUrl));
+    });
   }, [expandido, item.anexo_path, anexoUrl]);
 
   const anexoEhImagem = useMemo(() => /\.(png|jpe?g|webp|gif|heic)$/i.test(item.anexo_path || ""), [item.anexo_path]);
@@ -149,7 +163,7 @@ function ItemFeedback({ item, expandido, onAlternar, onMudou }: { item: Item; ex
   const responder = async () => {
     if (!resposta.trim()) return;
     setEnviando(true);
-    const { error: e1 } = await supabase.functions.invoke("admin-mensagem-pessoa", {
+    const { data: envio, error: e1 } = await supabase.functions.invoke("admin-mensagem-pessoa", {
       body: {
         user_id: item.user_id,
         titulo: `Sobre o seu ${item.tipo === "erro" ? "reporte" : "feedback"}: ${item.assunto}`.slice(0, 120),
@@ -159,9 +173,9 @@ function ItemFeedback({ item, expandido, onAlternar, onMudou }: { item: Item; ex
         email: true,
       },
     });
-    if (e1) {
+    if (e1 || !envio?.ok || (!envio.push && !envio.email)) {
       setEnviando(false);
-      toast({ title: "Não foi possível enviar a resposta", description: traduzirErro(e1), variant: "destructive" });
+      toast({ title: "Não foi possível enviar a resposta", description: e1 ? traduzirErro(e1) : "Nenhum canal confirmou o envio. Tente novamente.", variant: "destructive" });
       return;
     }
     const { error: e2 } = await supabase.rpc("admin_atualizar_feedback" as never, {
@@ -172,7 +186,7 @@ function ItemFeedback({ item, expandido, onAlternar, onMudou }: { item: Item; ex
     setEnviando(false);
     if (e2) toast({ title: "Resposta enviada, mas o status não mudou", description: traduzirErro(e2), variant: "destructive" });
     else {
-      toast({ title: "Resposta enviada por e-mail e no sininho!" });
+      toast({ title: envio.email && envio.push ? "Resposta enviada por e-mail e no sininho!" : envio.email ? "Resposta enviada por e-mail." : "Resposta enviada no sininho; o e-mail não foi enviado." });
       setResposta("");
       onMudou();
     }
@@ -209,7 +223,9 @@ function ItemFeedback({ item, expandido, onAlternar, onMudou }: { item: Item; ex
           {item.anexo_path && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1"><Paperclip className="h-3.5 w-3.5" /> Anexo</p>
-              {!anexoUrl ? (
+              {erroAnexo ? (
+                <p className="text-sm text-muted-foreground">Não foi possível abrir o anexo.</p>
+              ) : !anexoUrl ? (
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               ) : anexoEhImagem ? (
                 <a href={anexoUrl} target="_blank" rel="noreferrer">

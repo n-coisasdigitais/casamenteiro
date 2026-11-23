@@ -81,7 +81,7 @@ export default function CategoryFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{duplicate ? "Duplicar categoria" : data.id ? "Editar categoria" : "Nova categoria"}</DialogTitle>
         </DialogHeader>

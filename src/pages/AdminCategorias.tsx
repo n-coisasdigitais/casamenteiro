@@ -57,12 +57,12 @@ export default function AdminCategorias() {
 
   return (
     <div className="px-4 md:px-8 py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Categorias</h1>
           <p className="text-sm text-muted-foreground">Gerencie categorias e os campos do cadastro de fornecedores.</p>
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Nova categoria</Button>
+        <Button className="self-start shrink-0" onClick={openNew}><Plus className="h-4 w-4 mr-1" />Nova categoria</Button>
       </div>
 
       {loading ? (

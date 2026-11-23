@@ -66,10 +66,10 @@ export default function FormFeedback({
   const [anexo, setAnexo] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  const t = TIPOS_FEEDBACK.find((x) => x.valor === tipo)!;
+  const t = TIPOS_FEEDBACK.find((x) => x.valor === tipo) ?? TIPOS_FEEDBACK[0];
 
   const enviar = async () => {
-    if (!user) return;
+    if (!user || enviando) return;
     if (!assunto.trim() || !descricao.trim()) {
       toast({ title: "Preencha o assunto e a descrição", variant: "destructive" });
       return;
@@ -87,7 +87,7 @@ export default function FormFeedback({
         const { error: upErr } = await supabase.storage.from("suporte").upload(anexoPath, anexo);
         if (upErr) throw upErr;
       }
-      const { error } = await supabase.functions.invoke("reportar-erro", {
+      const { data, error } = await supabase.functions.invoke("reportar-erro", {
         body: {
           origem,
           tipo,
@@ -99,9 +99,12 @@ export default function FormFeedback({
         },
       });
       if (error) throw error;
+      if (!data?.ok || !data.id) throw new Error("Não foi possível confirmar o registro do feedback. Tente novamente.");
       toast({
         title: tipo === "erro" ? "Reporte enviado!" : "Obrigado pela ideia!",
-        description: "A equipe recebe na hora e responde por e-mail.",
+        description: data.emailEnviado
+          ? "Seu relato foi registrado e enviado por e-mail à equipe."
+          : "Seu relato foi registrado no painel da equipe, mas o aviso por e-mail não foi enviado.",
       });
       setAssunto("");
       setDescricao("");
