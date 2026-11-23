@@ -6,26 +6,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { buildWhatsAppLink } from "@/lib/phone";
 import { demoValues } from "@/lib/demoScope";
+import { coordenadaDe } from "@/lib/atendimento";
 
 export type Estilo = "intimista" | "elegante" | "grandioso";
-
-// ── Cache de coordenadas para Haversine ──
-let _coordCache: Map<string, { lat: number; lng: number; estado: string }> | null = null;
-async function getCoordCache() {
-  if (_coordCache) return _coordCache;
-  const { data } = await supabase
-    .from("cidades_coordenadas")
-    .select("cidade, estado, lat, lng");
-  _coordCache = new Map();
-  for (const r of data || []) {
-    _coordCache.set((r as any).cidade.toLowerCase(), {
-      lat: Number((r as any).lat),
-      lng: Number((r as any).lng),
-      estado: (r as any).estado,
-    });
-  }
-  return _coordCache;
-}
 
 // Distância em km entre dois pontos lat/lng (Haversine)
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -33,9 +16,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   const toRad = (x: number) => (x * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
@@ -78,16 +59,37 @@ const CATEGORIAS_ICONS: Record<string, string> = {
 
 const DISTRIBUICAO: Record<Estilo, Record<string, number>> = {
   intimista: {
-    espaco: 0.18, buffet: 0.32, fotografo: 0.12, decoracao: 0.10,
-    banda: 0.10, cerimonialista: 0.06, trajes: 0.06, maquiagem: 0.04, convites: 0.02,
+    espaco: 0.18,
+    buffet: 0.32,
+    fotografo: 0.12,
+    decoracao: 0.1,
+    banda: 0.1,
+    cerimonialista: 0.06,
+    trajes: 0.06,
+    maquiagem: 0.04,
+    convites: 0.02,
   },
   elegante: {
-    espaco: 0.20, buffet: 0.30, fotografo: 0.11, decoracao: 0.12,
-    banda: 0.10, cerimonialista: 0.07, trajes: 0.05, maquiagem: 0.03, convites: 0.02,
+    espaco: 0.2,
+    buffet: 0.3,
+    fotografo: 0.11,
+    decoracao: 0.12,
+    banda: 0.1,
+    cerimonialista: 0.07,
+    trajes: 0.05,
+    maquiagem: 0.03,
+    convites: 0.02,
   },
   grandioso: {
-    espaco: 0.22, buffet: 0.28, fotografo: 0.10, decoracao: 0.13,
-    banda: 0.12, cerimonialista: 0.07, trajes: 0.04, maquiagem: 0.02, convites: 0.02,
+    espaco: 0.22,
+    buffet: 0.28,
+    fotografo: 0.1,
+    decoracao: 0.13,
+    banda: 0.12,
+    cerimonialista: 0.07,
+    trajes: 0.04,
+    maquiagem: 0.02,
+    convites: 0.02,
   },
 };
 
@@ -161,9 +163,7 @@ function faixaPreco(s: any, convidados: number): "$" | "$$" | "$$$" {
 function precoBase(s: any, convidados: number): number {
   const a = s.price_min;
   const b = s.price_max;
-  let unit = a != null && b != null
-    ? (Number(a) + Number(b)) / 2
-    : Number(a ?? b ?? 0);
+  let unit = a != null && b != null ? (Number(a) + Number(b)) / 2 : Number(a ?? b ?? 0);
   if (s.pricing_model === "por_pessoa") unit = unit * Math.max(1, convidados);
   return Math.round(unit);
 }
@@ -178,7 +178,7 @@ function enriquecer(s: any, verba: number, convidados: number, aceitaOciosas: bo
     ? Math.round(
         s.price_min != null && s.price_max != null
           ? (Number(s.price_min) + Number(s.price_max)) / 2
-          : Number(s.price_min ?? s.price_max ?? 0)
+          : Number(s.price_min ?? s.price_max ?? 0),
       )
     : null;
   const fone = "";
@@ -221,10 +221,10 @@ async function buscarFornecedores(
   const { data, error } = await supabase
     .from("suppliers")
     .select(
-      "id, company_name, city, state, profile_photo_url, price_min, price_max, featured, rating, accepts_idle_dates, idle_discount_pct, status, category_id, guest_min, guest_max, cidades_atendidas, raio_atendimento_km, lat, lng, pricing_model",
+      "id, company_name, city, state, profile_photo_url, price_min, price_max, featured, rating, accepts_idle_dates, idle_discount_pct, status, category_id, guest_min, guest_max, cidades_atendidas, raio_atendimento_km, lat, lng, pricing_model, atendimento_modo",
     )
     .eq("status", "approved")
-        .in("is_demo", demoValues())
+    .in("is_demo", demoValues())
     .eq("category_id", catId)
     .limit(100);
 
@@ -233,8 +233,7 @@ async function buscarFornecedores(
   const cidadeBusca = (cidade || "").trim().toLowerCase();
   let buscaCoord: { lat: number; lng: number; estado: string } | null = null;
   if (cidadeBusca) {
-    const cache = await getCoordCache();
-    buscaCoord = cache.get(cidadeBusca) || null;
+    buscaCoord = await coordenadaDe(cidade);
   }
 
   const matchCidade = (s: any): boolean => {
@@ -253,6 +252,8 @@ async function buscarFornecedores(
     if (buscaCoord && s.state === buscaCoord.estado && s.raio_atendimento_km > 0) {
       return true;
     }
+    // 5) atende todo o Brasil (online, viagem ou envio)
+    if (s.atendimento_modo === "nacional") return true;
     return false;
   };
 
@@ -260,9 +261,10 @@ async function buscarFornecedores(
     if (!matchCidade(s)) return false;
     if (s.guest_min && convidados < s.guest_min) return false;
     if (s.guest_max && convidados > s.guest_max) return false;
-    const fator = aceitaOciosas && s.accepts_idle_dates && (s.idle_discount_pct || 0) > 0
-      ? 1 - Number(s.idle_discount_pct) / 100
-      : 1;
+    const fator =
+      aceitaOciosas && s.accepts_idle_dates && (s.idle_discount_pct || 0) > 0
+        ? 1 - Number(s.idle_discount_pct) / 100
+        : 1;
     const base = precoBase(s, convidados);
     if (base > 0 && Math.round(base * fator) > verba * 1.15) return false;
     return true;
@@ -281,7 +283,12 @@ async function buscarFornecedores(
   return filtrados.slice(0, 3).map((s: any) => enriquecer(s, verba, convidados, aceitaOciosas));
 }
 
-function gerarAlertas(plano: Record<string, CategoriaPlano>, semFornecedor: string[], sobra: number, aceitaOciosas: boolean): Alerta[] {
+function gerarAlertas(
+  plano: Record<string, CategoriaPlano>,
+  semFornecedor: string[],
+  sobra: number,
+  aceitaOciosas: boolean,
+): Alerta[] {
   const alertas: Alerta[] = [];
 
   if (semFornecedor.length > 0) {
@@ -322,12 +329,18 @@ function gerarAlertas(plano: Record<string, CategoriaPlano>, semFornecedor: stri
 }
 
 async function salvarSimulacao(input: {
-  orcamento: number; convidados: number; cidade: string; estilo: Estilo; aceitaOciosas: boolean;
+  orcamento: number;
+  convidados: number;
+  cidade: string;
+  estilo: Estilo;
+  aceitaOciosas: boolean;
   resultado?: any;
   categoriasSelecionadas?: string[] | null;
 }): Promise<string | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     let coupleId: string | null = null;
     if (user) {
       const { data: c } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
@@ -449,7 +462,11 @@ export async function calcularSimulacao(
 
   // salva snapshot
   const simulacaoId = await salvarSimulacao({
-    orcamento, convidados, cidade, estilo: estiloNorm, aceitaOciosas,
+    orcamento,
+    convidados,
+    cidade,
+    estilo: estiloNorm,
+    aceitaOciosas,
     resultado: { resumo, plano, alertas },
     categoriasSelecionadas: categoriasSelecionadas || null,
   });
@@ -512,7 +529,9 @@ export async function criarPlano(
   dataEvento: string,
   fornecedoresSelecionados?: Set<string> | null,
 ): Promise<{ couple_id: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário precisa estar logado para criar um plano.");
 
   const { data: couple, error: cErr } = await supabase
@@ -628,9 +647,10 @@ export async function criarPlano(
   const csRowsMap = new Map<string, any>();
   for (const cat of Object.values(resultado.plano)) {
     // Se houver subset, usa apenas os escolhidos; senão, usa o primeiro sugerido
-    const escolhidos = fornecedoresSelecionados && fornecedoresSelecionados.size > 0
-      ? cat.fornecedores.filter((f) => fornecedoresSelecionados.has(f.id))
-      : cat.fornecedores.slice(0, 1);
+    const escolhidos =
+      fornecedoresSelecionados && fornecedoresSelecionados.size > 0
+        ? cat.fornecedores.filter((f) => fornecedoresSelecionados.has(f.id))
+        : cat.fornecedores.slice(0, 1);
     for (const f of escolhidos) {
       if (csRowsMap.has(f.id)) continue;
       const catId = catIdMap.get(cat.slug) || null;
