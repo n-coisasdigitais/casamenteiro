@@ -2,7 +2,8 @@ import { useRef, useState } from "react";
 import { linkFornecedor } from "@/lib/linkFornecedor";
 import LogoFornecedor from "@/components/supplier/LogoFornecedor";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Heart, MapPin, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Globe2, Heart, MapPin, Star } from "lucide-react";
+import { seloAtendimento } from "@/lib/atendimento";
 import { textoPreco, type FornecedorVitrine } from "@/lib/vitrine";
 
 export default function CardFornecedor({
@@ -27,7 +28,8 @@ export default function CardFornecedor({
   const trilho = useRef<HTMLDivElement>(null);
   const preco = textoPreco(f);
   const temNota = !!f.rating && Number(f.rating) > 0 && !!f.review_count;
-  const local = [f.city, f.state].filter(Boolean).join(", ");
+  const nacional = seloAtendimento(f);
+  const local = nacional || [f.city, f.state].filter(Boolean).join(", ");
 
   const mover = (e: React.MouseEvent, d: number) => {
     e.preventDefault();
@@ -50,11 +52,21 @@ export default function CardFornecedor({
           }}
         >
           {fotos.map((u, k) => (
-            <img key={u + k} src={u} alt={k === 0 ? f.company_name : ""} loading={k === 0 ? "eager" : "lazy"} draggable={false} />
+            <img
+              key={u + k}
+              src={u}
+              alt={k === 0 ? f.company_name : ""}
+              loading={k === 0 ? "eager" : "lazy"}
+              draggable={false}
+            />
           ))}
         </div>
         {destaque && <span className="vt-tagc">Destaque</span>}
-        {selo && <span className="vt-tagc" style={{ top: "auto", bottom: 10, background: "var(--vt-ink)" }}>{selo}</span>}
+        {selo && (
+          <span className="vt-tagc" style={{ top: "auto", bottom: 10, background: "var(--vt-ink)" }}>
+            {selo}
+          </span>
+        )}
         <button
           type="button"
           className={`vt-coracao ${favorito ? "on" : ""}`}
@@ -107,12 +119,14 @@ export default function CardFornecedor({
           </span>
         ) : (
           <>
-            <MapPin className="h-3.5 w-3.5 flex-none" />
+            {nacional ? <Globe2 className="h-3.5 w-3.5 flex-none" /> : <MapPin className="h-3.5 w-3.5 flex-none" />}
             <span className="truncate">{local || "Cidade não informada"}</span>
           </>
         )}
       </div>
-      {mostrarDescricao && f.description && <p className="vt-clamp2 -mt-1 text-[13.5px] text-[var(--vt-body)]">{f.description}</p>}
+      {mostrarDescricao && f.description && (
+        <p className="vt-clamp2 -mt-1 text-[13.5px] text-[var(--vt-body)]">{f.description}</p>
+      )}
       <div className="-mt-1 text-sm">
         {preco ? (
           <>
