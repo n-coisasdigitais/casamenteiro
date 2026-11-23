@@ -5,10 +5,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
-import { ArrowLeft, ExternalLink, FileText, Mail, Phone, Search, ShieldCheck, Star } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  ExternalLink,
+  FileText,
+  Mail,
+  Phone,
+  Search,
+  ShieldCheck,
+  Star,
+  X,
+} from "lucide-react";
 import { TIPOS_DOC, verificacaoLabel } from "@/components/staff/StaffDocumentsTab";
 import { appStatusLabel } from "@/lib/staff";
 import { semDemo } from "@/lib/demoScope";
+import ArquivoViewerDialog, { type ArquivoView } from "@/components/staff/ArquivoViewerDialog";
+import { requisitosVerificacao } from "@/lib/staffVerificacao";
 
 type Filtro = "todos" | "em_analise" | "nao_enviado" | "verificado" | "rejeitado";
 
@@ -34,7 +48,14 @@ const docTom = (s: string) => (s === "aprovado" ? "cz-ok" : s === "rejeitado" ? 
 
 function Avatar({ s, i, size = 36 }: { s: any; i: number; size?: number }) {
   if (s.foto_url)
-    return <img src={s.foto_url} alt="" className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />;
+    return (
+      <img
+        src={s.foto_url}
+        alt=""
+        className="shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
   return (
     <span
       className="grid shrink-0 place-items-center rounded-full text-xs font-extrabold text-white"
@@ -51,11 +72,12 @@ export default function AdminProfissionais() {
   const [docs, setDocs] = useState<Record<string, any[]>>({});
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
-  const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [filtro, setFiltro] = useState<Filtro>("em_analise");
   const [selId, setSelId] = useState<string | null>(null);
   const [extra, setExtra] = useState<{ apps: any[]; reviews: any[] } | null>(null);
   const [obs, setObs] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [ver, setVer] = useState<(ArquivoView & { doc?: any }) | null>(null);
 
   const load = async () => {
     const [{ data }, { data: profiles }] = await Promise.all([
@@ -65,18 +87,27 @@ export default function AdminProfissionais() {
     const userIds = new Set((profiles || []).map((p: any) => p.user_id));
     const scopedRows = (data || []).filter((row: any) => userIds.has(row.user_id));
     setRows(scopedRows);
-    const { data: dd } = await (supabase.from("staff_documents" as any) as any).select("*").order("created_at", { ascending: false });
+    const { data: dd } = await (supabase.from("staff_documents" as any) as any)
+      .select("*")
+      .order("created_at", { ascending: false });
     const map: Record<string, any[]> = {};
     const staffIds = new Set(scopedRows.map((row: any) => row.id));
-    (dd || []).filter((d: any) => staffIds.has(d.staff_id)).forEach((d: any) => {
-      (map[d.staff_id] ||= []).push(d);
-    });
+    (dd || [])
+      .filter((d: any) => staffIds.has(d.staff_id))
+      .forEach((d: any) => {
+        (map[d.staff_id] ||= []).push(d);
+      });
     setDocs(map);
     setCarregando(false);
+    return scopedRows;
   };
 
   useEffect(() => {
-    load();
+    // abre na fila de verificação; se não houver ninguém aguardando, mostra todos
+    load().then((r) => {
+      if (!r.some((x: any) => x.verificacao_status === "em_analise")) setFiltro("todos");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sel = useMemo(() => rows.find((r) => r.id === selId) || null, [rows, selId]);
@@ -104,42 +135,95 @@ export default function AdminProfissionais() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selId]);
 
-  const abrir = async (d: any) => {
-    const { data, error } = await supabase.storage.from("staff-docs").createSignedUrl(d.file_path, 60);
-    if (error || !data) return toast({ title: "Erro ao abrir arquivo", variant: "destructive" });
-    window.open(data.signedUrl, "_blank");
-  };
+  // documento abre em modal, sem sair da página
+  const abrir = (d: any) =>
+    setVer({
+      titulo: docTipo(d.tipo),
+      subtitulo: `${d.file_name || "arquivo"} · enviado em ${dataBR(d.created_at)}`,
+      file_path: d.file_path,
+      file_name: d.file_name,
+      doc: d,
+    });
 
   const decidirDoc = async (d: any, novo: "aprovado" | "rejeitado") => {
     const { error } = await (supabase.from("staff_documents" as any) as any).update({ status: novo }).eq("id", d.id);
     if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
+    setVer((v) => (v?.doc?.id === d.id ? null : v));
     load();
   };
 
   const decidirPerfil = async (novo: "verificado" | "rejeitado") => {
     if (!sel) return;
+    if (novo === "rejeitado" && !obs.trim()) {
+      return toast({
+        title: "Diga o que precisa ajustar",
+        description: "A observação aparece para o profissional corrigir e reenviar.",
+        variant: "destructive",
+      });
+    }
     setSalvando(true);
+    // ao verificar, os documentos ainda pendentes ficam aprovados junto
+    if (novo === "verificado") {
+      const pendentes = (docs[sel.id] || []).filter((d) => d.status === "pendente").map((d) => d.id);
+      if (pendentes.length) {
+        const { error: eDocs } = await (supabase.from("staff_documents" as any) as any)
+          .update({ status: "aprovado" })
+          .in("id", pendentes);
+        if (eDocs) {
+          setSalvando(false);
+          return toast({
+            title: "Erro ao aprovar documentos",
+            description: traduzirErro(eDocs),
+            variant: "destructive",
+          });
+        }
+      }
+    }
     const { error } = await (supabase.from("staff_profiles" as any) as any)
       .update({
         verificacao_status: novo,
         verificado_em: novo === "verificado" ? new Date().toISOString() : null,
-        verificacao_obs: obs.trim() || null,
+        verificacao_obs: novo === "rejeitado" ? obs.trim() : obs.trim() || null,
       })
       .eq("id", sel.id);
     setSalvando(false);
     if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
-    toast({ title: novo === "verificado" ? "Profissional verificado" : "Verificação recusada" });
+
+    // volta para a fila de quem está aguardando verificação
+    const restantes = rows.filter((r) => r.id !== sel.id && statusDe(r) === "em_analise").length;
+    toast({
+      title: novo === "verificado" ? `${sel.nome.split(" ")[0]} verificado(a)` : "Verificação recusada",
+      description: restantes ? `${restantes} aguardando na fila.` : "Fila de verificação zerada.",
+    });
+    setSelId(null);
+    setFiltro(restantes ? "em_analise" : "todos");
+    setBusca("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
     load();
   };
 
   const statusDe = (r: any) => r.verificacao_status || "nao_enviado";
   const conta = (f: Filtro) => (f === "todos" ? rows.length : rows.filter((r) => statusDe(r) === f).length);
-  const filtradas = rows.filter((r) => {
-    const t = busca.toLowerCase();
-    const okBusca =
-      !t || [r.nome, r.cidade, r.email, r.telefone, ...(r.funcoes || [])].some((v) => String(v || "").toLowerCase().includes(t));
-    return okBusca && (filtro === "todos" || statusDe(r) === filtro);
-  });
+  const filtradas = rows
+    .filter((r) => {
+      const t = busca.toLowerCase();
+      const okBusca =
+        !t ||
+        [r.nome, r.cidade, r.email, r.telefone, ...(r.funcoes || [])].some((v) =>
+          String(v || "")
+            .toLowerCase()
+            .includes(t),
+        );
+      return okBusca && (filtro === "todos" || statusDe(r) === filtro);
+    })
+    // na fila, quem enviou primeiro aparece primeiro
+    .sort((a, b) =>
+      filtro === "em_analise"
+        ? String(a.verificacao_enviada_em || a.updated_at || "").localeCompare(
+            String(b.verificacao_enviada_em || b.updated_at || ""),
+          )
+        : 0,
+    );
 
   const filtros: { k: Filtro; l: string }[] = [
     { k: "todos", l: "Todos" },
@@ -150,6 +234,8 @@ export default function AdminProfissionais() {
   ];
 
   const docsSel = sel ? docs[sel.id] || [] : [];
+  const reqSel = sel ? requisitosVerificacao(sel, docsSel) : [];
+  const faltamSel = reqSel.filter((r) => !r.ok);
   const idxSel = sel ? rows.findIndex((r) => r.id === sel.id) : 0;
 
   return (
@@ -218,25 +304,42 @@ export default function AdminProfissionais() {
                   type="button"
                   onClick={() => setSelId(s.id)}
                   className="cz-row flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
-                  style={{ background: ativo ? "#fbf3ec" : undefined, boxShadow: ativo ? "inset 3px 0 0 var(--ad-clay)" : undefined }}
+                  style={{
+                    background: ativo ? "#fbf3ec" : undefined,
+                    boxShadow: ativo ? "inset 3px 0 0 var(--ad-clay)" : undefined,
+                  }}
                 >
                   <Avatar s={s} i={i} />
                   <span className="min-w-0 flex-1">
                     <b className="flex items-center gap-1.5 truncate text-[13.5px]">
                       {s.nome}
-                      {statusDe(s) === "verificado" && <ShieldCheck className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--ad-ok)" }} />}
+                      {statusDe(s) === "verificado" && (
+                        <ShieldCheck className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--ad-ok)" }} />
+                      )}
                     </b>
                     <span className="block truncate text-xs" style={{ color: "var(--ad-muted)" }}>
-                      {[s.cidade && `${s.cidade}${s.estado ? `/${s.estado}` : ""}`, (s.funcoes || []).slice(0, 2).join(", ")]
+                      {[
+                        s.cidade && `${s.cidade}${s.estado ? `/${s.estado}` : ""}`,
+                        (s.funcoes || []).slice(0, 2).join(", "),
+                      ]
                         .filter(Boolean)
                         .join(" · ") || "—"}
                     </span>
                     <span className="block text-[11.5px]" style={{ color: "var(--ad-muted)" }}>
-                      {nd ? `${nd} documento${nd > 1 ? "s" : ""}` : "sem documentos"} · desde {dataBR(s.created_at)}
+                      {nd ? `${nd} documento${nd > 1 ? "s" : ""}` : "sem documentos"} ·{" "}
+                      {statusDe(s) === "em_analise" && s.verificacao_enviada_em
+                        ? `enviado em ${dataBR(s.verificacao_enviada_em)}`
+                        : `desde ${dataBR(s.created_at)}`}
                     </span>
                   </span>
                   <span className={`cz-st ${TOM_VERIF[statusDe(s)] || "cz-off"}`}>
-                    {statusDe(s) === "em_analise" ? "Em análise" : statusDe(s) === "verificado" ? "Verificado" : statusDe(s) === "rejeitado" ? "Recusado" : "Não verificado"}
+                    {statusDe(s) === "em_analise"
+                      ? "Em análise"
+                      : statusDe(s) === "verificado"
+                        ? "Verificado"
+                        : statusDe(s) === "rejeitado"
+                          ? "Recusado"
+                          : "Não verificado"}
                   </span>
                 </button>
               );
@@ -262,14 +365,34 @@ export default function AdminProfissionais() {
 
             <section className="cz-card p-4 md:p-5">
               <div className="flex flex-wrap items-start gap-4">
-                <Avatar s={sel} i={idxSel} size={64} />
+                {sel.foto_url ? (
+                  <button
+                    type="button"
+                    title="Ver foto"
+                    onClick={() => setVer({ titulo: `Foto de ${sel.nome}`, url: sel.foto_url })}
+                    className="rounded-full ring-offset-2 transition hover:ring-2"
+                    style={{ ["--tw-ring-color" as any]: "var(--ad-clay)" }}
+                  >
+                    <Avatar s={sel} i={idxSel} size={64} />
+                  </button>
+                ) : (
+                  <Avatar s={sel} i={idxSel} size={64} />
+                )}
                 <div className="min-w-0 flex-1">
-                  <h2 className="m-0 flex flex-wrap items-center gap-2 text-xl font-extrabold" style={{ letterSpacing: "-0.02em" }}>
+                  <h2
+                    className="m-0 flex flex-wrap items-center gap-2 text-xl font-extrabold"
+                    style={{ letterSpacing: "-0.02em" }}
+                  >
                     {sel.nome}
-                    <span className={`cz-st ${TOM_VERIF[statusDe(sel)] || "cz-off"}`}>{verificacaoLabel(sel.verificacao_status)}</span>
+                    <span className={`cz-st ${TOM_VERIF[statusDe(sel)] || "cz-off"}`}>
+                      {verificacaoLabel(sel.verificacao_status)}
+                    </span>
                   </h2>
                   <p className="m-0 mt-1 text-[13px]" style={{ color: "var(--ad-body)" }}>
-                    {[sel.cidade && `${sel.cidade}${sel.estado ? `/${sel.estado}` : ""}`, `atende até ${sel.raio_km ?? "?"} km`]
+                    {[
+                      sel.cidade && `${sel.cidade}${sel.estado ? `/${sel.estado}` : ""}`,
+                      `atende até ${sel.raio_km ?? "?"} km`,
+                    ]
                       .filter(Boolean)
                       .join(" · ")}{" "}
                     · cadastrado em {dataBR(sel.created_at)}
@@ -293,8 +416,14 @@ export default function AdminProfissionais() {
                 {[
                   ["Eventos aceitos", String(sel.eventos_aceitos ?? 0)],
                   ["Eventos concluídos", String(sel.eventos_concluidos ?? 0)],
-                  ["Nota", sel.rating ? `${Number(sel.rating).toFixed(1).replace(".", ",")} (${sel.review_count || 0})` : "—"],
-                  ["Valor mínimo/turno", sel.valor_min_turno ? `R$ ${Number(sel.valor_min_turno).toLocaleString("pt-BR")}` : "—"],
+                  [
+                    "Nota",
+                    sel.rating ? `${Number(sel.rating).toFixed(1).replace(".", ",")} (${sel.review_count || 0})` : "—",
+                  ],
+                  [
+                    "Valor mínimo/turno",
+                    sel.valor_min_turno ? `R$ ${Number(sel.valor_min_turno).toLocaleString("pt-BR")}` : "—",
+                  ],
                 ].map(([l, v]) => (
                   <div key={l} className="rounded-xl border px-3 py-2.5" style={{ borderColor: "var(--ad-line)" }}>
                     <small className="block text-[11.5px] font-semibold" style={{ color: "var(--ad-muted)" }}>
@@ -318,9 +447,12 @@ export default function AdminProfissionais() {
                     <Phone className="h-3.5 w-3.5" style={{ color: "var(--ad-muted)" }} />
                     {sel.telefone || "—"}
                   </span>
-                  <span className="mt-1.5 border-t pt-2.5" style={{ borderColor: "var(--ad-line)", color: "var(--ad-body)" }}>
-                    {sel.disponivel ? "Disponível para convites" : "Indisponível no momento"} · perfil {sel.is_public ? "público" : "oculto"} ·
-                    LGPD {sel.consentimento_lgpd ? "aceita" : "não aceita"}
+                  <span
+                    className="mt-1.5 border-t pt-2.5"
+                    style={{ borderColor: "var(--ad-line)", color: "var(--ad-body)" }}
+                  >
+                    {sel.disponivel ? "Disponível para convites" : "Indisponível no momento"} · perfil{" "}
+                    {sel.is_public ? "público" : "oculto"} · LGPD {sel.consentimento_lgpd ? "aceita" : "não aceita"}
                   </span>
                 </div>
                 <h3 className="m-0 mb-1.5 mt-4 text-[14px] font-bold">Sobre</h3>
@@ -338,7 +470,11 @@ export default function AdminProfissionais() {
                 ) : (
                   docsSel.map((d) => (
                     <div key={d.id} className="cz-row flex flex-wrap items-center gap-2 px-4 py-3 text-[13px]">
-                      <button type="button" onClick={() => abrir(d)} className="flex min-w-0 flex-1 basis-[220px] items-center gap-2 text-left hover:underline">
+                      <button
+                        type="button"
+                        onClick={() => abrir(d)}
+                        className="flex min-w-0 flex-1 basis-[220px] items-center gap-2 text-left hover:underline"
+                      >
                         <FileText className="h-4 w-4 shrink-0" style={{ color: "var(--ad-clay)" }} />
                         <span className="min-w-0">
                           <b className="block">{docTipo(d.tipo)}</b>
@@ -406,7 +542,10 @@ export default function AdminProfissionais() {
                   extra.reviews.map((r) => (
                     <div key={r.id} className="cz-row px-4 py-2.5 text-[13px]">
                       <b className="inline-flex items-center gap-1">
-                        <Star className="h-3 w-3" style={{ color: "var(--ad-terracota)", fill: "var(--ad-terracota)" }} />
+                        <Star
+                          className="h-3 w-3"
+                          style={{ color: "var(--ad-terracota)", fill: "var(--ad-terracota)" }}
+                        />
                         {r.estrelas} · {dataBR(r.created_at)}
                       </b>
                       {r.comentario && (
@@ -420,13 +559,45 @@ export default function AdminProfissionais() {
               </section>
             </div>
 
+            <section className="cz-card p-4">
+              <h3 className="m-0 mb-2 text-[14px] font-bold">
+                Dados mínimos ({reqSel.length - faltamSel.length} de {reqSel.length})
+              </h3>
+              <ul className="m-0 grid list-none gap-1.5 p-0 text-[13px] sm:grid-cols-2">
+                {reqSel.map((r) => (
+                  <li
+                    key={r.key}
+                    className="flex items-center gap-2"
+                    style={{ color: r.ok ? "var(--ad-body)" : "var(--ad-err, #b3261e)" }}
+                  >
+                    {r.ok ? (
+                      <Check className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--ad-ok)" }} />
+                    ) : (
+                      <X className="h-3.5 w-3.5 shrink-0" />
+                    )}
+                    {r.label}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
             <section className="cz-card flex flex-col gap-2.5 p-4">
               <h3 className="m-0 text-[14px] font-bold">Decisão da verificação</h3>
               <p className="m-0 text-xs" style={{ color: "var(--ad-muted)" }}>
                 Confira os documentos acima. A observação aparece para o profissional no painel dele.
               </p>
+              {faltamSel.length > 0 && (
+                <p
+                  className="m-0 flex items-start gap-1.5 rounded-lg border px-3 py-2 text-xs"
+                  style={{ borderColor: "#f0d9a8", background: "#fdf6e7", color: "#7a5a12" }}
+                >
+                  <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                  Faltam {faltamSel.length} dado{faltamSel.length > 1 ? "s" : ""} mínimo
+                  {faltamSel.length > 1 ? "s" : ""}. O ideal é recusar dizendo o que completar.
+                </p>
+              )}
               <Input
-                placeholder="Observação para o profissional (opcional)"
+                placeholder="Observação para o profissional (obrigatória ao recusar)"
                 className="bg-white"
                 value={obs}
                 onChange={(e) => setObs(e.target.value)}
@@ -435,14 +606,41 @@ export default function AdminProfissionais() {
                 <button type="button" className="cz-btn" disabled={salvando} onClick={() => decidirPerfil("rejeitado")}>
                   Recusar verificação
                 </button>
-                <button type="button" className="cz-btn pri" disabled={salvando} onClick={() => decidirPerfil("verificado")}>
-                  <ShieldCheck className="h-3.5 w-3.5" /> Verificar profissional
+                <button
+                  type="button"
+                  className="cz-btn pri"
+                  disabled={salvando}
+                  onClick={() => decidirPerfil("verificado")}
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />{" "}
+                  {faltamSel.length ? "Verificar mesmo assim" : "Verificar e voltar para a fila"}
                 </button>
               </div>
             </section>
           </div>
         )}
       </div>
+
+      <ArquivoViewerDialog
+        arquivo={ver}
+        onClose={() => setVer(null)}
+        rodape={
+          ver?.doc && (
+            <>
+              {ver.doc.status !== "rejeitado" && (
+                <button type="button" className="cz-btn" onClick={() => decidirDoc(ver.doc, "rejeitado")}>
+                  Recusar documento
+                </button>
+              )}
+              {ver.doc.status !== "aprovado" && (
+                <button type="button" className="cz-btn pri" onClick={() => decidirDoc(ver.doc, "aprovado")}>
+                  Aprovar documento
+                </button>
+              )}
+            </>
+          )
+        }
+      />
     </div>
   );
 }
