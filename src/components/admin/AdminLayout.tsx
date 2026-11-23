@@ -18,7 +18,7 @@ import {
   Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
   Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
   Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal, MapPin, Zap, Mail, Share2,
-  CalendarRange, Sparkles, Tag, MessageSquareHeart, HelpCircle } from "lucide-react";
+  CalendarRange, Sparkles, Tag, MessageSquareHeart, HelpCircle, ImageDown } from "lucide-react";
 
 type NavItem = { title: string; url: string; icon: any; end?: boolean; extra?: string[]; badge?: "aprovacao" | "reservas" | "feedback" };
 
@@ -85,6 +85,7 @@ const groups: { label: string; items: NavItem[] }[] = [
       { title: "E-mails do CTA", url: "/admin/fornecedor-emails", icon: Mail },
       { title: "Categorias e campos", url: "/admin/categorias", icon: SlidersHorizontal },
       { title: "Cidades", url: "/admin/cidades", icon: MapPin },
+      { title: "Otimizar fotos", url: "/admin/otimizar-fotos", icon: ImageDown },
       { title: "Tarefas padrão", url: "/admin/tarefas-padrao", icon: ListChecks },
       { title: "Quiz Um dia vou casar", url: "/admin/quiz", icon: Sparkles },
       { title: "Central de Ajuda", url: "/admin/ajuda", icon: HelpCircle },

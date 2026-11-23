@@ -3,6 +3,7 @@ import LogoUploader from "@/components/supplier/LogoUploader";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
+import { comprimirImagem, nomeArquivo, FOTO_GALERIA, FOTO_PERFIL } from "@/lib/comprimirImagem";
 import { supabase } from "@/integrations/supabase/client";
 import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
@@ -288,8 +289,9 @@ export default function SupplierOnboarding() {
     if (!supplierId || !session?.user) return;
     setUploading(true);
     try {
-      const path = `${session.user.id}/profile-${Date.now()}.jpg`;
-      const { error } = await supabase.storage.from("supplier-photos").upload(path, file, { contentType: "image/jpeg" });
+      const img = await comprimirImagem(file, FOTO_PERFIL);
+      const path = `${session.user.id}/profile-${Date.now()}.${img.extensao}`;
+      const { error } = await supabase.storage.from("supplier-photos").upload(path, img.blob, { contentType: img.tipo });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from("supplier-photos").getPublicUrl(path);
       await (supabase.from("suppliers") as any).update({ profile_photo_url: publicUrl }).eq("id", supplierId);
@@ -304,8 +306,9 @@ export default function SupplierOnboarding() {
     if (!supplierId || !session?.user || galleryPhotos.length >= 10) return;
     setUploading(true);
     try {
-      const path = `${session.user.id}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("supplier-photos").upload(path, file);
+      const img = await comprimirImagem(file, FOTO_GALERIA);
+      const path = `${session.user.id}/${Date.now()}-${nomeArquivo(file.name, img.extensao)}`;
+      const { error } = await supabase.storage.from("supplier-photos").upload(path, img.blob, { contentType: img.tipo });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from("supplier-photos").getPublicUrl(path);
       const { data: ins } = await (supabase.from("supplier_photos") as any)

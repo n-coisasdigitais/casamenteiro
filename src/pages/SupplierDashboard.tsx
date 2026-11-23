@@ -5,6 +5,7 @@ import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
+import { comprimirImagem, nomeArquivo, FOTO_GALERIA } from "@/lib/comprimirImagem";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import WelcomeModal from "@/components/WelcomeModal";
@@ -362,11 +363,12 @@ export default function SupplierDashboard() {
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !supplier || photos.length >= 10) return;
+    if (!e.target.files || !supplier || !user || photos.length >= 10) return;
     setUploading(true);
     const file = e.target.files[0];
-    const filePath = `${user!.id}/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage.from("supplier-photos").upload(filePath, file);
+    const img = await comprimirImagem(file, FOTO_GALERIA);
+    const filePath = `${user.id}/${Date.now()}-${nomeArquivo(file.name, img.extensao)}`;
+    const { error: uploadError } = await supabase.storage.from("supplier-photos").upload(filePath, img.blob, { contentType: img.tipo });
     if (uploadError) {
       toast({ title: "Erro no upload", description: traduzirErro(uploadError), variant: "destructive" });
       setUploading(false);
@@ -468,7 +470,7 @@ export default function SupplierDashboard() {
     { key: "capa", label: "Foto de destaque", feito: photos.some((p) => p.is_principal) || !!supplier.cover_photo_url, onClick: () => goDest("negocio", { sub: "fotos" }) },
     { key: "descricao", label: descricaoOk ? "Descrição dos serviços" : "Escrever a descrição dos serviços", feito: descricaoOk, onClick: () => goDest("negocio", { sub: "perfil" }) },
     { key: "contato", label: phone ? "WhatsApp de contato" : "Informar WhatsApp de contato", feito: !!phone && isValidPhoneBR(phone), onClick: () => goDest("negocio", { sub: "perfil" }) },
-    { key: "area", label: "Cidades que você atende", feito: (supplier.cidades_atendidas?.length ?? 0) > 0 || !!supplier.raio_atendimento_km, onClick: () => goDest("negocio", { sub: "atendimento" }) },
+    { key: "area", label: "Cidades que você atende", feito: (supplier.cidades_atendidas?.length ?? 0) > 0 || !!supplier.raio_atendimento_km || (supplier as any).atendimento_modo === "nacional", onClick: () => goDest("negocio", { sub: "atendimento" }) },
   ];
   const titulos: Record<SupplierDestination, string> = {
     painel: "",

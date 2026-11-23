@@ -5,6 +5,7 @@ import { useParams, Link } from "react-router-dom";
 import { linkFornecedor, ehUuid } from "@/lib/linkFornecedor";
 import LogoFornecedor from "@/components/supplier/LogoFornecedor";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
+import { ehNacional, formasDe, seloAtendimento } from "@/lib/atendimento";
 import { semDemo } from "@/lib/demoScope";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -443,7 +444,9 @@ export default function SupplierProfile() {
   const anos = valorCampo("anos_experiencia");
   if (anos) destaques.push({ icone: Award, rotulo: "Experiência", valor: `${anos} ${Number(anos) === 1 ? "ano" : "anos"}` });
   destaques.push({ icone: Wallet, rotulo: "Preço", valor: precoTexto ? `a partir de ${precoTexto}` : "sob consulta" });
-  if (local) destaques.push({ icone: MapPin, rotulo: "Atende", valor: local });
+  const seloNacional = seloAtendimento(supplier);
+  if (seloNacional) destaques.push({ icone: MapPin, rotulo: "Atende", valor: seloNacional });
+  else if (local) destaques.push({ icone: MapPin, rotulo: "Atende", valor: local });
 
   const oferece = campos.filter((c) => !CHAVES_FORA.has(c.chave));
   const cidadesAtendidas: string[] = Array.isArray(supplier.cidades_atendidas) ? supplier.cidades_atendidas.filter(Boolean) : [];
@@ -833,11 +836,30 @@ export default function SupplierProfile() {
                   <SupplierMap city={supplier.city} state={supplier.state} supplierName={supplier.company_name} />
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {(cidadesAtendidas.length ? cidadesAtendidas : [supplier.city].filter(Boolean)).map((c: string) => (
-                    <span key={c} className="pf-chip">
-                      Atende em {c}
-                    </span>
-                  ))}
+                  {ehNacional(supplier) ? (
+                    <>
+                      {formasDe(supplier).map((fm) => (
+                        <span key={fm} className="pf-chip">
+                          {fm === "online" ? "Atende todo o Brasil online" : fm === "viagem" ? "Viaja até o seu evento" : "Envia para todo o Brasil"}
+                        </span>
+                      ))}
+                      {formasDe(supplier).includes("viagem") && supplier.taxa_deslocamento && (
+                        <span className="pf-chip">
+                          Deslocamento:{" "}
+                          {supplier.taxa_deslocamento === "inclusa"
+                            ? "incluso no preço"
+                            : supplier.taxa_deslocamento === "a_partir" && supplier.taxa_deslocamento_valor
+                              ? `a partir de R$ ${Number(supplier.taxa_deslocamento_valor).toLocaleString("pt-BR")}`
+                              : "a combinar"}
+                        </span>
+                      )}
+                      {supplier.atende_exterior && <span className="pf-chip">Atende também fora do Brasil</span>}
+                    </>
+                  ) : (
+                    (cidadesAtendidas.length ? cidadesAtendidas : [supplier.city].filter(Boolean)).map((c: string) => (
+                      <span key={c} className="pf-chip">Atende em {c}</span>
+                    ))
+                  )}
                   {valorCampo("atende_fora") === true && <span className="pf-chip">Atende fora da cidade</span>}
                 </div>
               </section>

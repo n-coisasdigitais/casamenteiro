@@ -42,6 +42,7 @@ import AdminCategoriaCampos from "./pages/AdminCategoriaCampos";
 import AdminFornecedorAprovacao from "./pages/AdminFornecedorAprovacao";
 import AdminCategoriasSugeridas from "./pages/AdminCategoriasSugeridas";
 import AdminCidades from "./pages/AdminCidades";
+import AdminOtimizarFotos from "./pages/AdminOtimizarFotos";
 import AdminHomeConfig from "./pages/AdminHomeConfig";
 import AdminHomeDestaques from "./pages/AdminHomeDestaques";
 import AdminFornecedorLanding from "./pages/AdminFornecedorLanding";
@@ -389,6 +390,7 @@ const App = () => (
                   </AdminLayout>
                 }
               />
+              <Route path="/admin/otimizar-fotos" element={<AdminLayout><AdminOtimizarFotos /></AdminLayout>} />
               <Route
                 path="/admin/cidades"
                 element={

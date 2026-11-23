@@ -2,6 +2,7 @@ import { traduzirErro } from "@/lib/errorMessages";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { SUPPLIER_COLS } from "@/lib/suppliers";
+import { seloAtendimento } from "@/lib/atendimento";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
@@ -429,6 +430,12 @@ export default function AdminFornecedorAprovacao() {
                         )}
                       </dd>
                     </div>
+                    {seloAtendimento(selected as any) && (
+                      <div>
+                        <dt className="text-[11px] font-bold uppercase" style={{ letterSpacing: ".04em", color: "var(--ad-muted)" }}>Atendimento</dt>
+                        <dd className="m-0 mt-0.5">{seloAtendimento(selected as any)}{(selected as any).atende_exterior ? " · também no exterior" : ""}</dd>
+                      </div>
+                    )}
                     {(selected.cidades_atendidas || []).length > 0 && (
                       <div>
                         <dt className="text-[11px] font-bold uppercase" style={{ letterSpacing: ".04em", color: "var(--ad-muted)" }}>
