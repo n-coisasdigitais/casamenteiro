@@ -91,9 +91,9 @@ Deno.serve(async (req) => {
       anexo_path: anexoPath,
     })
     .select("id, created_at")
-    .single();
+    .maybeSingle();
 
-  if (insertErr) {
+  if (insertErr || !reporte) {
     return json({ error: "Falha ao registrar o reporte" }, 500);
   }
 
