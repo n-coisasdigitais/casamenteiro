@@ -27,6 +27,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { RodapeVitrine, TopoVitrine, useFavoritos } from "@/components/vitrine/VitrineLayout";
 import CapaVitrine from "@/components/vitrine/CapaVitrine";
 import CardFornecedor from "@/components/vitrine/CardFornecedor";
+import { comoAtende, coordenadaDe, type Coord } from "@/lib/atendimento";
 import AvisoCategoria from "@/components/vitrine/AvisoCategoria";
 import {
   FOTO_PADRAO,
@@ -56,7 +57,17 @@ export const iconesCategoria: Record<string, any> = {
   utensils: Utensils,
 };
 
-function Trilho({ titulo, subtitulo, link, children }: { titulo: React.ReactNode; subtitulo?: string; link?: { to: string; label: string }; children: React.ReactNode }) {
+function Trilho({
+  titulo,
+  subtitulo,
+  link,
+  children,
+}: {
+  titulo: React.ReactNode;
+  subtitulo?: string;
+  link?: { to: string; label: string };
+  children: React.ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const rolar = (d: number) => ref.current?.scrollBy({ left: d * ref.current.clientWidth * 0.8, behavior: "smooth" });
   return (
@@ -72,10 +83,20 @@ function Trilho({ titulo, subtitulo, link, children }: { titulo: React.ReactNode
           </Link>
         ) : (
           <div className="hidden gap-1.5 md:flex">
-            <button type="button" className="grid h-9 w-9 place-items-center rounded-full border border-[var(--vt-line2)] bg-white" onClick={() => rolar(-1)} aria-label="Voltar">
+            <button
+              type="button"
+              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--vt-line2)] bg-white"
+              onClick={() => rolar(-1)}
+              aria-label="Voltar"
+            >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <button type="button" className="grid h-9 w-9 place-items-center rounded-full border border-[var(--vt-line2)] bg-white" onClick={() => rolar(1)} aria-label="Avançar">
+            <button
+              type="button"
+              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--vt-line2)] bg-white"
+              onClick={() => rolar(1)}
+              aria-label="Avançar"
+            >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
@@ -122,30 +143,47 @@ const Explore = () => {
     return m;
   }, [fornecedores]);
   const comFornecedor = useMemo(
-    () => categorias.filter((c) => contagem.get(c.id)).sort((a, b) => (contagem.get(b.id) || 0) - (contagem.get(a.id) || 0)),
+    () =>
+      categorias
+        .filter((c) => contagem.get(c.id))
+        .sort((a, b) => (contagem.get(b.id) || 0) - (contagem.get(a.id) || 0)),
     [categorias, contagem],
   );
   const semFornecedor = useMemo(() => categorias.filter((c) => !contagem.get(c.id)), [categorias, contagem]);
   const destaques = fornecedores.filter((f) => f.featured).slice(0, 8);
   const novos = [...fornecedores].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 8);
   const linhas = comFornecedor.filter((c) => (contagem.get(c.id) || 0) >= 5).slice(0, 8);
-  const cidades = useMemo(() => [...new Set(fornecedores.map((f) => f.city).filter(Boolean) as string[])].sort(), [fornecedores]);
+  const cidades = useMemo(
+    () => [...new Set(fornecedores.map((f) => f.city).filter(Boolean) as string[])].sort(),
+    [fornecedores],
+  );
 
   useEffect(() => {
     if (!buscaCat && comFornecedor[0]) setBuscaCat(comFornecedor[0].slug);
   }, [comFornecedor, buscaCat]);
 
-  // busca livre (/buscar?q=...&loc=...)
+  const [coordBusca, setCoordBusca] = useState<Coord | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    setCoordBusca(null);
+    if (locParam) coordenadaDe(locParam).then((c) => vivo && setCoordBusca(c));
+    return () => {
+      vivo = false;
+    };
+  }, [locParam]);
+
+  // busca livre (/buscar?q=...&loc=...): primeiro quem é da região, depois quem atende todo o Brasil
   const resultados = useMemo(() => {
     if (!qParam && !locParam) return null;
     const q = normalizar(qParam);
-    const l = normalizar(locParam);
-    return fornecedores.filter(
-      (f) =>
-        (!q || normalizar(`${f.company_name} ${f.categories?.name || ""} ${f.description || ""}`).includes(q)) &&
-        (!l || normalizar(`${f.city || ""} ${f.state || ""}`).includes(l)),
+    const porTexto = fornecedores.filter(
+      (f) => !q || normalizar(`${f.company_name} ${f.categories?.name || ""} ${f.description || ""}`).includes(q),
     );
-  }, [fornecedores, qParam, locParam]);
+    if (!locParam) return porTexto;
+    const locais = porTexto.filter((f) => comoAtende(f, locParam, coordBusca) === "local");
+    const remotos = porTexto.filter((f) => comoAtende(f, locParam, coordBusca) === "remoto");
+    return [...locais, ...remotos];
+  }, [fornecedores, qParam, locParam, coordBusca]);
 
   // ?cat= (ou ?q= igual ao nome de uma categoria) abre a página da categoria
   const pedido = catParam || qParam;
@@ -169,7 +207,9 @@ const Explore = () => {
       { name: "Início", path: "/" },
       { name: "Fornecedores", path: "/explorar" },
     ]),
-    ...(novos.length ? [itemListJsonLd(novos.map((s) => ({ name: s.company_name, path: `/fornecedor/${s.id}` })))] : []),
+    ...(novos.length
+      ? [itemListJsonLd(novos.map((s) => ({ name: s.company_name, path: `/fornecedor/${s.id}` })))]
+      : []),
   ];
 
   return (
@@ -185,7 +225,9 @@ const Explore = () => {
           <h1 className="mb-3.5 mt-4 text-[clamp(34px,5vw,58px)]">
             Os fornecedores do seu casamento, <em>num só lugar</em>
           </h1>
-          <p className="max-w-[46ch] text-[17px] text-white/90">Veja fotos, compare preços e converse direto com quem vai fazer o seu dia acontecer.</p>
+          <p className="max-w-[46ch] text-[17px] text-white/90">
+            Veja fotos, compare preços e converse direto com quem vai fazer o seu dia acontecer.
+          </p>
           <form className="vt-busca" onSubmit={buscar}>
             <label>
               O que vocês procuram?
@@ -199,7 +241,13 @@ const Explore = () => {
             </label>
             <label>
               Onde vai ser?
-              <input list="vt-cidades" placeholder="Cidade" autoComplete="off" value={buscaCidade} onChange={(e) => setBuscaCidade(e.target.value)} />
+              <input
+                list="vt-cidades"
+                placeholder="Cidade"
+                autoComplete="off"
+                value={buscaCidade}
+                onChange={(e) => setBuscaCidade(e.target.value)}
+              />
               <datalist id="vt-cidades">
                 {cidades.map((c) => (
                   <option key={c} value={c} />
@@ -227,8 +275,18 @@ const Explore = () => {
         {resultados && (
           <section className="vt-sec">
             <h2 className="vt-h2">
-              Resultados {qParam ? <>para <em>“{qParam}”</em></> : null}
-              {locParam ? <> em <em>{locParam}</em></> : null}
+              Resultados{" "}
+              {qParam ? (
+                <>
+                  para <em>“{qParam}”</em>
+                </>
+              ) : null}
+              {locParam ? (
+                <>
+                  {" "}
+                  em <em>{locParam}</em>
+                </>
+              ) : null}
             </h2>
             <p className="mb-4 mt-1 text-sm text-[var(--vt-muted)]">
               {resultados.length} {resultados.length === 1 ? "fornecedor encontrado" : "fornecedores encontrados"}
@@ -236,11 +294,19 @@ const Explore = () => {
             {resultados.length ? (
               <div className="vt-grade">
                 {resultados.map((f) => (
-                  <CardFornecedor key={f.id} f={f} favorito={favoritos.has(f.id)} onFavoritar={alternar} destaque={f.featured} />
+                  <CardFornecedor
+                    key={f.id}
+                    f={f}
+                    favorito={favoritos.has(f.id)}
+                    onFavoritar={alternar}
+                    destaque={f.featured}
+                  />
                 ))}
               </div>
             ) : (
-              <div className="vt-caixa text-[var(--vt-body)]">Nenhum fornecedor com esse nome ou cidade. Tente escolher uma categoria abaixo.</div>
+              <div className="vt-caixa text-[var(--vt-body)]">
+                Nenhum fornecedor com esse nome ou cidade. Tente escolher uma categoria abaixo.
+              </div>
             )}
           </section>
         )}
@@ -284,7 +350,11 @@ const Explore = () => {
               </span>
               <div className="flex min-w-[240px] flex-1 flex-wrap gap-1.5">
                 {semFornecedor.map((c) => (
-                  <Link key={c.id} to={`/categoria/${c.slug}`} className="rounded-full bg-[var(--vt-bg)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--vt-body)]">
+                  <Link
+                    key={c.id}
+                    to={`/categoria/${c.slug}`}
+                    className="rounded-full bg-[var(--vt-bg)] px-2.5 py-1 text-[12.5px] font-semibold text-[var(--vt-body)]"
+                  >
                     {c.name}
                   </Link>
                 ))}
@@ -327,12 +397,22 @@ const Explore = () => {
         )}
 
         {linhas.map((c) => (
-          <Trilho key={c.id} titulo={c.name} link={{ to: `/categoria/${c.slug}`, label: `Ver todos (${contagem.get(c.id)})` }}>
+          <Trilho
+            key={c.id}
+            titulo={c.name}
+            link={{ to: `/categoria/${c.slug}`, label: `Ver todos (${contagem.get(c.id)})` }}
+          >
             {fornecedores
               .filter((f) => f.category_id === c.id)
               .slice(0, 8)
               .map((f) => (
-                <CardFornecedor key={f.id} f={f} favorito={favoritos.has(f.id)} onFavoritar={alternar} destaque={f.featured} />
+                <CardFornecedor
+                  key={f.id}
+                  f={f}
+                  favorito={favoritos.has(f.id)}
+                  onFavoritar={alternar}
+                  destaque={f.featured}
+                />
               ))}
           </Trilho>
         ))}
@@ -362,7 +442,8 @@ const Explore = () => {
               Trabalha com <em>casamentos</em>?
             </h2>
             <p className="mt-1.5 max-w-[52ch] text-[var(--vt-body)]">
-              Cadastre seu negócio grátis, apareça para casais da sua região e receba pedidos de orçamento. Sem comissão sobre o que você fechar.
+              Cadastre seu negócio grátis, apareça para casais da sua região e receba pedidos de orçamento. Sem comissão
+              sobre o que você fechar.
             </p>
           </div>
           <Link to="/cadastro?tipo=supplier" className="vt-pill pri">
@@ -378,7 +459,9 @@ const Explore = () => {
           <DialogHeader>
             <DialogTitle className="vt-serif text-2xl">Avise-me quando chegar</DialogTitle>
           </DialogHeader>
-          <p className="-mt-2 text-sm text-[var(--vt-body)]">Escolha a categoria. Assim que aprovarmos o primeiro fornecedor, você recebe um aviso.</p>
+          <p className="-mt-2 text-sm text-[var(--vt-body)]">
+            Escolha a categoria. Assim que aprovarmos o primeiro fornecedor, você recebe um aviso.
+          </p>
           <AvisoCategoria categorias={semFornecedor} compacto />
         </DialogContent>
       </Dialog>
