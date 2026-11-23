@@ -25,6 +25,13 @@ export type FornecedorVitrine = {
   category_id: string | null;
   slug?: string | null;
   logo_url?: string | null;
+  cidades_atendidas?: string[] | null;
+  raio_atendimento_km?: number | null;
+  lat?: number | null;
+  lng?: number | null;
+  atendimento_modo?: string | null;
+  atendimento_formas?: string[] | null;
+  atende_exterior?: boolean | null;
   categories?: { name: string; slug: string } | null;
   fotos: string[];
 };
@@ -61,8 +68,9 @@ export const PLURAL: Record<string, string> = {
 };
 export const pluralCategoria = (c: { slug: string; name: string }) => PLURAL[c.slug] || c.name;
 
-const COLS =
+const COLS_BASE =
   "id, slug, logo_url, company_name, description, city, state, rating, review_count, price_min, preco_por_pessoa, guest_max, featured, created_at, category_id, categories(name, slug), supplier_photos(photo_url, is_principal, display_order)";
+const COLS = `${COLS_BASE}, cidades_atendidas, raio_atendimento_km, lat, lng, atendimento_modo, atendimento_formas, atende_exterior`;
 
 function comFotos(rows: any[]): FornecedorVitrine[] {
   return (rows || [])
@@ -82,9 +90,7 @@ function comFotos(rows: any[]): FornecedorVitrine[] {
 }
 
 export async function carregarCategorias(): Promise<CategoriaVitrine[]> {
-  const { data } = await (supabase.from("categories") as any)
-    .select("id, name, slug, icon, active")
-    .order("name");
+  const { data } = await (supabase.from("categories") as any).select("id, name, slug, icon, active").order("name");
   return ((data as any[]) || []).filter((c) => c.active !== false);
 }
 
@@ -103,7 +109,7 @@ export async function carregarFornecedores(categoriaId?: string): Promise<Fornec
     // Se alguma coluna nova não estiver liberada para leitura, não deixa a vitrine vazia.
     console.error("vitrine: falha ao carregar fornecedores", error);
     let q2 = (supabase.from("suppliers") as any)
-      .select(COLS.replace("preco_por_pessoa, ", ""))
+      .select(COLS_BASE.replace("preco_por_pessoa, ", ""))
       .eq("status", "approved")
       .in("is_demo", demoValues())
       .order("featured", { ascending: false })
@@ -127,7 +133,9 @@ function embaralhar<T>(l: T[]): T[] {
 
 /** Destaques pagos ativos: sem categoria = /explorar; com categoria = /categoria. */
 export async function carregarAnuncios(categoriaId?: string | null): Promise<Anuncio[]> {
-  const { data, error } = await (supabase.rpc as any)("vitrine_destaques_ativos", { _categoria_id: categoriaId ?? null });
+  const { data, error } = await (supabase.rpc as any)("vitrine_destaques_ativos", {
+    _categoria_id: categoriaId ?? null,
+  });
   if (error || !data) return [];
   const demo = demoValues();
   return embaralhar(
@@ -159,11 +167,7 @@ export async function carregarFotoInstitucional(): Promise<string> {
 }
 
 export const normalizar = (s: string | null | undefined) =>
-  (s || "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim()
-    .toLowerCase();
+  (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
 
 export function textoPreco(f: Pick<FornecedorVitrine, "price_min" | "preco_por_pessoa">): string | null {
   if (!f.price_min || Number(f.price_min) <= 0) return null;
@@ -173,7 +177,12 @@ export function textoPreco(f: Pick<FornecedorVitrine, "price_min" | "preco_por_p
 }
 
 /** Pedido de aviso quando chegar fornecedor na categoria. Duplicado conta como sucesso. */
-export async function pedirAviso(opts: { categoryId: string; userId?: string | null; email?: string | null; cidade?: string | null }) {
+export async function pedirAviso(opts: {
+  categoryId: string;
+  userId?: string | null;
+  email?: string | null;
+  cidade?: string | null;
+}) {
   const { error } = await (supabase.from("avisos_categoria" as any) as any).insert({
     category_id: opts.categoryId,
     user_id: opts.userId || null,
