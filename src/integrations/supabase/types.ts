@@ -3836,6 +3836,7 @@ export type Database = {
           updated_at: string
           user_id: string | null
           valor_min_turno: number | null
+          verificacao_enviada_em: string | null
           verificacao_obs: string | null
           verificacao_status: string
           verificado_em: string | null
@@ -3865,6 +3866,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           valor_min_turno?: number | null
+          verificacao_enviada_em?: string | null
           verificacao_obs?: string | null
           verificacao_status?: string
           verificado_em?: string | null
@@ -3894,6 +3896,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           valor_min_turno?: number | null
+          verificacao_enviada_em?: string | null
           verificacao_obs?: string | null
           verificacao_status?: string
           verificado_em?: string | null
@@ -6324,6 +6327,10 @@ export type Database = {
         Returns: undefined
       }
       slugify_texto: { Args: { _t: string }; Returns: string }
+      staff_requisitos_faltando: {
+        Args: { p: Database["public"]["Tables"]["staff_profiles"]["Row"] }
+        Returns: string[]
+      }
       supplier_tem_acesso: { Args: { _supplier_id: string }; Returns: boolean }
       trocar_perfil: { Args: { tipo: string }; Returns: undefined }
       vagas_destaque_disponiveis: {
