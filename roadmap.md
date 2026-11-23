@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Investigar falha de comunicação: envio de 23/11 confirmado no histórico autenticado; 212 avisos na plataforma e 200 e-mails aceitos, 12 e-mails falharam por limite diário do serviço (daily_quota_exceeded). Nenhum reenvio realizado; não há erro de cadastro ou filtros para corrigir neste envio.
+
 - [x] Adicionar filtros de cadastro incompleto na comunicação com canais plataforma/e-mail e aviso editável; seleção real conferida (9 fornecedores, 212 profissionais sem documentos ou com recusas), 6 testes passaram. Nenhuma mensagem real disparada.
 - [x] Conferir a regra existente de documentos dos fornecedores: aprovação exige foto de perfil, 4 fotos do trabalho, contato, descrição de 80 caracteres, cidade/estado, categoria e respostas obrigatórias; não exige documentos internos. Filtro de dados já reutiliza essa regra; nenhuma nova exigência criada.
 
