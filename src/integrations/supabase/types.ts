@@ -5858,6 +5858,12 @@ export type Database = {
         }
         Returns: string
       }
+      admin_destinatarios_comunicacao: {
+        Args: { _demo?: boolean; _pendencia?: string; _segment: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
       admin_duplicar_categoria: {
         Args: {
           p_active: boolean

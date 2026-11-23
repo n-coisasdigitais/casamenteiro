@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Adicionar filtros de cadastro incompleto na comunicação com canais plataforma/e-mail e aviso editável; seleção real conferida (9 fornecedores, 212 profissionais sem documentos ou com recusas), 6 testes passaram. Nenhuma mensagem real disparada.
+- [ ] Filtro de documentos obrigatórios de fornecedores — aguardando definição do usuário; hoje documentos internos são opcionais.
+
 - [x] Conferir feedback compartilhado (botão, Ajuda dos painéis, Central de Ajuda, admin, envio e resposta) e categorias (lista, sugestões, campos e formulários). Corrigidos confirmação de registro, recuperação de erros, aviso de email parcial e margens móveis; 12 testes passaram. Resposta real por email e upload não exercitados.
 
 - [x] Corrigir carregamento e envio de feedback: consulta e status conferidos no admin; envio confirmado em conta comum e admin; 9 testes passaram.

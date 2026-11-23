@@ -11,7 +11,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { semDemo } from "@/lib/demoScope";
+import { isDemoSession } from "@/lib/demoScope";
+import { filtroComunicacao, type FiltroPendencia, type SegmentoComunicacao } from "@/lib/comunicacao";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MensagemParaPessoa from "@/components/admin/MensagemParaPessoa";
 
@@ -20,13 +23,19 @@ export default function AdminBroadcast() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [ok, setOk] = useState(false);
-  type Segmento = "couples" | "suppliers" | "profissionais" | "genericos" | "all";
-  const [segment, setSegment] = useState<Segmento>("couples");
+  const [segment, setSegment] = useState<SegmentoComunicacao>("couples");
+  const [pendencia, setPendencia] = useState<FiltroPendencia>("todos");
+  const [push, setPush] = useState(true);
+  const [email, setEmail] = useState(false);
+  const [destinatarios, setDestinatarios] = useState<number | null>(null);
+  const [erroDestinatarios, setErroDestinatarios] = useState(false);
+  const demo = isDemoSession();
+  const filtro = filtroComunicacao(segment, pendencia);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [link, setLink] = useState("");
   const [sending, setSending] = useState(false);
-  const [counts, setCounts] = useState({ couples: 0, suppliers: 0, profissionais: 0, genericos: 0 });
+  const [counts, setCounts] = useState({ couples: 0, suppliers: 0, profissionais: 0, genericos: 0, all: 0 });
   const [params] = useSearchParams();
   const paraInicial = params.get("para");
 
@@ -36,44 +45,50 @@ export default function AdminBroadcast() {
       navigate("/login");
       return;
     }
-    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(async ({ data }) => {
+    Promise.resolve(supabase.rpc("has_role", { _user_id: user.id, _role: "admin" })).then(async ({ data }) => {
       if (!data) {
         navigate("/");
         return;
       }
       setOk(true);
-      const { data: profs } = await semDemo(supabase.from("profiles").select("account_type, is_demo"));
-      setCounts({
-        couples: (profs || []).filter((p: any) => p.account_type === "couple").length,
-        suppliers: (profs || []).filter((p: any) => p.account_type === "supplier").length,
-        profissionais: (profs || []).filter((p: any) => p.account_type === "profissional").length,
-        genericos: (profs || []).filter((p: any) => p.account_type === "generico").length,
-      });
+      const segmentos = ["couples", "suppliers", "profissionais", "genericos", "all"] as const;
+      const valores = await Promise.all(segmentos.map(async (s) => {
+        const { data, error } = await supabase.rpc("admin_destinatarios_comunicacao", { _segment: s, _pendencia: "todos", _demo: demo });
+        if (error) throw error;
+        return [s, data?.length || 0] as const;
+      }));
+      setCounts(Object.fromEntries(valores) as typeof counts);
+    }).catch((error) => {
+      toast({ title: "Não foi possível contar destinatários", description: traduzirErro(error), variant: "destructive" });
     });
   }, [user, authLoading, navigate]);
 
+  useEffect(() => {
+    if (!ok) return;
+    let ativo = true;
+    setDestinatarios(null);
+    setErroDestinatarios(false);
+    supabase.rpc("admin_destinatarios_comunicacao", { _segment: segment, _pendencia: filtro, _demo: demo }).then(({ data, error }) => {
+      if (!ativo) return;
+      setErroDestinatarios(Boolean(error));
+      if (!error) setDestinatarios(data?.length || 0);
+    });
+    return () => { ativo = false; };
+  }, [ok, segment, filtro, demo]);
+
   const send = async () => {
-    if (!title.trim()) return;
-    const total = counts.couples + counts.suppliers + counts.profissionais + counts.genericos;
-    const rotulo = {
-      couples: `${counts.couples} casais`,
-      suppliers: `${counts.suppliers} fornecedores`,
-      profissionais: `${counts.profissionais} profissionais`,
-      genericos: `${counts.genericos} perfis sonho`,
-      all: `${total} usuários`,
-    }[segment];
-    if (!confirm(`Enviar para ${rotulo}?`)) return;
+    if (!title.trim() || !destinatarios || (!push && !email) || sending) return;
+    const canais = [push && "plataforma", email && "e-mail"].filter(Boolean).join(" e ");
+    if (!confirm(`Enviar para ${destinatarios} destinatários por ${canais}?`)) return;
     setSending(true);
-    const { data, error } = await supabase.rpc("admin_broadcast_notification" as any, {
-      _segment: segment,
-      _title: title,
-      _body: body || null,
-      _link: link || null,
+    const { data, error } = await supabase.functions.invoke("admin-comunicacao-grupo", {
+      body: { segment, pendencia: filtro, titulo: title.trim(), mensagem: body.trim(), link: link.trim() || null, push, email, demo },
     });
     setSending(false);
     if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
-    else {
-      toast({ title: `Mensagem enviada para ${data} usuários!` });
+    else if (data?.ok) {
+      toast({ title: `${data.plataforma} avisos na plataforma e ${data.emails} e-mails enviados`, description: data.falhas ? `${data.falhas} envios não concluídos. Confira o histórico.` : undefined, variant: data.falhas ? "destructive" : undefined });
+      if (data.falhas) return;
       setTitle("");
       setBody("");
       setLink("");
@@ -109,7 +124,7 @@ export default function AdminBroadcast() {
               <CardContent className="p-4 space-y-4">
                 <div>
                   <Label>Segmento</Label>
-                  <RadioGroup value={segment} onValueChange={(v) => setSegment(v as any)} className="mt-2 space-y-2">
+                  <RadioGroup value={segment} onValueChange={(v) => { setSegment(v as SegmentoComunicacao); setPendencia("todos"); }} className="mt-2 space-y-2">
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="couples" id="s1" />
                       <Label htmlFor="s1" className="font-normal">
@@ -137,11 +152,31 @@ export default function AdminBroadcast() {
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="all" id="s3" />
                       <Label htmlFor="s3" className="font-normal">
-                        Todos ({counts.couples + counts.suppliers + counts.profissionais + counts.genericos})
+                        Todos ({counts.all})
                       </Label>
                     </div>
                   </RadioGroup>
                 </div>
+                {(segment === "suppliers" || segment === "profissionais") && (
+                  <div className="space-y-2">
+                    <Label htmlFor="pendencia-cadastro">Situação do cadastro</Label>
+                    <Select value={filtro} onValueChange={(v) => setPendencia(v as FiltroPendencia)}>
+                      <SelectTrigger id="pendencia-cadastro"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos os cadastros</SelectItem>
+                        <SelectItem value="dados">Dados cadastrais incompletos</SelectItem>
+                        {segment === "profissionais" && <SelectItem value="documentos">Sem documentos ou com documentos recusados</SelectItem>}
+                        {segment === "profissionais" && <SelectItem value="incompleto">Dados ou documentos incompletos</SelectItem>}
+                      </SelectContent>
+                    </Select>
+                    {filtro !== "todos" && <Button variant="outline" size="sm" onClick={() => {
+                      setTitle("Complete seu cadastro no Casamenteiro");
+                      setBody(segment === "suppliers" ? "Olá! Ainda há informações pendentes no seu cadastro. Acesse seu painel, confira os itens indicados e complete os dados para dar continuidade à análise." : filtro === "dados" ? "Olá! Ainda há dados cadastrais pendentes no seu perfil. Acesse seu painel e complete as informações para dar continuidade ao cadastro." : "Olá! Há pendências nos dados cadastrais ou nos documentos de verificação do seu perfil. Acesse seu painel, confira suas informações e a seção de documentos e complete os itens pendentes.");
+                      setLink(segment === "suppliers" ? "/fornecedor/painel" : "/profissional/painel?tab=perfil");
+                    }}>Usar aviso de cadastro pendente</Button>}
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">{erroDestinatarios ? "Não foi possível consultar os destinatários. Atualize a página para tentar novamente." : destinatarios === null ? "Consultando destinatários…" : `${destinatarios} destinatários selecionados`}</p>
                 <div>
                   <Label htmlFor="title">Título *</Label>
                   <Input
@@ -149,6 +184,7 @@ export default function AdminBroadcast() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Ex: Nova promoção disponível!"
+                    maxLength={120}
                   />
                 </div>
                 <div>
@@ -159,6 +195,7 @@ export default function AdminBroadcast() {
                     onChange={(e) => setBody(e.target.value)}
                     rows={4}
                     placeholder="Detalhes da mensagem..."
+                    maxLength={3000}
                   />
                 </div>
                 <div>
@@ -170,14 +207,14 @@ export default function AdminBroadcast() {
                     placeholder="/buscar ou /meu-plano"
                   />
                 </div>
-                <Button onClick={send} disabled={sending || !title.trim()} className="w-full">
+                <div className="flex flex-wrap gap-6">
+                  <label className="flex items-center gap-2 text-sm"><Checkbox checked={push} onCheckedChange={(v) => setPush(v === true)} /> Plataforma (sininho)</label>
+                  <label className="flex items-center gap-2 text-sm"><Checkbox checked={email} disabled={demo} onCheckedChange={(v) => setEmail(v === true)} /> E-mail</label>
+                </div>
+                <Button onClick={send} disabled={sending || !title.trim() || !destinatarios || (!push && !email) || erroDestinatarios} className="w-full">
                   <Send className="w-4 h-4 mr-2" />
                   {sending ? "Enviando..." : "Enviar agora"}
                 </Button>
-                <p className="text-xs text-muted-foreground">
-                  As mensagens aparecem no sininho de notificações dos usuários. O envio por e-mail será habilitado
-                  quando você configurar um domínio próprio.
-                </p>
               </CardContent>
             </Card>
           </TabsContent>
