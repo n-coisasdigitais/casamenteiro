@@ -13,6 +13,7 @@ import { Check, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
 import { MoedaInput } from "@/components/ui/moeda-input";
+import { comprimirImagem, nomeArquivo, FOTO_GALERIA } from "@/lib/comprimirImagem";
 
 type Category = { id: string; name: string };
 
@@ -25,12 +26,7 @@ const STEPS = [
   "Pronto!",
 ];
 
-export default function SupplierOnboardingWizard({
-  supplier, onComplete,
-}: {
-  supplier: any;
-  onComplete: () => void;
-}) {
+export default function SupplierOnboardingWizard({ supplier, onComplete }: { supplier: any; onComplete: () => void }) {
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -53,14 +49,24 @@ export default function SupplierOnboardingWizard({
   );
 
   useEffect(() => {
-    supabase.from("categories").select("id, name").order("name").then(({ data }) => setCategories(data || []));
-    supabase.from("supplier_photos").select("*").eq("supplier_id", supplier.id).order("display_order").then(({ data }) => setPhotos(data || []));
+    supabase
+      .from("categories")
+      .select("id, name")
+      .order("name")
+      .then(({ data }) => setCategories(data || []));
+    supabase
+      .from("supplier_photos")
+      .select("*")
+      .eq("supplier_id", supplier.id)
+      .order("display_order")
+      .then(({ data }) => setPhotos(data || []));
   }, [supplier.id]);
 
   const progress = ((step + 1) / STEPS.length) * 100;
 
   const canNext = () => {
-    if (step === 0) return companyName.trim().length >= 2 && description.trim().length >= 20 && isValidPhoneBR(whatsapp);
+    if (step === 0)
+      return companyName.trim().length >= 2 && description.trim().length >= 20 && isValidPhoneBR(whatsapp);
     if (step === 1) return !!categoryId && !!city && !!state;
     if (step === 2) return photos.length >= 1;
     if (step === 3) return !!priceMin && Number(priceMin) > 0;
@@ -119,17 +125,27 @@ export default function SupplierOnboardingWizard({
     if (!e.target.files || photos.length >= 10) return;
     setUploading(true);
     const file = e.target.files[0];
-    const filePath = `${supplier.user_id}/${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage.from("supplier-photos").upload(filePath, file);
+    const img = await comprimirImagem(file, FOTO_GALERIA);
+    const filePath = `${supplier.user_id}/${Date.now()}-${nomeArquivo(file.name, img.extensao)}`;
+    const { error } = await supabase.storage
+      .from("supplier-photos")
+      .upload(filePath, img.blob, { contentType: img.tipo });
     if (error) {
       toast({ title: "Erro no upload", description: traduzirErro(error), variant: "destructive" });
       setUploading(false);
       return;
     }
-    const { data: { publicUrl } } = supabase.storage.from("supplier-photos").getPublicUrl(filePath);
-    const { data: inserted } = await (supabase.from("supplier_photos") as any).insert({
-      supplier_id: supplier.id, photo_url: publicUrl, display_order: photos.length,
-    }).select().maybeSingle();
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("supplier-photos").getPublicUrl(filePath);
+    const { data: inserted } = await (supabase.from("supplier_photos") as any)
+      .insert({
+        supplier_id: supplier.id,
+        photo_url: publicUrl,
+        display_order: photos.length,
+      })
+      .select()
+      .maybeSingle();
     if (inserted) setPhotos([...photos, inserted]);
     setUploading(false);
   };
@@ -157,26 +173,43 @@ export default function SupplierOnboardingWizard({
             <h3 className="text-lg font-semibold">Conte quem é a sua empresa</h3>
             <div>
               <Label>Nome da empresa *</Label>
-              <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Ex.: Buffet Encanto" />
+              <Input
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Ex.: Buffet Encanto"
+              />
             </div>
             <div>
               <Label>Descrição dos serviços * (mínimo 20 caracteres)</Label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4}
-                placeholder="Conte um pouco sobre seus diferenciais, anos de experiência, estilo..." />
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                placeholder="Conte um pouco sobre seus diferenciais, anos de experiência, estilo..."
+              />
               <p className="text-xs text-muted-foreground mt-1">{description.length} caracteres</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>WhatsApp * (com DDD)</Label>
-                <Input value={whatsapp} onChange={(e) => setWhatsapp(formatPhoneBR(e.target.value))}
-                  placeholder="(11) 91234-5678" inputMode="numeric" />
+                <Input
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(formatPhoneBR(e.target.value))}
+                  placeholder="(11) 91234-5678"
+                  inputMode="numeric"
+                />
                 {whatsapp && !isValidPhoneBR(whatsapp) && (
                   <p className="text-xs text-destructive mt-1">Telefone inválido. Use DDD + número.</p>
                 )}
               </div>
               <div>
                 <Label>E-mail comercial</Label>
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contato@empresa.com" />
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="contato@empresa.com"
+                />
               </div>
             </div>
           </div>
@@ -188,9 +221,15 @@ export default function SupplierOnboardingWizard({
             <div>
               <Label>Categoria principal *</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
                 <SelectContent>
-                  {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -201,7 +240,12 @@ export default function SupplierOnboardingWizard({
               </div>
               <div>
                 <Label>UF *</Label>
-                <Input value={state} onChange={(e) => setState(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} placeholder="SP" />
+                <Input
+                  value={state}
+                  onChange={(e) => setState(e.target.value.toUpperCase().slice(0, 2))}
+                  maxLength={2}
+                  placeholder="SP"
+                />
               </div>
             </div>
           </div>
@@ -217,8 +261,10 @@ export default function SupplierOnboardingWizard({
               {photos.map((p) => (
                 <div key={p.id} className="relative group rounded-lg overflow-hidden aspect-square">
                   <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
-                  <button onClick={() => removePhoto(p.id)}
-                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100">
+                  <button
+                    onClick={() => removePhoto(p.id)}
+                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
@@ -245,7 +291,9 @@ export default function SupplierOnboardingWizard({
             <div>
               <Label>Modelo de preço *</Label>
               <Select value={pricingModel} onValueChange={(v) => setPricingModel(v as "fixo" | "por_pessoa")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="fixo">Fixo (valor total do serviço)</SelectItem>
                   <SelectItem value="por_pessoa">Por pessoa (valor por convidado)</SelectItem>
@@ -259,23 +307,29 @@ export default function SupplierOnboardingWizard({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>
-                  {pricingModel === "por_pessoa" ? "A partir de (R$/convidado) *" : "A partir de (R$) *"}
-                </Label>
-                <MoedaInput value={priceMin} onValueChange={(n) => setPriceMin(n == null ? "" : String(n))}
-                  placeholder={pricingModel === "por_pessoa" ? "120,00" : "3.000,00"} />
+                <Label>{pricingModel === "por_pessoa" ? "A partir de (R$/convidado) *" : "A partir de (R$) *"}</Label>
+                <MoedaInput
+                  value={priceMin}
+                  onValueChange={(n) => setPriceMin(n == null ? "" : String(n))}
+                  placeholder={pricingModel === "por_pessoa" ? "120,00" : "3.000,00"}
+                />
               </div>
               <div>
-                <Label>
-                  {pricingModel === "por_pessoa" ? "Até (R$/convidado) — opcional" : "Até (R$) — opcional"}
-                </Label>
-                <MoedaInput value={priceMax} onValueChange={(n) => setPriceMax(n == null ? "" : String(n))}
-                  placeholder={pricingModel === "por_pessoa" ? "250,00" : "15.000,00"} />
+                <Label>{pricingModel === "por_pessoa" ? "Até (R$/convidado) — opcional" : "Até (R$) — opcional"}</Label>
+                <MoedaInput
+                  value={priceMax}
+                  onValueChange={(n) => setPriceMax(n == null ? "" : String(n))}
+                  placeholder={pricingModel === "por_pessoa" ? "250,00" : "15.000,00"}
+                />
               </div>
             </div>
             <label className="flex items-start gap-2 cursor-pointer">
-              <input type="checkbox" checked={acceptsIdle} onChange={(e) => setAcceptsIdle(e.target.checked)}
-                className="mt-1" />
+              <input
+                type="checkbox"
+                checked={acceptsIdle}
+                onChange={(e) => setAcceptsIdle(e.target.checked)}
+                className="mt-1"
+              />
               <span className="text-sm">
                 Aceito casamentos em <strong>datas ociosas</strong> (segunda a quinta) com desconto especial
               </span>
@@ -287,7 +341,8 @@ export default function SupplierOnboardingWizard({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Detalhes da categoria</h3>
             <p className="text-sm text-muted-foreground">
-              Esses campos são específicos da sua categoria e ajudam os casais a encontrar você na busca. Você pode atualizar depois no seu perfil.
+              Esses campos são específicos da sua categoria e ajudam os casais a encontrar você na busca. Você pode
+              atualizar depois no seu perfil.
             </p>
             <DynamicFieldsForm supplierId={supplier.id} categoryId={categoryId || null} />
           </div>
@@ -300,8 +355,8 @@ export default function SupplierOnboardingWizard({
             </div>
             <h3 className="text-lg font-semibold">Tudo pronto!</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Seu perfil será revisado pela nossa equipe nas próximas 24h. Enquanto isso, configure suas
-              datas de disponibilidade para começar a aparecer nas buscas dos casais.
+              Seu perfil será revisado pela nossa equipe nas próximas 24h. Enquanto isso, configure suas datas de
+              disponibilidade para começar a aparecer nas buscas dos casais.
             </p>
           </div>
         )}
