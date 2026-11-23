@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Corrigir carregamento e envio de feedback e conferir com sessão autenticada.
-- [ ] Ajustar margens de Categorias sugeridas no celular.
+- [x] Corrigir carregamento e envio de feedback: consulta e status conferidos no admin; envio confirmado em conta comum e admin; 9 testes passaram.
+- [x] Ajustar margens de Categorias sugeridas: conferido no celular e computador, sem corte lateral.
 
 - [x] Adicionar duplicação de categorias com seus campos e criar Convites e Sites Virtuais; os 18 arquivos continuam vazios e nenhum build foi executado manualmente. Teste unitário passou; conferência no admin indisponível com a sessão do solicitante.
 

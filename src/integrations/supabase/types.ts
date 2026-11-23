@@ -4106,6 +4106,8 @@ export type Database = {
           id: string
           origem: string
           pagina: string | null
+          respondido_em: string | null
+          resposta: string | null
           solucao_sugerida: string | null
           status: string
           tipo: string
@@ -4119,6 +4121,8 @@ export type Database = {
           id?: string
           origem?: string
           pagina?: string | null
+          respondido_em?: string | null
+          resposta?: string | null
           solucao_sugerida?: string | null
           status?: string
           tipo?: string
@@ -4132,6 +4136,8 @@ export type Database = {
           id?: string
           origem?: string
           pagina?: string | null
+          respondido_em?: string | null
+          resposta?: string | null
           solucao_sugerida?: string | null
           status?: string
           tipo?: string
@@ -5806,6 +5812,10 @@ export type Database = {
         Returns: boolean
       }
       adicionar_perfil: { Args: { tipo: string }; Returns: undefined }
+      admin_atualizar_feedback: {
+        Args: { _id: string; _resposta?: string; _status: string }
+        Returns: undefined
+      }
       admin_broadcast_notification: {
         Args: {
           _body: string
@@ -5859,12 +5869,34 @@ export type Database = {
         }
         Returns: string
       }
+      admin_feedback_abertos: { Args: never; Returns: number }
       admin_lista_match: {
         Args: never
         Returns: {
           cidade: string
           total: number
           uf: string
+        }[]
+      }
+      admin_listar_feedback: {
+        Args: { _status?: string; _tipo?: string }
+        Returns: {
+          anexo_path: string
+          assunto: string
+          conta: string
+          created_at: string
+          descricao: string
+          email: string
+          id: string
+          nome: string
+          origem: string
+          pagina: string
+          respondido_em: string
+          resposta: string
+          solucao_sugerida: string
+          status: string
+          tipo: string
+          user_id: string
         }[]
       }
       admin_mark_commission_paid: {

@@ -61,7 +61,7 @@ export default function AdminCategoriasSugeridas() {
   }, [lista, filtro]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 py-6 md:px-8">
       <div>
         <h1 className="text-2xl font-semibold">Categorias sugeridas</h1>
         <p className="text-sm text-muted-foreground">
@@ -70,7 +70,7 @@ export default function AdminCategoriasSugeridas() {
       </div>
 
       <Tabs value={filtro} onValueChange={(v) => setFiltro(v as any)}>
-        <TabsList>
+        <TabsList className="h-auto flex w-fit max-w-full flex-wrap">
           <TabsTrigger value="pendente">Pendentes</TabsTrigger>
           <TabsTrigger value="aprovada">Aprovadas</TabsTrigger>
           <TabsTrigger value="recusada">Recusadas</TabsTrigger>

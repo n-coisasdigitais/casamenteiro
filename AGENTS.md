@@ -9,3 +9,4 @@
 - Resolve the current professional landing configuration through a fixed-search-path definer helper, to avoid recursive RLS while excluding older configuration records.
 - Account profiles: profiles.account_type is the ACTIVE profile; owned profiles derive from rows in couples/suppliers/staff_profiles. Change account_type only via trocar_perfil/adicionar_perfil/fiquei_noivo (they set app.troca_perfil) or admin — a trigger blocks other updates, to prevent activating unowned profiles.
 - Help center content: questions live in faq_itens; hero/steps/feature cards live in system_settings key ajuda_conteudo; value placeholders are filled by the pure src/lib/ajudaTexto.ts (shared by page, admin, prerender and tests) so no price or fee is hardcoded.
+- Feedback administration uses role-checked RPCs over suporte_reportes; keep list, count and update together so reports and responses remain private.

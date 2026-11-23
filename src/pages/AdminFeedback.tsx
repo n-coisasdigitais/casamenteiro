@@ -79,7 +79,7 @@ export default function AdminFeedback() {
   }, [status, tipo]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 px-4 py-6 md:px-8">
       <SEO title="Feedback | Admin" noIndex />
       <div>
         <h1 className="text-2xl font-semibold">Feedback dos usuários</h1>
