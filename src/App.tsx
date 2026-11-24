@@ -98,6 +98,7 @@ import CustoCasarCidade from "./pages/CustoCasarCidade";
 import StaffOnboarding from "./pages/StaffOnboarding";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffPublicProfile from "./pages/StaffPublicProfile";
+import Profissionais from "./pages/Profissionais";
 import AdminPlanos from "./pages/AdminPlanos";
 import AdminPrecos from "./pages/AdminPrecos";
 import AdminCupons from "./pages/AdminCupons";
@@ -254,7 +255,14 @@ const App = () => (
                 }
               />
               <Route path="/fornecedor/:id" element={<SupplierProfile />} />
-              <Route path="/fornecedor/painel" element={<OferecerTrocaPerfil tipo="supplier"><SupplierDashboard /></OferecerTrocaPerfil>} />
+              <Route
+                path="/fornecedor/painel"
+                element={
+                  <OferecerTrocaPerfil tipo="supplier">
+                    <SupplierDashboard />
+                  </OferecerTrocaPerfil>
+                }
+              />
               <Route path="/fornecedor/mp-callback" element={<MpCallback />} />
               <Route path="/fornecedor/planos" element={<FornecedorPlanos />} />
               <Route path="/pagamento" element={<Pagamento />} />
@@ -293,7 +301,14 @@ const App = () => (
               />
               <Route path="/quiz" element={<Quiz />} />
               <Route path="/ajuda" element={<Ajuda />} />
-              <Route path="/admin/ajuda" element={<AdminLayout><AdminAjuda /></AdminLayout>} />
+              <Route
+                path="/admin/ajuda"
+                element={
+                  <AdminLayout>
+                    <AdminAjuda />
+                  </AdminLayout>
+                }
+              />
               <Route
                 path="/meu-sonho"
                 element={
@@ -302,7 +317,14 @@ const App = () => (
                   </RequireAccountType>
                 }
               />
-              <Route path="/meu-sonho/dossie" element={<RequireAccountType allow={["generico", "couple", "admin"]}><DossieEstilo /></RequireAccountType>} />
+              <Route
+                path="/meu-sonho/dossie"
+                element={
+                  <RequireAccountType allow={["generico", "couple", "admin"]}>
+                    <DossieEstilo />
+                  </RequireAccountType>
+                }
+              />
               <Route path="/sonho/:codigo" element={<ApresentacaoSonho />} />
               <Route
                 path="/admin/quiz"
@@ -342,7 +364,9 @@ const App = () => (
                 path="/profissional/painel"
                 element={
                   <FlagGate flag="vagas">
-                    <OferecerTrocaPerfil tipo="profissional"><StaffDashboard /></OferecerTrocaPerfil>
+                    <OferecerTrocaPerfil tipo="profissional">
+                      <StaffDashboard />
+                    </OferecerTrocaPerfil>
                   </FlagGate>
                 }
               />
@@ -351,6 +375,22 @@ const App = () => (
                 element={
                   <FlagGate flag="vagas">
                     <StaffPublicProfile />
+                  </FlagGate>
+                }
+              />
+              <Route
+                path="/profissionais"
+                element={
+                  <FlagGate flag="vagas">
+                    <Profissionais />
+                  </FlagGate>
+                }
+              />
+              <Route
+                path="/profissionais/:funcao"
+                element={
+                  <FlagGate flag="vagas">
+                    <Profissionais />
                   </FlagGate>
                 }
               />
@@ -390,7 +430,14 @@ const App = () => (
                   </AdminLayout>
                 }
               />
-              <Route path="/admin/otimizar-fotos" element={<AdminLayout><AdminOtimizarFotos /></AdminLayout>} />
+              <Route
+                path="/admin/otimizar-fotos"
+                element={
+                  <AdminLayout>
+                    <AdminOtimizarFotos />
+                  </AdminLayout>
+                }
+              />
               <Route
                 path="/admin/cidades"
                 element={
