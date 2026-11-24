@@ -42,13 +42,22 @@ export default function StaffOnboarding() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await (supabase.from("staff_profiles" as any) as any)
-        .select("*").eq("user_id", user.id).maybeSingle();
+      // telefone e e-mail não são lidos direto da tabela (protegidos): vêm da função do próprio perfil
+      const [{ data }, { data: contato }] = await Promise.all([
+        (supabase.from("staff_profiles" as any) as any)
+          .select(
+            "id, user_id, criado_por, nome, slug, foto_url, funcoes, cidade, estado, raio_km, valor_min_turno, bio, consentimento_lgpd, is_public, rating, review_count, eventos_concluidos, eventos_aceitos, created_at, updated_at, verificacao_status, verificado_em, verificacao_obs, disponivel, notificar_vagas_email, verificacao_enviada_em",
+          )
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        (supabase.rpc as any)("staff_meu_contato"),
+      ]);
+      const meuContato = Array.isArray(contato) ? contato[0] : contato;
       if (data) {
         setProfileId(data.id);
         setNome(data.nome || "");
         setFotoUrl(data.foto_url || null);
-        setTelefone(data.telefone || "");
+        setTelefone(meuContato?.telefone || "");
         setCidade(data.cidade || "");
         setEstado(data.estado || "");
         setRaio(data.raio_km ?? 30);
@@ -64,7 +73,7 @@ export default function StaffOnboarding() {
   }, [user]);
 
   const toggleFuncao = (f: string) =>
-    setFuncoes((prev) => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
+    setFuncoes((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]));
 
   const salvar = async () => {
     if (!user) return;
@@ -113,49 +122,78 @@ export default function StaffOnboarding() {
       <SEO title="Meu perfil profissional — Casamenteiro" noIndex />
       <div className="container mx-auto max-w-2xl px-4">
         <Card>
-          <CardHeader><CardTitle>Complete seu perfil profissional</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Complete seu perfil profissional</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <StaffPhotoUpload fotoUrl={fotoUrl} nome={nome} onUploaded={setFotoUrl} />
-            <div><Label>Nome completo</Label><Input value={nome} onChange={e => setNome(e.target.value)} /></div>
-            <div><Label>Telefone / WhatsApp</Label>
-              <Input value={telefone} onChange={e => setTelefone(formatPhoneBR(e.target.value))} placeholder="(11) 99999-9999" />
+            <div>
+              <Label>Nome completo</Label>
+              <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+            </div>
+            <div>
+              <Label>Telefone / WhatsApp</Label>
+              <Input
+                value={telefone}
+                onChange={(e) => setTelefone(formatPhoneBR(e.target.value))}
+                placeholder="(11) 99999-9999"
+              />
               <p className="text-xs text-muted-foreground mt-1">Fica oculto até você aceitar uma vaga.</p>
             </div>
             <CityStateSelect
               cidade={cidade}
               estado={estado}
-              onChange={(c, uf) => { setCidade(c); setEstado(uf); }}
+              onChange={(c, uf) => {
+                setCidade(c);
+                setEstado(uf);
+              }}
               placeholderCidade="Digite e selecione sua cidade"
             />
 
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Raio de atendimento (km)</Label><Input type="number" value={raio} onChange={e => setRaio(Number(e.target.value))} /></div>
-              <div><Label>Valor mínimo por turno (R$)</Label><MoedaInput value={valorMin} onValueChange={(n) => setValorMin(n == null ? "" : n)} /></div>
+              <div>
+                <Label>Raio de atendimento (km)</Label>
+                <Input type="number" value={raio} onChange={(e) => setRaio(Number(e.target.value))} />
+              </div>
+              <div>
+                <Label>Valor mínimo por turno (R$)</Label>
+                <MoedaInput value={valorMin} onValueChange={(n) => setValorMin(n == null ? "" : n)} />
+              </div>
             </div>
             <div>
               <Label>Funções que você desempenha</Label>
               <div className="flex flex-wrap gap-2 mt-2">
-                {FUNCOES_STAFF.map(f => (
+                {FUNCOES_STAFF.map((f) => (
                   <Badge
                     key={f}
                     variant={funcoes.includes(f) ? "default" : "outline"}
                     className="cursor-pointer"
                     onClick={() => toggleFuncao(f)}
-                  >{f}</Badge>
+                  >
+                    {f}
+                  </Badge>
                 ))}
               </div>
             </div>
-            <div><Label>Bio</Label><Textarea rows={3} value={bio} onChange={e => setBio(e.target.value)} placeholder="Conte um pouco da sua experiência" /></div>
+            <div>
+              <Label>Bio</Label>
+              <Textarea
+                rows={3}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Conte um pouco da sua experiência"
+              />
+            </div>
             <label className="flex gap-2 items-start text-sm cursor-pointer">
-              <Checkbox checked={pub} onCheckedChange={v => setPub(v === true)} className="mt-0.5" />
+              <Checkbox checked={pub} onCheckedChange={(v) => setPub(v === true)} className="mt-0.5" />
               <span>Manter meu perfil visível no marketplace público</span>
             </label>
             <label className="flex gap-2 items-start text-sm cursor-pointer">
-              <Checkbox checked={avisarVagas} onCheckedChange={v => setAvisarVagas(v === true)} className="mt-0.5" />
+              <Checkbox checked={avisarVagas} onCheckedChange={(v) => setAvisarVagas(v === true)} className="mt-0.5" />
               <span>Quero receber e-mails quando surgirem vagas na minha cidade para as minhas funções.</span>
             </label>
             <label className="flex gap-2 items-start text-sm cursor-pointer">
-              <Checkbox checked={consent} onCheckedChange={v => setConsent(v === true)} className="mt-0.5" />
+              <Checkbox checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" />
               <span>Autorizo o tratamento dos meus dados conforme a LGPD e a exibição pública do perfil.</span>
             </label>
             <Button onClick={salvar} disabled={loading} className="w-full">
