@@ -73,6 +73,7 @@ import { AgendaMes, PerfilCompleto, type PassoPerfil } from "@/components/suppli
 import { useSupplierPlan } from "@/hooks/usePlanFeature";
 import "@/components/supplier/painel-v2.css";
 import ConvitePerfilExtra from "@/components/perfis/ConvitePerfilExtra";
+import CityStateSelect from "@/components/CityStateSelect";
 
 type Category = { id: string; name: string; slug?: string | null };
 
@@ -209,7 +210,6 @@ export default function SupplierDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-
   // Abre automaticamente um quote vindo de notificação (?quote=)
   useEffect(() => {
     const qid = searchParams.get("quote");
@@ -327,7 +327,11 @@ export default function SupplierDashboard() {
     if (!supplier) return;
     const ehOutros = categories.find((c) => c.id === categoryId)?.slug === "outros";
     if (ehOutros && outrosDescricao.trim().length < 3) {
-      toast({ title: "Descreva seu serviço", description: "Conte qual é o serviço que você oferece.", variant: "destructive" });
+      toast({
+        title: "Descreva seu serviço",
+        description: "Conte qual é o serviço que você oferece.",
+        variant: "destructive",
+      });
       return;
     }
     if (phone && !isValidPhoneBR(phone)) {
@@ -346,7 +350,8 @@ export default function SupplierDashboard() {
         company_name: companyName,
         description,
         category_id: categoryId || null,
-        categoria_outros_descricao: categories.find((c) => c.id === categoryId)?.slug === "outros" ? outrosDescricao.trim() : null,
+        categoria_outros_descricao:
+          categories.find((c) => c.id === categoryId)?.slug === "outros" ? outrosDescricao.trim() : null,
         city: city || null,
         state: state || null,
         phone: phoneDigits,
@@ -368,7 +373,9 @@ export default function SupplierDashboard() {
     const file = e.target.files[0];
     const img = await comprimirImagem(file, FOTO_GALERIA);
     const filePath = `${user.id}/${Date.now()}-${nomeArquivo(file.name, img.extensao)}`;
-    const { error: uploadError } = await supabase.storage.from("supplier-photos").upload(filePath, img.blob, { contentType: img.tipo });
+    const { error: uploadError } = await supabase.storage
+      .from("supplier-photos")
+      .upload(filePath, img.blob, { contentType: img.tipo });
     if (uploadError) {
       toast({ title: "Erro no upload", description: traduzirErro(uploadError), variant: "destructive" });
       setUploading(false);
@@ -466,11 +473,39 @@ export default function SupplierDashboard() {
 
   const descricaoOk = (supplier.description || "").trim().length >= 80;
   const passosPerfil: PassoPerfil[] = [
-    { key: "fotos", label: photos.length >= 5 ? "Fotos do portfólio" : `Adicionar fotos (${photos.length}/5)`, feito: photos.length >= 5, onClick: () => goDest("negocio", { sub: "fotos" }) },
-    { key: "capa", label: "Foto de destaque", feito: photos.some((p) => p.is_principal) || !!supplier.cover_photo_url, onClick: () => goDest("negocio", { sub: "fotos" }) },
-    { key: "descricao", label: descricaoOk ? "Descrição dos serviços" : "Escrever a descrição dos serviços", feito: descricaoOk, onClick: () => goDest("negocio", { sub: "perfil" }) },
-    { key: "contato", label: phone ? "WhatsApp de contato" : "Informar WhatsApp de contato", feito: !!phone && isValidPhoneBR(phone), onClick: () => goDest("negocio", { sub: "perfil" }) },
-    { key: "area", label: "Cidades que você atende", feito: (supplier.cidades_atendidas?.length ?? 0) > 0 || !!supplier.raio_atendimento_km || (supplier as any).atendimento_modo === "nacional", onClick: () => goDest("negocio", { sub: "atendimento" }) },
+    {
+      key: "fotos",
+      label: photos.length >= 5 ? "Fotos do portfólio" : `Adicionar fotos (${photos.length}/5)`,
+      feito: photos.length >= 5,
+      onClick: () => goDest("negocio", { sub: "fotos" }),
+    },
+    {
+      key: "capa",
+      label: "Foto de destaque",
+      feito: photos.some((p) => p.is_principal) || !!supplier.cover_photo_url,
+      onClick: () => goDest("negocio", { sub: "fotos" }),
+    },
+    {
+      key: "descricao",
+      label: descricaoOk ? "Descrição dos serviços" : "Escrever a descrição dos serviços",
+      feito: descricaoOk,
+      onClick: () => goDest("negocio", { sub: "perfil" }),
+    },
+    {
+      key: "contato",
+      label: phone ? "WhatsApp de contato" : "Informar WhatsApp de contato",
+      feito: !!phone && isValidPhoneBR(phone),
+      onClick: () => goDest("negocio", { sub: "perfil" }),
+    },
+    {
+      key: "area",
+      label: "Cidades que você atende",
+      feito:
+        (supplier.cidades_atendidas?.length ?? 0) > 0 ||
+        !!supplier.raio_atendimento_km ||
+        (supplier as any).atendimento_modo === "nacional",
+      onClick: () => goDest("negocio", { sub: "atendimento" }),
+    },
   ];
   const titulos: Record<SupplierDestination, string> = {
     painel: "",
@@ -483,7 +518,13 @@ export default function SupplierDashboard() {
   };
   const hora = new Date().getHours();
   const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
-  const iniciais = (supplier.company_name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
+  const iniciais = (supplier.company_name || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w: string) => w[0])
+    .join("")
+    .toUpperCase();
 
   const renderContent = () => {
     if (dest === "painel") {
@@ -667,24 +708,34 @@ export default function SupplierDashboard() {
                   {categories.find((c) => c.id === categoryId)?.slug === "outros" && (
                     <div>
                       <Label>Qual é o seu serviço? *</Label>
-                      <Input value={outrosDescricao} maxLength={120} onChange={(e) => setOutrosDescricao(e.target.value)}
-                        placeholder="Ex.: Aluguel de mobiliário" />
+                      <Input
+                        value={outrosDescricao}
+                        maxLength={120}
+                        onChange={(e) => setOutrosDescricao(e.target.value)}
+                        placeholder="Ex.: Aluguel de mobiliário"
+                      />
                     </div>
                   )}
                   {user && (
-                    <LogoUploader userId={user.id} supplierId={supplier.id} nome={companyName}
-                      atual={supplier.logo_url} onSalvo={(url) => setSupplier((s: any) => ({ ...s, logo_url: url }))} />
+                    <LogoUploader
+                      userId={user.id}
+                      supplierId={supplier.id}
+                      nome={companyName}
+                      atual={supplier.logo_url}
+                      onSalvo={(url) => setSupplier((s: any) => ({ ...s, logo_url: url }))}
+                    />
                   )}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Cidade</Label>
-                      <Input value={city} onChange={(e) => setCity(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>Estado</Label>
-                      <Input value={state} onChange={(e) => setState(e.target.value)} />
-                    </div>
-                  </div>
+                  <CityStateSelect
+                    cidade={city}
+                    estado={state}
+                    labelCidade="Cidade principal"
+                    labelEstado="Estado (UF)"
+                    ajuda="Digite e selecione na lista. Outras cidades e raio ficam em Onde você atende."
+                    onChange={(c, uf) => {
+                      setCity(c);
+                      setState(uf);
+                    }}
+                  />
                   <div>
                     <Label>WhatsApp (com DDD)</Label>
                     <Input
@@ -798,11 +849,21 @@ export default function SupplierDashboard() {
   };
 
   return (
-    <div className="painel-v2 min-h-[100dvh] overflow-x-hidden" style={{ background: "hsl(var(--background))", color: "var(--pv-ink)" }}>
+    <div
+      className="painel-v2 min-h-[100dvh] overflow-x-hidden"
+      style={{ background: "hsl(var(--background))", color: "var(--pv-ink)" }}
+    >
       <WelcomeModal tipo="supplier" />
-      <header className="sticky top-0 z-40 border-b backdrop-blur" style={{ background: "rgba(248,243,237,.9)", borderColor: "var(--pv-line)" }}>
+      <header
+        className="sticky top-0 z-40 border-b backdrop-blur"
+        style={{ background: "rgba(248,243,237,.9)", borderColor: "var(--pv-line)" }}
+      >
         <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
-          <Link to="/" className="text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--pv-ink)" }}>
+          <Link
+            to="/"
+            className="text-[20px] font-extrabold"
+            style={{ letterSpacing: "-0.03em", color: "var(--pv-ink)" }}
+          >
             <BrandLogo />
           </Link>
           <div className="flex items-center gap-2">
@@ -826,12 +887,20 @@ export default function SupplierDashboard() {
           onChange={(d) => goDest(d)}
           items={destinations}
           cabecalho={
-            <div className="mb-2.5 flex items-center gap-2.5 rounded-[14px] border bg-white p-2.5" style={{ borderColor: "var(--pv-line)" }}>
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] text-sm font-extrabold" style={{ background: "linear-gradient(135deg,#f2b98a,#d9905a)", color: "#1f1d1b" }}>
+            <div
+              className="mb-2.5 flex items-center gap-2.5 rounded-[14px] border bg-white p-2.5"
+              style={{ borderColor: "var(--pv-line)" }}
+            >
+              <span
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] text-sm font-extrabold"
+                style={{ background: "linear-gradient(135deg,#f2b98a,#d9905a)", color: "#1f1d1b" }}
+              >
                 {iniciais}
               </span>
               <span className="min-w-0">
-                <b className="block truncate text-sm" style={{ color: "var(--pv-ink)" }}>{supplier.company_name}</b>
+                <b className="block truncate text-sm" style={{ color: "var(--pv-ink)" }}>
+                  {supplier.company_name}
+                </b>
                 <small className="block truncate text-xs" style={{ color: "var(--pv-muted)" }}>
                   {[cat?.name, supplier.city].filter(Boolean).join(" · ") || "Seu negócio"}
                 </small>
@@ -854,8 +923,14 @@ export default function SupplierDashboard() {
             <div className="min-w-0">
               {dest === "painel" ? (
                 <>
-                  <h1 className="m-0 text-[clamp(24px,2.6vw,30px)] font-extrabold leading-tight" style={{ letterSpacing: "-0.035em", color: "var(--pv-ink)" }}>
-                    {saudacao}, <em className="pv-serif" style={{ color: "var(--pv-clay)" }}>{supplier.company_name}.</em>
+                  <h1
+                    className="m-0 text-[clamp(24px,2.6vw,30px)] font-extrabold leading-tight"
+                    style={{ letterSpacing: "-0.035em", color: "var(--pv-ink)" }}
+                  >
+                    {saudacao},{" "}
+                    <em className="pv-serif" style={{ color: "var(--pv-clay)" }}>
+                      {supplier.company_name}.
+                    </em>
                   </h1>
                   <p className="pv-num m-0 mt-1 text-[15px]" style={{ color: "var(--pv-body)" }}>
                     {prioridades == null
@@ -866,7 +941,10 @@ export default function SupplierDashboard() {
                   </p>
                 </>
               ) : (
-                <h1 className="m-0 text-[clamp(24px,2.6vw,30px)] font-extrabold leading-tight" style={{ letterSpacing: "-0.035em", color: "var(--pv-ink)" }}>
+                <h1
+                  className="m-0 text-[clamp(24px,2.6vw,30px)] font-extrabold leading-tight"
+                  style={{ letterSpacing: "-0.035em", color: "var(--pv-ink)" }}
+                >
                   {titulos[dest]}
                 </h1>
               )}
@@ -1032,15 +1110,27 @@ function PlanoLateral({ supplierId }: { supplierId: string }) {
     texto = plano.cancelada ? "Cancelado: vale até o fim do período pago." : "Assinatura ativa.";
   }
   return (
-    <div className="flex flex-col gap-2 rounded-[14px] p-3.5 text-[13px]" style={{ background: "var(--pv-sage-soft)", color: "var(--pv-body)" }}>
-      <b className="text-sm" style={{ color: "var(--pv-ink)" }}>{titulo}</b>
+    <div
+      className="flex flex-col gap-2 rounded-[14px] p-3.5 text-[13px]"
+      style={{ background: "var(--pv-sage-soft)", color: "var(--pv-body)" }}
+    >
+      <b className="text-sm" style={{ color: "var(--pv-ink)" }}>
+        {titulo}
+      </b>
       <span className="pv-num">{texto}</span>
       {pct != null && (
         <span className="block h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(74,124,106,.18)" }}>
-          <span className="block h-full rounded-full transition-[width] duration-1000" style={{ width: `${pct}%`, background: "var(--pv-sage)" }} />
+          <span
+            className="block h-full rounded-full transition-[width] duration-1000"
+            style={{ width: `${pct}%`, background: "var(--pv-sage)" }}
+          />
         </span>
       )}
-      <Link to="/fornecedor/planos" className="self-start font-semibold hover:underline" style={{ color: "var(--pv-clay)" }}>
+      <Link
+        to="/fornecedor/planos"
+        className="self-start font-semibold hover:underline"
+        style={{ color: "var(--pv-clay)" }}
+      >
         {plano.temAssinatura ? "Gerenciar plano" : "Ver planos"}
       </Link>
     </div>
