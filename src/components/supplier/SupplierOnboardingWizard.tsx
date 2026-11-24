@@ -14,6 +14,7 @@ import { formatPhoneBR, isValidPhoneBR } from "@/lib/phone";
 import DynamicFieldsForm from "@/components/dynamic-fields/DynamicFieldsForm";
 import { MoedaInput } from "@/components/ui/moeda-input";
 import { comprimirImagem, nomeArquivo, FOTO_GALERIA } from "@/lib/comprimirImagem";
+import CityStateSelect from "@/components/CityStateSelect";
 
 type Category = { id: string; name: string };
 
@@ -233,21 +234,16 @@ export default function SupplierOnboardingWizard({ supplier, onComplete }: { sup
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Cidade *</Label>
-                <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="São Paulo" />
-              </div>
-              <div>
-                <Label>UF *</Label>
-                <Input
-                  value={state}
-                  onChange={(e) => setState(e.target.value.toUpperCase().slice(0, 2))}
-                  maxLength={2}
-                  placeholder="SP"
-                />
-              </div>
-            </div>
+            <CityStateSelect
+              cidade={city}
+              estado={state}
+              labelCidade="Cidade principal *"
+              labelEstado="UF *"
+              onChange={(c, uf) => {
+                setCity(c);
+                setState(uf);
+              }}
+            />
           </div>
         )}
 
