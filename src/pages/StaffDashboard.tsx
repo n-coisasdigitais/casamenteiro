@@ -48,8 +48,10 @@ function isoLocal(d: Date) {
   const dia = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${m}-${dia}`;
 }
-const dataBR = (iso?: string | null, opts: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short" }) =>
-  iso ? new Date(iso + "T00:00:00").toLocaleDateString("pt-BR", opts).replace(/\./g, "") : "";
+const dataBR = (
+  iso?: string | null,
+  opts: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short" },
+) => (iso ? new Date(iso + "T00:00:00").toLocaleDateString("pt-BR", opts).replace(/\./g, "") : "");
 const horaCurta = (h?: string | null) => (h ? h.slice(0, 5) : "");
 const reais = (v?: number | null) =>
   "R$ " + Number(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -151,7 +153,8 @@ export default function StaffDashboard() {
     if (!tab) return;
     const d = TAB_PARA_DESTINO[tab];
     if (d) setDest(d);
-    if (tab === "documentos") setTimeout(() => docsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+    if (tab === "documentos")
+      setTimeout(() => docsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
   }, [params]);
 
   const irPara = (d: Destino) => {
@@ -166,7 +169,9 @@ export default function StaffDashboard() {
   const load = async () => {
     if (!user) return;
     const { data: sp } = await (supabase.from("staff_profiles" as any) as any)
-      .select("*")
+      .select(
+        "id, user_id, criado_por, nome, slug, foto_url, funcoes, cidade, estado, raio_km, valor_min_turno, bio, consentimento_lgpd, is_public, rating, review_count, eventos_concluidos, eventos_aceitos, created_at, updated_at, verificacao_status, verificado_em, verificacao_obs, disponivel, notificar_vagas_email, verificacao_enviada_em",
+      )
       .eq("user_id", user.id)
       .maybeSingle();
     if (!sp) return navigate("/profissional/onboarding");
@@ -229,7 +234,10 @@ export default function StaffDashboard() {
     setSaindo((s) => ({ ...s, [appId]: true }));
     toast({
       title: status === "aceito" ? "Vaga aceita!" : "Convite recusado",
-      description: status === "aceito" ? "A data foi bloqueada na sua agenda. O contato do fornecedor já está liberado." : undefined,
+      description:
+        status === "aceito"
+          ? "A data foi bloqueada na sua agenda. O contato do fornecedor já está liberado."
+          : undefined,
     });
     setTimeout(() => {
       setSaindo((s) => ({ ...s, [appId]: false }));
@@ -276,11 +284,17 @@ export default function StaffDashboard() {
       `• Função: ${j.funcao}`,
       `• Data: ${new Date(j.data + "T00:00:00").toLocaleDateString("pt-BR")}`,
     ];
-    if (j.hora_inicio) linhas.push(`• Horário: ${horaCurta(j.hora_inicio)}${j.hora_fim ? " às " + horaCurta(j.hora_fim) : ""}`);
+    if (j.hora_inicio)
+      linhas.push(`• Horário: ${horaCurta(j.hora_inicio)}${j.hora_fim ? " às " + horaCurta(j.hora_fim) : ""}`);
     if (j.local) linhas.push(`• Local: ${j.local}`);
     const url = buildWhatsAppLink(fone, linhas.join("\n"));
     if (url) window.open(url, "_blank");
-    else toast({ title: "Número de WhatsApp inválido", description: "Use a conversa aqui no painel.", variant: "destructive" });
+    else
+      toast({
+        title: "Número de WhatsApp inválido",
+        description: "Use a conversa aqui no painel.",
+        variant: "destructive",
+      });
   };
 
   const bloquearPeriodo = async () => {
@@ -288,7 +302,11 @@ export default function StaffDashboard() {
     const start = new Date(blockStart + "T00:00:00");
     const end = new Date((blockEnd || blockStart) + "T00:00:00");
     if (end < start) {
-      return toast({ title: "Período inválido", description: "A data final é anterior à inicial.", variant: "destructive" });
+      return toast({
+        title: "Período inválido",
+        description: "A data final é anterior à inicial.",
+        variant: "destructive",
+      });
     }
     const dias: string[] = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) dias.push(isoLocal(d));
@@ -296,7 +314,8 @@ export default function StaffDashboard() {
     const novos = dias
       .filter((data) => !jaBloqueadas.has(data))
       .map((data) => ({ staff_id: staff.id, data, motivo: blockMotivo || null }));
-    if (novos.length === 0) return toast({ title: "Nada a bloquear", description: "Essas datas já estavam bloqueadas." });
+    if (novos.length === 0)
+      return toast({ title: "Nada a bloquear", description: "Essas datas já estavam bloqueadas." });
     const { error } = await (supabase.from("staff_unavailability" as any) as any).insert(novos);
     if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: novos.length === 1 ? "Data bloqueada" : `${novos.length} datas bloqueadas` });
@@ -319,7 +338,11 @@ export default function StaffDashboard() {
     if (datasEvento.has(data)) return toast({ title: "Você tem um evento confirmado nesse dia." });
     const bloqueio = unavPorData.get(data);
     if (bloqueio) return desbloquear(bloqueio.id);
-    const { error } = await (supabase.from("staff_unavailability" as any) as any).insert({ staff_id: staff.id, data, motivo: null });
+    const { error } = await (supabase.from("staff_unavailability" as any) as any).insert({
+      staff_id: staff.id,
+      data,
+      motivo: null,
+    });
     if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: "Dia bloqueado", description: "Você não recebe convites nessa data." });
     load();
@@ -327,7 +350,9 @@ export default function StaffDashboard() {
 
   const toggleDisponivel = async (v: boolean) => {
     setStaff((s: any) => ({ ...s, disponivel: v }));
-    const { error } = await (supabase.from("staff_profiles" as any) as any).update({ disponivel: v }).eq("id", staff.id);
+    const { error } = await (supabase.from("staff_profiles" as any) as any)
+      .update({ disponivel: v })
+      .eq("id", staff.id);
     if (error) return toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
     toast({ title: v ? "Você está disponível para vagas" : "Pausado: você não recebe novos convites" });
   };
@@ -380,7 +405,8 @@ export default function StaffDashboard() {
   const datasEvento = useMemo(() => {
     const s = new Set<string>();
     applications.forEach((a) => {
-      if ((a.status === "aceito" || a.status === "concluido") && !isEncerradaSemConclusao(a) && a.job?.data) s.add(a.job.data);
+      if ((a.status === "aceito" || a.status === "concluido") && !isEncerradaSemConclusao(a) && a.job?.data)
+        s.add(a.job.data);
     });
     return s;
   }, [applications]);
@@ -388,7 +414,10 @@ export default function StaffDashboard() {
 
   const mesAtual = hoje.slice(0, 7);
   const doMes = applications.filter(
-    (a) => (a.status === "aceito" || a.status === "concluido") && !isEncerradaSemConclusao(a) && (a.job?.data || "").startsWith(mesAtual),
+    (a) =>
+      (a.status === "aceito" || a.status === "concluido") &&
+      !isEncerradaSemConclusao(a) &&
+      (a.job?.data || "").startsWith(mesAtual),
   );
   const totalMes = doMes.reduce((s, a) => s + Number(a.job?.valor_turno || 0), 0);
   const jaAplicou = (jobId: string) => applications.some((a) => a.job_id === jobId && a.status !== "retirada");
@@ -404,7 +433,9 @@ export default function StaffDashboard() {
         { ok: staff.verificacao_status === "verificado", label: "Documentos verificados", docs: true },
       ]
     : [];
-  const pctPerfil = passosPerfil.length ? Math.round((passosPerfil.filter((p) => p.ok).length / passosPerfil.length) * 100) : 0;
+  const pctPerfil = passosPerfil.length
+    ? Math.round((passosPerfil.filter((p) => p.ok).length / passosPerfil.length) * 100)
+    : 0;
 
   if (!staff) return null;
 
@@ -415,7 +446,9 @@ export default function StaffDashboard() {
 
   const contagem = (() => {
     if (!proximo) return null;
-    const inicio = new Date(`${proximo.job.data}T${proximo.job.hora_inicio ? horaCurta(proximo.job.hora_inicio) : "00:00"}:00`).getTime();
+    const inicio = new Date(
+      `${proximo.job.data}T${proximo.job.hora_inicio ? horaCurta(proximo.job.hora_inicio) : "00:00"}:00`,
+    ).getTime();
     const mins = Math.max(0, Math.floor((inicio - agora) / 60000));
     return { d: Math.floor(mins / 1440), h: Math.floor((mins % 1440) / 60), m: mins % 60 };
   })();
@@ -423,7 +456,10 @@ export default function StaffDashboard() {
   /* ---------- pedaços de interface ---------- */
 
   const Fatos = ({ j, claro }: { j: any; claro?: boolean }) => (
-    <div className="pp-num flex flex-wrap gap-x-3.5 gap-y-1 text-[13.5px]" style={{ color: claro ? "#e3f0ea" : "var(--pp-body)" }}>
+    <div
+      className="pp-num flex flex-wrap gap-x-3.5 gap-y-1 text-[13.5px]"
+      style={{ color: claro ? "#e3f0ea" : "var(--pp-body)" }}
+    >
       {j?.data && (
         <span className="inline-flex items-center gap-1.5">
           <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
@@ -446,7 +482,8 @@ export default function StaffDashboard() {
     </div>
   );
 
-  const btn = "inline-flex h-11 items-center justify-center gap-1.5 rounded-full px-5 text-[15px] font-bold transition active:scale-[.97] disabled:opacity-60";
+  const btn =
+    "inline-flex h-11 items-center justify-center gap-1.5 rounded-full px-5 text-[15px] font-bold transition active:scale-[.97] disabled:opacity-60";
   const btnPri = `${btn} text-white hover:brightness-110`;
   const btnSec = `${btn} border bg-white`;
   const priStyle = { background: "var(--pp-sage)" };
@@ -470,11 +507,20 @@ export default function StaffDashboard() {
         <Fatos j={compacto ? { data: j.data, cidade: j.cidade || j.local } : j} />
         <div className="mt-auto pt-1">
           {enviado ? (
-            <span className="inline-flex h-10 items-center gap-1.5 text-sm font-bold" role="status" style={{ color: "var(--pp-ok)" }}>
+            <span
+              className="inline-flex h-10 items-center gap-1.5 text-sm font-bold"
+              role="status"
+              style={{ color: "var(--pp-ok)" }}
+            >
               <Check className="h-4 w-4" aria-hidden="true" /> Candidatura enviada
             </span>
           ) : (
-            <button type="button" className={`${btnPri} h-10 w-full text-sm`} style={priStyle} onClick={() => candidatar(j.id)}>
+            <button
+              type="button"
+              className={`${btnPri} h-10 w-full text-sm`}
+              style={priStyle}
+              onClick={() => candidatar(j.id)}
+            >
               Candidatar-se
             </button>
           )}
@@ -487,7 +533,9 @@ export default function StaffDashboard() {
     const ev = datasEvento.has(data);
     const bl = unavPorData.has(data);
     const passado = data < hoje;
-    const cls = ["pp-day", ev ? "ev" : "", bl ? "bl" : "", data === hoje ? "today" : "", passado ? "past" : ""].join(" ");
+    const cls = ["pp-day", ev ? "ev" : "", bl ? "bl" : "", data === hoje ? "today" : "", passado ? "past" : ""].join(
+      " ",
+    );
     return (
       <button
         type="button"
@@ -516,7 +564,8 @@ export default function StaffDashboard() {
         <i className="inline-block h-2.5 w-2.5 rounded-[3px]" style={{ background: "var(--pp-sage)" }} /> Evento
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <i className="inline-block h-2.5 w-2.5 rounded-[3px]" style={{ background: "var(--pp-line-strong)" }} /> Indisponível
+        <i className="inline-block h-2.5 w-2.5 rounded-[3px]" style={{ background: "var(--pp-line-strong)" }} />{" "}
+        Indisponível
       </span>
       <span>Toque num dia livre para bloquear</span>
     </div>
@@ -530,7 +579,10 @@ export default function StaffDashboard() {
   ];
 
   const Titulo = ({ children }: { children: React.ReactNode }) => (
-    <h1 className="m-0 text-[26px] font-bold md:text-[30px]" style={{ letterSpacing: "-0.035em", lineHeight: 1.15, color: "var(--pp-ink)" }}>
+    <h1
+      className="m-0 text-[26px] font-bold md:text-[30px]"
+      style={{ letterSpacing: "-0.035em", lineHeight: 1.15, color: "var(--pp-ink)" }}
+    >
       {children}
     </h1>
   );
@@ -549,10 +601,18 @@ export default function StaffDashboard() {
             <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> {verificacaoLabel(verif)}
           </span>
           <span className="pp-chip pp-num">
-            <Star className="h-3.5 w-3.5" style={{ color: "var(--pp-terracota)", fill: "var(--pp-terracota)" }} aria-hidden="true" />
-            {staff.rating ? `${Number(staff.rating).toFixed(1).replace(".", ",")} · ${staff.review_count} avaliações` : "sem avaliações"}
+            <Star
+              className="h-3.5 w-3.5"
+              style={{ color: "var(--pp-terracota)", fill: "var(--pp-terracota)" }}
+              aria-hidden="true"
+            />
+            {staff.rating
+              ? `${Number(staff.rating).toFixed(1).replace(".", ",")} · ${staff.review_count} avaliações`
+              : "sem avaliações"}
           </span>
-          {(staff.funcoes || []).length > 0 && <span className="pp-chip">{(staff.funcoes || []).slice(0, 2).join(" · ")}</span>}
+          {(staff.funcoes || []).length > 0 && (
+            <span className="pp-chip">{(staff.funcoes || []).slice(0, 2).join(" · ")}</span>
+          )}
         </div>
       </div>
 
@@ -566,10 +626,16 @@ export default function StaffDashboard() {
             <span>
               <b className="block text-[15px]">{staff.disponivel !== false ? "Disponível para vagas" : "Pausado"}</b>
               <small className="text-[13px]" style={{ color: "var(--pp-body)" }}>
-                {staff.disponivel !== false ? "Fornecedores da sua região podem te convidar." : "Você não recebe convites até religar."}
+                {staff.disponivel !== false
+                  ? "Fornecedores da sua região podem te convidar."
+                  : "Você não recebe convites até religar."}
               </small>
             </span>
-            <Switch checked={staff.disponivel !== false} onCheckedChange={toggleDisponivel} aria-label="Disponível para vagas" />
+            <Switch
+              checked={staff.disponivel !== false}
+              onCheckedChange={toggleDisponivel}
+              aria-label="Disponível para vagas"
+            />
           </label>
 
           <section className="pp-card" aria-labelledby="h-agora">
@@ -582,7 +648,10 @@ export default function StaffDashboard() {
               </span>
             </div>
             {convites.length === 0 ? (
-              <p className="m-0 rounded-2xl border border-dashed p-5 text-center text-sm" style={{ borderColor: "var(--pp-line-strong)", color: "var(--pp-body)" }}>
+              <p
+                className="m-0 rounded-2xl border border-dashed p-5 text-center text-sm"
+                style={{ borderColor: "var(--pp-line-strong)", color: "var(--pp-body)" }}
+              >
                 Nenhum convite esperando resposta. Avisamos quando chegar.
                 {sugestoes.length > 0 && (
                   <>
@@ -620,26 +689,57 @@ export default function StaffDashboard() {
                     </div>
                     <Fatos j={a.job} />
                     {confirmRecusa === a.id ? (
-                      <div className="flex flex-col gap-2 rounded-xl p-3 text-[13.5px]" style={{ background: "var(--pp-rose-soft)" }}>
+                      <div
+                        className="flex flex-col gap-2 rounded-xl p-3 text-[13.5px]"
+                        style={{ background: "var(--pp-rose-soft)" }}
+                      >
                         <span>Recusar este convite? O fornecedor é avisado e pode chamar outra pessoa.</span>
                         <div className="flex gap-2">
-                          <button type="button" className={btnSec} style={secStyle} disabled={ocupado[a.id]} onClick={() => responder(a.id, "recusado")}>
+                          <button
+                            type="button"
+                            className={btnSec}
+                            style={secStyle}
+                            disabled={ocupado[a.id]}
+                            onClick={() => responder(a.id, "recusado")}
+                          >
                             Sim, recusar
                           </button>
-                          <button type="button" className={`${btn} px-3`} style={{ color: "var(--pp-body)" }} onClick={() => setConfirmRecusa(null)}>
+                          <button
+                            type="button"
+                            className={`${btn} px-3`}
+                            style={{ color: "var(--pp-body)" }}
+                            onClick={() => setConfirmRecusa(null)}
+                          >
                             Voltar
                           </button>
                         </div>
                       </div>
                     ) : (
                       <div className="flex gap-2">
-                        <button type="button" className={`${btnPri} flex-1`} style={priStyle} disabled={ocupado[a.id]} onClick={() => responder(a.id, "aceito")}>
+                        <button
+                          type="button"
+                          className={`${btnPri} flex-1`}
+                          style={priStyle}
+                          disabled={ocupado[a.id]}
+                          onClick={() => responder(a.id, "aceito")}
+                        >
                           Aceitar
                         </button>
-                        <button type="button" className={btnSec} style={secStyle} onClick={() => setConfirmRecusa(a.id)}>
+                        <button
+                          type="button"
+                          className={btnSec}
+                          style={secStyle}
+                          onClick={() => setConfirmRecusa(a.id)}
+                        >
                           Recusar
                         </button>
-                        <button type="button" className={`${btnSec} w-11`} style={{ ...secStyle, padding: 0, flex: "none" }} aria-label="Conversar com o fornecedor" onClick={() => setChatApp(a)}>
+                        <button
+                          type="button"
+                          className={`${btnSec} w-11`}
+                          style={{ ...secStyle, padding: 0, flex: "none" }}
+                          aria-label="Conversar com o fornecedor"
+                          onClick={() => setChatApp(a)}
+                        >
                           <MessageCircle className="h-[18px] w-[18px]" aria-hidden="true" />
                         </button>
                       </div>
@@ -661,7 +761,8 @@ export default function StaffDashboard() {
             </div>
             {sugestoes.length === 0 ? (
               <p className="m-0 text-sm" style={{ color: "var(--pp-body)" }}>
-                Nenhuma vaga aberta com as suas funções e cidade agora. Quanto mais completo o perfil, mais convites você recebe.
+                Nenhuma vaga aberta com as suas funções e cidade agora. Quanto mais completo o perfil, mais convites
+                você recebe.
               </p>
             ) : (
               <div className="pp-rail">
@@ -688,7 +789,10 @@ export default function StaffDashboard() {
                 {proximo.job.observacoes ? ` · ${proximo.job.observacoes}` : ""}
               </div>
               {contagem && (
-                <div className="pp-count pp-num flex gap-2" aria-label={`Faltam ${contagem.d} dias e ${contagem.h} horas`}>
+                <div
+                  className="pp-count pp-num flex gap-2"
+                  aria-label={`Faltam ${contagem.d} dias e ${contagem.h} horas`}
+                >
                   {[
                     [contagem.d, "dias"],
                     [contagem.h, "horas"],
@@ -706,7 +810,12 @@ export default function StaffDashboard() {
                 </div>
               )}
               <div className="flex gap-2">
-                <button type="button" className={`${btn} flex-1 bg-white`} style={{ color: "#2f5446" }} onClick={() => abrirWhats(proximo)}>
+                <button
+                  type="button"
+                  className={`${btn} flex-1 bg-white`}
+                  style={{ color: "#2f5446" }}
+                  onClick={() => abrirWhats(proximo)}
+                >
                   WhatsApp
                 </button>
                 <button
@@ -754,7 +863,8 @@ export default function StaffDashboard() {
               </div>
             </div>
             <p className="m-0 text-[12.5px]" style={{ color: "var(--pp-muted)" }}>
-              Soma dos valores de turno das vagas aceitas. O pagamento é combinado e feito direto com o fornecedor; a plataforma só registra o valor.
+              Soma dos valores de turno das vagas aceitas. O pagamento é combinado e feito direto com o fornecedor; a
+              plataforma só registra o valor.
             </p>
           </section>
 
@@ -782,8 +892,10 @@ export default function StaffDashboard() {
               </h2>
               <p className="m-0 text-sm" style={{ color: "var(--pp-body)" }}>
                 Como foi trabalhar com <b>{paraAvaliar[0].job?.supplier?.company_name || "o fornecedor"}</b>
-                {paraAvaliar[0].job?.data ? ` em ${dataBR(paraAvaliar[0].job.data, { day: "numeric", month: "short" })}` : ""}?
-                {paraAvaliar.length > 1 ? ` (mais ${paraAvaliar.length - 1} para avaliar)` : ""}
+                {paraAvaliar[0].job?.data
+                  ? ` em ${dataBR(paraAvaliar[0].job.data, { day: "numeric", month: "short" })}`
+                  : ""}
+                ?{paraAvaliar.length > 1 ? ` (mais ${paraAvaliar.length - 1} para avaliar)` : ""}
               </p>
               <div className="flex gap-2" role="group" aria-label="Escolha uma nota">
                 {[1, 2, 3, 4, 5].map((n) => (
@@ -838,8 +950,13 @@ export default function StaffDashboard() {
       </div>
 
       {minhas.length === 0 ? (
-        <p className="m-0 rounded-2xl border border-dashed p-5 text-center text-sm" style={{ borderColor: "var(--pp-line-strong)", color: "var(--pp-body)" }}>
-          {filtro === "todas" ? "Você ainda não tem convites nem candidaturas. Veja as vagas abertas abaixo." : "Nada por aqui."}
+        <p
+          className="m-0 rounded-2xl border border-dashed p-5 text-center text-sm"
+          style={{ borderColor: "var(--pp-line-strong)", color: "var(--pp-body)" }}
+        >
+          {filtro === "todas"
+            ? "Você ainda não tem convites nem candidaturas. Veja as vagas abertas abaixo."
+            : "Nada por aqui."}
         </p>
       ) : (
         <div className="flex flex-col gap-2.5">
@@ -864,36 +981,72 @@ export default function StaffDashboard() {
                 <div className="flex flex-wrap gap-2">
                   {a.status === "convidado" && !encerrada && (
                     <>
-                      <button type="button" className={`${btnPri} h-10 text-sm`} style={priStyle} disabled={ocupado[a.id]} onClick={() => responder(a.id, "aceito")}>
+                      <button
+                        type="button"
+                        className={`${btnPri} h-10 text-sm`}
+                        style={priStyle}
+                        disabled={ocupado[a.id]}
+                        onClick={() => responder(a.id, "aceito")}
+                      >
                         Aceitar
                       </button>
                       {confirmRecusa === a.id ? (
-                        <button type="button" className={`${btnSec} h-10 text-sm`} style={{ ...secStyle, background: "var(--pp-rose-soft)" }} onClick={() => responder(a.id, "recusado")}>
+                        <button
+                          type="button"
+                          className={`${btnSec} h-10 text-sm`}
+                          style={{ ...secStyle, background: "var(--pp-rose-soft)" }}
+                          onClick={() => responder(a.id, "recusado")}
+                        >
                           Confirmar recusa
                         </button>
                       ) : (
-                        <button type="button" className={`${btnSec} h-10 text-sm`} style={secStyle} onClick={() => setConfirmRecusa(a.id)}>
+                        <button
+                          type="button"
+                          className={`${btnSec} h-10 text-sm`}
+                          style={secStyle}
+                          onClick={() => setConfirmRecusa(a.id)}
+                        >
                           Recusar
                         </button>
                       )}
                     </>
                   )}
                   {(a.status === "aceito" || a.status === "concluido") && !encerrada && (
-                    <button type="button" className={`${btnSec} h-10 text-sm`} style={secStyle} onClick={() => abrirWhats(a)}>
+                    <button
+                      type="button"
+                      className={`${btnSec} h-10 text-sm`}
+                      style={secStyle}
+                      onClick={() => abrirWhats(a)}
+                    >
                       WhatsApp
                     </button>
                   )}
                   {/* a conversa continua disponível mesmo com a vaga encerrada: o histórico é preservado */}
-                  <button type="button" className={`${btnSec} h-10 text-sm`} style={secStyle} onClick={() => setChatApp(a)}>
+                  <button
+                    type="button"
+                    className={`${btnSec} h-10 text-sm`}
+                    style={secStyle}
+                    onClick={() => setChatApp(a)}
+                  >
                     Conversar
                   </button>
                   {a.status === "candidato" && !encerrada && (
-                    <button type="button" className={`${btn} h-10 px-3 text-sm`} style={{ color: "var(--pp-body)" }} onClick={() => retirarCandidatura(a.id)}>
+                    <button
+                      type="button"
+                      className={`${btn} h-10 px-3 text-sm`}
+                      style={{ color: "var(--pp-body)" }}
+                      onClick={() => retirarCandidatura(a.id)}
+                    >
                       Retirar candidatura
                     </button>
                   )}
                   {a.status === "concluido" && !reviewsGiven[a.job_id] && (
-                    <button type="button" className={`${btnPri} h-10 text-sm`} style={priStyle} onClick={() => abrirAvaliacao(a)}>
+                    <button
+                      type="button"
+                      className={`${btnPri} h-10 text-sm`}
+                      style={priStyle}
+                      onClick={() => abrirAvaliacao(a)}
+                    >
                       Avaliar fornecedor
                     </button>
                   )}
@@ -915,7 +1068,11 @@ export default function StaffDashboard() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-[200px] flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--pp-muted)" }} aria-hidden="true" />
+            <Search
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+              style={{ color: "var(--pp-muted)" }}
+              aria-hidden="true"
+            />
             <Input
               placeholder="Buscar por função, fornecedor ou cidade"
               value={feedBusca}
@@ -1029,7 +1186,13 @@ export default function StaffDashboard() {
             <div className="grid grid-cols-2 gap-2">
               <label className="text-[13px]" style={{ color: "var(--pp-muted)" }}>
                 Início
-                <Input type="date" value={blockStart} min={hoje} onChange={(e) => setBlockStart(e.target.value)} className="mt-1 h-11 rounded-xl" />
+                <Input
+                  type="date"
+                  value={blockStart}
+                  min={hoje}
+                  onChange={(e) => setBlockStart(e.target.value)}
+                  className="mt-1 h-11 rounded-xl"
+                />
               </label>
               <label className="text-[13px]" style={{ color: "var(--pp-muted)" }}>
                 Fim (opcional)
@@ -1042,7 +1205,12 @@ export default function StaffDashboard() {
                 />
               </label>
             </div>
-            <Input placeholder="Motivo (opcional)" value={blockMotivo} onChange={(e) => setBlockMotivo(e.target.value)} className="h-11 rounded-xl" />
+            <Input
+              placeholder="Motivo (opcional)"
+              value={blockMotivo}
+              onChange={(e) => setBlockMotivo(e.target.value)}
+              className="h-11 rounded-xl"
+            />
             <button type="button" className={btnPri} style={priStyle} onClick={bloquearPeriodo} disabled={!blockStart}>
               Bloquear período
             </button>
@@ -1069,7 +1237,12 @@ export default function StaffDashboard() {
                         <b className="pp-num">{dataBR(u.data)}</b>
                         <span style={{ color: "var(--pp-muted)" }}> · {u.motivo || "bloqueio manual"}</span>
                       </span>
-                      <button type="button" className="h-10 px-2 text-sm font-bold" style={lnkStyle} onClick={() => desbloquear(u.id)}>
+                      <button
+                        type="button"
+                        className="h-10 px-2 text-sm font-bold"
+                        style={lnkStyle}
+                        onClick={() => desbloquear(u.id)}
+                      >
                         Liberar
                       </button>
                     </li>
@@ -1097,7 +1270,12 @@ export default function StaffDashboard() {
                   Editar
                 </Link>
                 {staff.slug && (
-                  <Link to={`/profissional/${staff.slug}`} target="_blank" className={`${lnk} inline-flex items-center gap-1`} style={lnkStyle}>
+                  <Link
+                    to={`/profissional/${staff.slug}`}
+                    target="_blank"
+                    className={`${lnk} inline-flex items-center gap-1`}
+                    style={lnkStyle}
+                  >
                     Ver como os fornecedores veem <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
                 )}
@@ -1120,21 +1298,35 @@ export default function StaffDashboard() {
                     strokeDashoffset={195 - (195 * pctPerfil) / 100}
                   />
                 </svg>
-                <span className="pp-num absolute inset-0 grid place-items-center text-[17px] font-extrabold">{pctPerfil}%</span>
+                <span className="pp-num absolute inset-0 grid place-items-center text-[17px] font-extrabold">
+                  {pctPerfil}%
+                </span>
               </div>
               <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13.5px]">
                 {passosPerfil.map((p) => (
-                  <li key={p.label} className="flex items-center gap-2" style={{ color: p.ok ? "var(--pp-muted)" : "var(--pp-body)" }}>
+                  <li
+                    key={p.label}
+                    className="flex items-center gap-2"
+                    style={{ color: p.ok ? "var(--pp-muted)" : "var(--pp-body)" }}
+                  >
                     <i
                       className="grid h-[18px] w-[18px] flex-none place-items-center rounded-full border-[1.5px] not-italic text-white"
-                      style={{ background: p.ok ? "var(--pp-ok)" : "transparent", borderColor: p.ok ? "var(--pp-ok)" : "var(--pp-line-strong)" }}
+                      style={{
+                        background: p.ok ? "var(--pp-ok)" : "transparent",
+                        borderColor: p.ok ? "var(--pp-ok)" : "var(--pp-line-strong)",
+                      }}
                     >
                       {p.ok && <Check className="h-3 w-3" aria-hidden="true" />}
                     </i>
                     {p.ok ? (
                       p.label
                     ) : p.docs ? (
-                      <button type="button" className="font-bold" style={lnkStyle} onClick={() => docsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                      <button
+                        type="button"
+                        className="font-bold"
+                        style={lnkStyle}
+                        onClick={() => docsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                      >
                         {p.label}
                       </button>
                     ) : (
@@ -1177,7 +1369,10 @@ export default function StaffDashboard() {
                         <Star
                           key={i}
                           className="h-4 w-4"
-                          style={{ color: "var(--pp-terracota)", fill: i < r.estrelas ? "var(--pp-terracota)" : "transparent" }}
+                          style={{
+                            color: "var(--pp-terracota)",
+                            fill: i < r.estrelas ? "var(--pp-terracota)" : "transparent",
+                          }}
                           aria-hidden="true"
                         />
                       ))}
@@ -1226,9 +1421,16 @@ export default function StaffDashboard() {
       <SEO title="Painel do profissional — Casamenteiro" noIndex />
       <WelcomeModal tipo="profissional" />
 
-      <header className="sticky top-0 z-40 border-b backdrop-blur" style={{ background: "rgba(227,238,232,.92)", borderColor: "var(--pp-line)" }}>
+      <header
+        className="sticky top-0 z-40 border-b backdrop-blur"
+        style={{ background: "rgba(227,238,232,.92)", borderColor: "var(--pp-line)" }}
+      >
         <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
-          <Link to="/" className="text-[20px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--pp-ink)" }}>
+          <Link
+            to="/"
+            className="text-[20px] font-extrabold"
+            style={{ letterSpacing: "-0.03em", color: "var(--pp-ink)" }}
+          >
             <BrandLogo />
           </Link>
           <div className="flex items-center gap-2">
@@ -1250,9 +1452,18 @@ export default function StaffDashboard() {
 
       <div className="flex items-start">
         {/* menu lateral (computador) */}
-        <div className="hidden w-[240px] shrink-0 self-stretch border-r md:block" style={{ background: "var(--pp-side)", borderColor: "var(--pp-line)" }}>
-          <aside className="sticky top-16 flex h-[calc(100dvh-4rem)] flex-col gap-1.5 overflow-y-auto px-3 pb-4 pt-4" aria-label="Menu do profissional">
-            <div className="mb-2 flex items-center gap-2.5 rounded-[14px] border bg-white p-2.5" style={{ borderColor: "var(--pp-line)" }}>
+        <div
+          className="hidden w-[240px] shrink-0 self-stretch border-r md:block"
+          style={{ background: "var(--pp-side)", borderColor: "var(--pp-line)" }}
+        >
+          <aside
+            className="sticky top-16 flex h-[calc(100dvh-4rem)] flex-col gap-1.5 overflow-y-auto px-3 pb-4 pt-4"
+            aria-label="Menu do profissional"
+          >
+            <div
+              className="mb-2 flex items-center gap-2.5 rounded-[14px] border bg-white p-2.5"
+              style={{ borderColor: "var(--pp-line)" }}
+            >
               {staff.foto_url ? (
                 <img src={staff.foto_url} alt="" className="h-9 w-9 rounded-full object-cover" />
               ) : (
@@ -1289,14 +1500,22 @@ export default function StaffDashboard() {
                     className={navBtn}
                     style={
                       ativo
-                        ? { background: "#fff", color: "var(--pp-ink)", fontWeight: 650, boxShadow: "0 0 0 1px var(--pp-line)" }
+                        ? {
+                            background: "#fff",
+                            color: "var(--pp-ink)",
+                            fontWeight: 650,
+                            boxShadow: "0 0 0 1px var(--pp-line)",
+                          }
                         : { color: "var(--pp-body)" }
                     }
                   >
                     <Icon className="h-[19px] w-[19px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
                     <span className="flex-1 truncate">{it.label}</span>
                     {"badge" in it && it.badge ? (
-                      <span className="pp-num grid h-5 min-w-[22px] place-items-center rounded-full px-1.5 text-xs font-bold text-white" style={{ background: "var(--pp-clay)" }}>
+                      <span
+                        className="pp-num grid h-5 min-w-[22px] place-items-center rounded-full px-1.5 text-xs font-bold text-white"
+                        style={{ background: "var(--pp-clay)" }}
+                      >
                         {it.badge}
                       </span>
                     ) : null}
@@ -1318,7 +1537,11 @@ export default function StaffDashboard() {
       <nav
         aria-label="Seções"
         className="fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur md:hidden"
-        style={{ background: "rgba(255,255,255,.94)", borderColor: "var(--pp-line)", paddingBottom: "env(safe-area-inset-bottom)" }}
+        style={{
+          background: "rgba(255,255,255,.94)",
+          borderColor: "var(--pp-line)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
       >
         <div className="grid grid-cols-4 px-1">
           {destinos.map((it) => {
