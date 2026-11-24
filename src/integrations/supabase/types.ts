@@ -3826,6 +3826,8 @@ export type Database = {
           funcoes: string[]
           id: string
           is_public: boolean
+          lat: number | null
+          lng: number | null
           nome: string
           notificar_vagas_email: boolean
           raio_km: number
@@ -3856,6 +3858,8 @@ export type Database = {
           funcoes?: string[]
           id?: string
           is_public?: boolean
+          lat?: number | null
+          lng?: number | null
           nome: string
           notificar_vagas_email?: boolean
           raio_km?: number
@@ -3886,6 +3890,8 @@ export type Database = {
           funcoes?: string[]
           id?: string
           is_public?: boolean
+          lat?: number | null
+          lng?: number | null
           nome?: string
           notificar_vagas_email?: boolean
           raio_km?: number
@@ -5970,6 +5976,14 @@ export type Database = {
         Args: { _reason?: string; _suspended: boolean; _user_id: string }
         Returns: undefined
       }
+      admin_staff_contatos: {
+        Args: never
+        Returns: {
+          email: string
+          id: string
+          telefone: string
+        }[]
+      }
       admin_suppliers_contacts: {
         Args: never
         Returns: {
@@ -5995,6 +6009,35 @@ export type Database = {
           estado: string
           lat: number
           lng: number
+        }[]
+      }
+      buscar_profissionais: {
+        Args: {
+          _cidade?: string
+          _funcao?: string
+          _limite?: number
+          _offset?: number
+          _uf?: string
+          _verificados?: boolean
+        }
+        Returns: {
+          bio: string
+          cidade: string
+          distancia_km: number
+          estado: string
+          eventos_aceitos: number
+          eventos_concluidos: number
+          foto_url: string
+          funcoes: string[]
+          id: string
+          nome: string
+          raio_km: number
+          rating: number
+          review_count: number
+          slug: string
+          total: number
+          valor_min_turno: number
+          verificacao_status: string
         }[]
       }
       calc_oferta_corretagem: {
@@ -6327,6 +6370,13 @@ export type Database = {
         Returns: undefined
       }
       slugify_texto: { Args: { _t: string }; Returns: string }
+      staff_meu_contato: {
+        Args: never
+        Returns: {
+          email: string
+          telefone: string
+        }[]
+      }
       staff_requisitos_faltando: {
         Args: { p: Database["public"]["Tables"]["staff_profiles"]["Row"] }
         Returns: string[]
@@ -6337,6 +6387,7 @@ export type Database = {
         Args: { p_categoria?: string; p_escopo: string }
         Returns: number
       }
+      valor_turno_profissional: { Args: { _staff_id: string }; Returns: number }
       vitrine_destaques_ativos: {
         Args: { _categoria_id?: string }
         Returns: {
