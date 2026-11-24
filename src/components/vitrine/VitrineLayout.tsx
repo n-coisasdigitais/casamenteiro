@@ -27,7 +27,7 @@ export function TopoVitrine({ ativo }: { ativo?: "fornecedores" | "profissionais
             to="/profissionais"
             className={ativo === "profissionais" ? "text-[var(--vt-ink)]" : "hover:text-[var(--vt-ink)]"}
           >
-            Profissionais
+            Contratar equipe
           </Link>
           {user && (
             <Link to="/dashboard" className="hover:text-[var(--vt-ink)]">

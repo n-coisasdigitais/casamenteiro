@@ -54,6 +54,7 @@ export function HomeFooterV3() {
         ])}
         {col("Para empresas", [
           { to: "/fornecedor", label: "Sou fornecedor" },
+          { to: "/profissionais", label: "Contratar equipe para eventos" },
           { to: "/profissional", label: "Sou profissional" },
           { to: "/vagas", label: "Vagas" },
         ])}
