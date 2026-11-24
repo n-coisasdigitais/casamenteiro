@@ -8,7 +8,7 @@ import UserMenu from "@/components/UserMenu";
 import NotificationsBell from "@/components/NotificationsBell";
 import "./vitrine.css";
 
-export function TopoVitrine({ ativo }: { ativo?: "fornecedores" }) {
+export function TopoVitrine({ ativo }: { ativo?: "fornecedores" | "profissionais" }) {
   const { user, loading } = useAuth();
   return (
     <header className="vt-top">
@@ -17,8 +17,17 @@ export function TopoVitrine({ ativo }: { ativo?: "fornecedores" }) {
           <BrandLogo />
         </Link>
         <nav className="hidden items-center gap-5 text-sm font-semibold text-[var(--vt-body)] md:flex">
-          <Link to="/explorar" className={ativo === "fornecedores" ? "text-[var(--vt-ink)]" : "hover:text-[var(--vt-ink)]"}>
+          <Link
+            to="/explorar"
+            className={ativo === "fornecedores" ? "text-[var(--vt-ink)]" : "hover:text-[var(--vt-ink)]"}
+          >
             Fornecedores
+          </Link>
+          <Link
+            to="/profissionais"
+            className={ativo === "profissionais" ? "text-[var(--vt-ink)]" : "hover:text-[var(--vt-ink)]"}
+          >
+            Profissionais
           </Link>
           {user && (
             <Link to="/dashboard" className="hover:text-[var(--vt-ink)]">
@@ -72,6 +81,7 @@ export function RodapeVitrine() {
             <nav className="flex flex-col gap-1.5">
               <Link to="/cadastro?tipo=supplier">Cadastrar empresa</Link>
               <Link to="/fornecedor/painel">Painel do fornecedor</Link>
+              <Link to="/profissionais">Contratar equipe para eventos</Link>
             </nav>
           </div>
           <div>
@@ -118,7 +128,10 @@ export function useFavoritos() {
   const alternar = useCallback(
     async (supplierId: string) => {
       if (!user) {
-        toast({ title: "Entre para salvar", description: "Crie sua conta grátis para guardar seus fornecedores favoritos." });
+        toast({
+          title: "Entre para salvar",
+          description: "Crie sua conta grátis para guardar seus fornecedores favoritos.",
+        });
         return;
       }
       if (!coupleId) {
