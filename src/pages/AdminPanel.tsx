@@ -16,6 +16,7 @@ type Fila = {
   reservas: number;
   webhooks: { total: number; ultimo: string | null };
   avaliacoes: number;
+  avaliacoesFornecedor: number;
   testes: number;
 };
 type Numeros = {
@@ -102,6 +103,7 @@ export default function AdminPanel() {
         reservas: reservas.count || 0,
         webhooks: { total: wh.length, ultimo: wh[0]?.created_at || null },
         avaliacoes: (rev.count || 0) + (prev.count || 0),
+        avaliacoesFornecedor: rev.count || 0,
         testes: testes.count || 0,
       });
     })();
@@ -211,7 +213,7 @@ export default function AdminPanel() {
           titulo: `${fila.avaliacoes} ${fila.avaliacoes === 1 ? "avaliação para moderar" : "avaliações para moderar"}`,
           texto: "Avaliações de fornecedores e da plataforma aguardando aprovação.",
           acao: "Moderar",
-          to: "/admin/avaliacoes",
+          to: fila.avaliacoesFornecedor > 0 ? "/admin/avaliacoes" : "/admin/avaliacoes-plataforma",
         },
         fila.testes > 0 && {
           icone: Hourglass,
