@@ -71,6 +71,15 @@ export default function AdminReviews() {
     }
   };
 
+  const alternarAprovacao = async (id: string, aprovado: boolean) => {
+    const { error } = await supabase.from("reviews").update({ aprovado: !aprovado } as any).eq("id", id);
+    if (error) toast({ title: "Erro", description: traduzirErro(error), variant: "destructive" });
+    else {
+      toast({ title: aprovado ? "Avaliação despublicada" : "Avaliação aprovada" });
+      load();
+    }
+  };
+
   const filtered = filter === "low" ? rows.filter((r) => r.rating <= 2) : rows;
 
   if (!checked) return <div className="min-h-screen flex items-center justify-center">Verificando...</div>;
@@ -115,6 +124,10 @@ export default function AdminReviews() {
                   {r.title && <p className="font-medium text-sm">{r.title}</p>}
                   <p className="text-sm text-muted-foreground">{r.comment}</p>
                 </div>
+                {(r as any).aprovado === false && <Badge variant="outline">Pendente</Badge>}
+                <Button variant="outline" size="sm" onClick={() => alternarAprovacao(r.id, (r as any).aprovado !== false)}>
+                  {(r as any).aprovado === false ? "Aprovar" : "Despublicar"}
+                </Button>
                 <Button variant="destructive" size="sm" onClick={() => removeReview(r.id)}>
                   <Trash2 className="h-4 w-4 mr-1" />
                   Excluir
