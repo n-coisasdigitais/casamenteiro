@@ -13,7 +13,16 @@ import PublishJobDialog from "./PublishJobDialog";
 import PaymentDisclaimer from "./PaymentDisclaimer";
 import StaffChatDialog from "./StaffChatDialog";
 import { Star, MapPin, ShieldCheck, Search, CheckCircle2, AlertTriangle, Copy } from "lucide-react";
-import { appStatusLabel, jobStatusLabel, buildJobWhatsAppLink, fetchStaffContact, maskPhone } from "@/lib/staff";
+import {
+  appStatusLabel,
+  jobStatusLabel,
+  buildJobWhatsAppLink,
+  fetchStaffContact,
+  maskPhone,
+  FUNCOES_STAFF,
+} from "@/lib/staff";
+import CityAutocomplete from "@/components/CityAutocomplete";
+import { buscarProfissionais } from "@/lib/profissionais";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -297,8 +306,15 @@ function StaffRow({
             </button>
           </div>
           <p className="text-xs text-muted-foreground">
-            {s.cidade} • {(s.funcoes || []).join(", ")}
+            {s.cidade}
+            {s.distancia_km != null && s.distancia_km > 0 ? ` (${Math.round(s.distancia_km)} km)` : ""} •{" "}
+            {(s.funcoes || []).join(", ")}
           </p>
+          {s.verificacao_status === "verificado" && (
+            <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+              <ShieldCheck className="h-3 w-3" /> Verificado
+            </span>
+          )}
           <div className="flex items-center gap-2 text-xs mt-0.5">
             {s.rating ? (
               <span className="flex items-center gap-1">
@@ -342,7 +358,11 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
   const { toast } = useToast();
   const [jobs, setJobs] = useState<any[]>([]);
   const [apps, setApps] = useState<Record<string, any[]>>({});
+  // equipe de confiança (perfis dos favoritos) e resultado da busca
+  const [equipe, setEquipe] = useState<any[]>([]);
   const [staffs, setStaffs] = useState<any[]>([]);
+  const [staffTotal, setStaffTotal] = useState(0);
+  const [buscando, setBuscando] = useState(false);
   const [editJob, setEditJob] = useState<any | null>(null);
   const [dupJob, setDupJob] = useState<any | null>(null);
   const [chat, setChat] = useState<{ app: any; job: any } | null>(null);
@@ -359,7 +379,9 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
   // filtros da busca de profissionais
   const [staffBusca, setStaffBusca] = useState("");
   const [staffFuncao, setStaffFuncao] = useState("todas");
-  const [staffOrder, setStaffOrder] = useState<"rating" | "nome" | "concluidos">("rating");
+  const [staffOrder, setStaffOrder] = useState<"relevancia" | "rating" | "nome" | "concluidos">("relevancia");
+  const [staffCidade, setStaffCidade] = useState("");
+  const [staffVerificados, setStaffVerificados] = useState(false);
   const [jobFiltro, setJobFiltro] = useState<"ativas" | "todas">("ativas");
 
   useEffect(() => {
@@ -393,12 +415,6 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
       setApps({});
     }
 
-    const { data: sp } = await (supabase.from("staff_profiles" as any) as any)
-      .select("id, nome, cidade, funcoes, rating, review_count, is_public, eventos_concluidos, eventos_aceitos")
-      .eq("is_public", true)
-      .limit(50);
-    setStaffs(sp || []);
-
     const { data: given } = await (supabase.from("staff_reviews" as any) as any)
       .select("job_id, avaliado_id")
       .eq("autor_id", supplierId)
@@ -412,7 +428,18 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
     const { data: favs } = await (supabase.from("supplier_staff_favorites" as any) as any)
       .select("staff_id")
       .eq("supplier_id", supplierId);
-    setFavorites(new Set((favs || []).map((f: any) => f.staff_id)));
+    const favIds = (favs || []).map((f: any) => f.staff_id);
+    setFavorites(new Set(favIds));
+    if (favIds.length) {
+      const { data: eq } = await (supabase.from("staff_profiles" as any) as any)
+        .select(
+          "id, nome, slug, cidade, funcoes, rating, review_count, eventos_concluidos, eventos_aceitos, verificacao_status",
+        )
+        .in("id", favIds);
+      setEquipe(eq || []);
+    } else {
+      setEquipe([]);
+    }
 
     setLoading(false);
   };
@@ -420,6 +447,24 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
   useEffect(() => {
     load(); /* eslint-disable-next-line */
   }, [supplierId]);
+
+  // busca no servidor (sem limite de 50): função, cidade + raio do profissional e verificados
+  const buscarStaff = async (offset = 0) => {
+    setBuscando(true);
+    const r = await buscarProfissionais({
+      funcao: staffFuncao !== "todas" ? staffFuncao : null,
+      cidade: staffCidade,
+      verificados: staffVerificados,
+      offset,
+    });
+    setStaffs((l) => (offset ? [...l, ...r.itens.filter((x) => !l.some((y) => y.id === x.id))] : r.itens));
+    setStaffTotal(r.total);
+    setBuscando(false);
+  };
+
+  useEffect(() => {
+    buscarStaff(0); /* eslint-disable-next-line */
+  }, [staffFuncao, staffCidade, staffVerificados]);
 
   // faltas (no-show) por profissional, das vagas deste fornecedor
   const noShowByStaff = useMemo(() => {
@@ -450,6 +495,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
         load();
         return;
       }
+      setEquipe((l) => l.filter((x) => x.id !== staffId));
       toast({ title: "Removido da sua equipe" });
     } else {
       const { error } = await (supabase.from("supplier_staff_favorites" as any) as any).insert({
@@ -461,6 +507,8 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
         load();
         return;
       }
+      const novo = staffs.find((x) => x.id === staffId);
+      if (novo) setEquipe((l) => (l.some((x) => x.id === staffId) ? l : [...l, novo]));
       toast({ title: "Salvo na sua equipe!" });
     }
   };
@@ -542,11 +590,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
     setDupJob({ ...resto, data: "" });
   };
 
-  const funcoesDisponiveis = useMemo(() => {
-    const set = new Set<string>();
-    staffs.forEach((s) => (s.funcoes || []).forEach((f: string) => set.add(f)));
-    return Array.from(set).sort();
-  }, [staffs]);
+  const funcoesDisponiveis = FUNCOES_STAFF;
 
   const applyStaffFilters = (list: any[]) => {
     let out = [...list];
@@ -559,7 +603,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
           (s.funcoes || []).some((f: string) => f.toLowerCase().includes(q)),
       );
     }
-    if (staffFuncao !== "todas") out = out.filter((s) => (s.funcoes || []).includes(staffFuncao));
+    if (staffOrder === "relevancia") return out; // ordem do servidor: verificados, mais perto, melhor nota
     if (staffOrder === "nome") out.sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
     else if (staffOrder === "concluidos") out.sort((a, b) => (b.eventos_concluidos ?? 0) - (a.eventos_concluidos ?? 0));
     else out.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
@@ -567,7 +611,6 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
   };
 
   const staffsView = useMemo(() => applyStaffFilters(staffs), [staffs, staffBusca, staffFuncao, staffOrder]);
-  const equipe = useMemo(() => staffs.filter((s) => favorites.has(s.id)), [staffs, favorites]);
 
   const jobsView = useMemo(() => {
     if (jobFiltro === "todas") return jobs;
@@ -824,7 +867,7 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
             <div className="relative flex-1 min-w-[200px]">
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome, função ou cidade"
+                placeholder="Filtrar por nome"
                 value={staffBusca}
                 onChange={(e) => setStaffBusca(e.target.value)}
                 className="pl-9"
@@ -847,13 +890,52 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
               onChange={(e) => setStaffOrder(e.target.value as any)}
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
+              <option value="relevancia">Mais relevantes</option>
               <option value="rating">Melhor avaliação</option>
               <option value="concluidos">Mais experiente</option>
               <option value="nome">Nome (A-Z)</option>
             </select>
           </div>
 
-          {staffsView.length === 0 && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex-1 min-w-[220px]">
+              <CityAutocomplete
+                fonte="brasil"
+                mostrarContinuarMesmoAssim={false}
+                value={staffCidade}
+                placeholder="Cidade do evento (opcional)"
+                onChange={(c) => {
+                  if (!c) setStaffCidade("");
+                }}
+                onSelect={(c, uf) => setStaffCidade(uf ? `${c}, ${uf}` : c)}
+              />
+            </div>
+            {staffCidade && (
+              <Button size="sm" variant="ghost" onClick={() => setStaffCidade("")}>
+                Limpar cidade
+              </Button>
+            )}
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={staffVerificados}
+                onChange={(e) => setStaffVerificados(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <ShieldCheck className="h-4 w-4 text-emerald-700" /> Só verificados
+            </label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {buscando
+              ? "Buscando…"
+              : `${staffTotal} ${staffTotal === 1 ? "profissional" : "profissionais"}${staffCidade ? ` que atendem ${staffCidade}` : ""}`}{" "}
+            ·{" "}
+            <a href="/profissionais" target="_blank" rel="noreferrer" className="underline">
+              ver página pública
+            </a>
+          </p>
+
+          {!buscando && staffsView.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum profissional encontrado com esses filtros.</p>
           )}
           {staffsView.map((s) => (
@@ -868,6 +950,13 @@ export default function SupplierStaffTab({ supplierId, companyName }: { supplier
               noShowByStaff={noShowByStaff}
             />
           ))}
+          {staffs.length < staffTotal && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" onClick={() => buscarStaff(staffs.length)} disabled={buscando}>
+                {buscando ? "Carregando…" : `Ver mais (${staffTotal - staffs.length})`}
+              </Button>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
