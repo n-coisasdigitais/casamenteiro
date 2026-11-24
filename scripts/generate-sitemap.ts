@@ -3,6 +3,7 @@
 import { writeFileSync } from "fs";
 import { resolve } from "path";
 import { createClient } from "@supabase/supabase-js";
+import { FUNCOES_STAFF, slugFuncao } from "../src/lib/funcoesStaff";
 
 const BASE_URL = "https://www.casamenteiro.com.br";
 
@@ -20,6 +21,12 @@ const staticEntries: SitemapEntry[] = [
   { path: "/fornecedor", changefreq: "weekly", priority: "0.7" },
   { path: "/simulador", changefreq: "monthly", priority: "0.6" },
   { path: "/vagas", changefreq: "daily", priority: "0.7" },
+  { path: "/profissionais", changefreq: "daily", priority: "0.8" },
+  ...FUNCOES_STAFF.map((f) => ({
+    path: `/profissionais/${slugFuncao(f)}`,
+    changefreq: "weekly" as const,
+    priority: "0.7",
+  })),
   { path: "/ajuda", changefreq: "weekly", priority: "0.6" },
   { path: "/casais", changefreq: "weekly", priority: "0.6" },
   { path: "/quanto-custa-casar", changefreq: "weekly", priority: "0.8" },
@@ -45,10 +52,7 @@ async function loadDynamic(): Promise<SitemapEntry[]> {
     }
   });
 
-  const { data: sups } = await sb
-    .from("suppliers")
-    .select("id, updated_at")
-    .eq("status", "approved");
+  const { data: sups } = await sb.from("suppliers").select("id, updated_at").eq("status", "approved");
   (sups || []).forEach((s: any) => {
     out.push({
       path: `/fornecedor/${s.id}`,
@@ -59,20 +63,13 @@ async function loadDynamic(): Promise<SitemapEntry[]> {
   });
 
   // perfis públicos de casais
-  const { data: casais } = await sb
-    .from("couple_public_profiles")
-    .select("slug")
-    .eq("publico", true)
-    .limit(500);
+  const { data: casais } = await sb.from("couple_public_profiles").select("slug").eq("publico", true).limit(500);
   (casais || []).forEach((c: any) => {
     if (c.slug) out.push({ path: `/casais/${c.slug}`, changefreq: "monthly", priority: "0.5" });
   });
 
   // páginas de conteúdo "quanto custa casar em [cidade]"
-  const { data: locais } = await sb
-    .from("suppliers")
-    .select("city, state")
-    .eq("status", "approved");
+  const { data: locais } = await sb.from("suppliers").select("city, state").eq("status", "approved");
   const cidades = new Set<string>();
   (locais || []).forEach((s: any) => {
     if (!s.city) return;
@@ -88,6 +85,18 @@ async function loadDynamic(): Promise<SitemapEntry[]> {
   cidades.forEach((slug) =>
     out.push({ path: `/quanto-custa-casar-em/${slug}`, changefreq: "monthly", priority: "0.7" }),
   );
+
+  // perfis públicos de profissionais de eventos
+  const { data: profs } = await sb.from("staff_profiles").select("slug, updated_at").eq("is_public", true).limit(2000);
+  (profs || []).forEach((p: any) => {
+    if (!p.slug) return;
+    out.push({
+      path: `/profissional/${p.slug}`,
+      lastmod: p.updated_at ? new Date(p.updated_at).toISOString().slice(0, 10) : undefined,
+      changefreq: "weekly",
+      priority: "0.6",
+    });
+  });
 
   return out;
 }
