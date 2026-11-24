@@ -26,8 +26,14 @@ import ListaOpcoes from "@/components/dynamic-fields/ListaOpcoes";
 import { MoedaInput, ehCampoDinheiro } from "@/components/ui/moeda-input";
 import AjustarFotoDialog from "@/components/shared/AjustarFotoDialog";
 import { carregarRedes, salvarRedes, type Redes } from "@/lib/redesSociais";
-import { MINIMO_DESCRICAO, MINIMO_FOTOS, PENDENCIAS, mensagemCadastroIncompleto, type Pendencia } from "@/lib/pendencias";
-
+import {
+  MINIMO_DESCRICAO,
+  MINIMO_FOTOS,
+  PENDENCIAS,
+  mensagemCadastroIncompleto,
+  type Pendencia,
+} from "@/lib/pendencias";
+import CityStateSelect from "@/components/CityStateSelect";
 
 type Categoria = { id: string; name: string; slug: string; icon: string | null };
 type Campo = {
@@ -44,14 +50,25 @@ type Campo = {
 };
 
 const CAT_ICON: Record<string, string> = {
-  "espacos-buffet": "🍽️", fotografia: "📸", cerimonialista: "💍", celebrante: "🕊️",
-  "musica-dj": "🎵", decoracao: "🌸", "traje-noivo": "🤵",
-  "vestido-noiva": "👰", "som-iluminacao": "🔊", brigadistas: "🚒", outros: "✨", "beleza-maquiagem": "💄", convites: "✉️",
-  "bolos-doces": "🎂", transporte: "🚗", video: "🎬",
-  "equipe-danca": "💃", "desenho-ao-vivo": "🎨",
+  "espacos-buffet": "🍽️",
+  fotografia: "📸",
+  cerimonialista: "💍",
+  celebrante: "🕊️",
+  "musica-dj": "🎵",
+  decoracao: "🌸",
+  "traje-noivo": "🤵",
+  "vestido-noiva": "👰",
+  "som-iluminacao": "🔊",
+  brigadistas: "🚒",
+  outros: "✨",
+  "beleza-maquiagem": "💄",
+  convites: "✉️",
+  "bolos-doces": "🎂",
+  transporte: "🚗",
+  video: "🎬",
+  "equipe-danca": "💃",
+  "desenho-ao-vivo": "🎨",
 };
-
-const UFs = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 
 export default function SupplierOnboarding() {
   const { session, profile, loading: authLoading } = useAuth();
@@ -96,9 +113,13 @@ export default function SupplierOnboarding() {
 
   // Carregar categorias
   useEffect(() => {
-    supabase.from("categories").select("id, name, slug, icon").order("name").then(({ data }) => {
-      setCategorias((data || []) as any);
-    });
+    supabase
+      .from("categories")
+      .select("id, name, slug, icon")
+      .order("name")
+      .then(({ data }) => {
+        setCategorias((data || []) as any);
+      });
   }, []);
 
   // Bootstrap: detectar usuário/fornecedor existente
@@ -118,7 +139,10 @@ export default function SupplierOnboarding() {
         .maybeSingle();
       if (!sup) {
         // não é fornecedor
-        toast({ title: "Conta não é de fornecedor", description: "Use uma conta de fornecedor para concluir o cadastro." });
+        toast({
+          title: "Conta não é de fornecedor",
+          description: "Use uma conta de fornecedor para concluir o cadastro.",
+        });
         navigate("/", { replace: true });
         return;
       }
@@ -154,17 +178,26 @@ export default function SupplierOnboarding() {
 
   // Carregar campos da categoria selecionada
   useEffect(() => {
-    if (!categoryId) { setCampos([]); return; }
+    if (!categoryId) {
+      setCampos([]);
+      return;
+    }
     (async () => {
       const { data } = await (supabase.from("campos_categoria") as any)
-        .select("*").eq("category_id", categoryId).eq("ativo", true).order("ordem");
+        .select("*")
+        .eq("category_id", categoryId)
+        .eq("ativo", true)
+        .order("ordem");
       setCampos((data || []) as Campo[]);
       // preencher respostas existentes
       if (supplierId) {
         const { data: resps } = await (supabase.from("fornecedor_campos") as any)
-          .select("campo_id, valor").eq("supplier_id", supplierId);
+          .select("campo_id, valor")
+          .eq("supplier_id", supplierId);
         const map: Record<string, any> = {};
-        (resps || []).forEach((r: any) => { map[r.campo_id] = r.valor; });
+        (resps || []).forEach((r: any) => {
+          map[r.campo_id] = r.valor;
+        });
         setRespostas(map);
       }
     })();
@@ -192,7 +225,11 @@ export default function SupplierOnboarding() {
   // ─────── Handlers ───────
   const handleSignup = async () => {
     if (!signupAcceptTerms) {
-      toast({ title: "Aceite os termos", description: "Você precisa aceitar os termos para continuar.", variant: "destructive" });
+      toast({
+        title: "Aceite os termos",
+        description: "Você precisa aceitar os termos para continuar.",
+        variant: "destructive",
+      });
       return;
     }
     if (signupPass.length < 6) {
@@ -216,28 +253,42 @@ export default function SupplierOnboarding() {
       });
     } catch (e: any) {
       toast({ title: "Não foi possível criar a conta", description: traduzirErroAuth(e), variant: "destructive" });
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const saveSupplierBasics = async () => {
     if (!supplierId) return false;
     if (companyName.trim().length < 2 || !city.trim() || !state.trim() || !isValidPhoneBR(whatsapp)) {
-      toast({ title: "Preencha os dados", description: "Nome, cidade, UF e WhatsApp são obrigatórios.", variant: "destructive" });
+      toast({
+        title: "Preencha os dados",
+        description: "Nome, cidade, UF e WhatsApp são obrigatórios.",
+        variant: "destructive",
+      });
       return false;
     }
-    const { error } = await (supabase.from("suppliers") as any).update({
-      company_name: companyName.trim(),
-      city: city.trim(),
-      state: state.toUpperCase().slice(0, 2),
-      whatsapp: whatsapp.replace(/\D/g, ""),
-      phone: whatsapp.replace(/\D/g, ""),
-      description: description.trim() || null,
-      category_id: categoryId || null,
-      onboarding_step: step + 1,
-    }).eq("id", supplierId);
-    if (error) { toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" }); return false; }
+    const { error } = await (supabase.from("suppliers") as any)
+      .update({
+        company_name: companyName.trim(),
+        city: city.trim(),
+        state: state.toUpperCase().slice(0, 2),
+        whatsapp: whatsapp.replace(/\D/g, ""),
+        phone: whatsapp.replace(/\D/g, ""),
+        description: description.trim() || null,
+        category_id: categoryId || null,
+        onboarding_step: step + 1,
+      })
+      .eq("id", supplierId);
+    if (error) {
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
+      return false;
+    }
     const { error: errRedes } = await salvarRedes(supplierId, redes);
-    if (errRedes) { toast({ title: "Erro ao salvar as redes", description: traduzirErro(errRedes), variant: "destructive" }); return false; }
+    if (errRedes) {
+      toast({ title: "Erro ao salvar as redes", description: traduzirErro(errRedes), variant: "destructive" });
+      return false;
+    }
     return true;
   };
 
@@ -246,14 +297,24 @@ export default function SupplierOnboarding() {
   const saveCategoria = async () => {
     if (!supplierId || !categoryId) return false;
     if (ehOutros && outrosDescricao.trim().length < 3) {
-      toast({ title: "Descreva seu serviço", description: "Conte qual é o serviço ou a categoria que você oferece.", variant: "destructive" });
+      toast({
+        title: "Descreva seu serviço",
+        description: "Conte qual é o serviço ou a categoria que você oferece.",
+        variant: "destructive",
+      });
       return false;
     }
-    const { error } = await (supabase.from("suppliers") as any).update({
-      category_id: categoryId, onboarding_step: step + 1,
-      categoria_outros_descricao: ehOutros ? outrosDescricao.trim() : null,
-    }).eq("id", supplierId);
-    if (error) { toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" }); return false; }
+    const { error } = await (supabase.from("suppliers") as any)
+      .update({
+        category_id: categoryId,
+        onboarding_step: step + 1,
+        categoria_outros_descricao: ehOutros ? outrosDescricao.trim() : null,
+      })
+      .eq("id", supplierId);
+    if (error) {
+      toast({ title: "Erro ao salvar", description: traduzirErro(error), variant: "destructive" });
+      return false;
+    }
     return true;
   };
 
@@ -264,9 +325,11 @@ export default function SupplierOnboarding() {
       if (c.obrigatorio) {
         const v = respostas[c.id];
         const vazio =
-          v === undefined || v === null || v === "" ||
+          v === undefined ||
+          v === null ||
+          v === "" ||
           (Array.isArray(v) && v.length === 0) ||
-          (c.tipo === "faixa" && (!v?.min));
+          (c.tipo === "faixa" && !v?.min);
         if (vazio) {
           toast({ title: "Campo obrigatório", description: `Preencha "${c.label}".`, variant: "destructive" });
           return false;
@@ -277,9 +340,13 @@ export default function SupplierOnboarding() {
       .filter((c) => respostas[c.id] !== undefined && respostas[c.id] !== "")
       .map((c) => ({ supplier_id: supplierId, campo_id: c.id, valor: respostas[c.id] }));
     if (rows.length > 0) {
-      const { error } = await (supabase.from("fornecedor_campos") as any)
-        .upsert(rows, { onConflict: "supplier_id,campo_id" });
-      if (error) { toast({ title: "Erro ao salvar respostas", description: traduzirErro(error), variant: "destructive" }); return false; }
+      const { error } = await (supabase.from("fornecedor_campos") as any).upsert(rows, {
+        onConflict: "supplier_id,campo_id",
+      });
+      if (error) {
+        toast({ title: "Erro ao salvar respostas", description: traduzirErro(error), variant: "destructive" });
+        return false;
+      }
     }
     await (supabase.from("suppliers") as any).update({ onboarding_step: step + 1 }).eq("id", supplierId);
     return true;
@@ -291,15 +358,21 @@ export default function SupplierOnboarding() {
     try {
       const img = await comprimirImagem(file, FOTO_PERFIL);
       const path = `${session.user.id}/profile-${Date.now()}.${img.extensao}`;
-      const { error } = await supabase.storage.from("supplier-photos").upload(path, img.blob, { contentType: img.tipo });
+      const { error } = await supabase.storage
+        .from("supplier-photos")
+        .upload(path, img.blob, { contentType: img.tipo });
       if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from("supplier-photos").getPublicUrl(path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("supplier-photos").getPublicUrl(path);
       await (supabase.from("suppliers") as any).update({ profile_photo_url: publicUrl }).eq("id", supplierId);
       setProfilePhoto(publicUrl);
       setFotoPerfilParaAjustar(null);
     } catch (e: any) {
       toast({ title: "Erro no upload", description: traduzirErro(e), variant: "destructive" });
-    } finally { setUploading(false); }
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleGalleryUpload = async (file: File) => {
@@ -308,16 +381,23 @@ export default function SupplierOnboarding() {
     try {
       const img = await comprimirImagem(file, FOTO_GALERIA);
       const path = `${session.user.id}/${Date.now()}-${nomeArquivo(file.name, img.extensao)}`;
-      const { error } = await supabase.storage.from("supplier-photos").upload(path, img.blob, { contentType: img.tipo });
+      const { error } = await supabase.storage
+        .from("supplier-photos")
+        .upload(path, img.blob, { contentType: img.tipo });
       if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from("supplier-photos").getPublicUrl(path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("supplier-photos").getPublicUrl(path);
       const { data: ins } = await (supabase.from("supplier_photos") as any)
         .insert({ supplier_id: supplierId, photo_url: publicUrl, display_order: galleryPhotos.length })
-        .select().maybeSingle();
+        .select()
+        .maybeSingle();
       if (ins) setGalleryPhotos([...galleryPhotos, { id: ins.id, url: publicUrl }]);
     } catch (e: any) {
       toast({ title: "Erro no upload", description: traduzirErro(e), variant: "destructive" });
-    } finally { setUploading(false); }
+    } finally {
+      setUploading(false);
+    }
   };
 
   const removeGalleryPhoto = async (id: string) => {
@@ -328,7 +408,13 @@ export default function SupplierOnboarding() {
   // Mínimo para enviar (o banco confere a mesma regra)
   const respostaVazia = (c: Campo) => {
     const v = respostas[c.id];
-    return v === undefined || v === null || v === "" || (Array.isArray(v) && v.length === 0) || (c.tipo === "faixa" && !v?.min);
+    return (
+      v === undefined ||
+      v === null ||
+      v === "" ||
+      (Array.isArray(v) && v.length === 0) ||
+      (c.tipo === "faixa" && !v?.min)
+    );
   };
   const campoDescricao = campos.find((c) => c.chave === "descricao");
   const textoDescricao = String(description || (campoDescricao ? respostas[campoDescricao.id] : "") || "").trim();
@@ -353,38 +439,55 @@ export default function SupplierOnboarding() {
   const submitForApproval = async () => {
     if (!supplierId) return;
     if (faltando.length > 0) {
-      toast({ title: "Falta pouco", description: "Complete os itens da lista antes de enviar.", variant: "destructive" });
+      toast({
+        title: "Falta pouco",
+        description: "Complete os itens da lista antes de enviar.",
+        variant: "destructive",
+      });
       return;
     }
     setSaving(true);
     try {
-      const { error: errEnvio } = await (supabase.from("suppliers") as any).update({
-        status: "pending", onboarding_completed: true, onboarding_step: 999,
-      }).eq("id", supplierId);
+      const { error: errEnvio } = await (supabase.from("suppliers") as any)
+        .update({
+          status: "pending",
+          onboarding_completed: true,
+          onboarding_step: 999,
+        })
+        .eq("id", supplierId);
       if (errEnvio) throw errEnvio;
       await (supabase.from("fornecedor_aprovacoes") as any).insert({
-        supplier_id: supplierId, acao: "submitted",
+        supplier_id: supplierId,
+        acao: "submitted",
       });
       toast({ title: "Cadastro enviado!", description: "Vamos revisar e te avisar em até 24 h." });
       analytics.onboardingComplete("supplier");
       navigate("/fornecedor/painel", { replace: true });
     } catch (e: any) {
-      toast({ title: "Não foi possível enviar", description: mensagemCadastroIncompleto(e) || traduzirErro(e), variant: "destructive" });
-    } finally { setSaving(false); }
+      toast({
+        title: "Não foi possível enviar",
+        description: mensagemCadastroIncompleto(e) || traduzirErro(e),
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const next = async () => {
     if (saving) return;
-    if (step === 1) { if (!await saveCategoria()) return; }
-    else if (step === 2) { if (!await saveSupplierBasics()) return; }
-    else if (step >= etapaGruposInicio && step < etapaFotos) {
+    if (step === 1) {
+      if (!(await saveCategoria())) return;
+    } else if (step === 2) {
+      if (!(await saveSupplierBasics())) return;
+    } else if (step >= etapaGruposInicio && step < etapaFotos) {
       const g = grupos[step - etapaGruposInicio];
-      if (!await saveGrupo(g)) return;
+      if (!(await saveGrupo(g))) return;
     }
     setStep((s) => Math.min(s + 1, totalEtapas - 1));
   };
 
-  const back = () => setStep((s) => Math.max((session ? 1 : 0), s - 1));
+  const back = () => setStep((s) => Math.max(session ? 1 : 0, s - 1));
 
   // ─────── Render helpers ───────
   const renderCampo = (c: Campo) => {
@@ -408,9 +511,15 @@ export default function SupplierOnboarding() {
             }));
           }}
         >
-          <SelectTrigger><SelectValue placeholder="Selecione a UF" /></SelectTrigger>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione a UF" />
+          </SelectTrigger>
           <SelectContent className="max-h-72">
-            {UFS_BRASIL.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+            {UFS_BRASIL.map((uf) => (
+              <SelectItem key={uf} value={uf}>
+                {uf}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       );
@@ -434,31 +543,41 @@ export default function SupplierOnboarding() {
               }))
             }
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            Selecione uma cidade da lista oficial (IBGE).
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">Selecione uma cidade da lista oficial (IBGE).</p>
         </div>
       );
     }
 
     switch (c.tipo) {
-
       case "texto":
         return <Input value={v || ""} onChange={(e) => set(e.target.value)} />;
       case "textarea":
         return <Textarea value={v || ""} onChange={(e) => set(e.target.value)} rows={4} />;
       case "numero":
         if (ehCampoDinheiro(c)) return <MoedaInput value={v} onValueChange={set} />;
-        return <Input type="number" inputMode="numeric" value={v ?? ""} onChange={(e) => set(e.target.value === "" ? null : Number(e.target.value))} />;
+        return (
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={v ?? ""}
+            onChange={(e) => set(e.target.value === "" ? null : Number(e.target.value))}
+          />
+        );
       case "booleano":
         return (
           <div className="flex gap-2">
-            <button type="button" onClick={() => set(true)}
-              className={`flex-1 h-12 rounded-full border-2 transition ${v === true ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}>
+            <button
+              type="button"
+              onClick={() => set(true)}
+              className={`flex-1 h-12 rounded-full border-2 transition ${v === true ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}
+            >
               Sim
             </button>
-            <button type="button" onClick={() => set(false)}
-              className={`flex-1 h-12 rounded-full border-2 transition ${v === false ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}>
+            <button
+              type="button"
+              onClick={() => set(false)}
+              className={`flex-1 h-12 rounded-full border-2 transition ${v === false ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}
+            >
               Não
             </button>
           </div>
@@ -468,8 +587,12 @@ export default function SupplierOnboarding() {
         return (
           <div className="grid sm:grid-cols-2 gap-2">
             {opts.map((o) => (
-              <button key={o} type="button" onClick={() => set(o)}
-                className={`text-left p-3 rounded-xl border-2 transition ${v === o ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}>
+              <button
+                key={o}
+                type="button"
+                onClick={() => set(o)}
+                className={`text-left p-3 rounded-xl border-2 transition ${v === o ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+              >
                 {o}
               </button>
             ))}
@@ -494,17 +617,32 @@ export default function SupplierOnboarding() {
         return (
           <div className="space-y-2">
             <div className="flex gap-2">
-              <Input value={draft as string} onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
-                placeholder="Digite e pressione Enter" />
-              <Button type="button" onClick={add}>Adicionar</Button>
+              <Input
+                value={draft as string}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    add();
+                  }
+                }}
+                placeholder="Digite e pressione Enter"
+              />
+              <Button type="button" onClick={add}>
+                Adicionar
+              </Button>
             </div>
             {list.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {list.map((it, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
+                  >
                     {it}
-                    <button onClick={() => set(list.filter((_, idx) => idx !== i))}><X className="h-3 w-3" /></button>
+                    <button onClick={() => set(list.filter((_, idx) => idx !== i))}>
+                      <X className="h-3 w-3" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -521,7 +659,8 @@ export default function SupplierOnboarding() {
           </div>
         );
       }
-      default: return null;
+      default:
+        return null;
     }
   };
 
@@ -535,18 +674,26 @@ export default function SupplierOnboarding() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] flex flex-col">
-      <SEO title="Cadastro de fornecedor — Casamenteiro" description="Complete seu cadastro para aparecer na vitrine do Casamenteiro." />
+      <SEO
+        title="Cadastro de fornecedor — Casamenteiro"
+        description="Complete seu cadastro para aparecer na vitrine do Casamenteiro."
+      />
 
       {/* Topo: voltar + progresso */}
       <header className="sticky top-0 z-20 bg-[#FAF7F2]/90 backdrop-blur border-b border-border/40">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to="/fornecedor" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+          <Link
+            to="/fornecedor"
+            className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+          >
             <ArrowLeft className="h-4 w-4" /> Sair
           </Link>
           <div className="flex-1">
             <Progress value={progress} className="h-1.5" />
           </div>
-          <span className="text-xs text-muted-foreground tabular-nums">{step + 1}/{totalEtapas}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {step + 1}/{totalEtapas}
+          </span>
         </div>
       </header>
 
@@ -556,22 +703,50 @@ export default function SupplierOnboarding() {
           <div className="space-y-5 max-w-md mx-auto">
             <div>
               <h1 className="text-3xl font-semibold">Primeiro, vamos criar sua conta.</h1>
-              <p className="text-muted-foreground mt-1">É rápido. Depois você completa as informações do seu serviço.</p>
+              <p className="text-muted-foreground mt-1">
+                É rápido. Depois você completa as informações do seu serviço.
+              </p>
             </div>
             <div className="space-y-3">
-              <div><Label>Nome completo</Label><Input value={signupName} onChange={(e) => setSignupName(e.target.value)} /></div>
-              <div><Label>E-mail</Label><Input type="email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} /></div>
-              <div><Label>Senha (mínimo 6)</Label><Input type="password" value={signupPass} onChange={(e) => setSignupPass(e.target.value)} /></div>
+              <div>
+                <Label>Nome completo</Label>
+                <Input value={signupName} onChange={(e) => setSignupName(e.target.value)} />
+              </div>
+              <div>
+                <Label>E-mail</Label>
+                <Input type="email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} />
+              </div>
+              <div>
+                <Label>Senha (mínimo 6)</Label>
+                <Input type="password" value={signupPass} onChange={(e) => setSignupPass(e.target.value)} />
+              </div>
               <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
-                <Checkbox checked={signupAcceptTerms} onCheckedChange={(v) => setSignupAcceptTerms(v === true)} className="mt-0.5" />
-                <span>Aceito os <Link to="/termos" target="_blank" className="text-primary underline">Termos</Link> e a <Link to="/privacidade" target="_blank" className="text-primary underline">Política de Privacidade</Link>.</span>
+                <Checkbox
+                  checked={signupAcceptTerms}
+                  onCheckedChange={(v) => setSignupAcceptTerms(v === true)}
+                  className="mt-0.5"
+                />
+                <span>
+                  Aceito os{" "}
+                  <Link to="/termos" target="_blank" className="text-primary underline">
+                    Termos
+                  </Link>{" "}
+                  e a{" "}
+                  <Link to="/privacidade" target="_blank" className="text-primary underline">
+                    Política de Privacidade
+                  </Link>
+                  .
+                </span>
               </label>
             </div>
             <Button onClick={handleSignup} disabled={saving} className="w-full h-12 rounded-full">
               {saving ? "Criando conta..." : "Criar conta e continuar →"}
             </Button>
             <div className="text-center text-sm text-muted-foreground">
-              Já tem cadastro? <Link to="/fornecedor/login" className="text-primary underline">Fazer login</Link>
+              Já tem cadastro?{" "}
+              <Link to="/fornecedor/login" className="text-primary underline">
+                Fazer login
+              </Link>
             </div>
           </div>
         )}
@@ -587,8 +762,12 @@ export default function SupplierOnboarding() {
               {categorias.map((c) => {
                 const sel = categoryId === c.id;
                 return (
-                  <button key={c.id} type="button" onClick={() => setCategoryId(c.id)}
-                    className={`p-4 rounded-2xl border-2 text-left transition ${sel ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 bg-background"}`}>
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCategoryId(c.id)}
+                    className={`p-4 rounded-2xl border-2 text-left transition ${sel ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 bg-background"}`}
+                  >
                     <div className="text-2xl mb-2">{CAT_ICON[c.slug] || c.icon || "✨"}</div>
                     <div className="font-medium">{c.name}</div>
                   </button>
@@ -598,10 +777,16 @@ export default function SupplierOnboarding() {
             {ehOutros && (
               <div className="max-w-xl">
                 <Label htmlFor="outros-desc">Qual é o seu serviço? *</Label>
-                <Input id="outros-desc" value={outrosDescricao} maxLength={120}
+                <Input
+                  id="outros-desc"
+                  value={outrosDescricao}
+                  maxLength={120}
                   onChange={(e) => setOutrosDescricao(e.target.value)}
-                  placeholder="Ex.: Aluguel de mobiliário, Fogos de artifício..." />
-                <p className="text-xs text-muted-foreground mt-1">Usamos essa informação para avaliar novas categorias na plataforma.</p>
+                  placeholder="Ex.: Aluguel de mobiliário, Fogos de artifício..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Usamos essa informação para avaliar novas categorias na plataforma.
+                </p>
               </div>
             )}
           </div>
@@ -614,34 +799,52 @@ export default function SupplierOnboarding() {
               <h1 className="text-3xl font-semibold">Conte um pouco sobre o seu negócio.</h1>
               <p className="text-muted-foreground mt-1">Informações básicas que aparecem no seu perfil.</p>
             </div>
-            <div><Label>Nome do negócio *</Label><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></div>
+            <div>
+              <Label>Nome do negócio *</Label>
+              <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+            </div>
             <div>
               <Label>Descrição (será exibida no perfil)</Label>
-              <Textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Conte sobre seu diferencial, estilo, experiência..." />
-              <p className={`text-xs mt-1 ${description.trim().length >= MINIMO_DESCRICAO ? "text-muted-foreground" : "text-amber-700"}`}>
+              <Textarea
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Conte sobre seu diferencial, estilo, experiência..."
+              />
+              <p
+                className={`text-xs mt-1 ${description.trim().length >= MINIMO_DESCRICAO ? "text-muted-foreground" : "text-amber-700"}`}
+              >
                 {description.trim().length}/{MINIMO_DESCRICAO} caracteres no mínimo
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 sm:col-span-1"><Label>Cidade *</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
-              <div>
-                <Label>UF *</Label>
-                <select value={state} onChange={(e) => setState(e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background">
-                  <option value="">--</option>
-                  {UFs.map((u) => <option key={u} value={u}>{u}</option>)}
-                </select>
-              </div>
-            </div>
+            <CityStateSelect
+              cidade={city}
+              estado={state}
+              labelCidade="Cidade principal *"
+              labelEstado="UF *"
+              ajuda="Digite e selecione na lista. Outras cidades e raio você define depois, em Onde você atende."
+              onChange={(c, uf) => {
+                setCity(c);
+                setState(uf);
+              }}
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>WhatsApp *</Label>
-                <Input value={whatsapp} onChange={(e) => setWhatsapp(formatPhoneBR(e.target.value))} placeholder="(11) 99999-0000" />
+                <Input
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(formatPhoneBR(e.target.value))}
+                  placeholder="(11) 99999-0000"
+                />
               </div>
             </div>
             <div className="space-y-3 pt-2">
               <div>
                 <h2 className="text-lg font-semibold">Onde os casais podem ver seu trabalho?</h2>
-                <p className="text-sm text-muted-foreground">Digite só o @ ou o nome. Perfis com Instagram recebem mais pedidos. Os links aparecem para casais com conta no Casamenteiro.</p>
+                <p className="text-sm text-muted-foreground">
+                  Digite só o @ ou o nome. Perfis com Instagram recebem mais pedidos. Os links aparecem para casais com
+                  conta no Casamenteiro.
+                </p>
               </div>
               <RedesSociaisCampos value={redes} onChange={setRedes} />
             </div>
@@ -658,7 +861,11 @@ export default function SupplierOnboarding() {
             <div className="space-y-5">
               {grupos[step - etapaGruposInicio].campos.map((c) => (
                 <div key={c.id}>
-                  <Label>{c.label}{c.obrigatorio && <span className="text-primary"> *</span>}{!c.obrigatorio && <span className="text-muted-foreground text-xs"> (opcional)</span>}</Label>
+                  <Label>
+                    {c.label}
+                    {c.obrigatorio && <span className="text-primary"> *</span>}
+                    {!c.obrigatorio && <span className="text-muted-foreground text-xs"> (opcional)</span>}
+                  </Label>
                   {c.ajuda && <p className="text-xs text-muted-foreground mb-2">{c.ajuda}</p>}
                   {renderCampo(c)}
                 </div>
@@ -672,13 +879,20 @@ export default function SupplierOnboarding() {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-semibold">Adicione fotos do seu trabalho.</h1>
-              <p className="text-muted-foreground mt-1">A foto de perfil e pelo menos {MINIMO_FOTOS} fotos do seu trabalho são obrigatórias. Mostre casamentos reais que você fez.</p>
+              <p className="text-muted-foreground mt-1">
+                A foto de perfil e pelo menos {MINIMO_FOTOS} fotos do seu trabalho são obrigatórias. Mostre casamentos
+                reais que você fez.
+              </p>
             </div>
             <div>
               <Label>Foto de perfil *</Label>
               <div className="mt-2 flex items-center gap-4">
                 {profilePhoto ? (
-                  <img src={profilePhoto} alt="Perfil" className="w-24 h-24 rounded-full object-cover border-2 border-primary" />
+                  <img
+                    src={profilePhoto}
+                    alt="Perfil"
+                    className="w-24 h-24 rounded-full object-cover border-2 border-primary"
+                  />
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                     <Upload className="h-6 w-6" />
@@ -686,11 +900,24 @@ export default function SupplierOnboarding() {
                 )}
                 <label className="cursor-pointer inline-flex items-center justify-center h-10 px-4 rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition">
                   {profilePhoto ? "Trocar foto" : "Enviar foto"}
-                  <input type="file" accept="image/*" className="hidden" disabled={uploading}
-                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setFotoPerfilParaAjustar(URL.createObjectURL(f)); }} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (f) setFotoPerfilParaAjustar(URL.createObjectURL(f));
+                    }}
+                  />
                 </label>
                 {profilePhoto && (
-                  <button type="button" onClick={() => setFotoPerfilParaAjustar(profilePhoto)} className="text-sm text-primary hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => setFotoPerfilParaAjustar(profilePhoto)}
+                    className="text-sm text-primary hover:underline"
+                  >
                     Ajustar foto
                   </button>
                 )}
@@ -705,17 +932,31 @@ export default function SupplierOnboarding() {
               </div>
             </div>
             {supplierId && session?.user && (
-              <LogoUploader userId={session.user.id} supplierId={supplierId} nome={companyName}
-                atual={logoUrl} onSalvo={setLogoUrl} />
+              <LogoUploader
+                userId={session.user.id}
+                supplierId={supplierId}
+                nome={companyName}
+                atual={logoUrl}
+                onSalvo={setLogoUrl}
+              />
             )}
             <div>
-              <Label>Fotos do seu trabalho * <span className={`text-xs font-normal ${galleryPhotos.length >= MINIMO_FOTOS ? "text-muted-foreground" : "text-amber-700"}`}>{galleryPhotos.length} de no mínimo {MINIMO_FOTOS} (até 10)</span></Label>
+              <Label>
+                Fotos do seu trabalho *{" "}
+                <span
+                  className={`text-xs font-normal ${galleryPhotos.length >= MINIMO_FOTOS ? "text-muted-foreground" : "text-amber-700"}`}
+                >
+                  {galleryPhotos.length} de no mínimo {MINIMO_FOTOS} (até 10)
+                </span>
+              </Label>
               <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {galleryPhotos.map((p) => (
                   <div key={p.id} className="relative group aspect-square rounded-lg overflow-hidden">
                     <img src={p.url} alt="" className="w-full h-full object-cover" />
-                    <button onClick={() => removeGalleryPhoto(p.id)}
-                      className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100">
+                    <button
+                      onClick={() => removeGalleryPhoto(p.id)}
+                      className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100"
+                    >
                       <X className="h-3 w-3" />
                     </button>
                   </div>
@@ -726,8 +967,13 @@ export default function SupplierOnboarding() {
                       <Upload className="h-5 w-5 mx-auto" />
                       <span>{uploading ? "Enviando..." : "Adicionar"}</span>
                     </div>
-                    <input type="file" accept="image/*" className="hidden" disabled={uploading}
-                      onChange={(e) => e.target.files?.[0] && handleGalleryUpload(e.target.files[0])} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => e.target.files?.[0] && handleGalleryUpload(e.target.files[0])}
+                    />
                   </label>
                 )}
               </div>
@@ -750,7 +996,9 @@ export default function SupplierOnboarding() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>{PENDENCIAS.length - faltando.length} de {PENDENCIAS.length} prontos</span>
+                <span>
+                  {PENDENCIAS.length - faltando.length} de {PENDENCIAS.length} prontos
+                </span>
               </div>
               <div className="h-2 rounded-full bg-muted overflow-hidden">
                 <div
@@ -763,8 +1011,11 @@ export default function SupplierOnboarding() {
               {PENDENCIAS.map((p) => {
                 const ok = statusItens[p.codigo];
                 const detalhe =
-                  p.codigo === "fotos_trabalho" && !ok ? `você tem ${galleryPhotos.length}` :
-                  p.codigo === "descricao" && !ok ? `${textoDescricao.length} de ${MINIMO_DESCRICAO}` : "";
+                  p.codigo === "fotos_trabalho" && !ok
+                    ? `você tem ${galleryPhotos.length}`
+                    : p.codigo === "descricao" && !ok
+                      ? `${textoDescricao.length} de ${MINIMO_DESCRICAO}`
+                      : "";
                 return (
                   <div key={p.codigo} className="flex items-center gap-3 px-4 py-3 text-sm">
                     <span
@@ -778,7 +1029,11 @@ export default function SupplierOnboarding() {
                       {p.label} {detalhe && <span className="text-muted-foreground">({detalhe})</span>}
                     </span>
                     {!ok && (
-                      <button type="button" onClick={() => irPara(p.codigo)} className="text-sm font-semibold text-primary hover:underline">
+                      <button
+                        type="button"
+                        onClick={() => irPara(p.codigo)}
+                        className="text-sm font-semibold text-primary hover:underline"
+                      >
                         Resolver
                       </button>
                     )}
@@ -787,11 +1042,25 @@ export default function SupplierOnboarding() {
               })}
             </div>
             <div className="bg-background border border-border rounded-2xl p-5 text-sm">
-              <p className="font-medium">{companyName} — {city}/{state}</p>
-              <p className="text-muted-foreground">{categorias.find((c) => c.id === categoryId)?.name} · WhatsApp {whatsapp}</p>
+              <p className="font-medium">
+                {companyName} — {city}/{state}
+              </p>
+              <p className="text-muted-foreground">
+                {categorias.find((c) => c.id === categoryId)?.name} · WhatsApp {whatsapp}
+              </p>
             </div>
-            <Button onClick={submitForApproval} disabled={saving || faltando.length > 0} className="w-full h-14 rounded-full text-base">
-              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Check className="h-5 w-5 mr-2" /> Enviar para aprovação</>}
+            <Button
+              onClick={submitForApproval}
+              disabled={saving || faltando.length > 0}
+              className="w-full h-14 rounded-full text-base"
+            >
+              {saving ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <>
+                  <Check className="h-5 w-5 mr-2" /> Enviar para aprovação
+                </>
+              )}
             </Button>
             <Button variant="ghost" onClick={back} disabled={saving} className="w-full">
               <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
