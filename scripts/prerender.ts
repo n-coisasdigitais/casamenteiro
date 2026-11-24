@@ -15,6 +15,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve, join } from "path";
 import { createClient } from "@supabase/supabase-js";
 import { flagLigada, preencherAjuda, type FaqItem } from "../src/lib/ajudaTexto";
+import { FUNCOES_STAFF, listaFuncoes, pluralFuncao, slugFuncao } from "../src/lib/funcoesStaff";
 
 const BASE_URL = "https://www.casamenteiro.com.br";
 const DIST = resolve("dist");
@@ -23,6 +24,7 @@ const OG_PADRAO = `${BASE_URL}/og-image.jpg`;
 const MAX_FORNECEDORES = Number(process.env.PRERENDER_MAX_FORNECEDORES ?? 800);
 const MAX_CASAIS = Number(process.env.PRERENDER_MAX_CASAIS ?? 300);
 const MAX_CIDADES = Number(process.env.PRERENDER_MAX_CIDADES ?? 200);
+const MAX_PROFISSIONAIS = Number(process.env.PRERENDER_MAX_PROFISSIONAIS ?? 600);
 const MAX_TOTAL = 3000;
 
 type Rota = {
@@ -57,8 +59,7 @@ const slugify = (t: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const brl = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 /* ------------------------------ transformação ---------------------------- */
 
@@ -72,10 +73,7 @@ function aplicar(template: string, rota: Rota): string {
     /<meta\s+name="description"[\s\S]*?\/>/,
     `<meta name="description" content="${esc(rota.description)}" />`,
   );
-  html = html.replace(
-    /<link rel="canonical"[^>]*>/,
-    `<link rel="canonical" href="${esc(url)}" />`,
-  );
+  html = html.replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${esc(url)}" />`);
 
   const metas = [
     `<meta property="og:title" content="${esc(rota.title)}" />`,
@@ -172,6 +170,29 @@ async function coletarRotas(): Promise<Rota[]> {
     },
   ];
 
+  /* busca de profissionais: geral e por função */
+  const linksFuncoes = FUNCOES_STAFF.map(
+    (f) => `<li><a href="/profissionais/${slugFuncao(f)}">${esc(pluralFuncao(f))} para eventos</a></li>`,
+  ).join("");
+  rotas.push({
+    path: "/profissionais",
+    title: "Profissionais para eventos — garçons, cozinha, bar e limpeza | Casamenteiro",
+    description:
+      "Encontre garçons, cozinheiros, barmen, recepcionistas e equipe de limpeza para casamentos e eventos. Perfis com avaliações de fornecedores e documentos verificados.",
+    body: `<h1>Profissionais para eventos</h1><p>Garçons, cozinha, bar, recepção e limpeza avaliados por fornecedores.</p><ul>${linksFuncoes}</ul>`,
+  });
+  FUNCOES_STAFF.forEach((f) => {
+    const plural = pluralFuncao(f);
+    rotas.push({
+      path: `/profissionais/${slugFuncao(f)}`,
+      title: `${plural} para eventos — verificados e avaliados | Casamenteiro`,
+      description: corta(
+        `Encontre ${plural.toLowerCase()} para casamentos e eventos na sua cidade. Veja avaliações de fornecedores, histórico de eventos e quem tem documentos verificados.`,
+      ),
+      body: `<h1>${esc(plural)} para eventos</h1><p><a href="/profissionais">Ver todos os profissionais</a></p><ul>${linksFuncoes}</ul>`,
+    });
+  });
+
   if (!url || !key) {
     console.warn("[prerender] credenciais ausentes — só rotas estáticas.");
     return rotas;
@@ -185,7 +206,10 @@ async function coletarRotas(): Promise<Rota[]> {
       sb.from("faq_itens").select("*").eq("ativo", true).order("ordem"),
       sb.from("feature_flags").select("key, enabled"),
       sb.from("platform_prices").select("valor_fixo, ativo").eq("chave", "reserva_data_ociosa").maybeSingle(),
-      sb.from("system_settings").select("key, value").in("key", ["cancelamento_carencia_dias", "trial_dias", "fornecedor_aprovacao_horas"]),
+      sb
+        .from("system_settings")
+        .select("key, value")
+        .in("key", ["cancelamento_carencia_dias", "trial_dias", "fornecedor_aprovacao_horas"]),
       sb.from("subscription_plans").select("slug, nome, preco_mensal, preco_anual").eq("ativo", true),
     ]);
     const flags: Record<string, boolean> = {};
@@ -197,10 +221,17 @@ async function coletarRotas(): Promise<Rota[]> {
       carenciaDias: Number(cfg.cancelamento_carencia_dias?.dias) || 7,
       testeDias: Number(cfg.trial_dias?.dias) || 60,
       aprovacaoHoras: Number(cfg.fornecedor_aprovacao_horas?.horas) || 24,
-      planos: ((pl.data as any[]) || []).map((p) => ({ slug: p.slug, nome: p.nome, preco_mensal: Number(p.preco_mensal), preco_anual: Number(p.preco_anual) })),
+      planos: ((pl.data as any[]) || []).map((p) => ({
+        slug: p.slug,
+        nome: p.nome,
+        preco_mensal: Number(p.preco_mensal),
+        preco_anual: Number(p.preco_anual),
+      })),
     };
     const vistos = new Set<string>();
-    const itens = ((faq.data as FaqItem[]) || []).filter((i) => flagLigada(flags, i.feature_flag) && !vistos.has(i.slug) && vistos.add(i.slug));
+    const itens = ((faq.data as FaqItem[]) || []).filter(
+      (i) => flagLigada(flags, i.feature_flag) && !vistos.has(i.slug) && vistos.add(i.slug),
+    );
     const limpa = (t: string) => preencherAjuda(t, valores).replace(/\*\*|\[|\]\([^)]*\)/g, "");
     rotas.push({
       path: "/ajuda",
@@ -211,7 +242,11 @@ async function coletarRotas(): Promise<Rota[]> {
         ? {
             "@context": "https://schema.org",
             "@type": "FAQPage",
-            mainEntity: itens.map((i) => ({ "@type": "Question", name: i.pergunta, acceptedAnswer: { "@type": "Answer", text: limpa(i.resposta) } })),
+            mainEntity: itens.map((i) => ({
+              "@type": "Question",
+              name: i.pergunta,
+              acceptedAnswer: { "@type": "Answer", text: limpa(i.resposta) },
+            })),
           }
         : undefined,
       body: `<h1>Central de Ajuda do Casamenteiro</h1>${itens
@@ -240,7 +275,9 @@ async function coletarRotas(): Promise<Rota[]> {
   /* fornecedores aprovados */
   const { data: sups } = await sb
     .from("suppliers")
-    .select("id, company_name, description, city, state, price_min, price_max, rating, review_count, profile_photo_url, cover_photo_url, category_id")
+    .select(
+      "id, company_name, description, city, state, price_min, price_max, rating, review_count, profile_photo_url, cover_photo_url, category_id",
+    )
     .eq("status", "approved")
     .eq("is_demo", false)
     .order("updated_at", { ascending: false })
@@ -254,7 +291,8 @@ async function coletarRotas(): Promise<Rota[]> {
     const cat = s.category_id ? catNome[s.category_id] : null;
     const titulo = `${s.company_name}${cat ? ` — ${cat}` : ""}${local ? ` em ${local}` : ""} | Casamenteiro`;
     const desc = corta(
-      s.description || `${s.company_name}${cat ? `, ${cat} para casamento` : ""}${local ? ` em ${local}` : ""}. Veja fotos, avaliações e peça orçamento gratuito.`,
+      s.description ||
+        `${s.company_name}${cat ? `, ${cat} para casamento` : ""}${local ? ` em ${local}` : ""}. Veja fotos, avaliações e peça orçamento gratuito.`,
     );
     rotas.push({
       path: `/fornecedor/${s.id}`,
@@ -320,8 +358,7 @@ async function coletarRotas(): Promise<Rota[]> {
     .forEach(([slug, c]) => {
       const rotulo = c.uf ? `${c.cidade} (${c.uf})` : c.cidade;
       const soma = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
-      const faixa =
-        c.min.length && c.max.length ? `${brl(soma(c.min))} a ${brl(soma(c.max))}` : null;
+      const faixa = c.min.length && c.max.length ? `${brl(soma(c.min))} a ${brl(soma(c.max))}` : null;
       const desc = corta(
         faixa
           ? `Casar em ${rotulo} custa entre ${faixa} segundo ${c.qtd} fornecedores cadastrados. Veja preços por categoria e simule seu orçamento.`
@@ -334,6 +371,47 @@ async function coletarRotas(): Promise<Rota[]> {
         body: `<h1>Quanto custa casar em ${esc(rotulo)}?</h1><p>${esc(desc)}</p><p><a href="/simulador">Simular meu orçamento</a></p>`,
       });
     });
+
+  /* perfis públicos de profissionais (só colunas públicas; contato não é lido) */
+  const { data: profs } = await sb
+    .from("staff_profiles")
+    .select("nome, slug, foto_url, funcoes, cidade, estado, bio")
+    .eq("is_public", true)
+    .order("updated_at", { ascending: false })
+    .limit(MAX_PROFISSIONAIS);
+  (profs || []).forEach((p: any) => {
+    if (!p.slug) return;
+    const local = [p.cidade, p.estado].filter(Boolean).join(", ");
+    const funcoes = listaFuncoes(p.funcoes, 2);
+    const desc = corta(
+      p.bio ||
+        `${p.nome}, ${listaFuncoes(p.funcoes).toLowerCase()} para casamentos e eventos${local ? ` em ${local}` : ""}. Veja o perfil e as avaliações no Casamenteiro.`,
+    );
+    rotas.push({
+      path: `/profissional/${p.slug}`,
+      title: `${p.nome} — ${funcoes}${local ? ` em ${local}` : ""} | Casamenteiro`,
+      description: desc,
+      image: p.foto_url || undefined,
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        name: p.nome,
+        jobTitle: (p.funcoes || []).join(", ") || "Profissional de eventos",
+        description: desc,
+        image: p.foto_url || undefined,
+        url: `${BASE_URL}/profissional/${p.slug}`,
+        address: p.cidade
+          ? {
+              "@type": "PostalAddress",
+              addressLocality: p.cidade,
+              addressRegion: p.estado || undefined,
+              addressCountry: "BR",
+            }
+          : undefined,
+      },
+      body: `<h1>${esc(p.nome)}</h1><p>${esc(funcoes)}${local ? ` — ${esc(local)}` : ""}</p><p>${esc(desc)}</p><p><a href="/profissionais">Outros profissionais de eventos</a></p>`,
+    });
+  });
 
   return rotas;
 }
