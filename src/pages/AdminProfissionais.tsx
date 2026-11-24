@@ -80,12 +80,25 @@ export default function AdminProfissionais() {
   const [ver, setVer] = useState<(ArquivoView & { doc?: any }) | null>(null);
 
   const load = async () => {
-    const [{ data }, { data: profiles }] = await Promise.all([
-      (supabase.from("staff_profiles" as any) as any).select("*").order("created_at", { ascending: false }),
+    const [{ data }, { data: profiles }, { data: contatos }] = await Promise.all([
+      (supabase.from("staff_profiles" as any) as any)
+        .select(
+          "id, user_id, criado_por, nome, slug, foto_url, funcoes, cidade, estado, raio_km, valor_min_turno, bio, consentimento_lgpd, is_public, rating, review_count, eventos_concluidos, eventos_aceitos, created_at, updated_at, verificacao_status, verificado_em, verificacao_obs, disponivel, notificar_vagas_email, verificacao_enviada_em",
+        )
+        .order("created_at", { ascending: false }),
       semDemo(supabase.from("profiles").select("user_id, is_demo")),
+      // telefone e e-mail ficam fora da leitura direta da tabela (protegidos)
+      (supabase.rpc as any)("admin_staff_contatos"),
     ]);
+    const contatoPorId = new Map<string, any>(((contatos as any[]) || []).map((c: any) => [c.id, c]));
     const userIds = new Set((profiles || []).map((p: any) => p.user_id));
-    const scopedRows = (data || []).filter((row: any) => userIds.has(row.user_id));
+    const scopedRows = (data || [])
+      .filter((row: any) => userIds.has(row.user_id))
+      .map((row: any) => ({
+        ...row,
+        telefone: contatoPorId.get(row.id)?.telefone ?? null,
+        email: contatoPorId.get(row.id)?.email ?? null,
+      }));
     setRows(scopedRows);
     const { data: dd } = await (supabase.from("staff_documents" as any) as any)
       .select("*")
