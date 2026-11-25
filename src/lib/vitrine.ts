@@ -90,8 +90,14 @@ function comFotos(rows: any[]): FornecedorVitrine[] {
 }
 
 export async function carregarCategorias(): Promise<CategoriaVitrine[]> {
-  const { data } = await (supabase.from("categories") as any).select("id, name, slug, icon, active").order("name");
-  return ((data as any[]) || []).filter((c) => c.active !== false);
+  // "rascunho" = categoria do padrão criada pelo admin que ainda não tem fornecedor aprovado:
+  // aparece no cadastro do fornecedor, mas fica fora da vitrine do casal.
+  let { data, error } = await (supabase.from("categories") as any)
+    .select("id, name, slug, icon, active, rascunho")
+    .order("name");
+  if (error)
+    ({ data } = await (supabase.from("categories") as any).select("id, name, slug, icon, active").order("name"));
+  return ((data as any[]) || []).filter((c) => c.active !== false && c.rascunho !== true);
 }
 
 /** Todos os fornecedores visíveis (com foto). Usado para contagem e listas. */
