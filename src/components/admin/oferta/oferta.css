@@ -372,3 +372,28 @@ button.of-kpi:focus-visible {
     font-size: 22px;
   }
 }
+
+/* --- ajustes 25/11: respiro da página, cartões e mapa --- */
+.of-pagina {
+  padding: 24px clamp(16px, 3vw, 32px) 56px;
+  gap: 20px;
+}
+.of-bloco {
+  background: #fff;
+  border: 1px solid var(--ad-line);
+  border-radius: 14px;
+  box-shadow: var(--ad-shadow);
+}
+.of-kpi {
+  min-width: 0;
+}
+.of-kpi-r,
+.of-kpi-d {
+  white-space: normal;
+}
+.of-chips button {
+  line-height: 1.2;
+}
+.of-mapa-leaflet .leaflet-tile-pane {
+  filter: saturate(0.35) brightness(1.04);
+}
