@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowUpDown, Building, ChevronDown, MapPin, Tag, Users } from "lucide-react";
 import SEO from "@/components/SEO";
+import { analytics } from "@/lib/analytics";
 import { absoluteUrl, breadcrumbJsonLd, itemListJsonLd, truncate } from "@/lib/seo";
 import { useMyPlanSuppliers } from "@/hooks/useMyPlanSuppliers";
 import { RodapeVitrine, TopoVitrine, useFavoritos } from "@/components/vitrine/VitrineLayout";
@@ -207,6 +208,22 @@ export default function CategoriaPublica() {
     };
     return [ordenar(l), ordenar(rem)];
   }, [daCategoria, cidade, coordBusca, preco, conv, ordem, tipo, tiposPorForn]);
+
+  // Busca para o painel de comportamento (PostHog): o que o casal procurou e quanto achou.
+  useEffect(() => {
+    if (carregando || !categoria) return;
+    const t = window.setTimeout(() => {
+      analytics.buscaRealizada({
+        origem: "categoria",
+        categoria_slug: categoria.slug,
+        cidade: cidade || null,
+        resultados: itens.length + remotos.length,
+        resultados_locais: itens.length,
+        resultados_remotos: remotos.length,
+      });
+    }, 1200);
+    return () => window.clearTimeout(t);
+  }, [carregando, categoria, cidade, itens.length, remotos.length]);
 
   if (naoAchou) return <Navigate to="/explorar" replace />;
 
