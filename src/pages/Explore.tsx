@@ -21,6 +21,7 @@ import {
   Video,
 } from "lucide-react";
 import SEO from "@/components/SEO";
+import { analytics } from "@/lib/analytics";
 import { absoluteUrl, breadcrumbJsonLd, itemListJsonLd } from "@/lib/seo";
 import { resolverCategoriaSlug } from "@/lib/categoriaSlug";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -184,6 +185,22 @@ const Explore = () => {
     const remotos = porTexto.filter((f) => comoAtende(f, locParam, coordBusca) === "remoto");
     return [...locais, ...remotos];
   }, [fornecedores, qParam, locParam, coordBusca]);
+
+  // Busca livre para o painel de comportamento (PostHog). Se virar página de categoria, quem mede é ela.
+  useEffect(() => {
+    if (carregando || resultados === null) return;
+    const pedidoAtual = catParam || qParam;
+    if (pedidoAtual && resolverCategoriaSlug(pedidoAtual, categorias)) return;
+    const t = window.setTimeout(() => {
+      analytics.buscaRealizada({
+        origem: "explorar",
+        termo: qParam || null,
+        cidade: locParam || null,
+        resultados: resultados.length,
+      });
+    }, 1200);
+    return () => window.clearTimeout(t);
+  }, [carregando, resultados, catParam, qParam, locParam, categorias]);
 
   // ?cat= (ou ?q= igual ao nome de uma categoria) abre a página da categoria
   const pedido = catParam || qParam;
