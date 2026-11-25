@@ -43,6 +43,7 @@ import {
 import PromoDatesInline from "@/components/reservas/PromoDatesInline";
 import SupplierMap from "@/components/SupplierMap";
 import SEO from "@/components/SEO";
+import { analytics } from "@/lib/analytics";
 import { absoluteUrl, breadcrumbJsonLd, priceRangeLabel, truncate } from "@/lib/seo";
 import { compartilharPerfil, gerarArquivoCartao } from "@/lib/cartaoCompartilhar";
 import UserMenu from "@/components/UserMenu";
@@ -55,7 +56,15 @@ import GaleriaFornecedor, { Visualizador } from "@/components/perfil/GaleriaForn
 import OrcamentoInline, { formatarHoras } from "@/components/perfil/OrcamentoInline";
 import "@/components/perfil/perfil.css";
 
-type Campo = { id: string; chave: string; label: string; tipo: string; grupo: string | null; ordem: number; valor: any };
+type Campo = {
+  id: string;
+  chave: string;
+  label: string;
+  tipo: string;
+  grupo: string | null;
+  ordem: number;
+  valor: any;
+};
 type Faq = { id: string; pergunta: string; resposta: string };
 
 /** Campos que já aparecem em outro lugar da página (ou são contato). */
@@ -102,7 +111,10 @@ function Estrelas({ nota, tamanho = "h-4 w-4" }: { nota: number; tamanho?: strin
   return (
     <span className="inline-flex gap-0.5">
       {[1, 2, 3, 4, 5].map((s) => (
-        <Star key={s} className={`${tamanho} ${s <= Math.round(nota) ? "fill-[var(--pf-star)] text-[var(--pf-star)]" : "text-[#d8cfc4]"}`} />
+        <Star
+          key={s}
+          className={`${tamanho} ${s <= Math.round(nota) ? "fill-[var(--pf-star)] text-[var(--pf-star)]" : "text-[#d8cfc4]"}`}
+        />
       ))}
     </span>
   );
@@ -147,9 +159,15 @@ export default function SupplierProfile() {
     if (!ident) return;
     setId(undefined);
     setSupplier(null);
-    if (ehUuid(ident)) { setId(ident); return; }
+    if (ehUuid(ident)) {
+      setId(ident);
+      return;
+    }
     setLoading(true);
-    (supabase.from("suppliers") as any).select("id").eq("slug", ident).maybeSingle()
+    (supabase.from("suppliers") as any)
+      .select("id")
+      .eq("slug", ident)
+      .maybeSingle()
       .then(({ data }: any) => {
         if (data?.id) setId(data.id);
         else setLoading(false);
@@ -202,15 +220,21 @@ export default function SupplierProfile() {
       .then(({ data }: any) => setFaqs(data || []));
 
     (supabase.rpc as any)("fornecedor_tempo_resposta", { _supplier_id: id }).then(({ data }: any) =>
-      setTempoResposta((typeof data === "number" || typeof data === "string") && data !== "" && Number.isFinite(Number(data)) ? Number(data) : null),
+      setTempoResposta(
+        (typeof data === "number" || typeof data === "string") && data !== "" && Number.isFinite(Number(data))
+          ? Number(data)
+          : null,
+      ),
     );
 
     loadReviews();
 
     // Registra visita ao perfil (1x por carregamento)
-    (supabase.from("supplier_profile_views") as any).insert({ supplier_id: id, viewer_id: user?.id ?? null }).then(() => {
-      /* fire-and-forget */
-    });
+    (supabase.from("supplier_profile_views") as any)
+      .insert({ supplier_id: id, viewer_id: user?.id ?? null })
+      .then(() => {
+        /* fire-and-forget */
+      });
 
     if (user) {
       supabase
@@ -253,11 +277,7 @@ export default function SupplierProfile() {
       (supabase.from("fornecedor_campos") as any).select("campo_id, valor").eq("supplier_id", supplierId),
     ]);
     const mapa = new Map<string, any>((resps || []).map((r: any) => [r.campo_id, r.valor]));
-    setCampos(
-      (cps || [])
-        .map((c: any) => ({ ...c, valor: mapa.get(c.id) }))
-        .filter((c: Campo) => !vazio(c.valor)),
-    );
+    setCampos((cps || []).map((c: any) => ({ ...c, valor: mapa.get(c.id) })).filter((c: Campo) => !vazio(c.valor)));
   };
 
   const carregarContato = (supplierId: string) => {
@@ -272,8 +292,16 @@ export default function SupplierProfile() {
 
   const verificarPodeAvaliar = async (casal: string, supplierId: string) => {
     const [{ count: pedidos }, { count: contratos }] = await Promise.all([
-      supabase.from("quotes").select("id", { count: "exact", head: true }).eq("couple_id", casal).eq("supplier_id", supplierId),
-      supabase.from("couple_suppliers").select("id", { count: "exact", head: true }).eq("couple_id", casal).eq("supplier_id", supplierId),
+      supabase
+        .from("quotes")
+        .select("id", { count: "exact", head: true })
+        .eq("couple_id", casal)
+        .eq("supplier_id", supplierId),
+      supabase
+        .from("couple_suppliers")
+        .select("id", { count: "exact", head: true })
+        .eq("couple_id", casal)
+        .eq("supplier_id", supplierId),
     ]);
     setPodeAvaliar((pedidos || 0) + (contratos || 0) > 0);
   };
@@ -325,7 +353,10 @@ export default function SupplierProfile() {
 
   const toggleFavorite = async () => {
     if (!user) {
-      toast({ title: "Faça login para salvar", description: "Crie uma conta grátis ou entre para guardar seus favoritos." });
+      toast({
+        title: "Faça login para salvar",
+        description: "Crie uma conta grátis ou entre para guardar seus favoritos.",
+      });
       return;
     }
     if (!coupleId || !id) {
@@ -353,7 +384,11 @@ export default function SupplierProfile() {
       texto: `Conheça ${nome}${categoria ? ` (${categoria.toLowerCase()})` : ""} no Casamenteiro:`,
       url: absoluteUrl(linkFornecedor(supplier)),
       nome,
-      fotoUrl: photos.find((p: any) => p.is_principal)?.photo_url || supplier.profile_photo_url || photos[0]?.photo_url || null,
+      fotoUrl:
+        photos.find((p: any) => p.is_principal)?.photo_url ||
+        supplier.profile_photo_url ||
+        photos[0]?.photo_url ||
+        null,
       linha1: categoria,
       linha2: [supplier.city, supplier.state].filter(Boolean).join(", ") || null,
       selo: nota >= 4 ? `★ ${nota.toFixed(1).replace(".", ",")}` : null,
@@ -366,24 +401,37 @@ export default function SupplierProfile() {
     if (!dadosCartao) return;
     let vivo = true;
     const t = setTimeout(() => gerarArquivoCartao(dadosCartao).then((f) => vivo && setArquivoCartao(f)), 1200);
-    return () => { vivo = false; clearTimeout(t); };
+    return () => {
+      vivo = false;
+      clearTimeout(t);
+    };
   }, [dadosCartao]);
 
   const compartilhar = async () => {
     if (!dadosCartao) return;
     const resultado = await compartilharPerfil(dadosCartao, arquivoCartao);
-    if (resultado === "imagem-baixada") toast({ title: "Imagem baixada e link copiado!", description: "É só colar o link junto da imagem." });
+    if (resultado === "imagem-baixada")
+      toast({ title: "Imagem baixada e link copiado!", description: "É só colar o link junto da imagem." });
     else if (resultado === "link-copiado") toast({ title: "Link copiado!" });
   };
+
+  // Visita ao perfil para o painel de comportamento (uma vez por sessão por fornecedor).
+  useEffect(() => {
+    if (!supplier?.id) return;
+    analytics.perfilFornecedorVisto({
+      supplier_id: supplier.id,
+      categoria_slug: (supplier.categories as any)?.slug ?? null,
+      cidade: supplier.city ?? null,
+    });
+  }, [supplier?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // seção ativa no menu fixo
   useEffect(() => {
     if (loading || !("IntersectionObserver" in window)) return;
     const els = Array.from(document.querySelectorAll<HTMLElement>(".pf-bloco[id]"));
-    const io = new IntersectionObserver(
-      (es) => es.forEach((e) => e.isIntersecting && setSecao(e.target.id)),
-      { rootMargin: "-130px 0px -60% 0px" },
-    );
+    const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && setSecao(e.target.id)), {
+      rootMargin: "-130px 0px -60% 0px",
+    });
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
   }, [loading, campos.length, faqs.length, photos.length]);
@@ -427,7 +475,8 @@ export default function SupplierProfile() {
 
   // preço: faixa da categoria > preço médio > price_min do cadastro
   const faixaPreco = valorCampo("preco_locacao", "preco_por_pessoa", "faixa_preco", "preco");
-  const minFaixa: number | null = faixaPreco && typeof faixaPreco === "object" && faixaPreco.min != null ? Number(faixaPreco.min) : null;
+  const minFaixa: number | null =
+    faixaPreco && typeof faixaPreco === "object" && faixaPreco.min != null ? Number(faixaPreco.min) : null;
   const precoBase: number | null =
     minFaixa ??
     (valorCampo("preco_medio") != null ? Number(valorCampo("preco_medio")) : null) ??
@@ -438,18 +487,31 @@ export default function SupplierProfile() {
   // destaques: só dados reais do cadastro
   const capacidade = valorCampo("capacidade_max", "convidados_max") ?? supplier.guest_max;
   const destaques: { icone: LucideIcon; rotulo: string; valor: string }[] = [];
-  if (capacidade) destaques.push({ icone: Users, rotulo: "Capacidade", valor: `até ${Number(capacidade).toLocaleString("pt-BR")} convidados` });
+  if (capacidade)
+    destaques.push({
+      icone: Users,
+      rotulo: "Capacidade",
+      valor: `até ${Number(capacidade).toLocaleString("pt-BR")} convidados`,
+    });
   const quartos = valorCampo("hospedagem_qtd");
-  if (quartos) destaques.push({ icone: BedDouble, rotulo: "Hospedagem", valor: `${quartos} ${Number(quartos) === 1 ? "quarto ou chalé" : "quartos ou chalés"}` });
+  if (quartos)
+    destaques.push({
+      icone: BedDouble,
+      rotulo: "Hospedagem",
+      valor: `${quartos} ${Number(quartos) === 1 ? "quarto ou chalé" : "quartos ou chalés"}`,
+    });
   const anos = valorCampo("anos_experiencia");
-  if (anos) destaques.push({ icone: Award, rotulo: "Experiência", valor: `${anos} ${Number(anos) === 1 ? "ano" : "anos"}` });
+  if (anos)
+    destaques.push({ icone: Award, rotulo: "Experiência", valor: `${anos} ${Number(anos) === 1 ? "ano" : "anos"}` });
   destaques.push({ icone: Wallet, rotulo: "Preço", valor: precoTexto ? `a partir de ${precoTexto}` : "sob consulta" });
   const seloNacional = seloAtendimento(supplier);
   if (seloNacional) destaques.push({ icone: MapPin, rotulo: "Atende", valor: seloNacional });
   else if (local) destaques.push({ icone: MapPin, rotulo: "Atende", valor: local });
 
   const oferece = campos.filter((c) => !CHAVES_FORA.has(c.chave));
-  const cidadesAtendidas: string[] = Array.isArray(supplier.cidades_atendidas) ? supplier.cidades_atendidas.filter(Boolean) : [];
+  const cidadesAtendidas: string[] = Array.isArray(supplier.cidades_atendidas)
+    ? supplier.cidades_atendidas.filter(Boolean)
+    : [];
   const descricao: string = supplier.description || "";
   const descricaoLonga = descricao.length > 420;
   const mostrarFotos = photos.length > 1;
@@ -481,7 +543,10 @@ export default function SupplierProfile() {
       addressCountry: "BR",
     },
     telephone: supplier.whatsapp || supplier.phone || undefined,
-    geo: supplier.lat && supplier.lng ? { "@type": "GeoCoordinates", latitude: supplier.lat, longitude: supplier.lng } : undefined,
+    geo:
+      supplier.lat && supplier.lng
+        ? { "@type": "GeoCoordinates", latitude: supplier.lat, longitude: supplier.lng }
+        : undefined,
     aggregateRating:
       supplier.rating && supplier.review_count
         ? { "@type": "AggregateRating", ratingValue: supplier.rating, reviewCount: supplier.review_count }
@@ -522,7 +587,8 @@ export default function SupplierProfile() {
       <SEO
         title={`${supplier.company_name} — Casamenteiro`}
         description={truncate(
-          supplier.description || `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`,
+          supplier.description ||
+            `Conheça ${supplier.company_name}${supplier.city ? ` em ${supplier.city}` : ""} e peça um orçamento sem compromisso.`,
         )}
         canonical={absoluteUrl(linkFornecedor(supplier ?? { id }))}
         ogImage={supplier.profile_photo_url || photos[0]?.photo_url || undefined}
@@ -565,7 +631,10 @@ export default function SupplierProfile() {
       </header>
 
       <main className="pf-wrap">
-        <nav className="flex flex-wrap items-center gap-1.5 py-3.5 text-[12.5px] text-[var(--pf-muted)]" aria-label="Caminho">
+        <nav
+          className="flex flex-wrap items-center gap-1.5 py-3.5 text-[12.5px] text-[var(--pf-muted)]"
+          aria-label="Caminho"
+        >
           <Link to="/" className="hover:text-[var(--pf-ink)]">
             Início
           </Link>
@@ -607,8 +676,16 @@ export default function SupplierProfile() {
               )}
             </div>
             <div className="mt-3 flex items-center gap-4">
-              {supplier.logo_url && <LogoFornecedor url={supplier.logo_url} nome={supplier.company_name} className="h-16 w-16 md:h-20 md:w-20" />}
-              <h1 className="pf-serif text-[34px] leading-[1.08] tracking-[-0.02em] md:text-[46px]">{supplier.company_name}</h1>
+              {supplier.logo_url && (
+                <LogoFornecedor
+                  url={supplier.logo_url}
+                  nome={supplier.company_name}
+                  className="h-16 w-16 md:h-20 md:w-20"
+                />
+              )}
+              <h1 className="pf-serif text-[34px] leading-[1.08] tracking-[-0.02em] md:text-[46px]">
+                {supplier.company_name}
+              </h1>
             </div>
             {supplier.categoria_outros_descricao && (
               <p className="mt-2 text-[14.5px] text-[var(--pf-body)]">{supplier.categoria_outros_descricao}</p>
@@ -690,7 +767,9 @@ export default function SupplierProfile() {
                 <h2 className="pf-h2">
                   O que <em>oferece</em>
                 </h2>
-                <p className="-mt-2 mb-3 text-[13px] text-[var(--pf-muted)]">Informações preenchidas pelo fornecedor no cadastro.</p>
+                <p className="-mt-2 mb-3 text-[13px] text-[var(--pf-muted)]">
+                  Informações preenchidas pelo fornecedor no cadastro.
+                </p>
                 <div className="grid gap-x-8 sm:grid-cols-2">
                   {oferece.map((c) => {
                     const Icone = iconeDoCampo(c.chave);
@@ -717,7 +796,12 @@ export default function SupplierProfile() {
                 </h2>
                 <div className="pf-mosaico">
                   {photos.map((f, i) => (
-                    <button key={f.id || i} type="button" onClick={() => setFotoAberta(i)} aria-label={`Abrir foto ${i + 1}`}>
+                    <button
+                      key={f.id || i}
+                      type="button"
+                      onClick={() => setFotoAberta(i)}
+                      aria-label={`Abrir foto ${i + 1}`}
+                    >
                       <img src={f.photo_url} alt="" loading="lazy" />
                     </button>
                   ))}
@@ -763,7 +847,10 @@ export default function SupplierProfile() {
                           <div className="min-w-0 flex-1">
                             <b className="block truncate text-sm">Casal do Casamenteiro</b>
                             <small className="text-xs text-[var(--pf-muted)]">
-                              {new Date(rev.created_at).toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
+                              {new Date(rev.created_at).toLocaleDateString("pt-BR", {
+                                month: "short",
+                                year: "numeric",
+                              })}
                             </small>
                           </div>
                           <Estrelas nota={rev.rating} tamanho="h-3.5 w-3.5" />
@@ -787,7 +874,8 @@ export default function SupplierProfile() {
                   <div>
                     <b>Ainda sem avaliações</b>
                     <p className="mt-0.5 text-sm text-[var(--pf-body)]">
-                      Só casais que pediram orçamento ou contrataram este fornecedor podem avaliar, para as notas serem de verdade.
+                      Só casais que pediram orçamento ou contrataram este fornecedor podem avaliar, para as notas serem
+                      de verdade.
                     </p>
                   </div>
                 </div>
@@ -840,7 +928,11 @@ export default function SupplierProfile() {
                     <>
                       {formasDe(supplier).map((fm) => (
                         <span key={fm} className="pf-chip">
-                          {fm === "online" ? "Atende todo o Brasil online" : fm === "viagem" ? "Viaja até o seu evento" : "Envia para todo o Brasil"}
+                          {fm === "online"
+                            ? "Atende todo o Brasil online"
+                            : fm === "viagem"
+                              ? "Viaja até o seu evento"
+                              : "Envia para todo o Brasil"}
                         </span>
                       ))}
                       {formasDe(supplier).includes("viagem") && supplier.taxa_deslocamento && (
@@ -857,7 +949,9 @@ export default function SupplierProfile() {
                     </>
                   ) : (
                     (cidadesAtendidas.length ? cidadesAtendidas : [supplier.city].filter(Boolean)).map((c: string) => (
-                      <span key={c} className="pf-chip">Atende em {c}</span>
+                      <span key={c} className="pf-chip">
+                        Atende em {c}
+                      </span>
                     ))
                   )}
                   {valorCampo("atende_fora") === true && <span className="pf-chip">Atende fora da cidade</span>}
@@ -873,7 +967,9 @@ export default function SupplierProfile() {
                 {faqs.map((f) => (
                   <details key={f.id} className="pf-faq">
                     <summary>{f.pergunta}</summary>
-                    <p className="whitespace-pre-line pb-4 text-[15px] leading-relaxed text-[var(--pf-body)]">{f.resposta}</p>
+                    <p className="whitespace-pre-line pb-4 text-[15px] leading-relaxed text-[var(--pf-body)]">
+                      {f.resposta}
+                    </p>
                   </details>
                 ))}
               </section>
@@ -887,7 +983,8 @@ export default function SupplierProfile() {
                 <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
                   {recommendations.map((rec) => {
                     const fotos = rec.supplier_photos || [];
-                    const foto = (fotos.find((p: any) => p.is_principal) || fotos[0])?.photo_url || rec.profile_photo_url;
+                    const foto =
+                      (fotos.find((p: any) => p.is_principal) || fotos[0])?.photo_url || rec.profile_photo_url;
                     return (
                       <Link
                         key={rec.id}
@@ -943,7 +1040,9 @@ export default function SupplierProfile() {
       {/* celular: barra fixa + folha com o formulário */}
       <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-[var(--pf-line)] bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex min-w-0 flex-col leading-tight">
-          <small className="text-[11.5px] font-semibold text-[var(--pf-muted)]">{precoTexto ? "a partir de" : "preço"}</small>
+          <small className="text-[11.5px] font-semibold text-[var(--pf-muted)]">
+            {precoTexto ? "a partir de" : "preço"}
+          </small>
           <b className="pf-serif truncate text-lg">{precoTexto || "Sob consulta"}</b>
         </div>
         <button type="button" className="pf-cta ml-auto h-12 flex-1 px-5 text-[15px]" onClick={() => setFolha(true)}>
@@ -957,7 +1056,9 @@ export default function SupplierProfile() {
           style={{ minHeight: 0 }}
         >
           <div className="sticky top-0 z-10 -mx-3 mb-2 flex items-center gap-3 bg-[var(--pf-bg)] px-4 pb-2 pt-3">
-            <SheetTitle className="min-w-0 flex-1 truncate text-[15px] font-semibold">Orçamento · {supplier.company_name}</SheetTitle>
+            <SheetTitle className="min-w-0 flex-1 truncate text-[15px] font-semibold">
+              Orçamento · {supplier.company_name}
+            </SheetTitle>
             <SheetClose className="pf-pill h-9 px-3.5 text-[13.5px]">Fechar</SheetClose>
           </div>
           <OrcamentoInline {...orcamentoProps} />
@@ -965,7 +1066,12 @@ export default function SupplierProfile() {
       </Sheet>
 
       {fotoAberta !== null && (
-        <Visualizador fotos={photos} nome={supplier.company_name} inicio={fotoAberta} onFechar={() => setFotoAberta(null)} />
+        <Visualizador
+          fotos={photos}
+          nome={supplier.company_name}
+          inicio={fotoAberta}
+          onFechar={() => setFotoAberta(null)}
+        />
       )}
     </div>
   );
@@ -999,7 +1105,11 @@ function ValorCampo({ campo }: { campo: Campo }) {
     case "faixa":
       return <span className="font-semibold">{textoFaixa(v)}</span>;
     case "numero":
-      return <span className="font-semibold">{ehCampoDinheiro(campo) ? reais(Number(v)) : Number(v).toLocaleString("pt-BR")}</span>;
+      return (
+        <span className="font-semibold">
+          {ehCampoDinheiro(campo) ? reais(Number(v)) : Number(v).toLocaleString("pt-BR")}
+        </span>
+      );
     case "textarea":
       return <span className="whitespace-pre-line text-[var(--pf-body)]">{String(v)}</span>;
     default:
