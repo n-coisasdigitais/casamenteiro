@@ -158,13 +158,16 @@ export default function OrcamentoInline({
       }
     }
     analytics.formSubmit("pedido_orcamento", { supplier_id: supplierId });
+    analytics.orcamentoPedido({ supplier_id: supplierId, origem: "perfil_inline" });
     analytics.contactCtaClick({ supplier_id: supplierId, origem: "form_orcamento" });
     setEnviando(false);
     setEnviado(true);
     onEnviado?.();
   };
 
-  const linkZap = whatsapp ? buildWhatsAppLink(whatsapp, "Olá! Vim pelo Casamenteiro, acabei de pedir um orçamento.") : null;
+  const linkZap = whatsapp
+    ? buildWhatsAppLink(whatsapp, "Olá! Vim pelo Casamenteiro, acabei de pedir um orçamento.")
+    : null;
 
   return (
     <div className="pf-orc">
@@ -204,7 +207,10 @@ export default function OrcamentoInline({
                 href={linkZap}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => analytics.contactCtaClick({ supplier_id: supplierId, origem: "whatsapp" })}
+                onClick={() => {
+                  analytics.contactCtaClick({ supplier_id: supplierId, origem: "whatsapp" });
+                  analytics.whatsappClicado({ supplier_id: supplierId, origem: "pos_orcamento" });
+                }}
               >
                 <MessageCircle className="h-4 w-4" /> Abrir WhatsApp
               </a>
@@ -294,7 +300,12 @@ export default function OrcamentoInline({
                 <div className="flex flex-col gap-2.5">
                   <label className="pf-campo">
                     Telefone
-                    <input type="tel" placeholder="(11) 99999-9999" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+                    <input
+                      type="tel"
+                      placeholder="(11) 99999-9999"
+                      value={telefone}
+                      onChange={(e) => setTelefone(e.target.value)}
+                    />
                   </label>
                   {telefone && (
                     <label className="flex items-center gap-2 text-[13px] text-[var(--pf-body)]">
@@ -333,10 +344,13 @@ export default function OrcamentoInline({
             </li>
             <li className="flex items-center gap-2">
               <Check className="h-3.5 w-3.5 text-[var(--pf-ok)]" strokeWidth={3} />
-              {tempoResposta != null ? `Responde em cerca de ${formatarHoras(tempoResposta)}` : "Você recebe a resposta no seu painel"}
+              {tempoResposta != null
+                ? `Responde em cerca de ${formatarHoras(tempoResposta)}`
+                : "Você recebe a resposta no seu painel"}
             </li>
             <li className="flex items-center gap-2">
-              <Check className="h-3.5 w-3.5 text-[var(--pf-ok)]" strokeWidth={3} /> WhatsApp liberado depois do primeiro pedido
+              <Check className="h-3.5 w-3.5 text-[var(--pf-ok)]" strokeWidth={3} /> WhatsApp liberado depois do primeiro
+              pedido
             </li>
           </ul>
         </div>
