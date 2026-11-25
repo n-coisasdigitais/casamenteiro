@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { NavLink } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export function Kpi({ rotulo, valor, detalhe, tom, ativo, onClick }: { rotulo: s
   const conteudo = <><span className="of-kpi-r">{rotulo}</span><strong className="of-kpi-v">{valor}</strong>{detalhe && <span className={`of-kpi-d ${tom ?? ""}`}>{detalhe}</span>}</>;
   return onClick ? <Button type="button" variant="ghost" className={`of-kpi ${ativo ? "on" : ""}`} aria-pressed={ativo} onClick={onClick}>{conteudo}</Button> : <div className="of-kpi">{conteudo}</div>;
 }
-export function Chips<const T extends string>({ rotulo, valor, onChange, opcoes }: { rotulo: string; valor: T; onChange: (valor: T) => void; opcoes: readonly { id: NoInfer<T>; nome: string }[] }) {
+export function Chips<T extends string>({ rotulo, valor, onChange, opcoes }: { rotulo: string; valor: NoInfer<T>; onChange: Dispatch<SetStateAction<T>>; opcoes: readonly { id: NoInfer<T>; nome: string }[] }) {
   return <div className="of-chips" role="group" aria-label={rotulo}>{opcoes.map((o) => <Button key={o.id} type="button" variant="ghost" className={valor === o.id ? "on" : ""} aria-pressed={valor === o.id} onClick={() => onChange(o.id)}>{o.nome}</Button>)}</div>;
 }
 export function Erro({ texto, acao }: { texto: string; acao?: ReactNode }) { return <div className="of-estado err" role="alert"><span>{texto}</span>{acao}</div>; }
