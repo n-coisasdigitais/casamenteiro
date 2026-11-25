@@ -12,3 +12,4 @@
 - Feedback administration uses role-checked RPCs over suporte_reportes; keep list, count and update together so reports and responses remain private.
 - Manual group communication counts and sends through admin_destinatarios_comunicacao; reuse supplier approval requirements and staff onboarding/document states without changing approval rules.
 - Email quota errors use the pure shared email-errors helper in sending and admin displays; do not retry exhausted quotas as transient rate limits or encourage resending completed channels.
+- Offer dashboard calculations and payload types live in the pure oferta helper, and shared display controls in oferta/ui; keep their exports aligned with dashboard consumers and tests to avoid missing-module regressions.
