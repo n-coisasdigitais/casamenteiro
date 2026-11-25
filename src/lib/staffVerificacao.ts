@@ -59,6 +59,20 @@ export function requisitosVerificacao(staff: any, docs: any[] = []): Requisito[]
 export const podeEnviarVerificacao = (staff: any, docs: any[] = []) =>
   requisitosVerificacao(staff, docs).every((r) => r.ok);
 
+export type FiltroRequisitosVerificacao = "todos" | "completos" | "dados" | "documentos";
+
+/** Filtra a fila administrativa usando exatamente os requisitos exibidos na ficha. */
+export function atendeFiltroRequisitos(
+  staff: any,
+  docs: any[] = [],
+  filtro: FiltroRequisitosVerificacao = "todos",
+) {
+  if (filtro === "todos") return true;
+  const faltantes = requisitosVerificacao(staff, docs).filter((r) => !r.ok);
+  if (filtro === "completos") return faltantes.length === 0;
+  return faltantes.some((r) => (filtro === "dados" ? r.onde === "perfil" : r.onde === "documentos"));
+}
+
 /** Extensões que o modal mostra como imagem; o resto (PDF) vai em iframe. */
 export const ehImagem = (path?: string | null) => /\.(png|jpe?g|webp|gif|heic|heif|bmp)$/i.test(path || "");
 export const ehPdf = (path?: string | null) => /\.pdf$/i.test(path || "");

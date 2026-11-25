@@ -22,7 +22,11 @@ import { TIPOS_DOC, verificacaoLabel } from "@/components/staff/StaffDocumentsTa
 import { appStatusLabel } from "@/lib/staff";
 import { semDemo } from "@/lib/demoScope";
 import ArquivoViewerDialog, { type ArquivoView } from "@/components/staff/ArquivoViewerDialog";
-import { requisitosVerificacao } from "@/lib/staffVerificacao";
+import {
+  atendeFiltroRequisitos,
+  requisitosVerificacao,
+  type FiltroRequisitosVerificacao,
+} from "@/lib/staffVerificacao";
 
 type Filtro = "todos" | "em_analise" | "nao_enviado" | "verificado" | "rejeitado";
 
@@ -73,6 +77,7 @@ export default function AdminProfissionais() {
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("em_analise");
+  const [filtroRequisitos, setFiltroRequisitos] = useState<FiltroRequisitosVerificacao>("todos");
   const [selId, setSelId] = useState<string | null>(null);
   const [extra, setExtra] = useState<{ apps: any[]; reviews: any[] } | null>(null);
   const [obs, setObs] = useState("");
@@ -217,6 +222,8 @@ export default function AdminProfissionais() {
 
   const statusDe = (r: any) => r.verificacao_status || "nao_enviado";
   const conta = (f: Filtro) => (f === "todos" ? rows.length : rows.filter((r) => statusDe(r) === f).length);
+  const contaRequisitos = (f: FiltroRequisitosVerificacao) =>
+    rows.filter((r) => atendeFiltroRequisitos(r, docs[r.id] || [], f)).length;
   const filtradas = rows
     .filter((r) => {
       const t = busca.toLowerCase();
@@ -227,7 +234,11 @@ export default function AdminProfissionais() {
             .toLowerCase()
             .includes(t),
         );
-      return okBusca && (filtro === "todos" || statusDe(r) === filtro);
+      return (
+        okBusca &&
+        (filtro === "todos" || statusDe(r) === filtro) &&
+        atendeFiltroRequisitos(r, docs[r.id] || [], filtroRequisitos)
+      );
     })
     // na fila, quem enviou primeiro aparece primeiro
     .sort((a, b) =>
@@ -245,6 +256,12 @@ export default function AdminProfissionais() {
     { k: "verificado", l: "Verificados" },
     { k: "rejeitado", l: "Recusados" },
   ];
+  const filtrosRequisitos: { k: FiltroRequisitosVerificacao; l: string }[] = [
+    { k: "todos", l: "Todos" },
+    { k: "completos", l: "Prontos para aprovar" },
+    { k: "dados", l: "Faltam dados" },
+    { k: "documentos", l: "Falta RG/CNH" },
+  ];
 
   const docsSel = sel ? docs[sel.id] || [] : [];
   const reqSel = sel ? requisitosVerificacao(sel, docsSel) : [];
@@ -260,7 +277,7 @@ export default function AdminProfissionais() {
             Profissionais
           </h1>
           <p className="cz-num m-0 mt-1 text-sm" style={{ color: "var(--ad-body)" }}>
-            {rows.length} cadastrados · {conta("em_analise")} aguardando verificação
+            {rows.length} cadastrados · {conta("em_analise")} aguardando verificação · {contaRequisitos("completos")} com requisitos completos
           </p>
         </div>
       </div>
@@ -284,6 +301,30 @@ export default function AdminProfissionais() {
               <span className="cz-num ml-1.5 opacity-60">{conta(f.k)}</span>
             </button>
           ))}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[11.5px] font-semibold" style={{ color: "var(--ad-muted)" }}>
+            Requisitos básicos — combine com a situação acima
+          </span>
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5" role="group" aria-label="Filtro de requisitos básicos">
+            {filtrosRequisitos.map((f) => (
+              <button
+                key={f.k}
+                type="button"
+                aria-pressed={filtroRequisitos === f.k}
+                onClick={() => setFiltroRequisitos(f.k)}
+                className="h-8 shrink-0 rounded-full border px-3 text-[12.5px] font-semibold"
+                style={
+                  filtroRequisitos === f.k
+                    ? { background: "var(--ad-clay)", color: "#fff", borderColor: "var(--ad-clay)" }
+                    : { background: "#fff", borderColor: "var(--ad-line-strong)", color: "var(--ad-ink)" }
+                }
+              >
+                {f.l}
+                <span className="cz-num ml-1.5 opacity-60">{contaRequisitos(f.k)}</span>
+              </button>
+            ))}
+          </div>
         </div>
         <div className="relative max-w-[480px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--ad-muted)" }} />
@@ -310,6 +351,7 @@ export default function AdminProfissionais() {
           ) : (
             filtradas.map((s, i) => {
               const nd = (docs[s.id] || []).length;
+              const faltantes = requisitosVerificacao(s, docs[s.id] || []).filter((r) => !r.ok);
               const ativo = sel?.id === s.id;
               return (
                 <button
@@ -343,6 +385,19 @@ export default function AdminProfissionais() {
                       {statusDe(s) === "em_analise" && s.verificacao_enviada_em
                         ? `enviado em ${dataBR(s.verificacao_enviada_em)}`
                         : `desde ${dataBR(s.created_at)}`}
+                    </span>
+                    <span
+                      className={`cz-st mt-1 w-fit ${faltantes.length === 0 ? "cz-ok" : "cz-warn"}`}
+                      title={faltantes.length ? faltantes.map((r) => r.label).join(" · ") : "Todos os requisitos básicos foram enviados"}
+                    >
+                      {faltantes.length === 0 ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <AlertTriangle className="h-3 w-3" />
+                      )}
+                      {faltantes.length === 0
+                        ? "Pronto para aprovar"
+                        : `Falta${faltantes.length > 1 ? "m" : ""} ${faltantes.length} requisito${faltantes.length > 1 ? "s" : ""}`}
                     </span>
                   </span>
                   <span className={`cz-st ${TOM_VERIF[statusDe(s)] || "cz-off"}`}>
