@@ -11,6 +11,7 @@ import { Phone, MessageCircle, Globe, ExternalLink, CheckCircle2, DollarSign, Tr
 import { Link } from "react-router-dom";
 import QuoteConversation from "@/components/QuoteConversation";
 import { buildWhatsAppLink } from "@/lib/phone";
+import { analytics } from "@/lib/analytics";
 import type { PlanSupplier } from "./PlanKanban";
 
 const fmt = (n: number) => `R$ ${(n || 0).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
@@ -51,8 +52,16 @@ type SupplierMeta = {
 };
 
 export default function CardDetailDrawer({
-  open, onOpenChange, item, coupleId, currentUserId,
-  onOpenContract, onOpenNegotiate, onDiscard, onRegisterPayment, onChange,
+  open,
+  onOpenChange,
+  item,
+  coupleId,
+  currentUserId,
+  onOpenContract,
+  onOpenNegotiate,
+  onDiscard,
+  onRegisterPayment,
+  onChange,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -83,9 +92,13 @@ export default function CardDetailDrawer({
       .then(({ data }) => setEvents((data || []) as Event[]));
     // fetch quote id (most recent)
     if (item.supplier_id) {
-      supabase.from("quotes").select("id, created_at")
-        .eq("couple_id", coupleId).eq("supplier_id", item.supplier_id)
-        .order("created_at", { ascending: false }).limit(1)
+      supabase
+        .from("quotes")
+        .select("id, created_at")
+        .eq("couple_id", coupleId)
+        .eq("supplier_id", item.supplier_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .then(({ data }) => setQuoteId(data?.[0]?.id || null));
       Promise.all([
         supabase.rpc("my_supplier_contacts", { _ids: [item.supplier_id] }),
@@ -104,13 +117,17 @@ export default function CardDetailDrawer({
   if (!item) return null;
 
   const statusTone =
-    item.kanban_status === "contratado" ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
-    item.kanban_status === "negociando" ? "bg-blue-100 text-blue-800 border-blue-200" :
-    item.kanban_status === "em_orcamento" ? "bg-amber-100 text-amber-800 border-amber-200" :
-    item.kanban_status === "descartado" ? "bg-rose-50 text-rose-700 border-rose-200" :
-    "bg-slate-100 text-slate-700 border-slate-200";
+    item.kanban_status === "contratado"
+      ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+      : item.kanban_status === "negociando"
+        ? "bg-blue-100 text-blue-800 border-blue-200"
+        : item.kanban_status === "em_orcamento"
+          ? "bg-amber-100 text-amber-800 border-amber-200"
+          : item.kanban_status === "descartado"
+            ? "bg-rose-50 text-rose-700 border-rose-200"
+            : "bg-slate-100 text-slate-700 border-slate-200";
 
-  const wpp = meta ? (meta.whatsapp || meta.phone || "") : "";
+  const wpp = meta ? meta.whatsapp || meta.phone || "" : "";
   const waLink = wpp ? buildWhatsAppLink(wpp, `Olá! Falo pelo Casamenteiro.`) : null;
 
   return (
@@ -123,13 +140,21 @@ export default function CardDetailDrawer({
               {STATUS_LABEL[item.kanban_status] || item.kanban_status}
             </Badge>
           </SheetTitle>
-          {item.category_name && (
-            <p className="text-xs text-muted-foreground capitalize">{item.category_name}</p>
-          )}
+          {item.category_name && <p className="text-xs text-muted-foreground capitalize">{item.category_name}</p>}
           <div className="flex flex-wrap gap-3 text-xs pt-1">
-            <span className="text-muted-foreground">Plano <b className="text-foreground">{fmt(item.valor_plano)}</b></span>
-            {item.valor_cotado > 0 && <span className="text-amber-600">Cotado <b>{fmt(item.valor_cotado)}</b></span>}
-            {item.valor_contratado > 0 && <span className="text-emerald-600">Fechado <b>{fmt(item.valor_contratado)}</b></span>}
+            <span className="text-muted-foreground">
+              Plano <b className="text-foreground">{fmt(item.valor_plano)}</b>
+            </span>
+            {item.valor_cotado > 0 && (
+              <span className="text-amber-600">
+                Cotado <b>{fmt(item.valor_cotado)}</b>
+              </span>
+            )}
+            {item.valor_contratado > 0 && (
+              <span className="text-emerald-600">
+                Fechado <b>{fmt(item.valor_contratado)}</b>
+              </span>
+            )}
           </div>
         </SheetHeader>
 
@@ -150,15 +175,31 @@ export default function CardDetailDrawer({
             )}
             <Card className="p-3 space-y-2 text-sm">
               {meta?.phone && (
-                <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {meta.phone}</div>
+                <div className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" /> {meta.phone}
+                </div>
               )}
               {(meta?.whatsapp || meta?.phone) && waLink && (
-                <a href={waLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-emerald-700 hover:underline">
+                <a
+                  href={waLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    item.supplier_id &&
+                    analytics.whatsappClicado({ supplier_id: item.supplier_id, origem: "painel_casal" })
+                  }
+                  className="flex items-center gap-2 text-emerald-700 hover:underline"
+                >
                   <MessageCircle className="h-3.5 w-3.5" /> Abrir WhatsApp
                 </a>
               )}
               {meta?.website && (
-                <a href={meta.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline">
+                <a
+                  href={meta.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-primary hover:underline"
+                >
                   <Globe className="h-3.5 w-3.5" /> Site
                 </a>
               )}
@@ -180,7 +221,10 @@ export default function CardDetailDrawer({
                   isSupplier={false}
                   coupleId={coupleId}
                   supplierId={item.supplier_id}
-                  onContracted={() => { onChange(); onOpenChange(false); }}
+                  onContracted={() => {
+                    onChange();
+                    onOpenChange(false);
+                  }}
                 />
               </div>
             ) : (
@@ -198,9 +242,7 @@ export default function CardDetailDrawer({
           </TabsContent>
 
           <TabsContent value="historico" className="flex-1 overflow-y-auto p-4 space-y-2">
-            {events.length === 0 && (
-              <p className="text-xs text-muted-foreground">Nenhum evento registrado.</p>
-            )}
+            {events.length === 0 && <p className="text-xs text-muted-foreground">Nenhum evento registrado.</p>}
             {events.map((ev) => (
               <div key={ev.id} className="flex gap-3 text-xs">
                 <div className="w-1.5 rounded-full bg-primary/60 shrink-0" />
@@ -208,15 +250,14 @@ export default function CardDetailDrawer({
                   <p className="font-medium">{EVENT_LABEL[ev.type] || ev.type}</p>
                   {ev.type === "status_change" && (
                     <p className="text-muted-foreground">
-                      {STATUS_LABEL[ev.from_status || ""] || ev.from_status || "—"} → {STATUS_LABEL[ev.to_status || ""] || ev.to_status}
+                      {STATUS_LABEL[ev.from_status || ""] || ev.from_status || "—"} →{" "}
+                      {STATUS_LABEL[ev.to_status || ""] || ev.to_status}
                     </p>
                   )}
                   {ev.type === "contract" && ev.payload?.value && (
                     <p className="text-muted-foreground">Valor: {fmt(Number(ev.payload.value))}</p>
                   )}
-                  <p className="text-muted-foreground">
-                    {new Date(ev.created_at).toLocaleString("pt-BR")}
-                  </p>
+                  <p className="text-muted-foreground">{new Date(ev.created_at).toLocaleString("pt-BR")}</p>
                 </div>
               </div>
             ))}
@@ -240,7 +281,12 @@ export default function CardDetailDrawer({
               <DollarSign className="h-4 w-4 mr-1" /> Registrar pagamento
             </Button>
           )}
-          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => onDiscard(item)}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            onClick={() => onDiscard(item)}
+          >
             <Trash2 className="h-4 w-4 mr-1" /> Descartar
           </Button>
         </div>
