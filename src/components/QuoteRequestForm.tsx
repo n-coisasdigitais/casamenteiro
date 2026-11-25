@@ -37,7 +37,11 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
     if (!open || !user) return;
     (async () => {
       const [{ data: couple }, { data: profile }] = await Promise.all([
-        supabase.from("couples").select("wedding_date, estimated_guests, contact_phone").eq("user_id", user.id).maybeSingle(),
+        supabase
+          .from("couples")
+          .select("wedding_date, estimated_guests, contact_phone")
+          .eq("user_id", user.id)
+          .maybeSingle(),
         supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
       ]);
       if (couple?.wedding_date && !eventDate) setEventDate(couple.wedding_date);
@@ -62,11 +66,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
     setLoading(true);
 
     // Get couple_id
-    const { data: couple } = await supabase
-      .from("couples")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const { data: couple } = await supabase.from("couples").select("id").eq("user_id", user.id).maybeSingle();
 
     if (!couple) {
       toast({ title: "Apenas casais podem pedir orçamento", variant: "destructive" });
@@ -101,13 +101,11 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
       const uploaded: string[] = [];
       for (const file of attachments) {
         const filePath = `${quote.id}/${Date.now()}-${file.name}`;
-        const { error: uploadErr } = await supabase.storage
-          .from("quote-attachments")
-          .upload(filePath, file);
+        const { error: uploadErr } = await supabase.storage.from("quote-attachments").upload(filePath, file);
         if (uploadErr) continue;
-        const { data: { publicUrl } } = supabase.storage
-          .from("quote-attachments")
-          .getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("quote-attachments").getPublicUrl(filePath);
         uploaded.push(publicUrl);
       }
       if (uploaded.length > 0) {
@@ -122,6 +120,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
     }
 
     analytics.formSubmit("pedido_orcamento", { supplier_id: supplierId });
+    analytics.orcamentoPedido({ supplier_id: supplierId, origem: "form_orcamento" });
     analytics.contactCtaClick({ supplier_id: supplierId, origem: "form_orcamento" });
     toast({ title: "Orçamento solicitado!", description: `Seu pedido foi enviado para ${supplierName}.` });
     setOpen(false);
@@ -137,11 +136,7 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || (
-          <Button className="flex-1 h-12 text-base font-semibold">
-            Pedir Orçamento Grátis
-          </Button>
-        )}
+        {trigger || <Button className="flex-1 h-12 text-base font-semibold">Pedir Orçamento Grátis</Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -155,81 +150,77 @@ export default function QuoteRequestForm({ supplierId, supplierName, trigger }: 
               Crie sua conta gratuita para pedir orçamento sem complicação.
             </p>
             <div className="flex gap-2 justify-center">
-              <Button asChild variant="outline"><Link to="/login">Entrar</Link></Button>
-              <Button asChild><Link to="/cadastro">Criar conta</Link></Button>
+              <Button asChild variant="outline">
+                <Link to="/login">Entrar</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/cadastro">Criar conta</Link>
+              </Button>
             </div>
           </div>
         ) : (
-        <div className="space-y-4 mt-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs flex items-center gap-1 mb-1.5">
-                <Calendar className="h-3.5 w-3.5" /> Data do evento
-              </Label>
-              <Input
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label className="text-xs flex items-center gap-1 mb-1.5">
-                <Users className="h-3.5 w-3.5" /> Nº convidados
-              </Label>
-              <Input
-                type="number"
-                placeholder="150"
-                value={guestCount}
-                onChange={(e) => setGuestCount(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-xs mb-1.5 block">Mensagem *</Label>
-            <Textarea
-              placeholder="Olá! Gostaria de saber mais sobre seus serviços para o meu casamento..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={4}
-              maxLength={2000}
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs flex items-center gap-1 mb-1.5">
-              <Phone className="h-3.5 w-3.5" /> Telefone (opcional)
-            </Label>
-            <Input
-              type="tel"
-              placeholder="(11) 99999-9999"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-            {phone && (
-              <div className="flex items-center gap-2 mt-2">
-                <Switch
-                  checked={phoneVisible}
-                  onCheckedChange={setPhoneVisible}
-                  id="phone-visible"
-                />
-                <Label htmlFor="phone-visible" className="text-xs text-muted-foreground cursor-pointer">
-                  Permitir que o fornecedor veja meu telefone
+          <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs flex items-center gap-1 mb-1.5">
+                  <Calendar className="h-3.5 w-3.5" /> Data do evento
                 </Label>
+                <Input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
               </div>
-            )}
-          </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1 mb-1.5">
+                  <Users className="h-3.5 w-3.5" /> Nº convidados
+                </Label>
+                <Input
+                  type="number"
+                  placeholder="150"
+                  value={guestCount}
+                  onChange={(e) => setGuestCount(e.target.value)}
+                />
+              </div>
+            </div>
 
-          <div>
-            <Label className="text-xs mb-1.5 block">Anexos (opcional)</Label>
-            <AttachmentPicker files={attachments} onChange={setAttachments} />
-          </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Mensagem *</Label>
+              <Textarea
+                placeholder="Olá! Gostaria de saber mais sobre seus serviços para o meu casamento..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={4}
+                maxLength={2000}
+              />
+            </div>
 
-          <Button onClick={handleSubmit} disabled={loading || !message.trim()} className="w-full h-11">
-            <Send className="h-4 w-4 mr-2" />
-            {loading ? "Enviando..." : "Enviar pedido de orçamento"}
-          </Button>
-        </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1 mb-1.5">
+                <Phone className="h-3.5 w-3.5" /> Telefone (opcional)
+              </Label>
+              <Input
+                type="tel"
+                placeholder="(11) 99999-9999"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+              {phone && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Switch checked={phoneVisible} onCheckedChange={setPhoneVisible} id="phone-visible" />
+                  <Label htmlFor="phone-visible" className="text-xs text-muted-foreground cursor-pointer">
+                    Permitir que o fornecedor veja meu telefone
+                  </Label>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-xs mb-1.5 block">Anexos (opcional)</Label>
+              <AttachmentPicker files={attachments} onChange={setAttachments} />
+            </div>
+
+            <Button onClick={handleSubmit} disabled={loading || !message.trim()} className="w-full h-11">
+              <Send className="h-4 w-4 mr-2" />
+              {loading ? "Enviando..." : "Enviar pedido de orçamento"}
+            </Button>
+          </div>
         )}
       </DialogContent>
     </Dialog>
