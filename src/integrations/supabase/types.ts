@@ -462,6 +462,33 @@ export type Database = {
           },
         ]
       }
+      categorias_padrao: {
+        Row: {
+          aliases: string[]
+          icone: string | null
+          nivel: string
+          nome: string
+          ordem: number
+          slug: string
+        }
+        Insert: {
+          aliases?: string[]
+          icone?: string | null
+          nivel: string
+          nome: string
+          ordem: number
+          slug: string
+        }
+        Update: {
+          aliases?: string[]
+          icone?: string | null
+          nivel?: string
+          nome?: string
+          ordem?: number
+          slug?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           active: boolean
@@ -469,7 +496,11 @@ export type Database = {
           description: string | null
           icon: string | null
           id: string
+          meta_regiao: number | null
           name: string
+          nivel: string | null
+          ordem_padrao: number | null
+          rascunho: boolean
           slug: string
           updated_at: string
         }
@@ -479,7 +510,11 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          meta_regiao?: number | null
           name: string
+          nivel?: string | null
+          ordem_padrao?: number | null
+          rascunho?: boolean
           slug: string
           updated_at?: string
         }
@@ -489,7 +524,11 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          meta_regiao?: number | null
           name?: string
+          nivel?: string | null
+          ordem_padrao?: number | null
+          rascunho?: boolean
           slug?: string
           updated_at?: string
         }
@@ -5882,6 +5921,19 @@ export type Database = {
         }
         Returns: string
       }
+      admin_criar_categorias_padrao: {
+        Args: { p_slugs?: string[] }
+        Returns: number
+      }
+      admin_definir_categoria: {
+        Args: {
+          p_id: string
+          p_meta?: number
+          p_nivel: string
+          p_rascunho?: boolean
+        }
+        Returns: undefined
+      }
       admin_destinatarios_comunicacao: {
         Args: { _demo?: boolean; _pendencia?: string; _segment: string }
         Returns: {
@@ -5942,6 +5994,7 @@ export type Database = {
         Args: { _amount: number; _lead_id: string }
         Returns: undefined
       }
+      admin_oferta_painel: { Args: { p_demo?: boolean }; Returns: Json }
       admin_perfis_usuarios: {
         Args: never
         Returns: {
