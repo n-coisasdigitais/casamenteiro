@@ -4,9 +4,19 @@ import { NavLink, useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
-  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger,
-  SidebarHeader, SidebarFooter, useSidebar,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarHeader,
+  SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
@@ -15,12 +25,50 @@ import { isDemoSession, setAdminDemoScope } from "@/lib/demoScope";
 import "@/components/admin/admin.css";
 
 import {
-  Heart, LogOut, LayoutDashboard, Users, Building2, MessageSquare, Send, History,
-  Star, DollarSign, BarChart3, Home as HomeIcon, ListChecks, Settings, ScrollText,
-  Calculator, Receipt, ChevronLeft, ClipboardCheck, SlidersHorizontal, MapPin, Zap, Mail, Share2,
-  CalendarRange, Sparkles, Tag, MessageSquareHeart, HelpCircle, ImageDown } from "lucide-react";
+  Heart,
+  LogOut,
+  LayoutDashboard,
+  Users,
+  Building2,
+  MessageSquare,
+  Send,
+  History,
+  Star,
+  DollarSign,
+  BarChart3,
+  Home as HomeIcon,
+  ListChecks,
+  Settings,
+  ScrollText,
+  Calculator,
+  Receipt,
+  ChevronLeft,
+  ClipboardCheck,
+  SlidersHorizontal,
+  MapPin,
+  Zap,
+  Mail,
+  Share2,
+  CalendarRange,
+  Sparkles,
+  Tag,
+  MessageSquareHeart,
+  HelpCircle,
+  ImageDown,
+  Map as MapIcon,
+  Layers,
+  HardHat,
+  MousePointerClick,
+} from "lucide-react";
 
-type NavItem = { title: string; url: string; icon: any; end?: boolean; extra?: string[]; badge?: "aprovacao" | "reservas" | "feedback" };
+type NavItem = {
+  title: string;
+  url: string;
+  icon: any;
+  end?: boolean;
+  extra?: string[];
+  badge?: "aprovacao" | "reservas" | "feedback";
+};
 
 /** Menu em 7 grupos por tarefa (antes: 32 itens com grupos trocados). Todas as rotas continuam acessíveis. */
 const groups: { label: string; items: NavItem[] }[] = [
@@ -29,6 +77,16 @@ const groups: { label: string; items: NavItem[] }[] = [
     items: [
       { title: "Painel", url: "/admin", icon: LayoutDashboard, end: true },
       { title: "Métricas", url: "/admin/metricas", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Oferta e comportamento",
+    items: [
+      { title: "Painel de oferta", url: "/admin/oferta", icon: Layers, end: true },
+      { title: "Categorias × meta", url: "/admin/oferta/categorias", icon: SlidersHorizontal },
+      { title: "Mapa de fornecedores", url: "/admin/oferta/mapa", icon: MapIcon },
+      { title: "Profissionais por função", url: "/admin/oferta/profissionais", icon: HardHat },
+      { title: "Comportamento no site", url: "/admin/comportamento", icon: MousePointerClick },
     ],
   },
   {
@@ -103,14 +161,23 @@ const groups: { label: string; items: NavItem[] }[] = [
 
 /** contadores do menu (fila de trabalho) */
 function useContadoresMenu() {
-  const [c, setC] = useState<{ aprovacao: number; reservas: number; feedback: number }>({ aprovacao: 0, reservas: 0, feedback: 0 });
+  const [c, setC] = useState<{ aprovacao: number; reservas: number; feedback: number }>({
+    aprovacao: 0,
+    reservas: 0,
+    feedback: 0,
+  });
   const { pathname } = useLocation();
   useEffect(() => {
     let vivo = true;
     (async () => {
       const [{ count: aprov }, { count: res }, { data: fb }] = await Promise.all([
-        (supabase.from("suppliers") as any).select("id", { count: "exact", head: true }).eq("status", "pending").eq("is_demo", isDemoSession()),
-        (supabase.from("idle_date_reservations" as any) as any).select("id", { count: "exact", head: true }).in("status", ["solicitada", "pendente"]),
+        (supabase.from("suppliers") as any)
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending")
+          .eq("is_demo", isDemoSession()),
+        (supabase.from("idle_date_reservations" as any) as any)
+          .select("id", { count: "exact", head: true })
+          .in("status", ["solicitada", "pendente"]),
         supabase.rpc("admin_feedback_abertos" as never) as unknown as Promise<{ data: number | null }>,
       ]);
       if (vivo) setC({ aprovacao: aprov || 0, reservas: res || 0, feedback: Number(fb) || 0 });
@@ -122,13 +189,14 @@ function useContadoresMenu() {
   return c;
 }
 
-
 function AdminSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = !isMobile && state === "collapsed";
   const { pathname } = useLocation();
   const { signOut } = useAuth();
-  const closeMobile = () => { if (isMobile) setOpenMobile(false); };
+  const closeMobile = () => {
+    if (isMobile) setOpenMobile(false);
+  };
   const contadores = useContadoresMenu();
 
   return (
@@ -138,9 +206,15 @@ function AdminSidebar() {
           {collapsed ? (
             <BrandLogo symbolOnly />
           ) : (
-            <span className="whitespace-nowrap text-[18px] font-extrabold" style={{ letterSpacing: "-0.03em", color: "var(--ad-ink)" }}>
+            <span
+              className="whitespace-nowrap text-[18px] font-extrabold"
+              style={{ letterSpacing: "-0.03em", color: "var(--ad-ink)" }}
+            >
               <BrandLogo className="gap-1.5 text-base" />
-              <small className="ml-1.5 rounded-full px-1.5 py-0.5 align-[2px] text-[10px] font-extrabold uppercase" style={{ letterSpacing: ".08em", color: "var(--ad-clay)", background: "#fdf0e6" }}>
+              <small
+                className="ml-1.5 rounded-full px-1.5 py-0.5 align-[2px] text-[10px] font-extrabold uppercase"
+                style={{ letterSpacing: ".08em", color: "var(--ad-clay)", background: "#fdf0e6" }}
+              >
                 admin
               </small>
             </span>
@@ -156,7 +230,9 @@ function AdminSidebar() {
                 {g.items.map((item) => {
                   const active = item.end
                     ? pathname === item.url
-                    : pathname === item.url || pathname.startsWith(item.url + "/") || (item.extra || []).some((e) => pathname.startsWith(e));
+                    : pathname === item.url ||
+                      pathname.startsWith(item.url + "/") ||
+                      (item.extra || []).some((e) => pathname.startsWith(e));
                   const n = item.badge ? contadores[item.badge] : 0;
                   return (
                     <SidebarMenuItem key={item.url}>
@@ -172,10 +248,10 @@ function AdminSidebar() {
                     </SidebarMenuItem>
                   );
                 })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
@@ -214,16 +290,26 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate("/login"); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     supabase.rpc("has_role", { _user_id: user.id, _role: "admin" as any }).then(({ data }) => {
-      if (!data) { navigate("/"); return; }
+      if (!data) {
+        navigate("/");
+        return;
+      }
       setIsAdmin(true);
       setChecked(true);
     });
   }, [user, authLoading, navigate]);
 
   if (authLoading || !checked) {
-    return <div className="min-h-screen flex items-center justify-center"><p>Verificando permissões...</p></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Verificando permissões...</p>
+      </div>
+    );
   }
   if (!isAdmin) return null;
 
@@ -235,13 +321,27 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <div className="flex-1 flex flex-col min-w-0 w-full">
           <header className="h-14 flex items-center gap-2 border-b bg-card px-3 sticky top-0 z-30">
             <SidebarTrigger className="shrink-0" />
-            <span className="truncate text-sm font-medium" style={{ color: "var(--ad-muted)" }}>Painel administrativo</span>
+            <span className="truncate text-sm font-medium" style={{ color: "var(--ad-muted)" }}>
+              Painel administrativo
+            </span>
             <div className="ml-auto flex items-center gap-2">
               <div className="flex items-center rounded-md border p-0.5" aria-label="Ambiente de dados">
-                <Button type="button" size="sm" variant={!demoScope ? "default" : "ghost"} className="h-7 px-2" onClick={() => changeScope(false)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={!demoScope ? "default" : "ghost"}
+                  className="h-7 px-2"
+                  onClick={() => changeScope(false)}
+                >
                   Dados reais
                 </Button>
-                <Button type="button" size="sm" variant={demoScope ? "default" : "ghost"} className="h-7 px-2" onClick={() => changeScope(true)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={demoScope ? "default" : "ghost"}
+                  className="h-7 px-2"
+                  onClick={() => changeScope(true)}
+                >
                   Dados demo
                 </Button>
               </div>
