@@ -38,9 +38,8 @@ export default function MapaRaio({
           .map(ref.current, { scrollWheelZoom: false, zoomControl: true })
           .setView([config.foco_lat, config.foco_lng], 7);
         lib
-          .tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO',
-            subdomains: "abcd",
+          .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
             maxZoom: 18,
           })
           .addTo(mapa.current);
