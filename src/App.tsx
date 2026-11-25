@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { FeatureFlagsProvider } from "@/contexts/FeatureFlagsContext";
 import FlagGate from "@/components/FlagGate";
 import CookieConsent from "@/components/CookieConsent";
+import PostHogBridge from "@/components/PostHogBridge";
 import BackToTop from "@/components/BackToTop";
 import BotaoFeedback from "@/components/feedback/BotaoFeedback";
 import RequireAccountType, { OferecerTrocaPerfil } from "@/components/RequireAccountType";
@@ -51,6 +52,11 @@ import AdminLandingEmails from "./pages/AdminLandingEmails";
 import AdminSimulacoes from "./pages/AdminSimulacoes";
 import AdminTransacoes from "./pages/AdminTransacoes";
 import AdminMetrics from "./pages/AdminMetrics";
+import AdminOferta from "./pages/AdminOferta";
+import AdminOfertaCategorias from "./pages/AdminOfertaCategorias";
+import AdminOfertaMapa from "./pages/AdminOfertaMapa";
+import AdminOfertaProfissionais from "./pages/AdminOfertaProfissionais";
+import AdminComportamento from "./pages/AdminComportamento";
 import AdminCoupleCRM from "./pages/AdminCoupleCRM";
 import AdminSupplierCRM from "./pages/AdminSupplierCRM";
 import AdminBroadcast from "./pages/AdminBroadcast";
@@ -128,6 +134,7 @@ const App = () => (
           <AuthProvider>
             <DemoBanner />
             <CookieConsent />
+            <PostHogBridge />
             <BackToTop />
             <BotaoFeedback />
             <Routes>
@@ -524,6 +531,46 @@ const App = () => (
                 element={
                   <AdminLayout>
                     <AdminTransacoes />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/oferta"
+                element={
+                  <AdminLayout>
+                    <AdminOferta />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/oferta/categorias"
+                element={
+                  <AdminLayout>
+                    <AdminOfertaCategorias />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/oferta/mapa"
+                element={
+                  <AdminLayout>
+                    <AdminOfertaMapa />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/oferta/profissionais"
+                element={
+                  <AdminLayout>
+                    <AdminOfertaProfissionais />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/comportamento"
+                element={
+                  <AdminLayout>
+                    <AdminComportamento />
                   </AdminLayout>
                 }
               />
