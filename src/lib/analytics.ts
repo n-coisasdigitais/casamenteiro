@@ -7,7 +7,10 @@
  * Para adicionar outra ferramenta (Meta Pixel, Hotjar, Clarity...),
  * carregue o script em `index.html` e envie o evento também dentro
  * de `trackEvent` — nenhum componente precisa ser alterado.
+ *
+ * PostHog (comportamento) recebe todos os eventos daqui também — ver src/lib/posthog.ts.
  */
+import { capturarPostHog } from "@/lib/posthog";
 
 declare global {
   interface Window {
@@ -150,6 +153,7 @@ export function trackEvent(name: string, params: Record<string, unknown> = {}, o
   const key = dedupeKey ?? `${name}:${JSON.stringify(params)}`;
   if (jaEnviado(key, scope, janelaMs)) return;
   enviarMeta(name, params);
+  capturarPostHog(name, params);
   if (!gaAtivo()) {
     if (import.meta.env.DEV) console.debug("[analytics] (inativo)", name, params);
     return;
@@ -199,4 +203,38 @@ export const analytics = {
     trackEvent("contact_cta_click", params, {
       dedupeKey: `contact_cta_click:${params.supplier_id ?? "-"}:${params.origem}`,
     }),
+
+  /* --- Eventos do painel de comportamento (PostHog) --- */
+
+  /** Busca feita pelo casal. resultados = locais + de outras cidades. */
+  buscaRealizada: (params: {
+    origem: "categoria" | "explorar";
+    termo?: string | null;
+    categoria_slug?: string | null;
+    cidade?: string | null;
+    resultados: number;
+    resultados_locais?: number;
+    resultados_remotos?: number;
+  }) =>
+    trackEvent(
+      "busca_realizada",
+      { ...params, sem_resultado: params.resultados === 0 },
+      {
+        dedupeKey: `busca:${params.origem}:${params.termo ?? ""}:${params.categoria_slug ?? ""}:${params.cidade ?? ""}`,
+        janelaMs: 10000,
+      },
+    ),
+
+  perfilFornecedorVisto: (params: { supplier_id: string; categoria_slug?: string | null; cidade?: string | null }) =>
+    trackEvent("perfil_fornecedor_visto", params, {
+      scope: "session",
+      dedupeKey: `perfil_visto:${params.supplier_id}`,
+    }),
+
+  orcamentoPedido: (params: { supplier_id: string; origem: string; categoria_slug?: string | null }) =>
+    trackEvent("orcamento_pedido", params, { dedupeKey: `orcamento:${params.supplier_id}` }),
+
+  /** Clique no WhatsApp do fornecedor (mede o risco de o negócio sair da plataforma). */
+  whatsappClicado: (params: { supplier_id: string; origem: string }) =>
+    trackEvent("contato_whatsapp_clicado", params, { dedupeKey: `whatsapp:${params.supplier_id}:${params.origem}` }),
 };
