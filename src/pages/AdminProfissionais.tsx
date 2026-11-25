@@ -277,7 +277,7 @@ export default function AdminProfissionais() {
             Profissionais
           </h1>
           <p className="cz-num m-0 mt-1 text-sm" style={{ color: "var(--ad-body)" }}>
-            {rows.length} cadastrados · {conta("em_analise")} aguardando verificação · {contaRequisitos("completos")} com requisitos completos
+            {rows.length} cadastrados · {conta("em_analise")} aguardando verificação · {contaRequisitos("completos")} prontos para aprovar
           </p>
         </div>
       </div>
@@ -396,7 +396,7 @@ export default function AdminProfissionais() {
                         <AlertTriangle className="h-3 w-3" />
                       )}
                       {faltantes.length === 0
-                        ? "Pronto para aprovar"
+                        ? statusDe(s) === "verificado" ? "Requisitos completos" : "Pronto para aprovar"
                         : `Falta${faltantes.length > 1 ? "m" : ""} ${faltantes.length} requisito${faltantes.length > 1 ? "s" : ""}`}
                     </span>
                   </span>

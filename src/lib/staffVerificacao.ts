@@ -69,7 +69,7 @@ export function atendeFiltroRequisitos(
 ) {
   if (filtro === "todos") return true;
   const faltantes = requisitosVerificacao(staff, docs).filter((r) => !r.ok);
-  if (filtro === "completos") return faltantes.length === 0;
+  if (filtro === "completos") return !!staff && staff.verificacao_status !== "verificado" && faltantes.length === 0;
   return faltantes.some((r) => (filtro === "dados" ? r.onde === "perfil" : r.onde === "documentos"));
 }
 
